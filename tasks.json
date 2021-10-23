@@ -1,0 +1,12 @@
+{
+	"cdt_tasks": [
+		{
+			"name": "print Hello World",
+			"command": "echo Hello World!"
+		},
+		{
+			"name": "print Bye World",
+			"command": "echo Bye World!"
+		}
+	]
+}
