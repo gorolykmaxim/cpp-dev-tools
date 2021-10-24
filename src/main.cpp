@@ -124,12 +124,12 @@ static void choose_task_to_execute(const std::vector<task>& tasks, const std::st
         std::cout << task_list_msg;
     }
     std::cout << opts_msg;
-    std::string selected_task;
-    std::getline(std::cin, selected_task);
-    const auto index = std::atoi(selected_task.c_str());
+    std::string input;
+    std::getline(std::cin, input);
+    const auto index = std::atoi(input.c_str());
     if (index > 0 && index <= tasks.size()) {
         to_execute = tasks[index - 1];
-    } else {
+    } else if (!input.empty()) {
         to_execute.reset();
     }
 }
