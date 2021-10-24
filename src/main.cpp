@@ -2,9 +2,12 @@
 #include <fstream>
 #include <sstream>
 #include <unistd.h>
+#include <cstring>
+#include <cerrno>
 #include "process.hpp"
 #include "json.hpp"
 
+const auto TERM_COLOR_RED = "\033[31m";
 const auto TERM_COLOR_GREEN = "\033[32m";
 const auto TERM_COLOR_BLUE = "\033[34m";
 const auto TERM_COLOR_MAGENTA = "\033[35m";
@@ -150,6 +153,7 @@ static void execute_task_command(const task& t, bool is_primary_task, const char
     if (t.command == "__restart") {
         std::cout << TERM_COLOR_MAGENTA << "Restarting program..." << TERM_COLOR_RESET << std::endl;
         execvp(argv[0], const_cast<char* const*>(argv));
+        std::cout << TERM_COLOR_RED << "Failed to restart: " << std::strerror(errno) << TERM_COLOR_RESET << std::endl;
     } else {
         TinyProcessLib::Process process(t.command, "",
                                         is_primary_task ? write_to_stdout : write_to_dev_null,

@@ -8,6 +8,15 @@
             "name": "run",
             "command": "__restart",
             "tasks_to_execute_before": ["build"]
+        },
+        {
+            "name": "delete executable",
+            "command": "rm -f ./build/cpp-dev-tools"
+        },
+        {
+            "name": "fail to run",
+            "command": "__restart",
+            "tasks_to_execute_before": ["build", "delete executable"]
         }
     ]
 }
