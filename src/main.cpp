@@ -66,33 +66,46 @@ static bool read_tasks_from_specified_config_or_fail(int argc, const char** argv
     }
 }
 
-static void choose_task_to_execute(const std::vector<task>& tasks, std::optional<task>& to_execute) {
-    std::cout << "Tasks:" << std::endl;
-    std::stringstream options;
-    options << "(";
+static void format_task_list_selection_msgs(const std::vector<task>& tasks, std::string& task_list_msg, std::string& opts_msg) {
+    std::stringstream tl_msg_stream;
+    std::stringstream o_msg_stream;
+    tl_msg_stream << "Tasks:\n";
+    o_msg_stream << "Choose task to execute (";
     for (auto i = 0; i < tasks.size(); i++) {
         const auto& t = tasks[i];
-        std::cout << i + 1 << ") \"" << t.name << "\"" << std::endl;
-        options << i + 1;
+        const auto option = std::to_string(i + 1);
+        tl_msg_stream << option << ") \"" << t.name << "\"\n";
+        o_msg_stream << option;
         if (i + 1 < tasks.size()) {
-            options << "/";
+            o_msg_stream << '/';
         }
     }
-    options << ")";
-    std::cout << "Choose task to execute " << options.str() << ": ";
+    o_msg_stream << "): ";
+    task_list_msg = tl_msg_stream.str();
+    opts_msg = o_msg_stream.str();
+}
+
+static void choose_task_to_execute(const std::vector<task>& tasks, const std::string& task_list_msg, const std::string& opts_msg,
+                                   std::optional<task>& to_execute) {
+    if (!to_execute) {
+        std::cout << task_list_msg;
+    }
+    std::cout << opts_msg;
     std::string selected_task;
     std::getline(std::cin, selected_task);
     const auto index = std::atoi(selected_task.c_str());
     if (index > 0 && index <= tasks.size()) {
         to_execute = tasks[index - 1];
+    } else {
+        to_execute.reset();
     }
 }
 
 static void execute_task(std::optional<task>& to_execute) {
     if (to_execute) {
-        std::cout << std::endl << "Running: \"" << to_execute->name << "\"" << std::endl;
+        std::cout << "Running: \"" << to_execute->name << "\"" << std::endl;
         TinyProcessLib::Process process(to_execute->command);
-        std::cout << "Return code: " << process.get_exit_status() << std::endl << std::endl;
+        std::cout << "Return code: " << process.get_exit_status() << std::endl;
     }
 }
 
@@ -101,9 +114,11 @@ int main(int argc, const char** argv) {
     if (!read_tasks_from_specified_config_or_fail(argc, argv, tasks)) {
         return 1;
     }
+    std::string task_list, selection_opts;
+    format_task_list_selection_msgs(tasks, task_list, selection_opts);
+    std::optional<task> task_to_execute;
     while (true) {
-        std::optional<task> task_to_execute;
-        choose_task_to_execute(tasks, task_to_execute);
+        choose_task_to_execute(tasks, task_list, selection_opts, task_to_execute);
         execute_task(task_to_execute);
     }
 }
