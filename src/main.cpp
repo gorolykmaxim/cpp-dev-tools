@@ -4,6 +4,10 @@
 #include "process.hpp"
 #include "json.hpp"
 
+#define TERM_COLOR_GREEN "\033[32m"
+#define TERM_COLOR_MAGENTA "\033[35m"
+#define TERM_COLOR_RESET "\033[0m"
+
 struct task
 {
     std::string name;
@@ -69,8 +73,8 @@ static bool read_tasks_from_specified_config_or_fail(int argc, const char** argv
 static void format_task_list_selection_msgs(const std::vector<task>& tasks, std::string& task_list_msg, std::string& opts_msg) {
     std::stringstream tl_msg_stream;
     std::stringstream o_msg_stream;
-    tl_msg_stream << "Tasks:\n";
-    o_msg_stream << "Choose task to execute (";
+    tl_msg_stream << TERM_COLOR_GREEN << "Tasks:\n" << TERM_COLOR_RESET;
+    o_msg_stream << TERM_COLOR_GREEN << "Choose task to execute (";
     for (auto i = 0; i < tasks.size(); i++) {
         const auto& t = tasks[i];
         const auto option = std::to_string(i + 1);
@@ -80,7 +84,7 @@ static void format_task_list_selection_msgs(const std::vector<task>& tasks, std:
             o_msg_stream << '/';
         }
     }
-    o_msg_stream << "): ";
+    o_msg_stream << "): " << TERM_COLOR_RESET;
     task_list_msg = tl_msg_stream.str();
     opts_msg = o_msg_stream.str();
 }
@@ -103,9 +107,9 @@ static void choose_task_to_execute(const std::vector<task>& tasks, const std::st
 
 static void execute_task(std::optional<task>& to_execute) {
     if (to_execute) {
-        std::cout << "Running: \"" << to_execute->name << "\"" << std::endl;
+        std::cout << TERM_COLOR_MAGENTA << "Running" << TERM_COLOR_RESET << " \"" << to_execute->name << "\"" << std::endl;
         TinyProcessLib::Process process(to_execute->command);
-        std::cout << "Return code: " << process.get_exit_status() << std::endl;
+        std::cout << TERM_COLOR_MAGENTA << "Return code:" << TERM_COLOR_RESET << ' ' << process.get_exit_status() << std::endl;
     }
 }
 
