@@ -1,10 +1,12 @@
 #include <iostream>
 #include <fstream>
 #include <sstream>
+#include <unistd.h>
 #include "process.hpp"
 #include "json.hpp"
 
 const auto TERM_COLOR_GREEN = "\033[32m";
+const auto TERM_COLOR_BLUE = "\033[34m";
 const auto TERM_COLOR_MAGENTA = "\033[35m";
 const auto TERM_COLOR_RESET = "\033[0m";
 
@@ -12,18 +14,32 @@ struct task
 {
     std::string name;
     std::string command;
+    std::vector<std::string> tasks_to_execute_before;
 };
 
 static std::string error_invalid_config(const std::string& config) {
     return config + " is invalid:";
 }
 
-static void read_task_property(const nlohmann::json& task_json, size_t task_ind, const std::string& property, std::string& output, std::stringstream& errors) {
+static void read_task_property(const nlohmann::json& task_json, size_t task_ind, const std::string& property,
+                               std::string& output, std::stringstream& errors) {
     auto it = task_json.find(property);
     if (it == task_json.end()) {
         errors << "task #" + std::to_string(task_ind + 1) + " does not have '" + property + "' string specified\n";
     } else {
         output = *it;       
+    }
+}
+
+static void read_task_property(const nlohmann::json& task_json, size_t task_ind, const std::string& property,
+                               std::vector<std::string>& output, std::stringstream& errors, const std::string& err_desc) {
+    auto it = task_json.find(property);
+    if (it != task_json.end()) {
+        try {
+            output = it->get<std::vector<std::string>>();
+        } catch (std::exception& e) {
+            errors << "task #" + std::to_string(task_ind + 1) + " has '" << property << "' " << it->dump() << " which " << err_desc << "\n";
+        }
     }
 }
 
@@ -59,7 +75,16 @@ static bool read_tasks_from_specified_config_or_fail(int argc, const char** argv
         const auto& task_json = tasks_json[i];
         read_task_property(task_json, i, "name", t.name, errors_stream);
         read_task_property(task_json, i, "command", t.command, errors_stream);
+        read_task_property(task_json, i, "tasks_to_execute_before", t.tasks_to_execute_before, errors_stream, "should be an array of other task names");
         tasks.push_back(t);
+    }
+    // Validate that tasks reference existing tasks
+    for (const auto& t: tasks) {
+        for (const auto& task_name: t.tasks_to_execute_before) {
+            if (std::find_if(tasks.begin(), tasks.end(), [&task_name] (const task& ot) {return ot.name == task_name;}) == tasks.end()) {
+                errors_stream << "task '" << t.name << "' references task '" << task_name << "' that does not exist\n";
+            }
+        }
     }
     const auto error = errors_stream.str();
     if (error.empty()) {
@@ -105,11 +130,46 @@ static void choose_task_to_execute(const std::vector<task>& tasks, const std::st
     }
 }
 
-static void execute_task(std::optional<task>& to_execute) {
+static void write_to_stdout(const char* data, size_t size) {
+    std::cout << std::string(data, size);
+}
+
+static void write_to_stderr(const char* data, size_t size) {
+    std::cerr << std::string(data, size);
+}
+
+static void write_to_dev_null(const char* data, size_t size) {
+}
+
+static void execute_task_command(const task& t, bool is_primary_task, const char** argv) {
+    if (is_primary_task) {
+        std::cout << TERM_COLOR_MAGENTA << "Running \"" << t.name << "\"" << TERM_COLOR_RESET << std::endl;
+    } else {
+        std::cout << TERM_COLOR_BLUE << "Running \"" << t.name << "\"..." << TERM_COLOR_RESET << std::endl;
+    }
+    if (t.command == "__restart") {
+        std::cout << TERM_COLOR_MAGENTA << "Restarting program..." << TERM_COLOR_RESET << std::endl;
+        execvp(argv[0], const_cast<char* const*>(argv));
+    } else {
+        TinyProcessLib::Process process(t.command, "",
+                                        is_primary_task ? write_to_stdout : write_to_dev_null,
+                                        is_primary_task ? write_to_stderr : write_to_dev_null);
+        const auto ret_code = process.get_exit_status();
+        std::cout.flush();
+        std::cerr.flush();
+        if (is_primary_task) {
+            std::cout << TERM_COLOR_MAGENTA << "Return code: " << ret_code << TERM_COLOR_RESET << std::endl;
+        }
+    }
+}
+
+static void execute_task(const std::vector<task>& tasks, std::optional<task>& to_execute, const char** argv) {
     if (to_execute) {
-        std::cout << TERM_COLOR_MAGENTA << "Running" << TERM_COLOR_RESET << " \"" << to_execute->name << "\"" << std::endl;
-        TinyProcessLib::Process process(to_execute->command);
-        std::cout << TERM_COLOR_MAGENTA << "Return code:" << TERM_COLOR_RESET << ' ' << process.get_exit_status() << std::endl;
+        for (const auto& execute_before: to_execute->tasks_to_execute_before) {
+            const auto it = std::find_if(tasks.begin(), tasks.end(), [&execute_before] (const task& t) {return t.name == execute_before;});
+            execute_task_command(*it, false, argv);
+        }
+        execute_task_command(*to_execute, true, argv);
     }
 }
 
@@ -123,6 +183,6 @@ int main(int argc, const char** argv) {
     std::optional<task> task_to_execute;
     while (true) {
         choose_task_to_execute(tasks, task_list, selection_opts, task_to_execute);
-        execute_task(task_to_execute);
+        execute_task(tasks, task_to_execute, argv);
     }
 }
