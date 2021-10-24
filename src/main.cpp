@@ -83,7 +83,7 @@ static void choose_task_to_execute(const std::vector<task>& tasks, std::optional
     std::string selected_task;
     std::getline(std::cin, selected_task);
     const auto index = std::atoi(selected_task.c_str());
-    if (index <= tasks.size()) {
+    if (index > 0 && index <= tasks.size()) {
         to_execute = tasks[index - 1];
     }
 }
