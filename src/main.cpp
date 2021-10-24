@@ -4,9 +4,9 @@
 #include "process.hpp"
 #include "json.hpp"
 
-#define TERM_COLOR_GREEN "\033[32m"
-#define TERM_COLOR_MAGENTA "\033[35m"
-#define TERM_COLOR_RESET "\033[0m"
+const auto TERM_COLOR_GREEN = "\033[32m";
+const auto TERM_COLOR_MAGENTA = "\033[35m";
+const auto TERM_COLOR_RESET = "\033[0m";
 
 struct task
 {
