@@ -6,6 +6,7 @@
 #include <cerrno>
 #include "process.hpp"
 #include "json.hpp"
+#include "concurrentqueue.h"
 
 const auto TERM_COLOR_RED = "\033[31m";
 const auto TERM_COLOR_GREEN = "\033[32m";
@@ -17,7 +18,7 @@ struct task
 {
     std::string name;
     std::string command;
-    std::vector<std::string> tasks_to_execute_before;
+    std::vector<std::string> pre_tasks;
 };
 
 static std::string error_invalid_config(const std::string& config) {
@@ -78,12 +79,12 @@ static bool read_tasks_from_specified_config_or_fail(int argc, const char** argv
         const auto& task_json = tasks_json[i];
         read_task_property(task_json, i, "name", t.name, errors_stream);
         read_task_property(task_json, i, "command", t.command, errors_stream);
-        read_task_property(task_json, i, "tasks_to_execute_before", t.tasks_to_execute_before, errors_stream, "should be an array of other task names");
+        read_task_property(task_json, i, "pre_tasks", t.pre_tasks, errors_stream, "should be an array of other task names");
         tasks.push_back(t);
     }
     // Validate that tasks reference existing tasks
     for (const auto& t: tasks) {
-        for (const auto& task_name: t.tasks_to_execute_before) {
+        for (const auto& task_name: t.pre_tasks) {
             if (std::find_if(tasks.begin(), tasks.end(), [&task_name] (const task& ot) {return ot.name == task_name;}) == tasks.end()) {
                 errors_stream << "task '" << t.name << "' references task '" << task_name << "' that does not exist\n";
             }
@@ -141,10 +142,15 @@ static void write_to_stderr(const char* data, size_t size) {
     std::cerr << std::string(data, size);
 }
 
-static void write_to_dev_null(const char* data, size_t size) {
+static std::function<void(const char *bytes, size_t n)> write_to_buffer(moodycamel::ConcurrentQueue<char>& output) {
+    return [&output] (const char* data, size_t size) {
+        for (auto i = 0; i < size; i++) {
+            output.enqueue(data[i]);
+        }
+    };
 }
 
-static void execute_task_command(const task& t, bool is_primary_task, const char** argv) {
+static bool execute_task_command(const task& t, bool is_primary_task, const char** argv) {
     if (is_primary_task) {
         std::cout << TERM_COLOR_MAGENTA << "Running \"" << t.name << "\"" << TERM_COLOR_RESET << std::endl;
     } else {
@@ -154,24 +160,41 @@ static void execute_task_command(const task& t, bool is_primary_task, const char
         std::cout << TERM_COLOR_MAGENTA << "Restarting program..." << TERM_COLOR_RESET << std::endl;
         execvp(argv[0], const_cast<char* const*>(argv));
         std::cout << TERM_COLOR_RED << "Failed to restart: " << std::strerror(errno) << TERM_COLOR_RESET << std::endl;
+        return false;
     } else {
+        moodycamel::ConcurrentQueue<char> output;
         TinyProcessLib::Process process(t.command, "",
-                                        is_primary_task ? write_to_stdout : write_to_dev_null,
-                                        is_primary_task ? write_to_stderr : write_to_dev_null);
-        const auto ret_code = process.get_exit_status();
+                                        is_primary_task ? write_to_stdout : write_to_buffer(output),
+                                        is_primary_task ? write_to_stderr : write_to_buffer(output));
+        const auto code = process.get_exit_status();
+        const auto success = code == 0;
         std::cout.flush();
         std::cerr.flush();
-        if (is_primary_task) {
-            std::cout << TERM_COLOR_MAGENTA << "Return code: " << ret_code << TERM_COLOR_RESET << std::endl;
+        if (!success) {
+            char c;
+            while (output.try_dequeue(c)) {
+                std::cerr << c;
+            }
         }
+        if (is_primary_task || !success) {
+            if (success) {
+                std::cout << TERM_COLOR_MAGENTA << "'" << t.name << "' complete: ";
+            } else {
+                std::cout << TERM_COLOR_RED << "'" << t.name << "' failed: ";
+            }
+            std::cout << "return code: " << code << TERM_COLOR_RESET << std::endl;
+        }
+        return success;
     }
 }
 
 static void execute_task(const std::vector<task>& tasks, std::optional<task>& to_execute, const char** argv) {
     if (to_execute) {
-        for (const auto& execute_before: to_execute->tasks_to_execute_before) {
+        for (const auto& execute_before: to_execute->pre_tasks) {
             const auto it = std::find_if(tasks.begin(), tasks.end(), [&execute_before] (const task& t) {return t.name == execute_before;});
-            execute_task_command(*it, false, argv);
+            if (!execute_task_command(*it, false, argv)) {
+                return;
+            }
         }
         execute_task_command(*to_execute, true, argv);
     }

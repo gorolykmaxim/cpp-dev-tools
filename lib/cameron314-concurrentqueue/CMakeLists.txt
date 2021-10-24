@@ -1,0 +1,2 @@
+add_library(cameron314_concurrentqueue INTERFACE)
+target_include_directories(cameron314_concurrentqueue INTERFACE .)

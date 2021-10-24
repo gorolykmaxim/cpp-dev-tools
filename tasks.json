@@ -7,7 +7,7 @@
         {
             "name": "run",
             "command": "__restart",
-            "tasks_to_execute_before": ["build"]
+            "pre_tasks": ["build"]
         },
         {
             "name": "delete executable",
@@ -16,7 +16,7 @@
         {
             "name": "fail to run",
             "command": "__restart",
-            "tasks_to_execute_before": ["build", "delete executable"]
+            "pre_tasks": ["build", "delete executable"]
         }
     ]
 }

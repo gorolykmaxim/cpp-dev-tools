@@ -5,7 +5,8 @@ set(CMAKE_CXX_STANDARD 17)
 
 add_subdirectory(lib/tiny-process-library)
 add_subdirectory(lib/nlohmann-json)
+add_subdirectory(lib/cameron314-concurrentqueue)
 
 add_executable(${PROJECT_NAME} src/main.cpp)
-target_include_directories(${PROJECT_NAME} PUBLIC lib/tiny-process-library PUBLIC lib/nlohmann_json)
-target_link_libraries(${PROJECT_NAME} tiny-process-library nlohmann_json)
+target_include_directories(${PROJECT_NAME} PUBLIC lib/tiny-process-library PUBLIC lib/nlohmann_json PUBLIC lib/cameron314-concurrentqueue)
+target_link_libraries(${PROJECT_NAME} tiny-process-library nlohmann_json cameron314_concurrentqueue)
