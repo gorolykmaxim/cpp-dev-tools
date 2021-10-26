@@ -132,13 +132,13 @@ static bool read_tasks_from_specified_config_or_fail(int argc, const char** argv
     }
 }
 
-static void format_task_list_selection_msgs(const std::vector<task>& tasks, std::string& task_list_msg) {
-    std::stringstream tl_msg_stream;
-    tl_msg_stream << TERM_COLOR_GREEN << "Tasks:\n" << TERM_COLOR_RESET;
+static void format_task_list(const std::vector<task>& tasks, std::string& task_list) {
+    std::stringstream ss;
+    ss << TERM_COLOR_GREEN << "Tasks:\n" << TERM_COLOR_RESET;
     for (auto i = 0; i < tasks.size(); i++) {
-        tl_msg_stream << std::to_string(i + 1) << " \"" << tasks[i].name << "\"\n";
+        ss << std::to_string(i + 1) << " \"" << tasks[i].name << "\"\n";
     }
-    task_list_msg = tl_msg_stream.str();
+    task_list = ss.str();
 }
 
 static void write_to_stdout(const char* data, size_t size) {
@@ -223,12 +223,10 @@ static void read_user_command(user_command& cmd) {
 static void display_list_of_tasks_on_unknown_cmd(user_command& cmd, const std::string& task_list) {
     if (cmd.executed) return;
     std::cout << task_list;
-    cmd.executed = true;
 }
 
 static void execute_task(const std::vector<task>& tasks, user_command& cmd, const char** argv) {
     if (!accept_usr_cmd(TASK, cmd)) return;
-    cmd.executed = true;
     if (cmd.arg <= 0 || cmd.arg >= tasks.size()) {
         std::cerr << TERM_COLOR_RED << "There is no task with index " << cmd.arg << TERM_COLOR_RESET << std::endl;
         return;
@@ -249,7 +247,6 @@ static void prompt_user_to_ask_for_help() {
 
 static void display_help(const std::vector<user_command_definition>& defs, user_command& cmd) {
     if (!accept_usr_cmd(HELP, cmd)) return;
-    cmd.executed = true;
     std::cout << TERM_COLOR_GREEN << "User commands:" << TERM_COLOR_RESET << std::endl;
     for (const auto& def: defs) {
         std::cout << def.cmd;
@@ -266,7 +263,7 @@ int main(int argc, const char** argv) {
         return 1;
     }
     std::string task_list;
-    format_task_list_selection_msgs(tasks, task_list);
+    format_task_list(tasks, task_list);
     std::optional<task> task_to_execute;
     user_command cmd;
     prompt_user_to_ask_for_help();
