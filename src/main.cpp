@@ -14,6 +14,13 @@ const auto TERM_COLOR_BLUE = "\033[34m";
 const auto TERM_COLOR_MAGENTA = "\033[35m";
 const auto TERM_COLOR_RESET = "\033[0m";
 
+struct user_command
+{
+    std::string command;
+    size_t arg = 0;
+    bool executed = false;
+};
+
 struct task
 {
     std::string name;
@@ -99,39 +106,13 @@ static bool read_tasks_from_specified_config_or_fail(int argc, const char** argv
     }
 }
 
-static void format_task_list_selection_msgs(const std::vector<task>& tasks, std::string& task_list_msg, std::string& opts_msg) {
+static void format_task_list_selection_msgs(const std::vector<task>& tasks, std::string& task_list_msg) {
     std::stringstream tl_msg_stream;
-    std::stringstream o_msg_stream;
     tl_msg_stream << TERM_COLOR_GREEN << "Tasks:\n" << TERM_COLOR_RESET;
-    o_msg_stream << TERM_COLOR_GREEN << "Choose task to execute (";
     for (auto i = 0; i < tasks.size(); i++) {
-        const auto& t = tasks[i];
-        const auto option = std::to_string(i + 1);
-        tl_msg_stream << option << ") \"" << t.name << "\"\n";
-        o_msg_stream << option;
-        if (i + 1 < tasks.size()) {
-            o_msg_stream << '/';
-        }
+        tl_msg_stream << std::to_string(i + 1) << ") \"" << tasks[i].name << "\"\n";
     }
-    o_msg_stream << "): " << TERM_COLOR_RESET;
     task_list_msg = tl_msg_stream.str();
-    opts_msg = o_msg_stream.str();
-}
-
-static void choose_task_to_execute(const std::vector<task>& tasks, const std::string& task_list_msg, const std::string& opts_msg,
-                                   std::optional<task>& to_execute) {
-    if (!to_execute) {
-        std::cout << task_list_msg;
-    }
-    std::cout << opts_msg;
-    std::string input;
-    std::getline(std::cin, input);
-    const auto index = std::atoi(input.c_str());
-    if (index > 0 && index <= tasks.size()) {
-        to_execute = tasks[index - 1];
-    } else if (!input.empty()) {
-        to_execute.reset();
-    }
 }
 
 static void write_to_stdout(const char* data, size_t size) {
@@ -188,16 +169,52 @@ static bool execute_task_command(const task& t, bool is_primary_task, const char
     }
 }
 
-static void execute_task(const std::vector<task>& tasks, std::optional<task>& to_execute, const char** argv) {
-    if (to_execute) {
-        for (const auto& execute_before: to_execute->pre_tasks) {
-            const auto it = std::find_if(tasks.begin(), tasks.end(), [&execute_before] (const task& t) {return t.name == execute_before;});
-            if (!execute_task_command(*it, false, argv)) {
-                return;
-            }
-        }
-        execute_task_command(*to_execute, true, argv);
+static void read_user_command(user_command& cmd) {
+    std::cout << TERM_COLOR_GREEN << "(cdt) " << TERM_COLOR_RESET;
+    std::string input;
+    std::getline(std::cin, input);
+    if (input.empty()) {
+        return;
     }
+    cmd = user_command{};
+    std::stringstream chars;
+    std::stringstream digits;
+    for (auto i = 0; i < input.size(); i++) {
+        auto c = input[i];
+        if (std::isspace(c)) {
+            continue;
+        }
+        if (std::isdigit(c)) {
+            digits << c;
+        } else {
+            chars << c;
+        }
+    }
+    cmd.command = chars.str();
+    cmd.arg = std::atoi(digits.str().c_str());
+}
+
+static void display_list_of_tasks_on_unknown_cmd(user_command& cmd, const std::string& task_list) {
+    if (cmd.executed) return;
+    std::cout << task_list;
+    cmd.executed = true;
+}
+
+static void execute_task(const std::vector<task>& tasks, user_command& cmd, const char** argv) {
+    if (cmd.command != "t") return;
+    cmd.executed = true;
+    if (cmd.arg <= 0 || cmd.arg >= tasks.size()) {
+        std::cerr << TERM_COLOR_RED << "There is no task with index " << cmd.arg << TERM_COLOR_RESET << std::endl;
+        return;
+    }
+    const auto& to_execute = tasks[cmd.arg - 1];
+    for (const auto& execute_before: to_execute.pre_tasks) {
+        const auto it = std::find_if(tasks.begin(), tasks.end(), [&execute_before] (const task& t) {return t.name == execute_before;});
+        if (!execute_task_command(*it, false, argv)) {
+            return;
+        }
+    }
+    execute_task_command(to_execute, true, argv);
 }
 
 int main(int argc, const char** argv) {
@@ -205,11 +222,14 @@ int main(int argc, const char** argv) {
     if (!read_tasks_from_specified_config_or_fail(argc, argv, tasks)) {
         return 1;
     }
-    std::string task_list, selection_opts;
-    format_task_list_selection_msgs(tasks, task_list, selection_opts);
+    std::string task_list;
+    format_task_list_selection_msgs(tasks, task_list);
     std::optional<task> task_to_execute;
+    user_command cmd;
+    display_list_of_tasks_on_unknown_cmd(cmd, task_list);
     while (true) {
-        choose_task_to_execute(tasks, task_list, selection_opts, task_to_execute);
-        execute_task(tasks, task_to_execute, argv);
+        read_user_command(cmd);
+        execute_task(tasks, cmd, argv);
+        display_list_of_tasks_on_unknown_cmd(cmd, task_list);
     }
 }
