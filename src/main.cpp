@@ -4,6 +4,7 @@
 #include <unistd.h>
 #include <cstring>
 #include <cerrno>
+#include <filesystem>
 #include "process.hpp"
 #include "json.hpp"
 #include "concurrentqueue.h"
@@ -91,6 +92,8 @@ static bool read_tasks_from_specified_config_or_fail(int argc, const char** argv
         std::cerr << config_path << " does not exist" << std::endl;
         return false;
     }
+    const auto config_dir = std::filesystem::absolute(std::filesystem::path(config_path)).parent_path();
+    std::filesystem::current_path(config_dir);
     config_file >> std::noskipws;
     const std::string config_data = std::string(std::istream_iterator<char>(config_file), std::istream_iterator<char>());
     nlohmann::json config_json;
