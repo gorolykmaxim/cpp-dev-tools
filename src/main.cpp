@@ -14,9 +14,22 @@ const auto TERM_COLOR_BLUE = "\033[34m";
 const auto TERM_COLOR_MAGENTA = "\033[35m";
 const auto TERM_COLOR_RESET = "\033[0m";
 
+template <typename T>
+T push_back_and_return(std::vector<T>& vec, T&& t) {
+    vec.push_back(t);
+    return t;
+}
+
+struct user_command_definition
+{
+    std::string cmd;
+    std::string arg;
+    std::string desc;
+};
+
 struct user_command
 {
-    std::string command;
+    std::string cmd;
     size_t arg = 0;
     bool executed = false;
 };
@@ -27,6 +40,19 @@ struct task
     std::string command;
     std::vector<std::string> pre_tasks;
 };
+
+std::vector<user_command_definition> USR_CMD_DEFS;
+const auto TASK = push_back_and_return(USR_CMD_DEFS, {"t", "ind", "Execute the task with the specified index"});
+const auto HELP = push_back_and_return(USR_CMD_DEFS, {"h", "", "Display list of user commands"});
+
+static bool accept_usr_cmd(const user_command_definition& def, user_command& cmd) {
+    if (def.cmd == cmd.cmd) {
+        cmd.executed = true;
+        return true;
+    } else {
+        return false;
+    }
+}
 
 static std::string error_invalid_config(const std::string& config) {
     return config + " is invalid:";
@@ -110,7 +136,7 @@ static void format_task_list_selection_msgs(const std::vector<task>& tasks, std:
     std::stringstream tl_msg_stream;
     tl_msg_stream << TERM_COLOR_GREEN << "Tasks:\n" << TERM_COLOR_RESET;
     for (auto i = 0; i < tasks.size(); i++) {
-        tl_msg_stream << std::to_string(i + 1) << ") \"" << tasks[i].name << "\"\n";
+        tl_msg_stream << std::to_string(i + 1) << " \"" << tasks[i].name << "\"\n";
     }
     task_list_msg = tl_msg_stream.str();
 }
@@ -190,7 +216,7 @@ static void read_user_command(user_command& cmd) {
             chars << c;
         }
     }
-    cmd.command = chars.str();
+    cmd.cmd = chars.str();
     cmd.arg = std::atoi(digits.str().c_str());
 }
 
@@ -201,7 +227,7 @@ static void display_list_of_tasks_on_unknown_cmd(user_command& cmd, const std::s
 }
 
 static void execute_task(const std::vector<task>& tasks, user_command& cmd, const char** argv) {
-    if (cmd.command != "t") return;
+    if (!accept_usr_cmd(TASK, cmd)) return;
     cmd.executed = true;
     if (cmd.arg <= 0 || cmd.arg >= tasks.size()) {
         std::cerr << TERM_COLOR_RED << "There is no task with index " << cmd.arg << TERM_COLOR_RESET << std::endl;
@@ -217,6 +243,23 @@ static void execute_task(const std::vector<task>& tasks, user_command& cmd, cons
     execute_task_command(to_execute, true, argv);
 }
 
+static void prompt_user_to_ask_for_help() {
+    std::cout << "Type " << TERM_COLOR_GREEN << HELP.cmd << TERM_COLOR_RESET << " to see list of all the user commands." << std::endl;
+}
+
+static void display_help(const std::vector<user_command_definition>& defs, user_command& cmd) {
+    if (!accept_usr_cmd(HELP, cmd)) return;
+    cmd.executed = true;
+    std::cout << TERM_COLOR_GREEN << "User commands:" << TERM_COLOR_RESET << std::endl;
+    for (const auto& def: defs) {
+        std::cout << def.cmd;
+        if (!def.arg.empty()) {
+            std::cout << '<' << def.arg << '>';
+        }
+        std::cout << "\t\t" << def.desc << std::endl;
+    }
+}
+
 int main(int argc, const char** argv) {
     std::vector<task> tasks;
     if (!read_tasks_from_specified_config_or_fail(argc, argv, tasks)) {
@@ -226,9 +269,11 @@ int main(int argc, const char** argv) {
     format_task_list_selection_msgs(tasks, task_list);
     std::optional<task> task_to_execute;
     user_command cmd;
+    prompt_user_to_ask_for_help();
     display_list_of_tasks_on_unknown_cmd(cmd, task_list);
     while (true) {
         read_user_command(cmd);
+        display_help(USR_CMD_DEFS, cmd);
         execute_task(tasks, cmd, argv);
         display_list_of_tasks_on_unknown_cmd(cmd, task_list);
     }
