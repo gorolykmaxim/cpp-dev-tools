@@ -3,6 +3,7 @@
 #include <sstream>
 #include <unistd.h>
 #include <cstring>
+#include <cstdlib>
 #include <cerrno>
 #include <filesystem>
 #include "process.hpp"
@@ -14,6 +15,8 @@ const auto TERM_COLOR_GREEN = "\033[32m";
 const auto TERM_COLOR_BLUE = "\033[34m";
 const auto TERM_COLOR_MAGENTA = "\033[35m";
 const auto TERM_COLOR_RESET = "\033[0m";
+
+const auto ENV_VAR_LAST_COMMAND = "LAST_COMMAND";
 
 template <typename T>
 T push_back_and_return(std::vector<T>& vec, T&& t) {
@@ -135,6 +138,43 @@ static bool read_tasks_from_specified_config_or_fail(int argc, const char** argv
     }
 }
 
+static user_command parse_user_command(const std::string& str) {
+    std::stringstream chars;
+    std::stringstream digits;
+    for (auto i = 0; i < str.size(); i++) {
+        auto c = str[i];
+        if (std::isspace(c)) {
+            continue;
+        }
+        if (std::isdigit(c)) {
+            digits << c;
+        } else {
+            chars << c;
+        }
+    }
+    user_command cmd;
+    cmd.cmd = chars.str();
+    cmd.arg = std::atoi(digits.str().c_str());
+    return cmd;
+}
+
+static void read_user_command_from_stdin(user_command& cmd) {
+    std::cout << TERM_COLOR_GREEN << "(cdt) " << TERM_COLOR_RESET;
+    std::string input;
+    std::getline(std::cin, input);
+    if (input.empty()) {
+        return;
+    }
+    cmd = parse_user_command(input);
+}
+
+static void read_user_command_from_env(user_command& cmd) {
+    const auto str = getenv(ENV_VAR_LAST_COMMAND);
+    if (str) {
+        cmd = parse_user_command(str);
+    }
+}
+
 static void write_to_stdout(const char* data, size_t size) {
     std::cout << std::string(data, size);
 }
@@ -151,7 +191,7 @@ static std::function<void(const char *bytes, size_t n)> write_to_buffer(moodycam
     };
 }
 
-static bool execute_task_command(const task& t, bool is_primary_task, const char** argv) {
+static bool execute_task_command(const task& t, bool is_primary_task, const char** argv, const user_command& cmd) {
     if (is_primary_task) {
         std::cout << TERM_COLOR_MAGENTA << "Running \"" << t.name << "\"" << TERM_COLOR_RESET << std::endl;
     } else {
@@ -159,6 +199,8 @@ static bool execute_task_command(const task& t, bool is_primary_task, const char
     }
     if (t.command == "__restart") {
         std::cout << TERM_COLOR_MAGENTA << "Restarting program..." << TERM_COLOR_RESET << std::endl;
+        const auto cmd_str = cmd.cmd + std::to_string(cmd.arg);
+        setenv(ENV_VAR_LAST_COMMAND, cmd_str.c_str(), true);
         execvp(argv[0], const_cast<char* const*>(argv));
         std::cout << TERM_COLOR_RED << "Failed to restart: " << std::strerror(errno) << TERM_COLOR_RESET << std::endl;
         return false;
@@ -189,31 +231,6 @@ static bool execute_task_command(const task& t, bool is_primary_task, const char
     }
 }
 
-static void read_user_command(user_command& cmd) {
-    std::cout << TERM_COLOR_GREEN << "(cdt) " << TERM_COLOR_RESET;
-    std::string input;
-    std::getline(std::cin, input);
-    if (input.empty()) {
-        return;
-    }
-    cmd = user_command{};
-    std::stringstream chars;
-    std::stringstream digits;
-    for (auto i = 0; i < input.size(); i++) {
-        auto c = input[i];
-        if (std::isspace(c)) {
-            continue;
-        }
-        if (std::isdigit(c)) {
-            digits << c;
-        } else {
-            chars << c;
-        }
-    }
-    cmd.cmd = chars.str();
-    cmd.arg = std::atoi(digits.str().c_str());
-}
-
 static void display_list_of_tasks_on_unknown_cmd(const std::vector<task>& tasks, user_command& cmd) {
     if (cmd.executed) return;
     std::cout << TERM_COLOR_GREEN << "Tasks:" << TERM_COLOR_RESET << std::endl;
@@ -231,11 +248,11 @@ static void execute_task(const std::vector<task>& tasks, user_command& cmd, cons
     const auto& to_execute = tasks[cmd.arg - 1];
     for (const auto& execute_before: to_execute.pre_tasks) {
         const auto it = std::find_if(tasks.begin(), tasks.end(), [&execute_before] (const task& t) {return t.name == execute_before;});
-        if (!execute_task_command(*it, false, argv)) {
+        if (!execute_task_command(*it, false, argv, cmd)) {
             return;
         }
     }
-    execute_task_command(to_execute, true, argv);
+    execute_task_command(to_execute, true, argv, cmd);
 }
 
 static void prompt_user_to_ask_for_help() {
@@ -260,10 +277,11 @@ int main(int argc, const char** argv) {
         return 1;
     }
     user_command cmd;
+    read_user_command_from_env(cmd);
     prompt_user_to_ask_for_help();
     display_list_of_tasks_on_unknown_cmd(tasks, cmd);
     while (true) {
-        read_user_command(cmd);
+        read_user_command_from_stdin(cmd);
         display_help(USR_CMD_DEFS, cmd);
         execute_task(tasks, cmd, argv);
         display_list_of_tasks_on_unknown_cmd(tasks, cmd);
