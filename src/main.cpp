@@ -307,7 +307,7 @@ static void display_list_of_tasks_on_unknown_cmd(const std::vector<task>& tasks,
 
 static void execute_task(const std::vector<task>& tasks, user_command& cmd, const char** argv) {
     if (!accept_usr_cmd(TASK, cmd)) return;
-    if (cmd.arg <= 0 || cmd.arg >= tasks.size()) {
+    if (cmd.arg <= 0 || cmd.arg > tasks.size()) {
         std::cerr << TERM_COLOR_RED << "There is no task with index " << cmd.arg << TERM_COLOR_RESET << std::endl;
         return;
     }
