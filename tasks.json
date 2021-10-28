@@ -2,7 +2,8 @@
     "cdt_tasks": [
         {
             "name": "build",
-            "command": "cmake --build build --target cpp-dev-tools"
+            "command": "cmake --build build --target cpp-dev-tools",
+            "pre_tasks": ["world"]
         },
         {
             "name": "run",
@@ -17,6 +18,15 @@
             "name": "fail to run",
             "command": "__restart",
             "pre_tasks": ["build", "delete executable"]
+        },
+        {
+            "name": "hello",
+            "command": "echo Hello"
+        },
+        {
+            "name": "world",
+            "command": "echo World!",
+            "pre_tasks": ["hello"]
         }
     ]
 }

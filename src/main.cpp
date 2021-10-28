@@ -6,6 +6,7 @@
 #include <cstdlib>
 #include <cerrno>
 #include <filesystem>
+#include <stack>
 #include "process.hpp"
 #include "json.hpp"
 #include "concurrentqueue.h"
@@ -42,7 +43,7 @@ struct task
 {
     std::string name;
     std::string command;
-    std::vector<std::string> pre_tasks;
+    std::vector<size_t> pre_tasks;
 };
 
 std::vector<user_command_definition> USR_CMD_DEFS;
@@ -72,14 +73,31 @@ static void read_task_property(const nlohmann::json& task_json, size_t task_ind,
     }
 }
 
-static void read_task_property(const nlohmann::json& task_json, size_t task_ind, const std::string& property,
-                               std::vector<std::string>& output, std::stringstream& errors, const std::string& err_desc) {
-    auto it = task_json.find(property);
-    if (it != task_json.end()) {
-        try {
-            output = it->get<std::vector<std::string>>();
-        } catch (std::exception& e) {
-            errors << "task #" + std::to_string(task_ind + 1) + " has '" << property << "' " << it->dump() << " which " << err_desc << "\n";
+static void read_pre_tasks_of_task(const std::vector<nlohmann::json>& tasks_json, const nlohmann::json& task_json, size_t task_ind,
+                                   std::vector<size_t>& pre_tasks, std::stringstream& errors) {
+    const auto pre_task_names_json = task_json.find("pre_tasks");
+    if (pre_task_names_json == task_json.end()) {
+        return;
+    }
+    std::vector<std::string> pre_task_names;
+    try {
+        pre_task_names = pre_task_names_json->get<std::vector<std::string>>();
+    } catch (std::exception& e) {
+        errors << "task #" + std::to_string(task_ind + 1) + " has 'pre_tasks' " << pre_task_names_json->dump() << " which should be an array of other task names\n";
+        return;
+    }
+    for (const auto& pre_task_name: pre_task_names) {
+        auto pre_task_ind = -1;
+        for (auto i = 0; i < tasks_json.size(); i++) {
+            if (tasks_json[i]["name"] == pre_task_name) {
+                pre_task_ind = i;
+                break;
+            }
+        }
+        if (pre_task_ind >= 0) {
+            pre_tasks.push_back(pre_task_ind);
+        } else {
+            errors << "task #" << std::to_string(task_ind + 1) << " references task '" << pre_task_name << "' that does not exist\n";
         }
     }
 }
@@ -113,21 +131,68 @@ static bool read_tasks_from_specified_config_or_fail(int argc, const char** argv
     }
     const auto tasks_json = it->get<std::vector<nlohmann::json>>();
     std::stringstream errors_stream;
+    // Initialize tasks with their direct "pre_tasks" dependencies
     for (auto i = 0; i < tasks_json.size(); i++) {
         task t;
         const auto& task_json = tasks_json[i];
         read_task_property(task_json, i, "name", t.name, errors_stream);
         read_task_property(task_json, i, "command", t.command, errors_stream);
-        read_task_property(task_json, i, "pre_tasks", t.pre_tasks, errors_stream, "should be an array of other task names");
+        read_pre_tasks_of_task(tasks_json, task_json, i, t.pre_tasks, errors_stream);
         tasks.push_back(t);
     }
-    // Validate that tasks reference existing tasks
-    for (const auto& t: tasks) {
-        for (const auto& task_name: t.pre_tasks) {
-            if (std::find_if(tasks.begin(), tasks.end(), [&task_name] (const task& ot) {return ot.name == task_name;}) == tasks.end()) {
-                errors_stream << "task '" << t.name << "' references task '" << task_name << "' that does not exist\n";
+    // Traverse the "pre_tasks" dependency graph of each task in a flat vector of effective pre_tasks.
+    std::vector<std::vector<size_t>> effective_pre_tasks(tasks.size());
+    for (auto i = 0; i < tasks.size(); i++) {
+        const auto& primary_task_name = tasks[i].name;
+        auto& pre_tasks = effective_pre_tasks[i];
+        std::stack<size_t> to_visit;
+        std::vector<size_t> task_call_stack;
+        to_visit.push(i);
+        while (!to_visit.empty()) {
+            const auto task_id = to_visit.top();
+            const auto& t = tasks[task_id];
+            // We are visiting each task with non-empty "pre_tasks" twice, so when get to a task the second time - the
+            // task should already be on top of the task_call_stack. If that's the case - don't push the task to stack
+            // second time.
+            if (task_call_stack.empty() || task_call_stack.back() != task_id) {
+                task_call_stack.push_back(task_id);
+            }
+            auto all_children_visited = true;
+            for (const auto& child: t.pre_tasks) {
+                if (std::find(pre_tasks.begin(), pre_tasks.end(), child) == pre_tasks.end()) {
+                    all_children_visited = false;
+                    break;
+                }
+            }
+            if (all_children_visited) {
+                to_visit.pop();
+                task_call_stack.pop_back();
+                // Primary task is also in to_visit. Don't add it to pre_tasks.
+                if (!to_visit.empty()) {
+                    pre_tasks.push_back(task_id);
+                }
+            } else {
+                // Check for circular dependencies
+                if (std::count(task_call_stack.begin(), task_call_stack.end(), task_id) > 1) {
+                    errors_stream << "task '" << primary_task_name << "' has a circular dependency in it's 'pre_tasks':\n";
+                    for (auto j = 0; j < task_call_stack.size(); j++) {
+                        errors_stream << tasks[task_call_stack[j]].name;
+                        if (j + 1 == task_call_stack.size()) {
+                            errors_stream << '\n';
+                        } else {
+                            errors_stream << " -> ";
+                        }
+                    }
+                    break;
+                }
+                for (auto it = t.pre_tasks.rbegin(); it != t.pre_tasks.rend(); it++) {
+                    to_visit.push(*it);
+                }
             }
         }
+    }
+    for (auto i = 0; i< tasks.size(); i++) {
+        tasks[i].pre_tasks = effective_pre_tasks[i];
     }
     const auto error = errors_stream.str();
     if (error.empty()) {
@@ -246,9 +311,8 @@ static void execute_task(const std::vector<task>& tasks, user_command& cmd, cons
         return;
     }
     const auto& to_execute = tasks[cmd.arg - 1];
-    for (const auto& execute_before: to_execute.pre_tasks) {
-        const auto it = std::find_if(tasks.begin(), tasks.end(), [&execute_before] (const task& t) {return t.name == execute_before;});
-        if (!execute_task_command(*it, false, argv, cmd)) {
+    for (const auto& task_index: to_execute.pre_tasks) {
+        if (!execute_task_command(tasks[task_index], false, argv, cmd)) {
             return;
         }
     }
