@@ -140,7 +140,7 @@ static bool read_tasks_from_specified_config_or_fail(int argc, const char** argv
         read_pre_tasks_of_task(tasks_json, task_json, i, t.pre_tasks, errors_stream);
         tasks.push_back(t);
     }
-    // Traverse the "pre_tasks" dependency graph of each task in a flat vector of effective pre_tasks.
+    // Transform the "pre_tasks" dependency graph of each task into a flat vector of effective pre_tasks.
     std::vector<std::vector<size_t>> effective_pre_tasks(tasks.size());
     for (auto i = 0; i < tasks.size(); i++) {
         const auto& primary_task_name = tasks[i].name;
@@ -148,13 +148,14 @@ static bool read_tasks_from_specified_config_or_fail(int argc, const char** argv
         std::stack<size_t> to_visit;
         std::vector<size_t> task_call_stack;
         to_visit.push(i);
+        task_call_stack.push_back(i);
         while (!to_visit.empty()) {
             const auto task_id = to_visit.top();
             const auto& t = tasks[task_id];
-            // We are visiting each task with non-empty "pre_tasks" twice, so when get to a task the second time - the
+            // We are visiting each task with non-empty "pre_tasks" twice, so when we get to a task the second time - the
             // task should already be on top of the task_call_stack. If that's the case - don't push the task to stack
             // second time.
-            if (task_call_stack.empty() || task_call_stack.back() != task_id) {
+            if (task_call_stack.back() != task_id) {
                 task_call_stack.push_back(task_id);
             }
             auto all_children_visited = true;
