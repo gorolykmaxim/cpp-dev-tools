@@ -350,8 +350,7 @@ static bool execute_task_command(const task& t, bool is_primary_task, const char
     }
 }
 
-static void display_list_of_tasks_on_unknown_cmd(const std::vector<task>& tasks, user_command& cmd) {
-    if (cmd.executed) return;
+static void display_list_of_tasks(const std::vector<task>& tasks) {
     std::cout << TERM_COLOR_GREEN << "Tasks:" << TERM_COLOR_RESET << std::endl;
     for (auto i = 0; i < tasks.size(); i++) {
         std::cout << std::to_string(i + 1) << " \"" << tasks[i].name << "\"" << std::endl;
@@ -361,7 +360,7 @@ static void display_list_of_tasks_on_unknown_cmd(const std::vector<task>& tasks,
 static void execute_task(const std::vector<task>& tasks, user_command& cmd, const char** argv, task_output& failed_output) {
     if (!accept_usr_cmd(TASK, cmd)) return;
     if (cmd.arg <= 0 || cmd.arg > tasks.size()) {
-        std::cerr << TERM_COLOR_RED << "There is no task with index " << cmd.arg << TERM_COLOR_RESET << std::endl;
+        display_list_of_tasks(tasks);
         return;
     }
     const auto& to_execute = tasks[cmd.arg - 1];
@@ -407,7 +406,7 @@ static void prompt_user_to_ask_for_help() {
 }
 
 static void display_help(const std::vector<user_command_definition>& defs, user_command& cmd) {
-    if (!accept_usr_cmd(HELP, cmd)) return;
+    if (cmd.executed) return;
     std::cout << TERM_COLOR_GREEN << "User commands:" << TERM_COLOR_RESET << std::endl;
     for (const auto& def: defs) {
         std::cout << def.cmd;
@@ -428,13 +427,12 @@ int main(int argc, const char** argv) {
     }
     read_user_command_from_env(cmd);
     prompt_user_to_ask_for_help();
-    display_list_of_tasks_on_unknown_cmd(tasks, cmd);
+    display_list_of_tasks(tasks);
     while (true) {
         read_user_command_from_stdin(cmd);
-        display_help(USR_CMD_DEFS, cmd);
         execute_task(tasks, cmd, argv, last_failed_task_output);
         display_file_links_from_task_output(last_failed_task_output, open_in_editor_command);
         open_file_link(last_failed_task_output, open_in_editor_command, cmd);
-        display_list_of_tasks_on_unknown_cmd(tasks, cmd);
+        display_help(USR_CMD_DEFS, cmd);
     }
 }
