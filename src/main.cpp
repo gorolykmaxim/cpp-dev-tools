@@ -77,41 +77,40 @@ static bool accept_usr_cmd(const user_command_definition& def, user_command& cmd
     }
 }
 
-static std::string error_invalid_config(const std::string& config) {
-    return config + " is invalid:";
-}
-
-static void read_task_property(const nlohmann::json& task_json, size_t task_ind, const std::string& property,
-                               std::string& output, std::stringstream& errors) {
-    auto it = task_json.find(property);
-    if (it == task_json.end()) {
-        errors << "task #" + std::to_string(task_ind + 1) + " does not have '" + property + "' string specified\n";
-    } else {
-        try {
-            output = it->get<std::string>();
-        } catch (std::exception& e) {
-            errors << "task #" << std::to_string(task_ind + 1) << " property '" + property + "' must be a string\n";
+template <typename T>
+static bool read_property(const nlohmann::json& json, const std::string& name, T& value,
+                          bool is_optional, const std::string& err_prefix, const std::string& err_suffix,
+                          std::vector<std::string>& errors, std::function<bool()> validate_result = [] {return true;}) {
+    auto it = json.find(name);
+    const auto err_msg = err_prefix + "'" + name + "': " + err_suffix;
+    if (it == json.end()) {
+        if (!is_optional) {
+            errors.emplace_back(err_msg);
         }
+        return false;
+    }
+    try {
+        value = it->get<T>();
+        if (!validate_result()) {
+            errors.emplace_back(err_msg);
+            return false;
+        } else {
+            return true;
+        }
+    } catch (std::exception& e) {
+        errors.emplace_back(err_msg);
+        return false;
     }
 }
 
-static void read_pre_tasks_of_task(const std::vector<nlohmann::json>& tasks_json, const nlohmann::json& task_json, size_t task_ind,
-                                   std::vector<size_t>& pre_tasks, std::stringstream& errors) {
-    const auto pre_task_names_json = task_json.find("pre_tasks");
-    if (pre_task_names_json == task_json.end()) {
-        return;
-    }
-    std::vector<std::string> pre_task_names;
-    try {
-        pre_task_names = pre_task_names_json->get<std::vector<std::string>>();
-    } catch (std::exception& e) {
-        errors << "task #" + std::to_string(task_ind + 1) + " has 'pre_tasks' " << pre_task_names_json->dump() << " which should be an array of other task names\n";
-        return;
-    }
+static void pre_task_names_to_indexes(const std::vector<std::string>& pre_task_names, const std::vector<nlohmann::json>& tasks_json,
+                                      std::vector<size_t>& pre_tasks, const std::string& err_prefix, std::vector<std::string>& errors) {
     for (const auto& pre_task_name: pre_task_names) {
         auto pre_task_ind = -1;
         for (auto i = 0; i < tasks_json.size(); i++) {
-            if (tasks_json[i]["name"] == pre_task_name) {
+            const auto& another_task = tasks_json[i];
+            const auto& another_task_name = another_task.find("name");
+            if (another_task_name != another_task.end() && *another_task_name == pre_task_name) {
                 pre_task_ind = i;
                 break;
             }
@@ -119,47 +118,92 @@ static void read_pre_tasks_of_task(const std::vector<nlohmann::json>& tasks_json
         if (pre_task_ind >= 0) {
             pre_tasks.push_back(pre_task_ind);
         } else {
-            errors << "task #" << std::to_string(task_ind + 1) << " references task '" << pre_task_name << "' that does not exist\n";
+            errors.emplace_back(err_prefix + "references task '" + pre_task_name + "' that does not exist");
         }
     }
 }
 
-static bool read_tasks_from_specified_config_or_fail(int argc, const char** argv, std::vector<task>& tasks) {
+static bool read_argv(int argc, const char** argv, std::filesystem::path& tasks_config_path, std::vector<std::string>& errors) {
     if (argc < 2) {
-        std::cerr << "usage: cpp-dev-tools tasks.json" << std::endl;
+        errors.emplace_back("usage: cpp-dev-tools tasks.json");
         return false;
     }
-    const auto* config_path = argv[1];
+    tasks_config_path = argv[1];
+    const auto& config_dir_path = std::filesystem::absolute(tasks_config_path).parent_path();
+    std::filesystem::current_path(config_dir_path);
+    return true;
+}
+
+static bool parse_json_file(const std::filesystem::path& config_path, bool should_exist, nlohmann::json& config_json,
+                            std::vector<std::string>& errors) {
     std::ifstream config_file(config_path);
     if (!config_file) {
-        std::cerr << config_path << " does not exist" << std::endl;
+        if (should_exist) {
+            errors.push_back(config_path.string() + " does not exist");
+        }
         return false;
     }
-    const auto config_dir = std::filesystem::absolute(std::filesystem::path(config_path)).parent_path();
-    std::filesystem::current_path(config_dir);
     config_file >> std::noskipws;
     const std::string config_data = std::string(std::istream_iterator<char>(config_file), std::istream_iterator<char>());
-    nlohmann::json config_json;
     try {
         config_json = nlohmann::json::parse(config_data);
+        return true;
     } catch (std::exception& e) {
-        std::cerr << "Failed to parse " << config_path << ": " << e.what() << std::endl;
+        errors.emplace_back("Failed to parse " + config_path.string() + ": " + e.what());
         return false;
     }
-    const auto it = config_json.find("cdt_tasks");
-    if (it == config_json.end()) {
-        std::cerr << error_invalid_config(config_path) << " array of task objects 'cdt_tasks' is not defined" << std::endl;
-        return false;
+}
+
+static void append_config_errors(const std::filesystem::path& config_path, const std::vector<std::string>& from,
+                                 std::vector<std::string>& to) {
+    if (!from.empty()) {
+        to.emplace_back(config_path.string() + " is invalid:");
+        to.insert(to.end(), from.begin(), from.end());
     }
-    const auto tasks_json = it->get<std::vector<nlohmann::json>>();
-    std::stringstream errors_stream;
+}
+
+static void read_user_config(template_string& open_in_editor_command, std::vector<std::string>& errors) {
+    const auto config_path = std::filesystem::path(getenv("HOME")) / ".cpp-dev-tools.json";
+    nlohmann::json config_json;
+    if (!parse_json_file(config_path, false, config_json, errors)) {
+        return;
+    }
+    std::vector<std::string> config_errors;
+    read_property(config_json, "open_in_editor_command", open_in_editor_command.str, true, "", "must be a string in format: 'notepad++ {}', where {} will be replaced with a file name", config_errors, [&open_in_editor_command] () {
+        const auto pos = open_in_editor_command.str.find(TEMPLATE_ARG_PLACEHOLDER);
+        if (pos == std::string::npos) {
+            return false;
+        } else {
+            open_in_editor_command.arg_pos = pos;
+            return true;
+        }
+    });
+    append_config_errors(config_path, config_errors, errors);
+}
+
+static void read_tasks_config(const std::filesystem::path& config_path, std::vector<task>& tasks, std::vector<std::string>& errors) {
+    nlohmann::json config_json;
+    std::vector<std::string> config_errors;
+    if (!parse_json_file(config_path, true, config_json, errors)) {
+        return;
+    }
+    std::vector<nlohmann::json> tasks_json;
+    if (!read_property(config_json, "cdt_tasks", tasks_json, false, "", "must be an array of task objects", config_errors)) {
+        append_config_errors(config_path, config_errors, errors);
+        return;
+    }
     // Initialize tasks with their direct "pre_tasks" dependencies
     for (auto i = 0; i < tasks_json.size(); i++) {
         task t;
         const auto& task_json = tasks_json[i];
-        read_task_property(task_json, i, "name", t.name, errors_stream);
-        read_task_property(task_json, i, "command", t.command, errors_stream);
-        read_pre_tasks_of_task(tasks_json, task_json, i, t.pre_tasks, errors_stream);
+        const auto err_prefix = "task #" + std::to_string(i + 1) + ": ";
+        const auto task_ind = std::to_string(i + 1);
+        read_property(task_json, "name", t.name, false, err_prefix, "must be a string", config_errors);
+        read_property(task_json, "command", t.command, false, err_prefix, "must be a string", config_errors);
+        std::vector<std::string> pre_task_names;
+        if (read_property(task_json, "pre_tasks", pre_task_names, true, err_prefix, "must be an array of other task names", config_errors)) {
+            pre_task_names_to_indexes(pre_task_names, tasks_json, t.pre_tasks, err_prefix, config_errors);
+        }
         tasks.push_back(t);
     }
     // Transform the "pre_tasks" dependency graph of each task into a flat vector of effective pre_tasks.
@@ -197,15 +241,15 @@ static bool read_tasks_from_specified_config_or_fail(int argc, const char** argv
             } else {
                 // Check for circular dependencies
                 if (std::count(task_call_stack.begin(), task_call_stack.end(), task_id) > 1) {
-                    errors_stream << "task '" << primary_task_name << "' has a circular dependency in it's 'pre_tasks':\n";
+                    std::stringstream err;
+                    err << "task '" << primary_task_name << "' has a circular dependency in it's 'pre_tasks':\n";
                     for (auto j = 0; j < task_call_stack.size(); j++) {
-                        errors_stream << tasks[task_call_stack[j]].name;
-                        if (j + 1 == task_call_stack.size()) {
-                            errors_stream << '\n';
-                        } else {
-                            errors_stream << " -> ";
+                        err << tasks[task_call_stack[j]].name;
+                        if (j + 1 < task_call_stack.size()) {
+                            err << " -> ";
                         }
                     }
+                    config_errors.emplace_back(err.str());
                     break;
                 }
                 for (auto it = t.pre_tasks.rbegin(); it != t.pre_tasks.rend(); it++) {
@@ -217,47 +261,16 @@ static bool read_tasks_from_specified_config_or_fail(int argc, const char** argv
     for (auto i = 0; i< tasks.size(); i++) {
         tasks[i].pre_tasks = effective_pre_tasks[i];
     }
-    const auto error = errors_stream.str();
-    if (error.empty()) {
-        return true;
-    } else {
-        std::cerr << error_invalid_config(config_path) << std::endl << error;
-        return false;
-    }
+    append_config_errors(config_path, config_errors, errors);
 }
 
-static bool read_user_config(template_string& open_in_editor_command) {
-    const auto config_path = std::filesystem::path(getenv("HOME")) / ".cpp-dev-tools.json";
-    std::ifstream config_file(config_path);
-    if (!config_file) {
-        return true;
+static bool print_errors(std::vector<std::string>& errors) {
+    std::cerr << TERM_COLOR_RED;
+    for (const auto& e: errors) {
+        std::cerr << e << std::endl;
     }
-    config_file >> std::noskipws;
-    const std::string config_data = std::string(std::istream_iterator<char>(config_file), std::istream_iterator<char>());
-    nlohmann::json config_json;
-    try {
-        config_json = nlohmann::json::parse(config_data);
-    } catch (std::exception& e) {
-        std::cerr << "Failed to parse " << config_path << ": " << e.what() << std::endl;
-        return false;
-    }
-    auto prop = config_json.find("open_in_editor_command");
-    if (prop != config_json.end()) {
-        try {
-            open_in_editor_command.str = prop->get<std::string>();
-            const auto pos = open_in_editor_command.str.find(TEMPLATE_ARG_PLACEHOLDER);
-            if (pos == std::string::npos) {
-                throw std::exception();
-            } else {
-                open_in_editor_command.arg_pos = pos;
-            }
-        } catch (std::exception& e) {
-            std::cerr << error_invalid_config(config_path) << " 'open_in_editor_command' must be a string in format: 'notepad++ {}', where {} will be replaced with a file name" << std::endl;
-            return false;
-        }
-
-    }
-    return true;
+    std::cerr << TERM_COLOR_RESET;
+    return !errors.empty();
 }
 
 static user_command parse_user_command(const std::string& str) {
@@ -428,9 +441,13 @@ int main(int argc, const char** argv) {
     std::vector<task> tasks;
     user_command cmd;
     task_output last_failed_task_output;
-    if (!read_user_config(open_in_editor_command) || !read_tasks_from_specified_config_or_fail(argc, argv, tasks)) {
-        return 1;
-    }
+    std::filesystem::path tasks_config_path;
+    std::vector<std::string> errors;
+    read_argv(argc, argv, tasks_config_path, errors);
+    read_user_config(open_in_editor_command, errors);
+    if (print_errors(errors)) return 1;
+    read_tasks_config(tasks_config_path, tasks, errors);
+    if (print_errors(errors)) return 1;
     read_user_command_from_env(cmd);
     prompt_user_to_ask_for_help();
     display_list_of_tasks(tasks);
