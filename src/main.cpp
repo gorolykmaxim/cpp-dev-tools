@@ -7,9 +7,10 @@
 #include <cerrno>
 #include <filesystem>
 #include <stack>
+#include <regex>
+#include <set>
 #include "process.hpp"
 #include "json.hpp"
-#include "concurrentqueue.h"
 
 const auto TERM_COLOR_RED = "\033[31m";
 const auto TERM_COLOR_GREEN = "\033[32m";
@@ -18,6 +19,10 @@ const auto TERM_COLOR_MAGENTA = "\033[35m";
 const auto TERM_COLOR_RESET = "\033[0m";
 
 const auto ENV_VAR_LAST_COMMAND = "LAST_COMMAND";
+
+const std::regex UNIX_FILE_LINK_REGEX("\n(\\/[^:]+:[0-9]+)");
+
+const std::string TEMPLATE_ARG_PLACEHOLDER = "{}";
 
 template <typename T>
 T push_back_and_return(std::vector<T>& vec, T&& t) {
@@ -46,8 +51,21 @@ struct task
     std::vector<size_t> pre_tasks;
 };
 
+struct task_output
+{
+    std::string output;
+    std::vector<std::string> file_links;
+};
+
+struct template_string
+{
+    std::string str;
+    size_t arg_pos;
+};
+
 std::vector<user_command_definition> USR_CMD_DEFS;
 const auto TASK = push_back_and_return(USR_CMD_DEFS, {"t", "ind", "Execute the task with the specified index"});
+const auto OPEN = push_back_and_return(USR_CMD_DEFS, {"o", "ind", "Open the file link with the specified index in your code editor"});
 const auto HELP = push_back_and_return(USR_CMD_DEFS, {"h", "", "Display list of user commands"});
 
 static bool accept_usr_cmd(const user_command_definition& def, user_command& cmd) {
@@ -69,7 +87,11 @@ static void read_task_property(const nlohmann::json& task_json, size_t task_ind,
     if (it == task_json.end()) {
         errors << "task #" + std::to_string(task_ind + 1) + " does not have '" + property + "' string specified\n";
     } else {
-        output = *it;       
+        try {
+            output = it->get<std::string>();
+        } catch (std::exception& e) {
+            errors << "task #" << std::to_string(task_ind + 1) << " property '" + property + "' must be a string\n";
+        }
     }
 }
 
@@ -204,6 +226,40 @@ static bool read_tasks_from_specified_config_or_fail(int argc, const char** argv
     }
 }
 
+static bool read_user_config(template_string& open_in_editor_command) {
+    const auto config_path = std::filesystem::path(getenv("HOME")) / ".cpp-dev-tools.json";
+    std::ifstream config_file(config_path);
+    if (!config_file) {
+        return true;
+    }
+    config_file >> std::noskipws;
+    const std::string config_data = std::string(std::istream_iterator<char>(config_file), std::istream_iterator<char>());
+    nlohmann::json config_json;
+    try {
+        config_json = nlohmann::json::parse(config_data);
+    } catch (std::exception& e) {
+        std::cerr << "Failed to parse " << config_path << ": " << e.what() << std::endl;
+        return false;
+    }
+    auto prop = config_json.find("open_in_editor_command");
+    if (prop != config_json.end()) {
+        try {
+            open_in_editor_command.str = prop->get<std::string>();
+            const auto pos = open_in_editor_command.str.find(TEMPLATE_ARG_PLACEHOLDER);
+            if (pos == std::string::npos) {
+                throw std::exception();
+            } else {
+                open_in_editor_command.arg_pos = pos;
+            }
+        } catch (std::exception& e) {
+            std::cerr << error_invalid_config(config_path) << " 'open_in_editor_command' must be a string in format: 'notepad++ {}', where {} will be replaced with a file name" << std::endl;
+            return false;
+        }
+
+    }
+    return true;
+}
+
 static user_command parse_user_command(const std::string& str) {
     std::stringstream chars;
     std::stringstream digits;
@@ -241,23 +297,19 @@ static void read_user_command_from_env(user_command& cmd) {
     }
 }
 
-static void write_to_stdout(const char* data, size_t size) {
-    std::cout << std::string(data, size);
-}
-
-static void write_to_stderr(const char* data, size_t size) {
-    std::cerr << std::string(data, size);
-}
-
-static std::function<void(const char *bytes, size_t n)> write_to_buffer(moodycamel::ConcurrentQueue<char>& output) {
-    return [&output] (const char* data, size_t size) {
-        for (auto i = 0; i < size; i++) {
-            output.enqueue(data[i]);
+static std::function<void(const char*,size_t)> duplicate_to(std::ostream& stream, std::stringstream& buffer, std::mutex& mutex, bool write_to_stream) {
+    return [&stream, &buffer, &mutex, write_to_stream] (const char* bytes, size_t n) {
+        std::string str(bytes, n);
+        if (write_to_stream) {
+            stream << str;
         }
+        std::lock_guard<std::mutex> lg(mutex);
+        buffer << str;
     };
 }
 
-static bool execute_task_command(const task& t, bool is_primary_task, const char** argv, const user_command& cmd) {
+static bool execute_task_command(const task& t, bool is_primary_task, const char** argv, const user_command& cmd, task_output& failed_output) {
+    failed_output = {};
     if (is_primary_task) {
         std::cout << TERM_COLOR_MAGENTA << "Running \"" << t.name << "\"" << TERM_COLOR_RESET << std::endl;
     } else {
@@ -271,18 +323,19 @@ static bool execute_task_command(const task& t, bool is_primary_task, const char
         std::cout << TERM_COLOR_RED << "Failed to restart: " << std::strerror(errno) << TERM_COLOR_RESET << std::endl;
         return false;
     } else {
-        moodycamel::ConcurrentQueue<char> output;
+        std::mutex mutex;
+        std::stringstream buffer;
         TinyProcessLib::Process process(t.command, "",
-                                        is_primary_task ? write_to_stdout : write_to_buffer(output),
-                                        is_primary_task ? write_to_stderr : write_to_buffer(output));
+                                        duplicate_to(std::cout, buffer, mutex, is_primary_task),
+                                        duplicate_to(std::cerr, buffer, mutex, is_primary_task));
         const auto code = process.get_exit_status();
         const auto success = code == 0;
         std::cout.flush();
         std::cerr.flush();
         if (!success) {
-            char c;
-            while (output.try_dequeue(c)) {
-                std::cerr << c;
+            failed_output.output = buffer.str();
+            if (!is_primary_task) {
+                std::cerr << failed_output.output;
             }
         }
         if (is_primary_task || !success) {
@@ -305,7 +358,7 @@ static void display_list_of_tasks_on_unknown_cmd(const std::vector<task>& tasks,
     }
 }
 
-static void execute_task(const std::vector<task>& tasks, user_command& cmd, const char** argv) {
+static void execute_task(const std::vector<task>& tasks, user_command& cmd, const char** argv, task_output& failed_output) {
     if (!accept_usr_cmd(TASK, cmd)) return;
     if (cmd.arg <= 0 || cmd.arg > tasks.size()) {
         std::cerr << TERM_COLOR_RED << "There is no task with index " << cmd.arg << TERM_COLOR_RESET << std::endl;
@@ -313,11 +366,40 @@ static void execute_task(const std::vector<task>& tasks, user_command& cmd, cons
     }
     const auto& to_execute = tasks[cmd.arg - 1];
     for (const auto& task_index: to_execute.pre_tasks) {
-        if (!execute_task_command(tasks[task_index], false, argv, cmd)) {
+        if (!execute_task_command(tasks[task_index], false, argv, cmd, failed_output)) {
             return;
         }
     }
-    execute_task_command(to_execute, true, argv, cmd);
+    execute_task_command(to_execute, true, argv, cmd, failed_output);
+}
+
+static void display_file_links_from_task_output(task_output& out, const template_string& open_in_editor_cmd) {
+    if (open_in_editor_cmd.str.empty() || out.output.empty() || !out.file_links.empty()) return;
+    std::sregex_iterator start(out.output.begin(), out.output.end(), UNIX_FILE_LINK_REGEX);
+    std::sregex_iterator end;
+    std::set<std::string> links;
+    for (auto it = start; it != end; it++) {
+        links.insert((*it)[1].str());
+    }
+    out.file_links = std::vector<std::string>(links.begin(), links.end());
+    if (!out.file_links.empty()) {
+        std::cout << TERM_COLOR_GREEN << "File links from the output:" << TERM_COLOR_RESET << std::endl;
+    }
+    for (auto i = 0; i < out.file_links.size(); i++) {
+        std::cout << i + 1 << ' ' << out.file_links[i] << std::endl;
+    }
+}
+
+static void open_file_link(task_output& out, const template_string& open_in_editor_cmd, user_command& cmd) {
+    if (!accept_usr_cmd(OPEN, cmd)) return;
+    if (cmd.arg <= 0 || cmd.arg > out.file_links.size()) {
+        std::cerr << TERM_COLOR_RED << "There is no file link with index " << cmd.arg << TERM_COLOR_RESET << std::endl;
+        return;
+    }
+    const auto& link = out.file_links[cmd.arg - 1];
+    std::string open_cmd = open_in_editor_cmd.str;
+    open_cmd.replace(open_in_editor_cmd.arg_pos, TEMPLATE_ARG_PLACEHOLDER.size(), link);
+    TinyProcessLib::Process p(open_cmd);
 }
 
 static void prompt_user_to_ask_for_help() {
@@ -337,18 +419,22 @@ static void display_help(const std::vector<user_command_definition>& defs, user_
 }
 
 int main(int argc, const char** argv) {
+    template_string open_in_editor_command;
     std::vector<task> tasks;
-    if (!read_tasks_from_specified_config_or_fail(argc, argv, tasks)) {
+    user_command cmd;
+    task_output last_failed_task_output;
+    if (!read_user_config(open_in_editor_command) || !read_tasks_from_specified_config_or_fail(argc, argv, tasks)) {
         return 1;
     }
-    user_command cmd;
     read_user_command_from_env(cmd);
     prompt_user_to_ask_for_help();
     display_list_of_tasks_on_unknown_cmd(tasks, cmd);
     while (true) {
         read_user_command_from_stdin(cmd);
         display_help(USR_CMD_DEFS, cmd);
-        execute_task(tasks, cmd, argv);
+        execute_task(tasks, cmd, argv, last_failed_task_output);
+        display_file_links_from_task_output(last_failed_task_output, open_in_editor_command);
+        open_file_link(last_failed_task_output, open_in_editor_command, cmd);
         display_list_of_tasks_on_unknown_cmd(tasks, cmd);
     }
 }
