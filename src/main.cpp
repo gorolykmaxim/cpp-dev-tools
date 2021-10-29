@@ -1,17 +1,15 @@
 #include <iostream>
 #include <fstream>
 #include <sstream>
+#include <unistd.h>
 #include <cstring>
+#include <cstdlib>
 #include <cerrno>
 #include <filesystem>
 #include <stack>
 #include "process.hpp"
 #include "json.hpp"
 #include "concurrentqueue.h"
-
-#ifndef _WIN32
-#include <unistd.h>
-#endif
 
 const auto TERM_COLOR_RED = "\033[31m";
 const auto TERM_COLOR_GREEN = "\033[32m";
