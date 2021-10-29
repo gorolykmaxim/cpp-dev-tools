@@ -372,6 +372,17 @@ static void execute_task(const std::vector<task>& tasks, user_command& cmd, cons
     execute_task_command(to_execute, true, argv, cmd, failed_output);
 }
 
+static void display_file_links(const task_output& out) {
+    if (out.file_links.empty()) {
+        std::cout << TERM_COLOR_GREEN << "No file links in the output" << TERM_COLOR_RESET << std::endl;
+    } else {
+        std::cout << TERM_COLOR_GREEN << "File links from the output:" << TERM_COLOR_RESET << std::endl;
+    }
+    for (auto i = 0; i < out.file_links.size(); i++) {
+        std::cout << i + 1 << ' ' << out.file_links[i] << std::endl;
+    }
+}
+
 static void display_file_links_from_task_output(task_output& out, const template_string& open_in_editor_cmd) {
     if (open_in_editor_cmd.str.empty() || out.output.empty() || !out.file_links.empty()) return;
     std::sregex_iterator start(out.output.begin(), out.output.end(), UNIX_FILE_LINK_REGEX);
@@ -381,18 +392,13 @@ static void display_file_links_from_task_output(task_output& out, const template
         links.insert((*it)[1].str());
     }
     out.file_links = std::vector<std::string>(links.begin(), links.end());
-    if (!out.file_links.empty()) {
-        std::cout << TERM_COLOR_GREEN << "File links from the output:" << TERM_COLOR_RESET << std::endl;
-    }
-    for (auto i = 0; i < out.file_links.size(); i++) {
-        std::cout << i + 1 << ' ' << out.file_links[i] << std::endl;
-    }
+    display_file_links(out);
 }
 
 static void open_file_link(task_output& out, const template_string& open_in_editor_cmd, user_command& cmd) {
     if (!accept_usr_cmd(OPEN, cmd)) return;
     if (cmd.arg <= 0 || cmd.arg > out.file_links.size()) {
-        std::cerr << TERM_COLOR_RED << "There is no file link with index " << cmd.arg << TERM_COLOR_RESET << std::endl;
+        display_file_links(out);
         return;
     }
     const auto& link = out.file_links[cmd.arg - 1];
