@@ -9,6 +9,7 @@
 #include <stack>
 #include <regex>
 #include <set>
+#include <queue>
 #include "process.hpp"
 #include "json.hpp"
 
@@ -308,6 +309,27 @@ static void read_user_command_from_env(user_command& cmd) {
     }
 }
 
+static void display_list_of_tasks(const std::vector<task>& tasks) {
+    std::cout << TERM_COLOR_GREEN << "Tasks:" << TERM_COLOR_RESET << std::endl;
+    for (auto i = 0; i < tasks.size(); i++) {
+        std::cout << std::to_string(i + 1) << " \"" << tasks[i].name << "\"" << std::endl;
+    }
+}
+
+static void schedule_task(const std::vector<task>& tasks, const std::vector<std::vector<size_t>>& pre_tasks,
+                          std::queue<size_t>& to_exec, user_command& cmd) {
+    if (!accept_usr_cmd(TASK, cmd)) return;
+    if (cmd.arg <= 0 || cmd.arg > tasks.size()) {
+        display_list_of_tasks(tasks);
+    } else {
+        const auto id = cmd.arg - 1;
+        for (const auto pre_task_id: pre_tasks[id]) {
+            to_exec.push(pre_task_id);
+        }
+        to_exec.push(id);
+    }
+}
+
 static std::function<void(const char*,size_t)> duplicate_to(std::ostream& stream, std::stringstream& buffer, std::mutex& mutex, bool write_to_stream) {
     return [&stream, &buffer, &mutex, write_to_stream] (const char* bytes, size_t n) {
         std::string str(bytes, n);
@@ -319,8 +341,14 @@ static std::function<void(const char*,size_t)> duplicate_to(std::ostream& stream
     };
 }
 
-static bool execute_task_command(const task& t, bool is_primary_task, const char** argv, const user_command& cmd, task_output& failed_output) {
+static void execute_task(const std::vector<task>& tasks, std::queue<size_t>& to_exec,
+                         const char** argv, const user_command& cmd, task_output& failed_output) {
+    if (to_exec.empty()) return;
+    const auto& t = tasks[to_exec.front()];
+    to_exec.pop();
     failed_output = {};
+    const auto is_primary_task = to_exec.empty();
+    auto is_success = true;
     if (is_primary_task) {
         std::cout << TERM_COLOR_MAGENTA << "Running \"" << t.name << "\"" << TERM_COLOR_RESET << std::endl;
     } else {
@@ -332,7 +360,7 @@ static bool execute_task_command(const task& t, bool is_primary_task, const char
         setenv(ENV_VAR_LAST_COMMAND, cmd_str.c_str(), true);
         execvp(argv[0], const_cast<char* const*>(argv));
         std::cout << TERM_COLOR_RED << "Failed to restart: " << std::strerror(errno) << TERM_COLOR_RESET << std::endl;
-        return false;
+        is_success = false;
     } else {
         std::mutex mutex;
         std::stringstream buffer;
@@ -340,48 +368,27 @@ static bool execute_task_command(const task& t, bool is_primary_task, const char
                                         duplicate_to(std::cout, buffer, mutex, is_primary_task),
                                         duplicate_to(std::cerr, buffer, mutex, is_primary_task));
         const auto code = process.get_exit_status();
-        const auto success = code == 0;
+        is_success = code == 0;
         std::cout.flush();
         std::cerr.flush();
-        if (!success) {
+        if (!is_success) {
             failed_output.output = buffer.str();
             if (!is_primary_task) {
                 std::cerr << failed_output.output;
             }
         }
-        if (is_primary_task || !success) {
-            if (success) {
+        if (is_primary_task || !is_success) {
+            if (is_success) {
                 std::cout << TERM_COLOR_MAGENTA << "'" << t.name << "' complete: ";
             } else {
                 std::cout << TERM_COLOR_RED << "'" << t.name << "' failed: ";
             }
             std::cout << "return code: " << code << TERM_COLOR_RESET << std::endl;
         }
-        return success;
     }
-}
-
-static void display_list_of_tasks(const std::vector<task>& tasks) {
-    std::cout << TERM_COLOR_GREEN << "Tasks:" << TERM_COLOR_RESET << std::endl;
-    for (auto i = 0; i < tasks.size(); i++) {
-        std::cout << std::to_string(i + 1) << " \"" << tasks[i].name << "\"" << std::endl;
+    if (!is_success) {
+        to_exec = {};
     }
-}
-
-static void execute_task(const std::vector<task>& tasks, const std::vector<std::vector<size_t>>& pre_tasks, user_command& cmd,
-                         const char** argv, task_output& failed_output) {
-    if (!accept_usr_cmd(TASK, cmd)) return;
-    if (cmd.arg <= 0 || cmd.arg > tasks.size()) {
-        display_list_of_tasks(tasks);
-        return;
-    }
-    const auto id = cmd.arg - 1;
-    for (const auto& task_index: pre_tasks[id]) {
-        if (!execute_task_command(tasks[task_index], false, argv, cmd, failed_output)) {
-            return;
-        }
-    }
-    execute_task_command(tasks[id], true, argv, cmd, failed_output);
 }
 
 static void display_file_links(const task_output& out) {
@@ -439,6 +446,7 @@ int main(int argc, const char** argv) {
     template_string open_in_editor_command;
     std::vector<task> tasks;
     std::vector<std::vector<size_t>> pre_tasks;
+    std::queue<size_t> tasks_to_exec;
     user_command cmd;
     task_output last_failed_task_output;
     std::filesystem::path tasks_config_path;
@@ -453,9 +461,12 @@ int main(int argc, const char** argv) {
     display_list_of_tasks(tasks);
     while (true) {
         read_user_command_from_stdin(cmd);
-        execute_task(tasks, pre_tasks, cmd, argv, last_failed_task_output);
-        display_file_links_from_task_output(last_failed_task_output, open_in_editor_command);
+        schedule_task(tasks, pre_tasks, tasks_to_exec, cmd);
         open_file_link(last_failed_task_output, open_in_editor_command, cmd);
         display_help(USR_CMD_DEFS, cmd);
+        while (!tasks_to_exec.empty()) {
+            execute_task(tasks, tasks_to_exec, argv, cmd, last_failed_task_output);
+            display_file_links_from_task_output(last_failed_task_output, open_in_editor_command);
+        }
     }
 }
