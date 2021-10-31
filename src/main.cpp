@@ -48,7 +48,6 @@ struct task
 {
     std::string name;
     std::string command;
-    std::vector<size_t> pre_tasks;
 };
 
 struct task_output
@@ -181,7 +180,8 @@ static void read_user_config(template_string& open_in_editor_command, std::vecto
     append_config_errors(config_path, config_errors, errors);
 }
 
-static void read_tasks_config(const std::filesystem::path& config_path, std::vector<task>& tasks, std::vector<std::string>& errors) {
+static void read_tasks_config(const std::filesystem::path& config_path, std::vector<task>& tasks, std::vector<std::vector<size_t>>& effective_pre_tasks,
+                              std::vector<std::string>& errors) {
     nlohmann::json config_json;
     std::vector<std::string> config_errors;
     if (!parse_json_file(config_path, true, config_json, errors)) {
@@ -192,6 +192,8 @@ static void read_tasks_config(const std::filesystem::path& config_path, std::vec
         append_config_errors(config_path, config_errors, errors);
         return;
     }
+    std::vector<std::vector<size_t>> direct_pre_tasks(tasks_json.size());
+    effective_pre_tasks = std::vector<std::vector<size_t>>(tasks_json.size());
     // Initialize tasks with their direct "pre_tasks" dependencies
     for (auto i = 0; i < tasks_json.size(); i++) {
         task t;
@@ -202,12 +204,11 @@ static void read_tasks_config(const std::filesystem::path& config_path, std::vec
         read_property(task_json, "command", t.command, false, err_prefix, "must be a string", config_errors);
         std::vector<std::string> pre_task_names;
         if (read_property(task_json, "pre_tasks", pre_task_names, true, err_prefix, "must be an array of other task names", config_errors)) {
-            pre_task_names_to_indexes(pre_task_names, tasks_json, t.pre_tasks, err_prefix, config_errors);
+            pre_task_names_to_indexes(pre_task_names, tasks_json, direct_pre_tasks[i], err_prefix, config_errors);
         }
         tasks.push_back(t);
     }
     // Transform the "pre_tasks" dependency graph of each task into a flat vector of effective pre_tasks.
-    std::vector<std::vector<size_t>> effective_pre_tasks(tasks.size());
     for (auto i = 0; i < tasks.size(); i++) {
         const auto& primary_task_name = tasks[i].name;
         auto& pre_tasks = effective_pre_tasks[i];
@@ -217,7 +218,7 @@ static void read_tasks_config(const std::filesystem::path& config_path, std::vec
         task_call_stack.push_back(i);
         while (!to_visit.empty()) {
             const auto task_id = to_visit.top();
-            const auto& t = tasks[task_id];
+            const auto& pre_pre_tasks = direct_pre_tasks[task_id];
             // We are visiting each task with non-empty "pre_tasks" twice, so when we get to a task the second time - the
             // task should already be on top of the task_call_stack. If that's the case - don't push the task to stack
             // second time.
@@ -225,7 +226,7 @@ static void read_tasks_config(const std::filesystem::path& config_path, std::vec
                 task_call_stack.push_back(task_id);
             }
             auto all_children_visited = true;
-            for (const auto& child: t.pre_tasks) {
+            for (const auto& child: pre_pre_tasks) {
                 if (std::find(pre_tasks.begin(), pre_tasks.end(), child) == pre_tasks.end()) {
                     all_children_visited = false;
                     break;
@@ -252,14 +253,11 @@ static void read_tasks_config(const std::filesystem::path& config_path, std::vec
                     config_errors.emplace_back(err.str());
                     break;
                 }
-                for (auto it = t.pre_tasks.rbegin(); it != t.pre_tasks.rend(); it++) {
+                for (auto it = pre_pre_tasks.rbegin(); it != pre_pre_tasks.rend(); it++) {
                     to_visit.push(*it);
                 }
             }
         }
-    }
-    for (auto i = 0; i< tasks.size(); i++) {
-        tasks[i].pre_tasks = effective_pre_tasks[i];
     }
     append_config_errors(config_path, config_errors, errors);
 }
@@ -370,19 +368,20 @@ static void display_list_of_tasks(const std::vector<task>& tasks) {
     }
 }
 
-static void execute_task(const std::vector<task>& tasks, user_command& cmd, const char** argv, task_output& failed_output) {
+static void execute_task(const std::vector<task>& tasks, const std::vector<std::vector<size_t>>& pre_tasks, user_command& cmd,
+                         const char** argv, task_output& failed_output) {
     if (!accept_usr_cmd(TASK, cmd)) return;
     if (cmd.arg <= 0 || cmd.arg > tasks.size()) {
         display_list_of_tasks(tasks);
         return;
     }
-    const auto& to_execute = tasks[cmd.arg - 1];
-    for (const auto& task_index: to_execute.pre_tasks) {
+    const auto id = cmd.arg - 1;
+    for (const auto& task_index: pre_tasks[id]) {
         if (!execute_task_command(tasks[task_index], false, argv, cmd, failed_output)) {
             return;
         }
     }
-    execute_task_command(to_execute, true, argv, cmd, failed_output);
+    execute_task_command(tasks[id], true, argv, cmd, failed_output);
 }
 
 static void display_file_links(const task_output& out) {
@@ -439,6 +438,7 @@ static void display_help(const std::vector<user_command_definition>& defs, user_
 int main(int argc, const char** argv) {
     template_string open_in_editor_command;
     std::vector<task> tasks;
+    std::vector<std::vector<size_t>> pre_tasks;
     user_command cmd;
     task_output last_failed_task_output;
     std::filesystem::path tasks_config_path;
@@ -446,14 +446,14 @@ int main(int argc, const char** argv) {
     read_argv(argc, argv, tasks_config_path, errors);
     read_user_config(open_in_editor_command, errors);
     if (print_errors(errors)) return 1;
-    read_tasks_config(tasks_config_path, tasks, errors);
+    read_tasks_config(tasks_config_path, tasks, pre_tasks, errors);
     if (print_errors(errors)) return 1;
     read_user_command_from_env(cmd);
     prompt_user_to_ask_for_help();
     display_list_of_tasks(tasks);
     while (true) {
         read_user_command_from_stdin(cmd);
-        execute_task(tasks, cmd, argv, last_failed_task_output);
+        execute_task(tasks, pre_tasks, cmd, argv, last_failed_task_output);
         display_file_links_from_task_output(last_failed_task_output, open_in_editor_command);
         open_file_link(last_failed_task_output, open_in_editor_command, cmd);
         display_help(USR_CMD_DEFS, cmd);
