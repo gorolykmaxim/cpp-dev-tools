@@ -128,8 +128,8 @@ static bool read_argv(int argc, const char** argv, std::filesystem::path& tasks_
         errors.emplace_back("usage: cpp-dev-tools tasks.json");
         return false;
     }
-    tasks_config_path = argv[1];
-    const auto& config_dir_path = std::filesystem::absolute(tasks_config_path).parent_path();
+    tasks_config_path = std::filesystem::absolute(argv[1]);
+    const auto& config_dir_path = tasks_config_path.parent_path();
     std::filesystem::current_path(config_dir_path);
     return true;
 }
@@ -341,7 +341,8 @@ static std::function<void(const char*,size_t)> duplicate_to(std::ostream& stream
 }
 
 static void execute_task(const std::vector<task>& tasks, std::queue<size_t>& to_exec,
-                         const char** argv, const user_command& cmd, task_output& failed_output) {
+                         const char* executable, const std::filesystem::path& tasks_config_path,
+                         const user_command& cmd, task_output& failed_output) {
     if (to_exec.empty()) return;
     const auto& task_to_exec = tasks[to_exec.front()];
     to_exec.pop();
@@ -357,7 +358,8 @@ static void execute_task(const std::vector<task>& tasks, std::queue<size_t>& to_
         std::cout << TERM_COLOR_MAGENTA << "Restarting program..." << TERM_COLOR_RESET << std::endl;
         const auto cmd_str = cmd.cmd + std::to_string(cmd.arg);
         setenv(ENV_VAR_LAST_COMMAND, cmd_str.c_str(), true);
-        execvp(argv[0], const_cast<char* const*>(argv));
+        std::vector<const char*> argv = {executable, tasks_config_path.c_str(), nullptr};
+        execvp(argv[0], const_cast<char* const*>(argv.data()));
         std::cout << TERM_COLOR_RED << "Failed to restart: " << std::strerror(errno) << TERM_COLOR_RESET << std::endl;
         is_success = false;
     } else {
@@ -448,6 +450,7 @@ int main(int argc, const char** argv) {
     std::queue<size_t> tasks_to_exec;
     user_command cmd;
     task_output last_failed_task_output;
+    auto executable = argv[0];
     std::filesystem::path tasks_config_path;
     std::vector<std::string> errors;
     read_argv(argc, argv, tasks_config_path, errors);
@@ -464,7 +467,7 @@ int main(int argc, const char** argv) {
         open_file_link(last_failed_task_output, open_in_editor_command, cmd);
         display_help(USR_CMD_DEFS, cmd);
         while (!tasks_to_exec.empty()) {
-            execute_task(tasks, tasks_to_exec, argv, cmd, last_failed_task_output);
+            execute_task(tasks, tasks_to_exec, executable, tasks_config_path, cmd, last_failed_task_output);
             display_file_links_from_task_output(last_failed_task_output, open_in_editor_command);
         }
     }
