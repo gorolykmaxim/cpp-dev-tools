@@ -106,17 +106,17 @@ static bool read_property(const nlohmann::json& json, const std::string& name, T
 static void pre_task_names_to_indexes(const std::vector<std::string>& pre_task_names, const std::vector<nlohmann::json>& tasks_json,
                                       std::vector<size_t>& pre_tasks, const std::string& err_prefix, std::vector<std::string>& errors) {
     for (const auto& pre_task_name: pre_task_names) {
-        auto pre_task_ind = -1;
+        auto pre_task_id = -1;
         for (auto i = 0; i < tasks_json.size(); i++) {
             const auto& another_task = tasks_json[i];
             const auto& another_task_name = another_task.find("name");
             if (another_task_name != another_task.end() && *another_task_name == pre_task_name) {
-                pre_task_ind = i;
+                pre_task_id = i;
                 break;
             }
         }
-        if (pre_task_ind >= 0) {
-            pre_tasks.push_back(pre_task_ind);
+        if (pre_task_id >= 0) {
+            pre_tasks.push_back(pre_task_id);
         } else {
             errors.emplace_back(err_prefix + "references task '" + pre_task_name + "' that does not exist");
         }
@@ -197,17 +197,16 @@ static void read_tasks_config(const std::filesystem::path& config_path, std::vec
     effective_pre_tasks = std::vector<std::vector<size_t>>(tasks_json.size());
     // Initialize tasks with their direct "pre_tasks" dependencies
     for (auto i = 0; i < tasks_json.size(); i++) {
-        task t;
+        task new_task;
         const auto& task_json = tasks_json[i];
         const auto err_prefix = "task #" + std::to_string(i + 1) + ": ";
-        const auto task_ind = std::to_string(i + 1);
-        read_property(task_json, "name", t.name, false, err_prefix, "must be a string", config_errors);
-        read_property(task_json, "command", t.command, false, err_prefix, "must be a string", config_errors);
+        read_property(task_json, "name", new_task.name, false, err_prefix, "must be a string", config_errors);
+        read_property(task_json, "command", new_task.command, false, err_prefix, "must be a string", config_errors);
         std::vector<std::string> pre_task_names;
         if (read_property(task_json, "pre_tasks", pre_task_names, true, err_prefix, "must be an array of other task names", config_errors)) {
             pre_task_names_to_indexes(pre_task_names, tasks_json, direct_pre_tasks[i], err_prefix, config_errors);
         }
-        tasks.push_back(t);
+        tasks.push_back(new_task);
     }
     // Transform the "pre_tasks" dependency graph of each task into a flat vector of effective pre_tasks.
     for (auto i = 0; i < tasks.size(); i++) {
@@ -344,17 +343,17 @@ static std::function<void(const char*,size_t)> duplicate_to(std::ostream& stream
 static void execute_task(const std::vector<task>& tasks, std::queue<size_t>& to_exec,
                          const char** argv, const user_command& cmd, task_output& failed_output) {
     if (to_exec.empty()) return;
-    const auto& t = tasks[to_exec.front()];
+    const auto& task_to_exec = tasks[to_exec.front()];
     to_exec.pop();
     failed_output = {};
     const auto is_primary_task = to_exec.empty();
     auto is_success = true;
     if (is_primary_task) {
-        std::cout << TERM_COLOR_MAGENTA << "Running \"" << t.name << "\"" << TERM_COLOR_RESET << std::endl;
+        std::cout << TERM_COLOR_MAGENTA << "Running \"" << task_to_exec.name << "\"" << TERM_COLOR_RESET << std::endl;
     } else {
-        std::cout << TERM_COLOR_BLUE << "Running \"" << t.name << "\"..." << TERM_COLOR_RESET << std::endl;
+        std::cout << TERM_COLOR_BLUE << "Running \"" << task_to_exec.name << "\"..." << TERM_COLOR_RESET << std::endl;
     }
-    if (t.command == "__restart") {
+    if (task_to_exec.command == "__restart") {
         std::cout << TERM_COLOR_MAGENTA << "Restarting program..." << TERM_COLOR_RESET << std::endl;
         const auto cmd_str = cmd.cmd + std::to_string(cmd.arg);
         setenv(ENV_VAR_LAST_COMMAND, cmd_str.c_str(), true);
@@ -364,7 +363,7 @@ static void execute_task(const std::vector<task>& tasks, std::queue<size_t>& to_
     } else {
         std::mutex mutex;
         std::stringstream buffer;
-        TinyProcessLib::Process process(t.command, "",
+        TinyProcessLib::Process process(task_to_exec.command, "",
                                         duplicate_to(std::cout, buffer, mutex, is_primary_task),
                                         duplicate_to(std::cerr, buffer, mutex, is_primary_task));
         const auto code = process.get_exit_status();
@@ -379,9 +378,9 @@ static void execute_task(const std::vector<task>& tasks, std::queue<size_t>& to_
         }
         if (is_primary_task || !is_success) {
             if (is_success) {
-                std::cout << TERM_COLOR_MAGENTA << "'" << t.name << "' complete: ";
+                std::cout << TERM_COLOR_MAGENTA << "'" << task_to_exec.name << "' complete: ";
             } else {
-                std::cout << TERM_COLOR_RED << "'" << t.name << "' failed: ";
+                std::cout << TERM_COLOR_RED << "'" << task_to_exec.name << "' failed: ";
             }
             std::cout << "return code: " << code << TERM_COLOR_RESET << std::endl;
         }
