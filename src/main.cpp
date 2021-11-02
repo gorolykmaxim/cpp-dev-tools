@@ -393,6 +393,29 @@ static void execute_task(const std::vector<task>& tasks, std::queue<size_t>& to_
     }
 }
 
+static void clear_tasks_queue_on_execution_failure(std::queue<size_t>& tasks_to_exec, std::optional<task_execution>& last_task_exec) {
+    if (last_task_exec && last_task_exec->process->get_exit_status() != 0) {
+        tasks_to_exec = {};
+    }
+}
+
+static void display_file_links(const task_output& out) {
+    if (out.file_links.empty()) {
+        std::cout << TERM_COLOR_GREEN << "No file links in the output" << TERM_COLOR_RESET << std::endl;
+    } else {
+        std::cout << TERM_COLOR_GREEN << "File links from the output:" << TERM_COLOR_RESET << std::endl;
+    }
+    for (auto i = 0; i < out.file_links.size(); i++) {
+        std::cout << i + 1 << ' ' << out.file_links[i] << std::endl;
+    }
+}
+
+static void display_task_completion(const char* color, const std::string& task_name, int code) {
+    const auto suffix = code == 0 ? "' complete: " : "' failed: ";
+    std::cout << color << "'" << task_name << suffix;
+    std::cout << "return code: " << code << TERM_COLOR_RESET << std::endl;
+}
+
 static void process_task_execution_output(std::optional<task_execution>& exec, const std::vector<task>& tasks, const std::queue<size_t>& tasks_to_exec,
                                          task_output& failed_output) {
     if (!exec) return;
@@ -421,52 +444,25 @@ static void process_task_execution_output(std::optional<task_execution>& exec, c
         }
     }
     const auto code = exec->process->get_exit_status();
-    const auto is_success = code == 0;
     std::cout.flush();
     std::cerr.flush();
-    if (!is_success) {
+    if (code != 0) {
         failed_output.output = output.str();
+        std::sregex_iterator start(failed_output.output.begin(), failed_output.output.end(), UNIX_FILE_LINK_REGEX);
+        std::sregex_iterator end;
+        std::set<std::string> links;
+        for (auto it = start; it != end; it++) {
+            links.insert((*it)[1].str());
+        }
+        failed_output.file_links = std::vector<std::string>(links.begin(), links.end());
         if (!is_primary_task) {
             std::cerr << failed_output.output;
         }
+        display_task_completion(TERM_COLOR_RED, executing_task.name, code);
+        display_file_links(failed_output);
+    } else if (is_primary_task) {
+        display_task_completion(TERM_COLOR_MAGENTA, executing_task.name, code);
     }
-    if (is_primary_task || !is_success) {
-        if (is_success) {
-            std::cout << TERM_COLOR_MAGENTA << "'" << executing_task.name << "' complete: ";
-        } else {
-            std::cout << TERM_COLOR_RED << "'" << executing_task.name << "' failed: ";
-        }
-        std::cout << "return code: " << code << TERM_COLOR_RESET << std::endl;
-    }
-}
-
-static void clear_tasks_queue_on_execution_failure(std::queue<size_t>& tasks_to_exec, std::optional<task_execution>& last_task_exec) {
-    if (last_task_exec && last_task_exec->process->get_exit_status() != 0) {
-        tasks_to_exec = {};
-    }
-}
-
-static void display_file_links(const task_output& out) {
-    if (out.file_links.empty()) {
-        std::cout << TERM_COLOR_GREEN << "No file links in the output" << TERM_COLOR_RESET << std::endl;
-    } else {
-        std::cout << TERM_COLOR_GREEN << "File links from the output:" << TERM_COLOR_RESET << std::endl;
-    }
-    for (auto i = 0; i < out.file_links.size(); i++) {
-        std::cout << i + 1 << ' ' << out.file_links[i] << std::endl;
-    }
-}
-
-static void display_file_links_from_task_output(task_output& out, const template_string& open_in_editor_cmd) {
-    if (open_in_editor_cmd.str.empty() || out.output.empty() || !out.file_links.empty()) return;
-    std::sregex_iterator start(out.output.begin(), out.output.end(), UNIX_FILE_LINK_REGEX);
-    std::sregex_iterator end;
-    std::set<std::string> links;
-    for (auto it = start; it != end; it++) {
-        links.insert((*it)[1].str());
-    }
-    out.file_links = std::vector<std::string>(links.begin(), links.end());
-    display_file_links(out);
 }
 
 static void open_file_link(task_output& out, const template_string& open_in_editor_cmd, user_command& cmd) {
@@ -525,7 +521,6 @@ int main(int argc, const char** argv) {
             execute_task(tasks, tasks_to_exec, last_task_exec, executable, tasks_config_path, cmd);
             process_task_execution_output(last_task_exec, tasks, tasks_to_exec, last_failed_task_output);
             clear_tasks_queue_on_execution_failure(tasks_to_exec, last_task_exec);
-            display_file_links_from_task_output(last_failed_task_output, open_in_editor_command);
         }
     }
 }
