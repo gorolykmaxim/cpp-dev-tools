@@ -10,8 +10,10 @@
 #include <regex>
 #include <set>
 #include <queue>
+#include <csignal>
 #include "process.hpp"
 #include "json.hpp"
+#include "blockingconcurrentqueue.h"
 
 const auto TERM_COLOR_RED = "\033[31m";
 const auto TERM_COLOR_GREEN = "\033[32m";
@@ -51,6 +53,23 @@ struct task
     std::string command;
 };
 
+enum task_event_type {
+    task_event_type_stdout, task_event_type_stderr, task_event_type_exit
+};
+
+struct task_event
+{
+    task_event_type type;
+    std::string data;
+};
+
+struct task_execution
+{
+    size_t task_id;
+    std::unique_ptr<TinyProcessLib::Process> process;
+    moodycamel::BlockingConcurrentQueue<task_event> event_queue;
+};
+
 struct task_output
 {
     std::string output;
@@ -67,6 +86,9 @@ std::vector<user_command_definition> USR_CMD_DEFS;
 const auto TASK = push_back_and_return(USR_CMD_DEFS, {"t", "ind", "Execute the task with the specified index"});
 const auto OPEN = push_back_and_return(USR_CMD_DEFS, {"o", "ind", "Open the file link with the specified index in your code editor"});
 const auto HELP = push_back_and_return(USR_CMD_DEFS, {"h", "", "Display list of user commands"});
+
+// This is global, because it is accessed from signal handlers.
+std::optional<task_execution> last_task_exec;
 
 static bool accept_usr_cmd(const user_command_definition& def, user_command& cmd) {
     if (def.cmd == cmd.cmd) {
@@ -329,66 +351,98 @@ static void schedule_task(const std::vector<task>& tasks, const std::vector<std:
     }
 }
 
-static std::function<void(const char*,size_t)> duplicate_to(std::ostream& stream, std::stringstream& buffer, std::mutex& mutex, bool write_to_stream) {
-    return [&stream, &buffer, &mutex, write_to_stream] (const char* bytes, size_t n) {
-        std::string str(bytes, n);
-        if (write_to_stream) {
-            stream << str;
-        }
-        std::lock_guard<std::mutex> lg(mutex);
-        buffer << str;
+static void notify_task_execution_about_child_process_exit(int signal) {
+    if (last_task_exec) {
+        task_event exit_event{};
+        exit_event.type = task_event_type_exit;
+        last_task_exec->event_queue.enqueue(exit_event);
+    }
+}
+
+static std::function<void(const char*,size_t)> write_to(moodycamel::BlockingConcurrentQueue<task_event>& queue, task_event_type event_type) {
+    return [&queue, event_type] (const char* data, size_t size) {
+        task_event event;
+        event.type = event_type;
+        event.data = std::string(data, size);
+        queue.enqueue(event);
     };
 }
 
-static void execute_task(const std::vector<task>& tasks, std::queue<size_t>& to_exec,
+static void execute_task(const std::vector<task>& tasks, std::queue<size_t>& to_exec, std::optional<task_execution>& exec,
                          const char* executable, const std::filesystem::path& tasks_config_path,
-                         const user_command& cmd, task_output& failed_output) {
-    if (to_exec.empty()) return;
-    const auto& task_to_exec = tasks[to_exec.front()];
+                         const user_command& cmd) {
+    const auto task_id = to_exec.front();
+    const auto& task_to_exec = tasks[task_id];
     to_exec.pop();
-    failed_output = {};
-    const auto is_primary_task = to_exec.empty();
-    auto is_success = true;
-    if (is_primary_task) {
-        std::cout << TERM_COLOR_MAGENTA << "Running \"" << task_to_exec.name << "\"" << TERM_COLOR_RESET << std::endl;
-    } else {
-        std::cout << TERM_COLOR_BLUE << "Running \"" << task_to_exec.name << "\"..." << TERM_COLOR_RESET << std::endl;
-    }
     if (task_to_exec.command == "__restart") {
+        exec = std::optional<task_execution>();
         std::cout << TERM_COLOR_MAGENTA << "Restarting program..." << TERM_COLOR_RESET << std::endl;
         const auto cmd_str = cmd.cmd + std::to_string(cmd.arg);
         setenv(ENV_VAR_LAST_COMMAND, cmd_str.c_str(), true);
         std::vector<const char*> argv = {executable, tasks_config_path.c_str(), nullptr};
         execvp(argv[0], const_cast<char* const*>(argv.data()));
         std::cout << TERM_COLOR_RED << "Failed to restart: " << std::strerror(errno) << TERM_COLOR_RESET << std::endl;
-        is_success = false;
     } else {
-        std::mutex mutex;
-        std::stringstream buffer;
-        TinyProcessLib::Process process(task_to_exec.command, "",
-                                        duplicate_to(std::cout, buffer, mutex, is_primary_task),
-                                        duplicate_to(std::cerr, buffer, mutex, is_primary_task));
-        const auto code = process.get_exit_status();
-        is_success = code == 0;
-        std::cout.flush();
-        std::cerr.flush();
-        if (!is_success) {
-            failed_output.output = buffer.str();
-            if (!is_primary_task) {
-                std::cerr << failed_output.output;
-            }
+        moodycamel::BlockingConcurrentQueue<task_event> queue;
+        exec = task_execution{task_id, nullptr, std::move(queue)};
+        exec->process = std::make_unique<TinyProcessLib::Process>(
+            task_to_exec.command,
+            "",
+            write_to(exec->event_queue, task_event_type_stdout),
+            write_to(exec->event_queue, task_event_type_stderr));
+    }
+}
+
+static void process_task_execution_output(std::optional<task_execution>& exec, const std::vector<task>& tasks, const std::queue<size_t>& tasks_to_exec,
+                                         task_output& failed_output) {
+    if (!exec) return;
+    const auto is_primary_task = tasks_to_exec.empty();
+    const auto& executing_task = tasks[exec->task_id];
+    failed_output = {};
+    if (is_primary_task) {
+        std::cout << TERM_COLOR_MAGENTA << "Running \"" << executing_task.name << "\"" << TERM_COLOR_RESET << std::endl;
+    } else {
+        std::cout << TERM_COLOR_BLUE << "Running \"" << executing_task.name << "\"..." << TERM_COLOR_RESET << std::endl;
+    }
+    task_event event;
+    std::stringstream output;
+    while (true) {
+        exec->event_queue.wait_dequeue(event);
+        if (event.type == task_event_type_exit) {
+            break;
         }
-        if (is_primary_task || !is_success) {
-            if (is_success) {
-                std::cout << TERM_COLOR_MAGENTA << "'" << task_to_exec.name << "' complete: ";
+        output << event.data;
+        if (is_primary_task) {
+            if (event.type == task_event_type_stdout) {
+                std::cout << event.data;
             } else {
-                std::cout << TERM_COLOR_RED << "'" << task_to_exec.name << "' failed: ";
+                std::cerr << event.data;
             }
-            std::cout << "return code: " << code << TERM_COLOR_RESET << std::endl;
         }
     }
+    const auto code = exec->process->get_exit_status();
+    const auto is_success = code == 0;
+    std::cout.flush();
+    std::cerr.flush();
     if (!is_success) {
-        to_exec = {};
+        failed_output.output = output.str();
+        if (!is_primary_task) {
+            std::cerr << failed_output.output;
+        }
+    }
+    if (is_primary_task || !is_success) {
+        if (is_success) {
+            std::cout << TERM_COLOR_MAGENTA << "'" << executing_task.name << "' complete: ";
+        } else {
+            std::cout << TERM_COLOR_RED << "'" << executing_task.name << "' failed: ";
+        }
+        std::cout << "return code: " << code << TERM_COLOR_RESET << std::endl;
+    }
+}
+
+static void clear_tasks_queue_on_execution_failure(std::queue<size_t>& tasks_to_exec, std::optional<task_execution>& last_task_exec) {
+    if (last_task_exec && last_task_exec->process->get_exit_status() != 0) {
+        tasks_to_exec = {};
     }
 }
 
@@ -461,13 +515,16 @@ int main(int argc, const char** argv) {
     read_user_command_from_env(cmd);
     prompt_user_to_ask_for_help();
     display_list_of_tasks(tasks);
+    std::signal(SIGCHLD, notify_task_execution_about_child_process_exit);
     while (true) {
         read_user_command_from_stdin(cmd);
         schedule_task(tasks, pre_tasks, tasks_to_exec, cmd);
         open_file_link(last_failed_task_output, open_in_editor_command, cmd);
         display_help(USR_CMD_DEFS, cmd);
         while (!tasks_to_exec.empty()) {
-            execute_task(tasks, tasks_to_exec, executable, tasks_config_path, cmd, last_failed_task_output);
+            execute_task(tasks, tasks_to_exec, last_task_exec, executable, tasks_config_path, cmd);
+            process_task_execution_output(last_task_exec, tasks, tasks_to_exec, last_failed_task_output);
+            clear_tasks_queue_on_execution_failure(tasks_to_exec, last_task_exec);
             display_file_links_from_task_output(last_failed_task_output, open_in_editor_command);
         }
     }
