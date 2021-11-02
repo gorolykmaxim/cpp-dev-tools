@@ -359,6 +359,16 @@ static void notify_task_execution_about_child_process_exit(int signal) {
     }
 }
 
+static void terminate_active_task_or_exit(int signal) {
+    int exit_code;
+    if (last_task_exec && !last_task_exec->process->try_get_exit_status(exit_code)) {
+        last_task_exec->process->kill();
+    } else {
+        std::signal(signal, SIG_DFL);
+        std::raise(signal);
+    }
+}
+
 static std::function<void(const char*,size_t)> write_to(moodycamel::BlockingConcurrentQueue<task_event>& queue, task_event_type event_type) {
     return [&queue, event_type] (const char* data, size_t size) {
         task_event event;
@@ -512,6 +522,7 @@ int main(int argc, const char** argv) {
     prompt_user_to_ask_for_help();
     display_list_of_tasks(tasks);
     std::signal(SIGCHLD, notify_task_execution_about_child_process_exit);
+    std::signal(SIGINT, terminate_active_task_or_exit);
     while (true) {
         read_user_command_from_stdin(cmd);
         schedule_task(tasks, pre_tasks, tasks_to_exec, cmd);
