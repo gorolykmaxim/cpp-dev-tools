@@ -23,7 +23,7 @@ const auto TERM_COLOR_RESET = "\033[0m";
 
 const auto ENV_VAR_LAST_COMMAND = "LAST_COMMAND";
 
-const std::regex UNIX_FILE_LINK_REGEX("\n(\\/[^:]+:[0-9]+)");
+const std::regex UNIX_FILE_LINK_REGEX("^(\\/[^:]+:[0-9]+)");
 
 const std::string TEMPLATE_ARG_PLACEHOLDER = "{}";
 
@@ -72,7 +72,7 @@ struct task_execution
 
 struct task_output
 {
-    std::string output;
+    std::vector<std::string> output_lines;
     std::vector<std::string> file_links;
 };
 
@@ -409,14 +409,14 @@ static void clear_tasks_queue_on_execution_failure(std::queue<size_t>& tasks_to_
     }
 }
 
-static void display_file_links(const task_output& out) {
+static void display_output_with_file_links(const task_output& out) {
     if (out.file_links.empty()) {
         std::cout << TERM_COLOR_GREEN << "No file links in the output" << TERM_COLOR_RESET << std::endl;
     } else {
-        std::cout << TERM_COLOR_GREEN << "File links from the output:" << TERM_COLOR_RESET << std::endl;
-    }
-    for (auto i = 0; i < out.file_links.size(); i++) {
-        std::cout << i + 1 << ' ' << out.file_links[i] << std::endl;
+        std::cout << TERM_COLOR_GREEN << "Last task output:" << TERM_COLOR_RESET << std::endl;
+        for (const auto& line: out.output_lines) {
+            std::cout << line << std::endl;
+        }
     }
 }
 
@@ -424,6 +424,14 @@ static void display_task_completion(const char* color, const std::string& task_n
     const auto suffix = code == 0 ? "' complete: " : "' failed: ";
     std::cout << color << "'" << task_name << suffix;
     std::cout << "return code: " << code << TERM_COLOR_RESET << std::endl;
+}
+
+static void print_lines_if(bool condition, std::ostream& stream, const std::vector<std::string>& lines) {
+    if (condition) {
+        for (const auto& line: lines) {
+            stream << line << std::endl;
+        }
+    }
 }
 
 static void process_task_execution_output(std::optional<task_execution>& exec, const std::vector<task>& tasks, const std::queue<size_t>& tasks_to_exec,
@@ -438,38 +446,46 @@ static void process_task_execution_output(std::optional<task_execution>& exec, c
         std::cout << TERM_COLOR_BLUE << "Running \"" << executing_task.name << "\"..." << TERM_COLOR_RESET << std::endl;
     }
     task_event event;
-    std::stringstream output;
+    std::string stdout_line_buffer, stderr_line_buffer;
     while (true) {
         exec->event_queue.wait_dequeue(event);
         if (event.type == task_event_type_exit) {
             break;
         }
-        output << event.data;
-        if (is_primary_task) {
-            if (event.type == task_event_type_stdout) {
-                std::cout << event.data;
+        std::vector<std::string> lines;
+        std::string& line_buffer = event.type == task_event_type_stdout ? stdout_line_buffer : stderr_line_buffer;
+        std::ostream& stream = event.type == task_event_type_stdout ? std::cout : std::cerr;
+        // Read lines from received data
+        auto to_process = line_buffer + event.data;
+        std::stringstream buffer;
+        for (const auto c: to_process) {
+            if (c == '\n') {
+                lines.push_back(buffer.str());
+                buffer = std::stringstream();
             } else {
-                std::cerr << event.data;
+                buffer << c;
             }
         }
+        line_buffer = buffer.str();
+        // Find and highlight file links in the output lines
+        for (auto& line: lines) {
+            std::smatch link_match;
+            if (std::regex_search(line, link_match, UNIX_FILE_LINK_REGEX)) {
+                std::stringstream highlighted_line;
+                failed_output.file_links.push_back(link_match[1]);
+                highlighted_line << TERM_COLOR_MAGENTA << '[' << OPEN.cmd << failed_output.file_links.size() << "] " << link_match[1] << TERM_COLOR_RESET << link_match.suffix();
+                line = highlighted_line.str();
+            }
+        }
+        print_lines_if(is_primary_task, stream, lines);
+        failed_output.output_lines.insert(failed_output.output_lines.end(), lines.begin(), lines.end());
     }
     const auto code = exec->process->get_exit_status();
     std::cout.flush();
     std::cerr.flush();
     if (code != 0) {
-        failed_output.output = output.str();
-        std::sregex_iterator start(failed_output.output.begin(), failed_output.output.end(), UNIX_FILE_LINK_REGEX);
-        std::sregex_iterator end;
-        std::set<std::string> links;
-        for (auto it = start; it != end; it++) {
-            links.insert((*it)[1].str());
-        }
-        failed_output.file_links = std::vector<std::string>(links.begin(), links.end());
-        if (!is_primary_task) {
-            std::cerr << failed_output.output;
-        }
+        print_lines_if(!is_primary_task, std::cerr, failed_output.output_lines);
         display_task_completion(TERM_COLOR_RED, executing_task.name, code);
-        display_file_links(failed_output);
     } else if (is_primary_task) {
         display_task_completion(TERM_COLOR_MAGENTA, executing_task.name, code);
     }
@@ -478,7 +494,7 @@ static void process_task_execution_output(std::optional<task_execution>& exec, c
 static void open_file_link(task_output& out, const template_string& open_in_editor_cmd, user_command& cmd) {
     if (!accept_usr_cmd(OPEN, cmd)) return;
     if (cmd.arg <= 0 || cmd.arg > out.file_links.size()) {
-        display_file_links(out);
+        display_output_with_file_links(out);
         return;
     }
     const auto& link = out.file_links[cmd.arg - 1];
