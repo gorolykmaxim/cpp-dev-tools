@@ -21,10 +21,10 @@ const auto TERM_COLOR_BLUE = "\033[34m";
 const auto TERM_COLOR_MAGENTA = "\033[35m";
 const auto TERM_COLOR_RESET = "\033[0m";
 
+const auto USER_CONFIG_PATH = std::filesystem::path(getenv("HOME")) / ".cpp-dev-tools.json";
+const auto OPEN_IN_EDITOR_COMMAND_PROPERTY = "open_in_editor_command";
 const auto ENV_VAR_LAST_COMMAND = "LAST_COMMAND";
-
 const std::regex UNIX_FILE_LINK_REGEX("^(\\/[^:]+:[0-9]+)");
-
 const std::string TEMPLATE_ARG_PLACEHOLDER = "{}";
 
 template <typename T>
@@ -185,13 +185,12 @@ static void append_config_errors(const std::filesystem::path& config_path, const
 }
 
 static void read_user_config(template_string& open_in_editor_command, std::vector<std::string>& errors) {
-    const auto config_path = std::filesystem::path(getenv("HOME")) / ".cpp-dev-tools.json";
     nlohmann::json config_json;
-    if (!parse_json_file(config_path, false, config_json, errors)) {
+    if (!parse_json_file(USER_CONFIG_PATH, false, config_json, errors)) {
         return;
     }
     std::vector<std::string> config_errors;
-    read_property(config_json, "open_in_editor_command", open_in_editor_command.str, true, "", "must be a string in format: 'notepad++ {}', where {} will be replaced with a file name", config_errors, [&open_in_editor_command] () {
+    read_property(config_json, OPEN_IN_EDITOR_COMMAND_PROPERTY, open_in_editor_command.str, true, "", "must be a string in format: 'notepad++ {}', where {} will be replaced with a file name", config_errors, [&open_in_editor_command] () {
         const auto pos = open_in_editor_command.str.find(TEMPLATE_ARG_PLACEHOLDER);
         if (pos == std::string::npos) {
             return false;
@@ -200,7 +199,7 @@ static void read_user_config(template_string& open_in_editor_command, std::vecto
             return true;
         }
     });
-    append_config_errors(config_path, config_errors, errors);
+    append_config_errors(USER_CONFIG_PATH, config_errors, errors);
 }
 
 static void read_tasks_config(const std::filesystem::path& config_path, std::vector<task>& tasks, std::vector<std::vector<size_t>>& effective_pre_tasks,
@@ -435,7 +434,7 @@ static void print_lines_if(bool condition, std::ostream& stream, const std::vect
 }
 
 static void process_task_execution_output(std::optional<task_execution>& exec, const std::vector<task>& tasks, const std::queue<size_t>& tasks_to_exec,
-                                         task_output& failed_output) {
+                                         task_output& failed_output, template_string& open_in_editor_cmd) {
     if (!exec) return;
     const auto is_primary_task = tasks_to_exec.empty();
     const auto& executing_task = tasks[exec->task_id];
@@ -468,13 +467,15 @@ static void process_task_execution_output(std::optional<task_execution>& exec, c
         }
         line_buffer = buffer.str();
         // Find and highlight file links in the output lines
-        for (auto& line: lines) {
-            std::smatch link_match;
-            if (std::regex_search(line, link_match, UNIX_FILE_LINK_REGEX)) {
-                std::stringstream highlighted_line;
-                failed_output.file_links.push_back(link_match[1]);
-                highlighted_line << TERM_COLOR_MAGENTA << '[' << OPEN.cmd << failed_output.file_links.size() << "] " << link_match[1] << TERM_COLOR_RESET << link_match.suffix();
-                line = highlighted_line.str();
+        if (!open_in_editor_cmd.str.empty()) {
+            for (auto& line: lines) {
+                std::smatch link_match;
+                if (std::regex_search(line, link_match, UNIX_FILE_LINK_REGEX)) {
+                    std::stringstream highlighted_line;
+                    failed_output.file_links.push_back(link_match[1]);
+                    highlighted_line << TERM_COLOR_MAGENTA << '[' << OPEN.cmd << failed_output.file_links.size() << "] " << link_match[1] << TERM_COLOR_RESET << link_match.suffix();
+                    line = highlighted_line.str();
+                }
             }
         }
         print_lines_if(is_primary_task, stream, lines);
@@ -493,14 +494,16 @@ static void process_task_execution_output(std::optional<task_execution>& exec, c
 
 static void open_file_link(task_output& out, const template_string& open_in_editor_cmd, user_command& cmd) {
     if (!accept_usr_cmd(OPEN, cmd)) return;
-    if (cmd.arg <= 0 || cmd.arg > out.file_links.size()) {
+    if (open_in_editor_cmd.str.empty()) {
+        std::cout << TERM_COLOR_RED << '\'' << OPEN_IN_EDITOR_COMMAND_PROPERTY << "' is not specified in " << USER_CONFIG_PATH << TERM_COLOR_RESET << std::endl;
+    } else if (cmd.arg <= 0 || cmd.arg > out.file_links.size()) {
         display_output_with_file_links(out);
-        return;
+    } else {
+        const auto& link = out.file_links[cmd.arg - 1];
+        std::string open_cmd = open_in_editor_cmd.str;
+        open_cmd.replace(open_in_editor_cmd.arg_pos, TEMPLATE_ARG_PLACEHOLDER.size(), link);
+        TinyProcessLib::Process p(open_cmd);
     }
-    const auto& link = out.file_links[cmd.arg - 1];
-    std::string open_cmd = open_in_editor_cmd.str;
-    open_cmd.replace(open_in_editor_cmd.arg_pos, TEMPLATE_ARG_PLACEHOLDER.size(), link);
-    TinyProcessLib::Process p(open_cmd);
 }
 
 static void prompt_user_to_ask_for_help() {
@@ -546,7 +549,7 @@ int main(int argc, const char** argv) {
         display_help(USR_CMD_DEFS, cmd);
         while (!tasks_to_exec.empty()) {
             execute_task(tasks, tasks_to_exec, last_task_exec, executable, tasks_config_path, cmd);
-            process_task_execution_output(last_task_exec, tasks, tasks_to_exec, last_failed_task_output);
+            process_task_execution_output(last_task_exec, tasks, tasks_to_exec, last_failed_task_output, open_in_editor_command);
             clear_tasks_queue_on_execution_failure(tasks_to_exec, last_task_exec);
         }
     }
