@@ -102,7 +102,7 @@ const auto HELP = push_back_and_return(USR_CMD_DEFS, {"h", "", "Display list of 
 std::optional<task_execution> last_task_exec;
 
 static bool accept_usr_cmd(const user_command_definition& def, user_command& cmd) {
-    if (def.cmd == cmd.cmd) {
+    if (!cmd.executed && def.cmd == cmd.cmd) {
         cmd.executed = true;
         return true;
     } else {
@@ -323,14 +323,21 @@ static user_command parse_user_command(const std::string& str) {
     return cmd;
 }
 
-static void read_user_command_from_stdin(user_command& cmd) {
+static bool is_active_execution(const std::optional<task_execution>& exec) {
+    return exec && !exec->is_finished;
+}
+
+static void read_user_command_from_stdin(user_command& cmd, const std::queue<size_t>& tasks_to_exec,
+                                         const std::optional<task_execution>& exec) {
+    if (!tasks_to_exec.empty() || is_active_execution(exec)) return;
     std::cout << TERM_COLOR_GREEN << "(cdt) " << TERM_COLOR_RESET;
     std::string input;
     std::getline(std::cin, input);
     if (input.empty()) {
-        return;
+        cmd.executed = false;
+    } else {
+        cmd = parse_user_command(input);
     }
-    cmd = parse_user_command(input);
 }
 
 static void read_user_command_from_env(user_command& cmd) {
@@ -361,10 +368,6 @@ static void schedule_task(const std::vector<task>& tasks, const std::vector<std:
     }
 }
 
-static bool is_active_execution(const std::optional<task_execution>& exec) {
-    return exec && !exec->is_finished;
-}
-
 static void notify_task_execution_about_child_process_exit(int signal) {
     if (last_task_exec) {
         task_event exit_event{};
@@ -393,7 +396,7 @@ static std::function<void(const char*,size_t)> write_to(moodycamel::BlockingConc
 
 static void execute_task(const std::vector<task>& tasks, std::queue<size_t>& to_exec, std::optional<task_execution>& exec,
                          task_output& out, const char* executable, const std::filesystem::path& tasks_config_path, const user_command& cmd) {
-    if (is_active_execution(exec)) return;
+    if (to_exec.empty() || is_active_execution(exec)) return;
     const auto task_id = to_exec.front();
     const auto& task_to_exec = tasks[task_id];
     to_exec.pop();
@@ -528,6 +531,7 @@ static void prompt_user_to_ask_for_help() {
 
 static void display_help(const std::vector<user_command_definition>& defs, user_command& cmd) {
     if (cmd.executed) return;
+    cmd.executed = true;
     std::cout << TERM_COLOR_GREEN << "User commands:" << TERM_COLOR_RESET << std::endl;
     for (const auto& def: defs) {
         std::cout << def.cmd;
@@ -559,16 +563,14 @@ int main(int argc, const char** argv) {
     std::signal(SIGCHLD, notify_task_execution_about_child_process_exit);
     std::signal(SIGINT, terminate_active_task_or_exit);
     while (true) {
-        read_user_command_from_stdin(cmd);
+        read_user_command_from_stdin(cmd, tasks_to_exec, last_task_exec);
         schedule_task(tasks, pre_tasks, tasks_to_exec, cmd);
         open_file_link(last_task_output, open_in_editor_command, cmd);
         display_help(USR_CMD_DEFS, cmd);
-        while (!tasks_to_exec.empty() || is_active_execution(last_task_exec)) {
-            execute_task(tasks, tasks_to_exec, last_task_exec, last_task_output, executable, tasks_config_path, cmd);
-            process_task_event(last_task_exec, last_task_output);
-            find_and_highlight_file_links(last_task_output, open_in_editor_command);
-            print_task_output(last_task_exec, last_task_output, tasks);
-            cleanup_execution_on_finish(last_task_exec, tasks_to_exec);
-        }
+        execute_task(tasks, tasks_to_exec, last_task_exec, last_task_output, executable, tasks_config_path, cmd);
+        process_task_event(last_task_exec, last_task_output);
+        find_and_highlight_file_links(last_task_output, open_in_editor_command);
+        print_task_output(last_task_exec, last_task_output, tasks);
+        cleanup_execution_on_finish(last_task_exec, tasks_to_exec);
     }
 }
