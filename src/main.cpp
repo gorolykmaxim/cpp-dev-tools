@@ -24,7 +24,7 @@ const auto TERM_COLOR_RESET = "\033[0m";
 const auto USER_CONFIG_PATH = std::filesystem::path(getenv("HOME")) / ".cpp-dev-tools.json";
 const auto OPEN_IN_EDITOR_COMMAND_PROPERTY = "open_in_editor_command";
 const auto ENV_VAR_LAST_COMMAND = "LAST_COMMAND";
-const std::regex UNIX_FILE_LINK_REGEX("^(\\/[^:]+:[0-9]+)");
+const std::regex UNIX_FILE_LINK_REGEX("^(\\/[^:]+:[0-9]+(:[0-9]+)?)");
 const std::string TEMPLATE_ARG_PLACEHOLDER = "{}";
 
 template <typename T>
