@@ -1,6 +1,10 @@
+#include <cstddef>
 #include <iostream>
 #include <fstream>
+#include <optional>
+#include <ostream>
 #include <sstream>
+#include <string>
 #include <unistd.h>
 #include <cstring>
 #include <cstdlib>
@@ -11,6 +15,7 @@
 #include <set>
 #include <queue>
 #include <csignal>
+#include <vector>
 #include "process.hpp"
 #include "json.hpp"
 #include "blockingconcurrentqueue.h"
@@ -66,21 +71,17 @@ struct task_event
 struct task_execution
 {
     size_t task_id;
+    bool is_primary_task = false;
     bool is_finished = false;
     std::unique_ptr<TinyProcessLib::Process> process;
     std::unique_ptr<moodycamel::BlockingConcurrentQueue<task_event>> event_queue;
-};
-
-enum task_output_type
-{
-    task_output_type_stream, task_output_type_print_on_error
+    std::string stdout_line_buffer;
+    std::string stderr_line_buffer;
+    std::vector<std::string> output_lines;
 };
 
 struct task_output
 {
-    task_output_type output_type;
-    std::string stdout_line_buffer;
-    std::string stderr_line_buffer;
     std::vector<std::string> output_lines;
     size_t lines_processed = 0;
     std::vector<std::string> file_links;
@@ -415,13 +416,14 @@ static void execute_task(const std::vector<task>& tasks, std::queue<size_t>& to_
         std::cout << TERM_COLOR_RED << "Failed to restart: " << std::strerror(errno) << TERM_COLOR_RESET << std::endl;
     } else {
         exec = task_execution{task_id};
+        exec->is_primary_task = is_primary_task;
         exec->event_queue = std::make_unique<moodycamel::BlockingConcurrentQueue<task_event>>();
         exec->process = std::make_unique<TinyProcessLib::Process>(
             task_to_exec.command,
             "",
             write_to(*exec->event_queue, task_event_type_stdout),
             write_to(*exec->event_queue, task_event_type_stderr));
-        out = task_output{is_primary_task ? task_output_type_stream : task_output_type_print_on_error};
+        out = task_output{};
     }
 }
 
@@ -436,19 +438,19 @@ static void display_output_with_file_links(const task_output& out) {
     }
 }
 
-static void process_task_event(std::optional<task_execution>& exec, task_output& out) {
+static void process_task_event(std::optional<task_execution>& exec) {
     if (!is_active_execution(exec)) return;
     task_event event;
     exec->event_queue->wait_dequeue(event);
     if (event.type == task_event_type_exit) {
         exec->is_finished = true;
     } else {
-        auto& line_buffer = event.type == task_event_type_stdout ? out.stdout_line_buffer : out.stderr_line_buffer;
+        auto& line_buffer = event.type == task_event_type_stdout ? exec->stdout_line_buffer : exec->stderr_line_buffer;
         auto to_process = line_buffer + event.data;
         std::stringstream tmp_buffer;
         for (const auto c: to_process) {
             if (c == '\n') {
-                out.output_lines.push_back(tmp_buffer.str());
+                exec->output_lines.push_back(tmp_buffer.str());
                 tmp_buffer = std::stringstream();
             } else {
                 tmp_buffer << c;
@@ -456,6 +458,12 @@ static void process_task_event(std::optional<task_execution>& exec, task_output&
         }
         line_buffer = tmp_buffer.str();
     }
+}
+
+static void stream_primary_task_output(std::optional<task_execution>& exec, task_output& out) {
+    if (!is_active_execution(exec) || !exec->is_primary_task) return;
+    out.output_lines.insert(out.output_lines.end(), exec->output_lines.begin(), exec->output_lines.end());
+    exec->output_lines.clear();
 }
 
 static void find_and_highlight_file_links(task_output& out, template_string& open_in_editor_cmd) {
@@ -472,41 +480,32 @@ static void find_and_highlight_file_links(task_output& out, template_string& ope
     }
 }
 
-static void display_task_completion(const char* color, const std::string& task_name, int code) {
-    const auto suffix = code == 0 ? "' complete: " : "' failed: ";
-    std::cout << color << "'" << task_name << suffix;
-    std::cout << "return code: " << code << TERM_COLOR_RESET << std::endl;
-}
-
-static void print_lines_if(task_output& out, task_output_type type, size_t start_from_line = 0) {
-    if (out.output_type == type) {
-        for (auto i = start_from_line; i < out.output_lines.size(); i++) {
-            std::cout << out.output_lines[i] << std::endl;
-        }
+static void print_task_output(task_output& out) {
+    for (auto i = out.lines_processed; i < out.output_lines.size(); i++) {
+        std::cout << out.output_lines[i] << std::endl;
     }
-}
-
-static void print_task_output(std::optional<task_execution>& exec, task_output& out, const std::vector<task>& tasks) {
-    print_lines_if(out, task_output_type_stream, out.lines_processed);
     out.lines_processed = out.output_lines.size();
-    if (exec && exec->is_finished) {
-        const auto& task_name = tasks[exec->task_id].name;
-        const auto code = exec->process->get_exit_status();
-        std::cout.flush();
-        std::cerr.flush();
-        if (code != 0) {
-            print_lines_if(out, task_output_type_print_on_error);
-            display_task_completion(TERM_COLOR_RED, task_name, code);
-        } else if (out.output_type == task_output_type_stream) {
-            display_task_completion(TERM_COLOR_MAGENTA, task_name, code);
-        }
-    }
 }
 
-static void cleanup_execution_on_finish(std::optional<task_execution>& exec, std::queue<size_t>& tasks_to_exec) {
+static void display_task_completion(task_output& out, const std::string& color, const std::string& task_name, const std::string& status,
+                                    int code) {
+    out.output_lines.push_back(color + '\'' + task_name + "' " + status + ": return code: " + std::to_string(code) + TERM_COLOR_RESET);
+}
+
+static void finish_task_execution(std::optional<task_execution>& exec, task_output& out, const std::vector<task>& tasks,
+                                  std::queue<size_t>& tasks_to_exec) {
     if (!exec || !exec->is_finished) return;
-    if (exec->process->get_exit_status() != 0) {
+    const auto code = exec->process->get_exit_status();
+    const auto& task_name = tasks[exec->task_id].name;
+    if (code != 0) {
         tasks_to_exec = {};
+        if (!exec->is_primary_task) {
+            out.output_lines.insert(out.output_lines.end(), exec->output_lines.begin(), exec->output_lines.end());
+            exec->output_lines.clear();
+        }
+        display_task_completion(out, TERM_COLOR_RED, task_name, "failed", code);
+    } else if (exec->is_primary_task) {
+        display_task_completion(out, TERM_COLOR_MAGENTA, task_name, "complete", code);
     }
     exec = std::optional<task_execution>();
 }
@@ -568,9 +567,10 @@ int main(int argc, const char** argv) {
         open_file_link(last_task_output, open_in_editor_command, cmd);
         display_help(USR_CMD_DEFS, cmd);
         execute_task(tasks, tasks_to_exec, last_task_exec, last_task_output, executable, tasks_config_path, cmd);
-        process_task_event(last_task_exec, last_task_output);
+        process_task_event(last_task_exec);
+        stream_primary_task_output(last_task_exec, last_task_output);
+        finish_task_execution(last_task_exec, last_task_output, tasks, tasks_to_exec);
         find_and_highlight_file_links(last_task_output, open_in_editor_command);
-        print_task_output(last_task_exec, last_task_output, tasks);
-        cleanup_execution_on_finish(last_task_exec, tasks_to_exec);
+        print_task_output(last_task_output);
     }
 }
