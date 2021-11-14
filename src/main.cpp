@@ -74,7 +74,7 @@ struct task_execution
     bool is_primary_task = false;
     bool is_finished = false;
     std::unique_ptr<TinyProcessLib::Process> process;
-    std::unique_ptr<moodycamel::BlockingConcurrentQueue<task_event>> event_queue;
+    std::unique_ptr<moodycamel::BlockingConcurrentQueue<task_event>> event_queue = std::make_unique<moodycamel::BlockingConcurrentQueue<task_event>>();
     std::string stdout_line_buffer;
     std::string stderr_line_buffer;
     std::vector<std::string> output_lines;
@@ -386,6 +386,33 @@ static void terminate_active_task_or_exit(int signal) {
     }
 }
 
+static void dequeue_task_to_execute(std::queue<size_t>& tasks_to_exec, std::optional<size_t>& task_to_exec, task_output& out,
+                         const std::optional<task_execution>& exec, const std::vector<task>& tasks) {
+    if (tasks_to_exec.empty() || is_active_execution(exec)) return;
+    task_to_exec = tasks_to_exec.front();
+    tasks_to_exec.pop();
+    out = task_output{};
+    const auto is_primary_task = tasks_to_exec.empty();
+    const auto& task_name = tasks[*task_to_exec].name;
+    if (is_primary_task) {
+        std::cout << TERM_COLOR_MAGENTA << "Running \"" << task_name << "\"" << TERM_COLOR_RESET << std::endl;
+    } else {
+        std::cout << TERM_COLOR_BLUE << "Running \"" << task_name << "\"..." << TERM_COLOR_RESET << std::endl;
+    }
+}
+
+static void execute_restart_task(std::optional<size_t>& to_exec, const std::vector<task>& tasks, const char* executable,
+                                 const std::filesystem::path& tasks_config_path, const user_command& cmd) {
+    if (!to_exec || tasks[*to_exec].command != "__restart") return;
+    to_exec = std::optional<size_t>();
+    std::cout << TERM_COLOR_MAGENTA << "Restarting program..." << TERM_COLOR_RESET << std::endl;
+    const auto cmd_str = cmd.cmd + std::to_string(cmd.arg);
+    setenv(ENV_VAR_LAST_COMMAND, cmd_str.c_str(), true);
+    std::vector<const char*> argv = {executable, tasks_config_path.c_str(), nullptr};
+    execvp(argv[0], const_cast<char* const*>(argv.data()));
+    std::cout << TERM_COLOR_RED << "Failed to restart: " << std::strerror(errno) << TERM_COLOR_RESET << std::endl;
+}
+
 static std::function<void(const char*,size_t)> write_to(moodycamel::BlockingConcurrentQueue<task_event>& queue, task_event_type event_type) {
     return [&queue, event_type] (const char* data, size_t size) {
         task_event event;
@@ -395,36 +422,17 @@ static std::function<void(const char*,size_t)> write_to(moodycamel::BlockingConc
     };
 }
 
-static void execute_task(const std::vector<task>& tasks, std::queue<size_t>& to_exec, std::optional<task_execution>& exec,
-                         task_output& out, const char* executable, const std::filesystem::path& tasks_config_path, const user_command& cmd) {
-    if (to_exec.empty() || is_active_execution(exec)) return;
-    const auto task_id = to_exec.front();
-    const auto& task_to_exec = tasks[task_id];
-    to_exec.pop();
-    const auto is_primary_task = to_exec.empty();
-    if (is_primary_task) {
-        std::cout << TERM_COLOR_MAGENTA << "Running \"" << task_to_exec.name << "\"" << TERM_COLOR_RESET << std::endl;
-    } else {
-        std::cout << TERM_COLOR_BLUE << "Running \"" << task_to_exec.name << "\"..." << TERM_COLOR_RESET << std::endl;
-    }
-    if (task_to_exec.command == "__restart") {
-        std::cout << TERM_COLOR_MAGENTA << "Restarting program..." << TERM_COLOR_RESET << std::endl;
-        const auto cmd_str = cmd.cmd + std::to_string(cmd.arg);
-        setenv(ENV_VAR_LAST_COMMAND, cmd_str.c_str(), true);
-        std::vector<const char*> argv = {executable, tasks_config_path.c_str(), nullptr};
-        execvp(argv[0], const_cast<char* const*>(argv.data()));
-        std::cout << TERM_COLOR_RED << "Failed to restart: " << std::strerror(errno) << TERM_COLOR_RESET << std::endl;
-    } else {
-        exec = task_execution{task_id};
-        exec->is_primary_task = is_primary_task;
-        exec->event_queue = std::make_unique<moodycamel::BlockingConcurrentQueue<task_event>>();
-        exec->process = std::make_unique<TinyProcessLib::Process>(
-            task_to_exec.command,
-            "",
-            write_to(*exec->event_queue, task_event_type_stdout),
-            write_to(*exec->event_queue, task_event_type_stderr));
-        out = task_output{};
-    }
+static void execute_task(std::optional<size_t>& to_exec, const std::vector<task>& tasks, std::optional<task_execution>& exec,
+                         const std::queue<size_t>& tasks_to_exec) {
+    if (!to_exec) return;
+    exec = task_execution{*to_exec};
+    exec->is_primary_task = tasks_to_exec.empty();
+    exec->process = std::make_unique<TinyProcessLib::Process>(
+        tasks[*to_exec].command,
+        "",
+        write_to(*exec->event_queue, task_event_type_stdout),
+        write_to(*exec->event_queue, task_event_type_stderr));
+    to_exec = std::optional<size_t>();
 }
 
 static void display_output_with_file_links(const task_output& out) {
@@ -546,6 +554,7 @@ int main(int argc, const char** argv) {
     std::vector<task> tasks;
     std::vector<std::vector<size_t>> pre_tasks;
     std::queue<size_t> tasks_to_exec;
+    std::optional<size_t> task_to_exec;
     user_command cmd;
     task_output last_task_output;
     auto executable = argv[0];
@@ -566,7 +575,9 @@ int main(int argc, const char** argv) {
         schedule_task(tasks, pre_tasks, tasks_to_exec, cmd);
         open_file_link(last_task_output, open_in_editor_command, cmd);
         display_help(USR_CMD_DEFS, cmd);
-        execute_task(tasks, tasks_to_exec, last_task_exec, last_task_output, executable, tasks_config_path, cmd);
+        dequeue_task_to_execute(tasks_to_exec, task_to_exec, last_task_output, last_task_exec, tasks);
+        execute_restart_task(task_to_exec, tasks, executable, tasks_config_path, cmd);
+        execute_task(task_to_exec, tasks, last_task_exec, tasks_to_exec);
         process_task_event(last_task_exec);
         stream_primary_task_output(last_task_exec, last_task_output);
         finish_task_execution(last_task_exec, last_task_output, tasks, tasks_to_exec);
