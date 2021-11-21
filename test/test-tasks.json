@@ -1,0 +1,5 @@
+{
+    "cdt_tasks": [
+        {"name": "hello world", "command": "echo hello world"}
+    ]
+}

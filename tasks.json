@@ -2,8 +2,7 @@
     "cdt_tasks": [
         {
             "name": "build",
-            "command": "cmake --build build --target cpp-dev-tools",
-            "pre_tasks": ["world"]
+            "command": "cmake --build build --target cpp-dev-tools"
         },
         {
             "name": "run",
@@ -11,22 +10,13 @@
             "pre_tasks": ["build"]
         },
         {
-            "name": "delete executable",
-            "command": "rm -f ./build/cpp-dev-tools"
+            "name": "build tests",
+            "command": "cmake --build build --target cpp-dev-tools-test"
         },
         {
-            "name": "fail to run",
-            "command": "__restart",
-            "pre_tasks": ["build", "delete executable"]
-        },
-        {
-            "name": "hello",
-            "command": "echo Hello"
-        },
-        {
-            "name": "world",
-            "command": "echo World!",
-            "pre_tasks": ["hello"]
+            "name": "run tests",
+            "command": "./build/cpp-dev-tools-test",
+            "pre_tasks": ["build tests"]
         }
     ]
 }
