@@ -1,0 +1,10 @@
+{
+    "cdt_tasks": [
+        {"command": "command"},
+        {"name": "name", "pre_tasks": true},
+        {"name": "name 2", "command": "command", "pre_tasks": ["non-existent-task"]},
+        {"name": "cycle-1", "command": "command", "pre_tasks": ["cycle-2"]},
+        {"name": "cycle-2", "command": "command", "pre_tasks": ["cycle-3"]},
+        {"name": "cycle-3", "command": "command", "pre_tasks": ["cycle-1"]}
+    ]
+}

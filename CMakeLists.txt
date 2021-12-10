@@ -14,11 +14,11 @@ target_link_libraries(${PROJECT_NAME} tiny-process-library nlohmann_json cameron
 
 set(TEST_TARGET ${PROJECT_NAME}-test)
 add_executable(${TEST_TARGET} test/test.cpp)
-target_compile_definitions(${TEST_TARGET} PRIVATE "BINARY_DIR=\"${CMAKE_BINARY_DIR}\"" "BINARY_NAME=\"${PROJECT_NAME}\"")
+target_compile_definitions(${TEST_TARGET} PRIVATE
+    "BINARY_DIR=\"${CMAKE_BINARY_DIR}\""
+    "BINARY_NAME=\"${PROJECT_NAME}\""
+    "TEST_CONFIGS_DIR=\"${CMAKE_CURRENT_SOURCE_DIR}/test/test-configs\""
+    "TEST_HOMES_DIR=\"${CMAKE_CURRENT_SOURCE_DIR}/test/test-homes\"")
 add_dependencies(${TEST_TARGET} ${PROJECT_NAME})
 target_include_directories(${TEST_TARGET} PUBLIC lib/tiny-process-library PUBLIC lib/cameron314_concurrentqueue)
 target_link_libraries(${TEST_TARGET} gtest tiny-process-library cameron314_concurrentqueue gtest_main)
-add_custom_command(TARGET ${TEST_TARGET} POST_BUILD
-                   COMMAND ${CMAKE_COMMAND} -E copy
-                   ${CMAKE_CURRENT_SOURCE_DIR}/test/test-tasks.json
-                   ${CMAKE_CURRENT_BINARY_DIR}/test-tasks.json)
