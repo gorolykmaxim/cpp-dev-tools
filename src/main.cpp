@@ -452,8 +452,20 @@ static void process_task_event(std::optional<task_execution>& exec) {
     task_event event;
     exec->event_queue->wait_dequeue(event);
     if (event.type == task_event_type_exit) {
-        exec->is_finished = true;
-    } else {
+        // We might get "exit" event before receiving last stdout/stderr event.
+        // Re-queue the "exit" event back and process last stdout/stderr event first.
+        if (exec->event_queue->size_approx() > 0) {
+            const auto exit_event = event;
+            // Read "out" event before queing "exit" back or we will hang!!!
+            // In the opposite order, event_queue will read just-placed "exit" event
+            // instead of "out" event.
+            exec->event_queue->wait_dequeue(event);
+            exec->event_queue->enqueue(exit_event);
+        } else {
+            exec->is_finished = true;
+        }
+    }
+    if (event.type != task_event_type_exit) {
         auto& line_buffer = event.type == task_event_type_stdout ? exec->stdout_line_buffer : exec->stderr_line_buffer;
         auto to_process = line_buffer + event.data;
         std::stringstream tmp_buffer;
