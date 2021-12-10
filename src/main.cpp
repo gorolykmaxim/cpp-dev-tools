@@ -296,12 +296,13 @@ static void read_tasks_config(const std::filesystem::path& config_path, std::vec
 }
 
 static bool print_errors(std::vector<std::string>& errors) {
+    if (errors.empty()) return false;
     std::cerr << TERM_COLOR_RED;
     for (const auto& e: errors) {
         std::cerr << e << std::endl;
     }
     std::cerr << TERM_COLOR_RESET;
-    return !errors.empty();
+    return true;
 }
 
 static user_command parse_user_command(const std::string& str) {
