@@ -26,12 +26,14 @@ static std::function<void(const char*, size_t)> write_to(moodycamel::BlockingCon
                 line << c;
             }
         }
+        line_buffer = line.str();
     };
 }
 
 struct cdt_test: public testing::Test {
 protected:
     const std::string HELP_PROMPT_MSG = "Type \x1B[32mh\x1B[0m to see list of all the user commands.";
+    const std::string CDT_PREFIX = "\x1B[32m(cdt) \x1B[0m";
     const std::filesystem::path cwd = std::filesystem::path(BINARY_DIR);
     const std::filesystem::path test_configs_dir = std::filesystem::path(TEST_CONFIGS_DIR);
     const std::filesystem::path test_homes_dir = std::filesystem::path(TEST_HOMES_DIR);
@@ -71,6 +73,11 @@ protected:
     std::string get_out_line() {
         std::string msg;
         output.wait_dequeue(msg);
+        // Ignore "(cdt) " output when waiting for a command
+        const auto pos = msg.find(CDT_PREFIX);
+        if (pos != std::string::npos) {
+            msg = msg.substr(pos + CDT_PREFIX.size());
+        }
         return msg;
     }
 };
