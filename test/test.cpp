@@ -32,7 +32,6 @@ static std::function<void(const char*, size_t)> write_to(moodycamel::BlockingCon
 
 struct cdt_test: public testing::Test {
 protected:
-    const std::string HELP_PROMPT_MSG = "Type \x1B[32mh\x1B[0m to see list of all the user commands.";
     const std::string CDT_PREFIX = "\x1B[32m(cdt) \x1B[0m";
     const std::filesystem::path cwd = std::filesystem::path(BINARY_DIR);
     const std::filesystem::path test_configs_dir = std::filesystem::path(TEST_CONFIGS_DIR);
@@ -82,6 +81,8 @@ protected:
     }
 };
 
+#define ASSERT_HELP_PROMPT_DISPLAYED() ASSERT_EQ("Type \x1B[32mh\x1B[0m to see list of all the user commands.", get_out_line())
+
 #define ASSERT_TASK_LIST_DISPLAYED()\
     ASSERT_EQ("\x1B[32mTasks:\x1B[0m", get_out_line());\
     ASSERT_EQ("1 \"hello world\"", get_out_line())
@@ -94,7 +95,7 @@ protected:
 
 TEST_F(cdt_test, start_and_view_tasks) {
     run_cdt("test-tasks.json", "no-config");
-    ASSERT_EQ(HELP_PROMPT_MSG, get_out_line());
+    ASSERT_HELP_PROMPT_DISPLAYED();
     ASSERT_TASK_LIST_DISPLAYED();
 }
 
@@ -157,7 +158,7 @@ TEST_F(cdt_test, fail_to_start_due_to_tasks_config_having_errors) {
 
 TEST_F(cdt_test, start_and_display_help) {
     run_cdt("test-tasks.json", "no-config");
-    ASSERT_EQ(HELP_PROMPT_MSG, get_out_line());
+    ASSERT_HELP_PROMPT_DISPLAYED();
     ASSERT_TASK_LIST_DISPLAYED();
     // Display help on unknown command
     run_cmd("zz");
@@ -169,7 +170,7 @@ TEST_F(cdt_test, start_and_display_help) {
 
 TEST_F(cdt_test, start_and_display_list_of_tasks_on_task_command) {
     run_cdt("test-tasks.json", "no-config");
-    ASSERT_EQ(HELP_PROMPT_MSG, get_out_line());
+    ASSERT_HELP_PROMPT_DISPLAYED();
     ASSERT_TASK_LIST_DISPLAYED();
     // Display tasks list on no index
     run_cmd("t");
