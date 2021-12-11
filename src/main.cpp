@@ -508,25 +508,23 @@ static void print_task_output(task_output& out) {
     out.lines_processed = out.output_lines.size();
 }
 
-static void display_task_completion(task_output& out, const std::string& color, const std::string& task_name, const std::string& status,
-                                    int code) {
-    out.output_lines.push_back(color + '\'' + task_name + "' " + status + ": return code: " + std::to_string(code) + TERM_COLOR_RESET);
+static void stream_pre_task_output_on_failure(std::optional<task_execution>& exec, task_output& out) {
+    if (!exec || !exec->is_finished) return;
+    if (exec->process->get_exit_status() != 0 && !exec->is_primary_task) {
+        out.output_lines.insert(out.output_lines.end(), exec->output_lines.begin(), exec->output_lines.end());
+        exec->output_lines.clear();
+    }
 }
 
-static void finish_task_execution(std::optional<task_execution>& exec, task_output& out, const std::vector<task>& tasks,
-                                  std::queue<size_t>& tasks_to_exec) {
+static void finish_task_execution(std::optional<task_execution>& exec, const std::vector<task>& tasks, std::queue<size_t>& tasks_to_exec) {
     if (!exec || !exec->is_finished) return;
     const auto code = exec->process->get_exit_status();
     const auto& task_name = tasks[exec->task_id].name;
     if (code != 0) {
         tasks_to_exec = {};
-        if (!exec->is_primary_task) {
-            out.output_lines.insert(out.output_lines.end(), exec->output_lines.begin(), exec->output_lines.end());
-            exec->output_lines.clear();
-        }
-        display_task_completion(out, TERM_COLOR_RED, task_name, "failed", code);
+        std::cout << TERM_COLOR_RED << "'" << task_name << "' failed: return code: " << code << TERM_COLOR_RESET << std::endl;
     } else if (exec->is_primary_task) {
-        display_task_completion(out, TERM_COLOR_MAGENTA, task_name, "complete", code);
+        std::cout << TERM_COLOR_MAGENTA << "'" << task_name << "' complete: return code: " << code << TERM_COLOR_RESET << std::endl;
     }
     exec = std::optional<task_execution>();
 }
@@ -593,8 +591,9 @@ int main(int argc, const char** argv) {
         execute_task(task_to_exec, tasks, last_task_exec, tasks_to_exec);
         process_task_event(last_task_exec);
         stream_primary_task_output(last_task_exec, last_task_output);
-        finish_task_execution(last_task_exec, last_task_output, tasks, tasks_to_exec);
+        stream_pre_task_output_on_failure(last_task_exec, last_task_output);
         find_and_highlight_file_links(last_task_output, open_in_editor_command);
         print_task_output(last_task_output);
+        finish_task_execution(last_task_exec, tasks, tasks_to_exec);
     }
 }

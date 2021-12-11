@@ -139,19 +139,16 @@ protected:
 #define ASSERT_FILE_LINKS_OPENED_IN_EDITOR() ASSERT_CMD_OUT("/a/b/c:10\n/d/e/f:15:32\n")
 #define ASSERT_LAST_TASK_OUTPUT_DISPLAYED() ASSERT_LINE("\x1B[32mLast task output:\x1B[0m")
 #define ASSERT_NO_FILE_LINKS_IN_OUTPUT_DISPLAYED() ASSERT_LINE("\x1B[32mNo file links in the output\x1B[0m")
-#define ASSERT_LAST_TASK_OUTPUT_DISPLAYED_ON_LINK_INDEX_OUT_OF_BOUNDS(TASK_STATUS_LINE)\
+#define ASSERT_LAST_TASK_OUTPUT_DISPLAYED_ON_LINK_INDEX_OUT_OF_BOUNDS()\
     run_cmd("o0");\
     ASSERT_LAST_TASK_OUTPUT_DISPLAYED();\
     ASSERT_OUTPUT_WITH_LINKS_DISPLAYED();\
-    ASSERT_LINE(TASK_STATUS_LINE);\
     run_cmd("o99");\
     ASSERT_LAST_TASK_OUTPUT_DISPLAYED();\
     ASSERT_OUTPUT_WITH_LINKS_DISPLAYED();\
-    ASSERT_LINE(TASK_STATUS_LINE);\
     run_cmd("o");\
     ASSERT_LAST_TASK_OUTPUT_DISPLAYED();\
     ASSERT_OUTPUT_WITH_LINKS_DISPLAYED();\
-    ASSERT_LINE(TASK_STATUS_LINE);\
     ASSERT_CMD_OUT("") // assert that we didn't attempt to open some weird link that does not exist
 #define WAIT_FOR_LAST_CMD_TO_COMPLETE()\
     run_cmd("h");\
@@ -399,7 +396,7 @@ TEST_F(cdt_test, start_execute_task_with_links_in_output_attempt_to_open_non_exi
     ASSERT_LINE("\x1B[35mRunning \"primary task with links\"\x1B[0m");
     ASSERT_OUTPUT_WITH_LINKS_DISPLAYED();
     ASSERT_LINE("\x1B[35m'primary task with links' complete: return code: 0\x1B[0m");
-    ASSERT_LAST_TASK_OUTPUT_DISPLAYED_ON_LINK_INDEX_OUT_OF_BOUNDS("\x1B[35m'primary task with links' complete: return code: 0\x1B[0m");
+    ASSERT_LAST_TASK_OUTPUT_DISPLAYED_ON_LINK_INDEX_OUT_OF_BOUNDS();
 }
 
 TEST_F(cdt_test, start_fail_to_execute_task_with_links_attempt_to_open_non_existent_link_and_view_task_output) {
@@ -410,7 +407,7 @@ TEST_F(cdt_test, start_fail_to_execute_task_with_links_attempt_to_open_non_exist
     ASSERT_LINE("\x1B[35mRunning \"fail primary task with links\"\x1B[0m");
     ASSERT_OUTPUT_WITH_LINKS_DISPLAYED();
     ASSERT_LINE("\x1B[31m'fail primary task with links' failed: return code: 32\x1B[0m");
-    ASSERT_LAST_TASK_OUTPUT_DISPLAYED_ON_LINK_INDEX_OUT_OF_BOUNDS("\x1B[31m'fail primary task with links' failed: return code: 32\x1B[0m");
+    ASSERT_LAST_TASK_OUTPUT_DISPLAYED_ON_LINK_INDEX_OUT_OF_BOUNDS();
 }
 
 TEST_F(cdt_test, start_fail_to_execute_pre_task_of_task_attempt_to_open_non_existent_link_and_view_task_output) {
@@ -421,7 +418,7 @@ TEST_F(cdt_test, start_fail_to_execute_pre_task_of_task_attempt_to_open_non_exis
     ASSERT_LINE("\x1B[34mRunning \"fail primary task with links\"...\x1B[0m");
     ASSERT_OUTPUT_WITH_LINKS_DISPLAYED();
     ASSERT_LINE("\x1B[31m'fail primary task with links' failed: return code: 32\x1B[0m");
-    ASSERT_LAST_TASK_OUTPUT_DISPLAYED_ON_LINK_INDEX_OUT_OF_BOUNDS("\x1B[31m'fail primary task with links' failed: return code: 32\x1B[0m");
+    ASSERT_LAST_TASK_OUTPUT_DISPLAYED_ON_LINK_INDEX_OUT_OF_BOUNDS();
 }
 
 TEST_F(cdt_test, start_attempt_to_open_non_existent_link_and_view_task_output) {
