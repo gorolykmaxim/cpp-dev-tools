@@ -85,7 +85,7 @@ protected:
         std::string msg;
         output.wait_dequeue(msg);
         // Ignore "(cdt) " output when waiting for a command
-        const auto pos = msg.find(CDT_PREFIX);
+        const auto pos = msg.rfind(CDT_PREFIX);
         if (pos != std::string::npos) {
             msg = msg.substr(pos + CDT_PREFIX.size());
         }
@@ -114,7 +114,10 @@ protected:
     ASSERT_LINE("8 \"primary task with fail pre task\"");\
     ASSERT_LINE("9 \"long task\"");\
     ASSERT_LINE("10 \"current working directory\"");\
-    ASSERT_LINE("11 \"restart\"")
+    ASSERT_LINE("11 \"restart\"");\
+    ASSERT_LINE("12 \"primary task with links\"");\
+    ASSERT_LINE("13 \"fail primary task with links\"");\
+    ASSERT_LINE("14 \"primary task with fail pre task with links\"")
 #define ASSERT_HELP_DISPLAYED()\
     ASSERT_LINE("\x1B[32mUser commands:\x1B[0m");\
     ASSERT_LINE("t<ind>\t\tExecute the task with the specified index");\
@@ -129,6 +132,30 @@ protected:
     ASSERT_LINE("\x1B[35mRestarting program...\x1B[0m");\
     ASSERT_HELP_PROMPT_DISPLAYED();\
     ASSERT_TASK_LIST_DISPLAYED()
+#define ASSERT_OUTPUT_WITH_LINKS_DISPLAYED()\
+    ASSERT_LINE("\x1B[35m[o1] /a/b/c:10\x1B[0m");\
+    ASSERT_LINE("some random data");\
+    ASSERT_LINE("\x1B[35m[o2] /d/e/f:15:32\x1B[0m something")
+#define ASSERT_FILE_LINKS_OPENED_IN_EDITOR() ASSERT_CMD_OUT("/a/b/c:10\n/d/e/f:15:32\n")
+#define ASSERT_LAST_TASK_OUTPUT_DISPLAYED() ASSERT_LINE("\x1B[32mLast task output:\x1B[0m")
+#define ASSERT_NO_FILE_LINKS_IN_OUTPUT_DISPLAYED() ASSERT_LINE("\x1B[32mNo file links in the output\x1B[0m")
+#define ASSERT_LAST_TASK_OUTPUT_DISPLAYED_ON_LINK_INDEX_OUT_OF_BOUNDS(TASK_STATUS_LINE)\
+    run_cmd("o0");\
+    ASSERT_LAST_TASK_OUTPUT_DISPLAYED();\
+    ASSERT_OUTPUT_WITH_LINKS_DISPLAYED();\
+    ASSERT_LINE(TASK_STATUS_LINE);\
+    run_cmd("o99");\
+    ASSERT_LAST_TASK_OUTPUT_DISPLAYED();\
+    ASSERT_OUTPUT_WITH_LINKS_DISPLAYED();\
+    ASSERT_LINE(TASK_STATUS_LINE);\
+    run_cmd("o");\
+    ASSERT_LAST_TASK_OUTPUT_DISPLAYED();\
+    ASSERT_OUTPUT_WITH_LINKS_DISPLAYED();\
+    ASSERT_LINE(TASK_STATUS_LINE);\
+    ASSERT_CMD_OUT("") // assert that we didn't attempt to open some weird link that does not exist
+#define WAIT_FOR_LAST_CMD_TO_COMPLETE()\
+    run_cmd("h");\
+    ASSERT_HELP_DISPLAYED()
 
 TEST_F(cdt_test, start_and_view_tasks) {
     run_cdt("test-tasks.json", "no-config");
@@ -322,11 +349,96 @@ TEST_F(cdt_test, start_and_execute_restart_task) {
     ASSERT_CDT_RESTARTED();
 }
 
-// TODO:
-// highlight file links in task output and open one of them if open_in_editor_command is specified
-// highlight file links in failed task output and open one of them if open_in_editor_command is specified
-// highlight file links in failed pre_task output and open one of them if open_in_editor_command is specified
-// display task output when attempting to open non-existent link
-// display failed task output when attempting to open non-existent link
-// display failed pre_task output when attempting to open non-existent link
-// when attempting to open a link with open_in_editor_command not set - warn user about it
+TEST_F(cdt_test, start_execute_task_and_open_links_from_output) {
+    run_cdt("test-tasks.json", "test-config");
+    ASSERT_HELP_PROMPT_DISPLAYED();
+    ASSERT_TASK_LIST_DISPLAYED();
+    run_cmd("t12");
+    ASSERT_LINE("\x1B[35mRunning \"primary task with links\"\x1B[0m");
+    ASSERT_OUTPUT_WITH_LINKS_DISPLAYED();
+    ASSERT_LINE("\x1B[35m'primary task with links' complete: return code: 0\x1B[0m");
+    run_cmd("o1");
+    run_cmd("o2");
+    WAIT_FOR_LAST_CMD_TO_COMPLETE();
+    ASSERT_FILE_LINKS_OPENED_IN_EDITOR();
+}
+
+TEST_F(cdt_test, start_fail_to_execute_task_with_links_and_open_links_from_output) {
+    run_cdt("test-tasks.json", "test-config");
+    ASSERT_HELP_PROMPT_DISPLAYED();
+    ASSERT_TASK_LIST_DISPLAYED();
+    run_cmd("t13");
+    ASSERT_LINE("\x1B[35mRunning \"fail primary task with links\"\x1B[0m");
+    ASSERT_OUTPUT_WITH_LINKS_DISPLAYED();
+    ASSERT_LINE("\x1B[31m'fail primary task with links' failed: return code: 32\x1B[0m");
+    run_cmd("o1");
+    run_cmd("o2");
+    WAIT_FOR_LAST_CMD_TO_COMPLETE();
+    ASSERT_FILE_LINKS_OPENED_IN_EDITOR();
+}
+
+TEST_F(cdt_test, start_fail_to_execute_pre_task_of_task_and_open_links_from_output) {
+    run_cdt("test-tasks.json", "test-config");
+    ASSERT_HELP_PROMPT_DISPLAYED();
+    ASSERT_TASK_LIST_DISPLAYED();
+    run_cmd("t14");
+    ASSERT_LINE("\x1B[34mRunning \"fail primary task with links\"...\x1B[0m");
+    ASSERT_OUTPUT_WITH_LINKS_DISPLAYED();
+    ASSERT_LINE("\x1B[31m'fail primary task with links' failed: return code: 32\x1B[0m");
+    run_cmd("o1");
+    run_cmd("o2");
+    WAIT_FOR_LAST_CMD_TO_COMPLETE();
+    ASSERT_FILE_LINKS_OPENED_IN_EDITOR();
+}
+
+TEST_F(cdt_test, start_execute_task_with_links_in_output_attempt_to_open_non_existent_link_and_view_task_output) {
+    run_cdt("test-tasks.json", "test-config");
+    ASSERT_HELP_PROMPT_DISPLAYED();
+    ASSERT_TASK_LIST_DISPLAYED();
+    run_cmd("t12");
+    ASSERT_LINE("\x1B[35mRunning \"primary task with links\"\x1B[0m");
+    ASSERT_OUTPUT_WITH_LINKS_DISPLAYED();
+    ASSERT_LINE("\x1B[35m'primary task with links' complete: return code: 0\x1B[0m");
+    ASSERT_LAST_TASK_OUTPUT_DISPLAYED_ON_LINK_INDEX_OUT_OF_BOUNDS("\x1B[35m'primary task with links' complete: return code: 0\x1B[0m");
+}
+
+TEST_F(cdt_test, start_fail_to_execute_task_with_links_attempt_to_open_non_existent_link_and_view_task_output) {
+    run_cdt("test-tasks.json", "test-config");
+    ASSERT_HELP_PROMPT_DISPLAYED();
+    ASSERT_TASK_LIST_DISPLAYED();
+    run_cmd("t13");
+    ASSERT_LINE("\x1B[35mRunning \"fail primary task with links\"\x1B[0m");
+    ASSERT_OUTPUT_WITH_LINKS_DISPLAYED();
+    ASSERT_LINE("\x1B[31m'fail primary task with links' failed: return code: 32\x1B[0m");
+    ASSERT_LAST_TASK_OUTPUT_DISPLAYED_ON_LINK_INDEX_OUT_OF_BOUNDS("\x1B[31m'fail primary task with links' failed: return code: 32\x1B[0m");
+}
+
+TEST_F(cdt_test, start_fail_to_execute_pre_task_of_task_attempt_to_open_non_existent_link_and_view_task_output) {
+    run_cdt("test-tasks.json", "test-config");
+    ASSERT_HELP_PROMPT_DISPLAYED();
+    ASSERT_TASK_LIST_DISPLAYED();
+    run_cmd("t14");
+    ASSERT_LINE("\x1B[34mRunning \"fail primary task with links\"...\x1B[0m");
+    ASSERT_OUTPUT_WITH_LINKS_DISPLAYED();
+    ASSERT_LINE("\x1B[31m'fail primary task with links' failed: return code: 32\x1B[0m");
+    ASSERT_LAST_TASK_OUTPUT_DISPLAYED_ON_LINK_INDEX_OUT_OF_BOUNDS("\x1B[31m'fail primary task with links' failed: return code: 32\x1B[0m");
+}
+
+TEST_F(cdt_test, start_attempt_to_open_non_existent_link_and_view_task_output) {
+    run_cdt("test-tasks.json", "test-config");
+    ASSERT_HELP_PROMPT_DISPLAYED();
+    ASSERT_TASK_LIST_DISPLAYED();
+    run_cmd("o1");
+    ASSERT_NO_FILE_LINKS_IN_OUTPUT_DISPLAYED();
+    run_cmd("o");
+    ASSERT_NO_FILE_LINKS_IN_OUTPUT_DISPLAYED();
+}
+
+TEST_F(cdt_test, start_attempt_to_open_link_while_open_in_editor_command_is_not_specified_and_see_error) {
+    using namespace std::string_literals;
+    run_cdt("test-tasks.json", "no-config");
+    ASSERT_HELP_PROMPT_DISPLAYED();
+    ASSERT_TASK_LIST_DISPLAYED();
+    run_cmd("o");
+    ASSERT_LINE("\x1B[31m'open_in_editor_command' is not specified in \""s + to_absolute_user_config_path("no-config") + "\"\x1B[0m");
+}

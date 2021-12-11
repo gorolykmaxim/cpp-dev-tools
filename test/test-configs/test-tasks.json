@@ -10,6 +10,9 @@
         {"name": "primary task with fail pre task", "command": "echo primary task with fail pre task | tee -a ${OUTPUT_FILE}", "pre_tasks": ["pre task 1", "fail pre task"]},
         {"name": "long task", "command": "sleep 999999"},
         {"name": "current working directory", "command": "pwd"},
-        {"name": "restart", "command": "__restart"}
+        {"name": "restart", "command": "__restart"},
+        {"name": "primary task with links", "command": "echo /a/b/c:10 && echo some random data && echo /d/e/f:15:32 something"},
+        {"name": "fail primary task with links", "command": "echo /a/b/c:10 && echo some random data && echo /d/e/f:15:32 something && exit 32"},
+        {"name": "primary task with fail pre task with links", "command": "echo nop", "pre_tasks": ["fail primary task with links"]}
     ]
 }

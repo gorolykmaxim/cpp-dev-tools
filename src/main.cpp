@@ -541,7 +541,7 @@ static void open_file_link(task_output& out, const template_string& open_in_edit
         const auto& link = out.file_links[cmd.arg - 1];
         std::string open_cmd = open_in_editor_cmd.str;
         open_cmd.replace(open_in_editor_cmd.arg_pos, TEMPLATE_ARG_PLACEHOLDER.size(), link);
-        TinyProcessLib::Process p(open_cmd);
+        TinyProcessLib::Process(open_cmd).get_exit_status();
     }
 }
 
