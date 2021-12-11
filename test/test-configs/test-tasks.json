@@ -1,5 +1,15 @@
 {
     "cdt_tasks": [
-        {"name": "hello world", "command": "echo hello world"}
+        {"name": "hello world", "command": "echo hello world | tee -a ${OUTPUT_FILE}"},
+        {"name": "primary task", "command": "echo primary task | tee -a ${OUTPUT_FILE}", "pre_tasks": ["pre task 1", "pre task 2"]},
+        {"name": "pre task 1", "command": "echo pre task 1 | tee -a ${OUTPUT_FILE}"},
+        {"name": "pre task 2", "command": "echo pre task 2 | tee -a ${OUTPUT_FILE}", "pre_tasks": ["pre pre task 1", "pre pre task 2"]},
+        {"name": "pre pre task 1", "command": "echo pre pre task 1 | tee -a ${OUTPUT_FILE}"},
+        {"name": "pre pre task 2", "command": "echo pre pre task 2 | tee -a ${OUTPUT_FILE}"},
+        {"name": "fail pre task", "command": "exit 15"},
+        {"name": "primary task with fail pre task", "command": "echo primary task with fail pre task | tee -a ${OUTPUT_FILE}", "pre_tasks": ["pre task 1", "fail pre task"]},
+        {"name": "long task", "command": "sleep 999999"},
+        {"name": "current working directory", "command": "pwd"},
+        {"name": "restart", "command": "__restart"}
     ]
 }
