@@ -15,6 +15,7 @@
 #include <set>
 #include <queue>
 #include <csignal>
+#include <utility>
 #include <vector>
 #include "process.hpp"
 #include "json.hpp"
@@ -29,7 +30,6 @@ const auto TERM_COLOR_RESET = "\033[0m";
 const auto USER_CONFIG_PATH = std::filesystem::path(getenv("HOME")) / ".cpp-dev-tools.json";
 const auto OPEN_IN_EDITOR_COMMAND_PROPERTY = "open_in_editor_command";
 const auto ENV_VAR_LAST_COMMAND = "LAST_COMMAND";
-const std::regex UNIX_FILE_LINK_REGEX("^(\\/[^:]+:[0-9]+(:[0-9]+)?)");
 const std::string TEMPLATE_ARG_PLACEHOLDER = "{}";
 
 template <typename T>
@@ -78,6 +78,22 @@ struct task_execution
     std::string stdout_line_buffer;
     std::string stderr_line_buffer;
     std::vector<std::string> output_lines;
+};
+
+struct gtest_test {
+    std::string name;
+    std::string duration;
+    std::vector<std::string> output;
+};
+
+struct gtest_execution {
+    std::string binary_path;
+    std::vector<gtest_test> tests;
+    std::vector<size_t> failed_test_ids;
+    size_t test_count;
+    std::optional<size_t> current_test;
+    std::string total_duration;
+    bool is_finished = false;
 };
 
 struct task_output
@@ -423,6 +439,24 @@ static std::function<void(const char*,size_t)> write_to(moodycamel::BlockingConc
     };
 }
 
+static void execute_gtest_task(std::optional<size_t>& to_exec, const std::vector<task>& tasks, std::optional<task_execution>& exec,
+                               const std::queue<size_t>& tasks_to_exec, gtest_execution& gtest_exec) {
+    static const std::string GTEST_TASK = "__gtest";
+    if (!to_exec) return;
+    const auto cmd = tasks[*to_exec].command;
+    if (cmd.find(GTEST_TASK) != 0) return;
+    const auto gtest_binary = cmd.substr(GTEST_TASK.size() + 1);
+    gtest_exec = gtest_execution{gtest_binary};
+    exec = task_execution{*to_exec};
+    exec->is_primary_task = tasks_to_exec.empty();
+    exec->process = std::make_unique<TinyProcessLib::Process>(
+        gtest_binary,
+        "",
+        write_to(*exec->event_queue, task_event_type_stdout),
+        write_to(*exec->event_queue, task_event_type_stderr));
+    to_exec = std::optional<size_t>();
+}
+
 static void execute_task(std::optional<size_t>& to_exec, const std::vector<task>& tasks, std::optional<task_execution>& exec,
                          const std::queue<size_t>& tasks_to_exec) {
     if (!to_exec) return;
@@ -481,6 +515,93 @@ static void process_task_event(std::optional<task_execution>& exec) {
     }
 }
 
+static void complete_current_gtest(gtest_execution& gtest_exec, const std::string& line_content, std::string& line_to_print) {
+    line_to_print = "\rTests completed: " + std::to_string(*gtest_exec.current_test + 1) + " of " + std::to_string(gtest_exec.test_count);
+    gtest_exec.tests[*gtest_exec.current_test].duration = line_content.substr(line_content.rfind('('));
+    gtest_exec.current_test = std::optional<size_t>();
+}
+
+static void parse_gtest_output(std::optional<task_execution>& exec, gtest_execution& gtest_exec) {
+    if (!is_active_execution(exec) || gtest_exec.is_finished) return;
+    static const auto test_count_index = std::string("Running ").size();
+    std::string line_to_print;
+    for (const auto& line: exec->output_lines) {
+        auto line_content_index = 0;
+        auto filler_char = '\0';
+        std::stringstream word_stream;
+        for (auto i = 0; i < line.size(); i++) {
+            if (i == 0) {
+                if (line[i] == '[') {
+                    continue;
+                } else {
+                    break;
+                }
+            }
+            if (i == 1) {
+                filler_char = line[i];
+                continue;
+            }
+            if (line[i] == ']') {
+                line_content_index = i + 2;
+                break;
+            }
+            if (line[i] != filler_char) {
+                word_stream << line[i];
+            }
+        }
+        const auto found_word = word_stream.str();
+        const auto line_content = line.substr(line_content_index);
+        if (filler_char == '=') {
+            if (gtest_exec.test_count == 0) {
+                const auto count_end_index = line_content.find(' ', test_count_index);
+                const auto count_str = line_content.substr(test_count_index, count_end_index - test_count_index);
+                gtest_exec.test_count = std::stoi(count_str);
+                gtest_exec.tests.reserve(gtest_exec.test_count);
+            } else {
+                gtest_exec.total_duration = line_content.substr(line_content.rfind('('));
+                // Clear currently displayed test execution progress line to properly display
+                // upcoming output over it.
+                line_to_print = "\33[2K\r";
+                break;
+            }
+        } else if (found_word == "RUN") {
+            gtest_exec.current_test = gtest_exec.tests.size();
+            gtest_test test{line_content};
+            gtest_exec.tests.push_back(std::move(test));
+        } else if (found_word == "OK") {
+            complete_current_gtest(gtest_exec, line_content, line_to_print);
+        } else if (found_word == "FAILED") {
+            gtest_exec.failed_test_ids.push_back(*gtest_exec.current_test);
+            complete_current_gtest(gtest_exec, line_content, line_to_print);
+        } else {
+            if (gtest_exec.current_test) {
+                gtest_exec.tests[*gtest_exec.current_test].output.push_back(line);
+            }
+        }
+    }
+    exec->output_lines.clear();
+    if (exec->is_primary_task) {
+        std::cout << std::flush << line_to_print;
+    }
+}
+
+static void finish_gtest_execution(std::optional<task_execution>& exec, gtest_execution& gtest_exec) {
+    if (!exec || !exec->is_finished || gtest_exec.is_finished) return;
+    gtest_exec.is_finished = true;
+    if (gtest_exec.failed_test_ids.empty() && exec->is_primary_task) {
+        std::cout << TERM_COLOR_GREEN << "Successfully executed " << gtest_exec.tests.size() << " tests "  << gtest_exec.total_duration << TERM_COLOR_RESET << std::endl;
+    } else if (!gtest_exec.failed_test_ids.empty()) {
+        std::cout << TERM_COLOR_RED << "Failed tests:" << TERM_COLOR_RESET << std::endl;
+        for (auto i = 0; i < gtest_exec.failed_test_ids.size(); i++) {
+            const auto id = gtest_exec.failed_test_ids[i];
+            const auto& test = gtest_exec.tests[id];
+            std::cout << i + 1 << " \"" << test.name << "\" " << test.duration << std::endl;
+        }
+        const int failed_percent = gtest_exec.failed_test_ids.size() / (float)gtest_exec.tests.size() * 100;
+        std::cout << TERM_COLOR_RED << "Tests failed: " << gtest_exec.failed_test_ids.size() << " of " << gtest_exec.tests.size() << " (" << failed_percent << "%) " << gtest_exec.total_duration << TERM_COLOR_RESET << std::endl;
+    }
+}
+
 static void stream_primary_task_output(std::optional<task_execution>& exec, task_output& out) {
     if (!is_active_execution(exec) || !exec->is_primary_task) return;
     out.output_lines.insert(out.output_lines.end(), exec->output_lines.begin(), exec->output_lines.end());
@@ -489,6 +610,7 @@ static void stream_primary_task_output(std::optional<task_execution>& exec, task
 
 static void find_and_highlight_file_links(task_output& out, template_string& open_in_editor_cmd) {
     if (open_in_editor_cmd.str.empty()) return;
+    static const std::regex UNIX_FILE_LINK_REGEX("^(\\/[^:]+:[0-9]+(:[0-9]+)?)");
     for (auto i = out.lines_processed; i < out.output_lines.size(); i++) {
         auto& line = out.output_lines[i];
         std::smatch link_match;
@@ -568,6 +690,8 @@ int main(int argc, const char** argv) {
     std::optional<size_t> task_to_exec;
     user_command cmd;
     task_output last_task_output;
+    gtest_execution last_gtest_exec;
+    last_gtest_exec.is_finished = true;
     auto executable = argv[0];
     std::filesystem::path tasks_config_path;
     std::vector<std::string> errors;
@@ -588,12 +712,15 @@ int main(int argc, const char** argv) {
         display_help(USR_CMD_DEFS, cmd);
         dequeue_task_to_execute(tasks_to_exec, task_to_exec, last_task_output, last_task_exec, tasks);
         execute_restart_task(task_to_exec, tasks, executable, tasks_config_path, cmd);
+        execute_gtest_task(task_to_exec, tasks, last_task_exec, tasks_to_exec, last_gtest_exec);
         execute_task(task_to_exec, tasks, last_task_exec, tasks_to_exec);
         process_task_event(last_task_exec);
+        parse_gtest_output(last_task_exec, last_gtest_exec);
         stream_primary_task_output(last_task_exec, last_task_output);
         stream_pre_task_output_on_failure(last_task_exec, last_task_output);
         find_and_highlight_file_links(last_task_output, open_in_editor_command);
         print_task_output(last_task_output);
+        finish_gtest_execution(last_task_exec, last_gtest_exec);
         finish_task_execution(last_task_exec, tasks, tasks_to_exec);
     }
 }

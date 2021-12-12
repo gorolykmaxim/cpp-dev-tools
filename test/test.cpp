@@ -439,3 +439,15 @@ TEST_F(cdt_test, start_attempt_to_open_link_while_open_in_editor_command_is_not_
     run_cmd("o");
     ASSERT_LINE("\x1B[31m'open_in_editor_command' is not specified in \""s + to_absolute_user_config_path("no-config") + "\"\x1B[0m");
 }
+
+// TODO:
+// execute gtest task with no tests
+// fail to execute gtest task with non-existent binary
+// execute gtest task with a non-gtest binary that finishes
+// execute gtest task with a non-gtest binary that does not finish and abort it
+// execute gtest task with multiple suites with all tests successfull
+// execute gtest task with multiple suites with failed tests in each suite
+// execute task with gtest pre task with multiple suites with all tests successfull
+// execute task with gtest pre task with multiple suites with failed tests in each suite
+// execute gtest task with sleep in it and abort it
+// execute gtest task with failures and sleep in it and abort it

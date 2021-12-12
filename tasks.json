@@ -15,7 +15,7 @@
         },
         {
             "name": "run tests",
-            "command": "./build/cpp-dev-tools-test",
+            "command": "__gtest ./build/cpp-dev-tools-test",
             "pre_tasks": ["build tests"]
         }
     ]
