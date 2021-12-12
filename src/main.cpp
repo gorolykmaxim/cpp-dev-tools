@@ -86,6 +86,10 @@ struct gtest_test {
     std::vector<std::string> output;
 };
 
+enum gtest_execution_state {
+    gtest_execution_state_running, gtest_execution_state_parsed, gtest_execution_state_finished
+};
+
 struct gtest_execution {
     std::string binary_path;
     std::vector<gtest_test> tests;
@@ -93,7 +97,7 @@ struct gtest_execution {
     size_t test_count;
     std::optional<size_t> current_test;
     std::string total_duration;
-    bool is_finished = false;
+    gtest_execution_state state = gtest_execution_state_running;
 };
 
 struct task_output
@@ -522,72 +526,75 @@ static void complete_current_gtest(gtest_execution& gtest_exec, const std::strin
 }
 
 static void parse_gtest_output(std::optional<task_execution>& exec, gtest_execution& gtest_exec) {
-    if (!is_active_execution(exec) || gtest_exec.is_finished) return;
+    if (!is_active_execution(exec) || gtest_exec.state == gtest_execution_state_finished) return;
     static const auto test_count_index = std::string("Running ").size();
-    std::string line_to_print;
-    for (const auto& line: exec->output_lines) {
-        auto line_content_index = 0;
-        auto filler_char = '\0';
-        std::stringstream word_stream;
-        for (auto i = 0; i < line.size(); i++) {
-            if (i == 0) {
-                if (line[i] == '[') {
+    if (gtest_exec.state == gtest_execution_state_running) {
+        std::string line_to_print;
+        for (const auto& line: exec->output_lines) {
+            auto line_content_index = 0;
+            auto filler_char = '\0';
+            std::stringstream word_stream;
+            for (auto i = 0; i < line.size(); i++) {
+                if (i == 0) {
+                    if (line[i] == '[') {
+                        continue;
+                    } else {
+                        break;
+                    }
+                }
+                if (i == 1) {
+                    filler_char = line[i];
                     continue;
-                } else {
+                }
+                if (line[i] == ']') {
+                    line_content_index = i + 2;
                     break;
                 }
+                if (line[i] != filler_char) {
+                    word_stream << line[i];
+                }
             }
-            if (i == 1) {
-                filler_char = line[i];
-                continue;
-            }
-            if (line[i] == ']') {
-                line_content_index = i + 2;
-                break;
-            }
-            if (line[i] != filler_char) {
-                word_stream << line[i];
+            const auto found_word = word_stream.str();
+            const auto line_content = line.substr(line_content_index);
+            if (filler_char == '=') {
+                if (gtest_exec.test_count == 0) {
+                    const auto count_end_index = line_content.find(' ', test_count_index);
+                    const auto count_str = line_content.substr(test_count_index, count_end_index - test_count_index);
+                    gtest_exec.test_count = std::stoi(count_str);
+                    gtest_exec.tests.reserve(gtest_exec.test_count);
+                } else {
+                    gtest_exec.total_duration = line_content.substr(line_content.rfind('('));
+                    gtest_exec.state = gtest_execution_state_parsed;
+                    // Clear currently displayed test execution progress line to properly display
+                    // upcoming output over it.
+                    line_to_print = "\33[2K\r";
+                    break;
+                }
+            } else if (found_word == "RUN") {
+                gtest_exec.current_test = gtest_exec.tests.size();
+                gtest_test test{line_content};
+                gtest_exec.tests.push_back(std::move(test));
+            } else if (found_word == "OK") {
+                complete_current_gtest(gtest_exec, line_content, line_to_print);
+            } else if (found_word == "FAILED") {
+                gtest_exec.failed_test_ids.push_back(*gtest_exec.current_test);
+                complete_current_gtest(gtest_exec, line_content, line_to_print);
+            } else {
+                if (gtest_exec.current_test) {
+                    gtest_exec.tests[*gtest_exec.current_test].output.push_back(line);
+                }
             }
         }
-        const auto found_word = word_stream.str();
-        const auto line_content = line.substr(line_content_index);
-        if (filler_char == '=') {
-            if (gtest_exec.test_count == 0) {
-                const auto count_end_index = line_content.find(' ', test_count_index);
-                const auto count_str = line_content.substr(test_count_index, count_end_index - test_count_index);
-                gtest_exec.test_count = std::stoi(count_str);
-                gtest_exec.tests.reserve(gtest_exec.test_count);
-            } else {
-                gtest_exec.total_duration = line_content.substr(line_content.rfind('('));
-                // Clear currently displayed test execution progress line to properly display
-                // upcoming output over it.
-                line_to_print = "\33[2K\r";
-                break;
-            }
-        } else if (found_word == "RUN") {
-            gtest_exec.current_test = gtest_exec.tests.size();
-            gtest_test test{line_content};
-            gtest_exec.tests.push_back(std::move(test));
-        } else if (found_word == "OK") {
-            complete_current_gtest(gtest_exec, line_content, line_to_print);
-        } else if (found_word == "FAILED") {
-            gtest_exec.failed_test_ids.push_back(*gtest_exec.current_test);
-            complete_current_gtest(gtest_exec, line_content, line_to_print);
-        } else {
-            if (gtest_exec.current_test) {
-                gtest_exec.tests[*gtest_exec.current_test].output.push_back(line);
-            }
+        if (exec->is_primary_task) {
+            std::cout << std::flush << line_to_print;
         }
     }
     exec->output_lines.clear();
-    if (exec->is_primary_task) {
-        std::cout << std::flush << line_to_print;
-    }
 }
 
 static void finish_gtest_execution(std::optional<task_execution>& exec, gtest_execution& gtest_exec) {
-    if (!exec || !exec->is_finished || gtest_exec.is_finished) return;
-    gtest_exec.is_finished = true;
+    if (!exec || !exec->is_finished || gtest_exec.state == gtest_execution_state_finished) return;
+    gtest_exec.state = gtest_execution_state_finished;
     if (gtest_exec.failed_test_ids.empty() && exec->is_primary_task) {
         std::cout << TERM_COLOR_GREEN << "Successfully executed " << gtest_exec.tests.size() << " tests "  << gtest_exec.total_duration << TERM_COLOR_RESET << std::endl;
     } else if (!gtest_exec.failed_test_ids.empty()) {
@@ -691,7 +698,7 @@ int main(int argc, const char** argv) {
     user_command cmd;
     task_output last_task_output;
     gtest_execution last_gtest_exec;
-    last_gtest_exec.is_finished = true;
+    last_gtest_exec.state = gtest_execution_state_finished;
     auto executable = argv[0];
     std::filesystem::path tasks_config_path;
     std::vector<std::string> errors;
