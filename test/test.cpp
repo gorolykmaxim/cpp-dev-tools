@@ -123,6 +123,7 @@ protected:
     ASSERT_LINE("t<ind>\t\tExecute the task with the specified index");\
     ASSERT_LINE("tr<ind>\t\tKeep executing the task with the specified index until it fails");\
     ASSERT_LINE("o<ind>\t\tOpen the file link with the specified index in your code editor");\
+    ASSERT_LINE("g<ind>\t\tDisplay output of the specified google test");\
     ASSERT_LINE("h\t\tDisplay list of user commands")
 #define ASSERT_HELLO_WORLD_TASK_RAN()\
     ASSERT_LINE("\x1B[35mRunning \"hello world\"\x1B[0m");\
@@ -455,3 +456,8 @@ TEST_F(cdt_test, start_attempt_to_open_link_while_open_in_editor_command_is_not_
 // execute task with pre tasks repeatedly until it fails
 // execute task with pre tasks repeatedly and stop once one of pre tasks fail
 // execute slow task repeatedly and abort it
+// try to view gtest tests but see "no tests have been executed yet"
+// execute gtest task, try to view gtest test output with index out of range and see all tests list
+// execute gtest task, view gtest test output with file links highlighted in the output and open first link
+// execute gtest task, fail, try to view gtest test output with index out of range and see failed tests list
+// execute gtest task, fail, view gtest test output with file links highlighted in the output and open first link

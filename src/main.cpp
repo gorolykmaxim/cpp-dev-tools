@@ -1,6 +1,7 @@
 #include <cstddef>
 #include <iostream>
 #include <fstream>
+#include <numeric>
 #include <optional>
 #include <ostream>
 #include <sstream>
@@ -94,7 +95,7 @@ struct gtest_execution {
     std::string binary_path;
     std::vector<gtest_test> tests;
     std::vector<size_t> failed_test_ids;
-    size_t test_count;
+    size_t test_count = 0;
     std::optional<size_t> current_test;
     std::string total_duration;
     gtest_execution_state state = gtest_execution_state_running;
@@ -117,6 +118,7 @@ std::vector<user_command_definition> USR_CMD_DEFS;
 const auto TASK = push_back_and_return(USR_CMD_DEFS, {"t", "ind", "Execute the task with the specified index"});
 const auto TASK_REPEAT = push_back_and_return(USR_CMD_DEFS, {"tr", "ind", "Keep executing the task with the specified index until it fails"});
 const auto OPEN = push_back_and_return(USR_CMD_DEFS, {"o", "ind", "Open the file link with the specified index in your code editor"});
+const auto GTEST = push_back_and_return(USR_CMD_DEFS, {"g", "ind", "Display output of the specified google test"});
 const auto HELP = push_back_and_return(USR_CMD_DEFS, {"h", "", "Display list of user commands"});
 
 // This is global, because it is accessed from signal handlers.
@@ -346,6 +348,11 @@ static user_command parse_user_command(const std::string& str) {
     return cmd;
 }
 
+template<typename T>
+static bool is_cmd_arg_in_range(const user_command& cmd, const std::vector<T>& range) {
+    return cmd.arg > 0 && cmd.arg <= range.size();
+}
+
 static bool is_active_execution(const std::optional<task_execution>& exec) {
     return exec && !exec->is_finished;
 }
@@ -380,7 +387,7 @@ static void display_list_of_tasks(const std::vector<task>& tasks) {
 static void schedule_task(const std::vector<task>& tasks, const std::vector<std::vector<size_t>>& pre_tasks,
                           std::queue<size_t>& to_exec, user_command& cmd, bool& repeat_until_fail) {
     if (!accept_usr_cmd(TASK, cmd) && !accept_usr_cmd(TASK_REPEAT, cmd)) return;
-    if (cmd.arg <= 0 || cmd.arg > tasks.size()) {
+    if (!is_cmd_arg_in_range(cmd, tasks)) {
         display_list_of_tasks(tasks);
     } else {
         const auto id = cmd.arg - 1;
@@ -594,20 +601,58 @@ static void parse_gtest_output(std::optional<task_execution>& exec, gtest_execut
     exec->output_lines.clear();
 }
 
+static void print_gtest_list(const std::vector<size_t>& test_ids, const std::vector<gtest_test>& tests) {
+    for (auto i = 0; i < test_ids.size(); i++) {
+        const auto id = test_ids[i];
+        const auto& test = tests[id];
+        std::cout << i + 1 << " \"" << test.name << "\" " << test.duration << std::endl;
+    }
+}
+
+static void print_failed_gtest_list(const gtest_execution& exec) {
+    std::cout << TERM_COLOR_RED << "Failed tests:" << TERM_COLOR_RESET << std::endl;
+    print_gtest_list(exec.failed_test_ids, exec.tests);
+    const int failed_percent = exec.failed_test_ids.size() / (float)exec.tests.size() * 100;
+    std::cout << TERM_COLOR_RED << "Tests failed: " << exec.failed_test_ids.size() << " of " << exec.tests.size() << " (" << failed_percent << "%) " << exec.total_duration << TERM_COLOR_RESET << std::endl;
+}
+
+static void print_gtest_output(task_output& out, const std::vector<gtest_test>& tests, size_t test_id, const std::string& color) {
+    const auto& test = tests[test_id];
+    out = task_output{};
+    out.output_lines.reserve(test.output.size() + 1);
+    out.output_lines.emplace_back(color + "\"" + test.name + "\" output:" + TERM_COLOR_RESET);
+    out.output_lines.insert(out.output_lines.end(), test.output.begin(), test.output.end());
+}
+
+static void display_gtest_output(gtest_execution& exec, task_output& out, user_command& cmd) {
+    if (!accept_usr_cmd(GTEST, cmd)) return;
+    if (exec.test_count == 0) {
+        std::cout << TERM_COLOR_GREEN << "No google tests have been executed yet." << TERM_COLOR_RESET << std::endl;
+    } else if (exec.failed_test_ids.empty()) {
+        if (!is_cmd_arg_in_range(cmd, exec.tests)) {
+            std::cout << TERM_COLOR_GREEN << "Last executed tests " << exec.total_duration << ":" << TERM_COLOR_RESET << std::endl;
+            std::vector<size_t> ids(exec.tests.size());
+            std::iota(ids.begin(), ids.end(), 0);
+            print_gtest_list(ids, exec.tests);
+        } else {
+            print_gtest_output(out, exec.tests, cmd.arg - 1, TERM_COLOR_GREEN);
+        }
+    } else {
+        if (!is_cmd_arg_in_range(cmd, exec.failed_test_ids)) {
+            print_failed_gtest_list(exec);
+        } else {
+            print_gtest_output(out, exec.tests, exec.failed_test_ids[cmd.arg - 1], TERM_COLOR_RED);
+        }
+    }
+}
+
 static void finish_gtest_execution(std::optional<task_execution>& exec, gtest_execution& gtest_exec) {
     if (!exec || !exec->is_finished || gtest_exec.state == gtest_execution_state_finished) return;
     gtest_exec.state = gtest_execution_state_finished;
     if (gtest_exec.failed_test_ids.empty() && exec->is_primary_task) {
         std::cout << TERM_COLOR_GREEN << "Successfully executed " << gtest_exec.tests.size() << " tests "  << gtest_exec.total_duration << TERM_COLOR_RESET << std::endl;
     } else if (!gtest_exec.failed_test_ids.empty()) {
-        std::cout << TERM_COLOR_RED << "Failed tests:" << TERM_COLOR_RESET << std::endl;
-        for (auto i = 0; i < gtest_exec.failed_test_ids.size(); i++) {
-            const auto id = gtest_exec.failed_test_ids[i];
-            const auto& test = gtest_exec.tests[id];
-            std::cout << i + 1 << " \"" << test.name << "\" " << test.duration << std::endl;
-        }
-        const int failed_percent = gtest_exec.failed_test_ids.size() / (float)gtest_exec.tests.size() * 100;
-        std::cout << TERM_COLOR_RED << "Tests failed: " << gtest_exec.failed_test_ids.size() << " of " << gtest_exec.tests.size() << " (" << failed_percent << "%) " << gtest_exec.total_duration << TERM_COLOR_RESET << std::endl;
+        print_failed_gtest_list(gtest_exec);
     }
 }
 
@@ -677,7 +722,7 @@ static void open_file_link(task_output& out, const template_string& open_in_edit
     if (!accept_usr_cmd(OPEN, cmd)) return;
     if (open_in_editor_cmd.str.empty()) {
         std::cout << TERM_COLOR_RED << '\'' << OPEN_IN_EDITOR_COMMAND_PROPERTY << "' is not specified in " << USER_CONFIG_PATH << TERM_COLOR_RESET << std::endl;
-    } else if (cmd.arg <= 0 || cmd.arg > out.file_links.size()) {
+    } else if (!is_cmd_arg_in_range(cmd, out.file_links)) {
         display_output_with_file_links(out);
     } else {
         const auto& link = out.file_links[cmd.arg - 1];
@@ -732,6 +777,7 @@ int main(int argc, const char** argv) {
         read_user_command_from_stdin(cmd, tasks_to_exec, last_task_exec);
         schedule_task(tasks, pre_tasks, tasks_to_exec, cmd, repeat_current_task_until_it_fails);
         open_file_link(last_task_output, open_in_editor_command, cmd);
+        display_gtest_output(last_gtest_exec, last_task_output, cmd);
         display_help(USR_CMD_DEFS, cmd);
         dequeue_task_to_execute(tasks_to_exec, task_to_exec, last_task_output, last_task_exec, tasks);
         execute_restart_task(task_to_exec, tasks, executable, tasks_config_path, cmd);
