@@ -469,3 +469,5 @@ TEST_F(cdt_test, start_attempt_to_open_link_while_open_in_editor_command_is_not_
 // execute gtest task, view gtest test output with file links highlighted in the output and open first link
 // execute gtest task, fail, try to view gtest test output with index out of range and see failed tests list
 // execute gtest task, fail, view gtest test output with file links highlighted in the output and open first link
+// execute gtest task, fail one of the tests and view automatically displayed test output
+// execute task with a gtest pre task, fail one of the tests and view automatically displayed test output

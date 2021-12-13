@@ -646,13 +646,16 @@ static void display_gtest_output(gtest_execution& exec, task_output& out, user_c
     }
 }
 
-static void finish_gtest_execution(std::optional<task_execution>& exec, gtest_execution& gtest_exec) {
+static void finish_gtest_execution(std::optional<task_execution>& exec, gtest_execution& gtest_exec, task_output& out) {
     if (!exec || !exec->is_finished || gtest_exec.state == gtest_execution_state_finished) return;
     gtest_exec.state = gtest_execution_state_finished;
     if (gtest_exec.failed_test_ids.empty() && exec->is_primary_task) {
         std::cout << TERM_COLOR_GREEN << "Successfully executed " << gtest_exec.tests.size() << " tests "  << gtest_exec.total_duration << TERM_COLOR_RESET << std::endl;
     } else if (!gtest_exec.failed_test_ids.empty()) {
         print_failed_gtest_list(gtest_exec);
+        if (gtest_exec.failed_test_ids.size() == 1) {
+            print_gtest_output(out, gtest_exec.tests, gtest_exec.failed_test_ids[0], TERM_COLOR_RED);
+        }
     }
 }
 
@@ -785,11 +788,11 @@ int main(int argc, const char** argv) {
         execute_task(task_to_exec, tasks, last_task_exec, tasks_to_exec);
         process_task_event(last_task_exec);
         parse_gtest_output(last_task_exec, last_gtest_exec);
+        finish_gtest_execution(last_task_exec, last_gtest_exec, last_task_output);
         stream_primary_task_output(last_task_exec, last_task_output);
         stream_pre_task_output_on_failure(last_task_exec, last_task_output);
         find_and_highlight_file_links(last_task_output, open_in_editor_command);
         print_task_output(last_task_output);
-        finish_gtest_execution(last_task_exec, last_gtest_exec);
         restart_repeating_task_on_success(last_task_exec, pre_tasks, tasks_to_exec, repeat_current_task_until_it_fails);
         finish_task_execution(last_task_exec, tasks, tasks_to_exec);
     }
