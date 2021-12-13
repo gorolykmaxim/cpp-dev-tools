@@ -115,6 +115,7 @@ struct template_string
 
 std::vector<user_command_definition> USR_CMD_DEFS;
 const auto TASK = push_back_and_return(USR_CMD_DEFS, {"t", "ind", "Execute the task with the specified index"});
+const auto TASK_REPEAT = push_back_and_return(USR_CMD_DEFS, {"tr", "ind", "Keep executing the task with the specified index until it fails"});
 const auto OPEN = push_back_and_return(USR_CMD_DEFS, {"o", "ind", "Open the file link with the specified index in your code editor"});
 const auto HELP = push_back_and_return(USR_CMD_DEFS, {"h", "", "Display list of user commands"});
 
@@ -377,12 +378,13 @@ static void display_list_of_tasks(const std::vector<task>& tasks) {
 }
 
 static void schedule_task(const std::vector<task>& tasks, const std::vector<std::vector<size_t>>& pre_tasks,
-                          std::queue<size_t>& to_exec, user_command& cmd) {
-    if (!accept_usr_cmd(TASK, cmd)) return;
+                          std::queue<size_t>& to_exec, user_command& cmd, bool& repeat_until_fail) {
+    if (!accept_usr_cmd(TASK, cmd) && !accept_usr_cmd(TASK_REPEAT, cmd)) return;
     if (cmd.arg <= 0 || cmd.arg > tasks.size()) {
         display_list_of_tasks(tasks);
     } else {
         const auto id = cmd.arg - 1;
+        repeat_until_fail = TASK_REPEAT.cmd == cmd.cmd;
         for (const auto pre_task_id: pre_tasks[id]) {
             to_exec.push(pre_task_id);
         }
@@ -645,6 +647,19 @@ static void stream_pre_task_output_on_failure(std::optional<task_execution>& exe
     }
 }
 
+static void restart_repeating_task_on_success(const std::optional<task_execution>& exec, const std::vector<std::vector<size_t>>& pre_tasks,
+                                              std::queue<size_t>& tasks_to_exec, bool& repeat_until_fail) {
+    if (!exec || !exec->is_finished || !exec->is_primary_task || !repeat_until_fail) return;
+    if (exec->process->get_exit_status() == 0) {
+        for (const auto& pre_task_id: pre_tasks[exec->task_id]) {
+            tasks_to_exec.push(pre_task_id);
+        }
+        tasks_to_exec.push(exec->task_id);
+    } else {
+        repeat_until_fail = false;
+    }
+}
+
 static void finish_task_execution(std::optional<task_execution>& exec, const std::vector<task>& tasks, std::queue<size_t>& tasks_to_exec) {
     if (!exec || !exec->is_finished) return;
     const auto code = exec->process->get_exit_status();
@@ -699,6 +714,7 @@ int main(int argc, const char** argv) {
     task_output last_task_output;
     gtest_execution last_gtest_exec;
     last_gtest_exec.state = gtest_execution_state_finished;
+    auto repeat_current_task_until_it_fails = false;
     auto executable = argv[0];
     std::filesystem::path tasks_config_path;
     std::vector<std::string> errors;
@@ -714,7 +730,7 @@ int main(int argc, const char** argv) {
     std::signal(SIGINT, terminate_active_task_or_exit);
     while (true) {
         read_user_command_from_stdin(cmd, tasks_to_exec, last_task_exec);
-        schedule_task(tasks, pre_tasks, tasks_to_exec, cmd);
+        schedule_task(tasks, pre_tasks, tasks_to_exec, cmd, repeat_current_task_until_it_fails);
         open_file_link(last_task_output, open_in_editor_command, cmd);
         display_help(USR_CMD_DEFS, cmd);
         dequeue_task_to_execute(tasks_to_exec, task_to_exec, last_task_output, last_task_exec, tasks);
@@ -728,6 +744,7 @@ int main(int argc, const char** argv) {
         find_and_highlight_file_links(last_task_output, open_in_editor_command);
         print_task_output(last_task_output);
         finish_gtest_execution(last_task_exec, last_gtest_exec);
+        restart_repeating_task_on_success(last_task_exec, pre_tasks, tasks_to_exec, repeat_current_task_until_it_fails);
         finish_task_execution(last_task_exec, tasks, tasks_to_exec);
     }
 }

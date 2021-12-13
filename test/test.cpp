@@ -121,6 +121,7 @@ protected:
 #define ASSERT_HELP_DISPLAYED()\
     ASSERT_LINE("\x1B[32mUser commands:\x1B[0m");\
     ASSERT_LINE("t<ind>\t\tExecute the task with the specified index");\
+    ASSERT_LINE("tr<ind>\t\tKeep executing the task with the specified index until it fails");\
     ASSERT_LINE("o<ind>\t\tOpen the file link with the specified index in your code editor");\
     ASSERT_LINE("h\t\tDisplay list of user commands")
 #define ASSERT_HELLO_WORLD_TASK_RAN()\
@@ -451,3 +452,6 @@ TEST_F(cdt_test, start_attempt_to_open_link_while_open_in_editor_command_is_not_
 // execute task with gtest pre task with multiple suites with failed tests in each suite
 // execute gtest task with sleep in it and abort it
 // execute gtest task with failures and sleep in it and abort it
+// execute task with pre tasks repeatedly until it fails
+// execute task with pre tasks repeatedly and stop once one of pre tasks fail
+// execute slow task repeatedly and abort it
