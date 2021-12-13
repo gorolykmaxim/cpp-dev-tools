@@ -36,6 +36,7 @@ static std::function<void(const char*, size_t)> write_to(moodycamel::BlockingCon
 
 struct cdt_test: public testing::Test {
 protected:
+    const std::string TIMEOUT_ERROR_MSG = "TIMED-OUT WAITING FOR OUTPUT FROM CDT";
     const std::string CDT_PREFIX = "\x1B[32m(cdt) \x1B[0m";
     const std::filesystem::path cwd = std::filesystem::path(BINARY_DIR);
     const std::filesystem::path test_configs_dir = std::filesystem::path(TEST_CONFIGS_DIR);
@@ -78,17 +79,24 @@ protected:
     }
     void print_lines() {
         while (true) {
-            EXPECT_EQ("", get_out_line());
+            const auto line = get_out_line();
+            if (line == TIMEOUT_ERROR_MSG) {
+                break;
+            }
+            EXPECT_EQ("", line);
         }
     }
     std::string get_out_line() {
         std::string msg;
-        output.wait_dequeue(msg);
+        if (!output.wait_dequeue_timed(msg, 1000000)) {
+            msg = TIMEOUT_ERROR_MSG;
+        }
         // Ignore "(cdt) " output when waiting for a command
         const auto pos = msg.rfind(CDT_PREFIX);
         if (pos != std::string::npos) {
             msg = msg.substr(pos + CDT_PREFIX.size());
         }
+        std::cout << msg << std::endl;
         return msg;
     }
     std::string read_cmd_test_output() {
