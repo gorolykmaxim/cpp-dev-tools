@@ -1,0 +1,73 @@
+diff --git a/process.cpp b/process.cpp
+index a68e518..87d4297 100644
+--- a/process.cpp
++++ b/process.cpp
+@@ -14,8 +14,9 @@ Process::Process(const std::vector<string_type> &arguments, const string_type &p
+ Process::Process(const string_type &command, const string_type &path,
+                  std::function<void(const char *bytes, size_t n)> read_stdout,
+                  std::function<void(const char *bytes, size_t n)> read_stderr,
++                 std::function<void()> handle_exit,
+                  bool open_stdin, const Config &config) noexcept
+-    : closed(true), read_stdout(std::move(read_stdout)), read_stderr(std::move(read_stderr)), open_stdin(open_stdin), config(config) {
++    : closed(true), read_stdout(std::move(read_stdout)), read_stderr(std::move(read_stderr)), handle_exit(std::move(handle_exit)), open_stdin(open_stdin), config(config) {
+   open(command, path);
+   async_read();
+ }
+diff --git a/process.hpp b/process.hpp
+index ad1ab3a..42e7bd3 100644
+--- a/process.hpp
++++ b/process.hpp
+@@ -85,6 +85,7 @@ public:
+   Process(const string_type &command, const string_type &path = string_type(),
+           std::function<void(const char *bytes, size_t n)> read_stdout = nullptr,
+           std::function<void(const char *bytes, size_t n)> read_stderr = nullptr,
++          std::function<void()> handle_exit = nullptr,
+           bool open_stdin = false,
+           const Config &config = {}) noexcept;
+
+@@ -143,6 +144,7 @@ private:
+   std::mutex close_mutex;
+   std::function<void(const char *bytes, size_t n)> read_stdout;
+   std::function<void(const char *bytes, size_t n)> read_stderr;
++  std::function<void()> handle_exit;
+ #ifndef _WIN32
+   std::thread stdout_stderr_thread;
+ #else
+diff --git a/process_unix.cpp b/process_unix.cpp
+index 01d6ca1..8fcb96b 100644
+--- a/process_unix.cpp
++++ b/process_unix.cpp
+@@ -240,6 +240,9 @@ void Process::async_read() noexcept {
+         }
+       }
+     }
++    if (handle_exit) {
++      handle_exit();
++    }
+   });
+ }
+
+diff --git a/process_win.cpp b/process_win.cpp
+index 305289a..48b6541 100644
+--- a/process_win.cpp
++++ b/process_win.cpp
+@@ -173,6 +173,9 @@ void Process::async_read() noexcept {
+           break;
+         read_stdout(buffer.get(), static_cast<size_t>(n));
+       }
++      if (handle_exit) {
++        handle_exit();
++      }
+     });
+   }
+   if(stderr_fd) {
+@@ -185,6 +188,9 @@ void Process::async_read() noexcept {
+           break;
+         read_stderr(buffer.get(), static_cast<size_t>(n));
+       }
++      if (handle_exit) {
++        handle_exit();
++      }
+     });
+   }
+ }

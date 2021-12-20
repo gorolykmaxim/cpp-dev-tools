@@ -1,4 +1,5 @@
 #include <cstddef>
+#include <functional>
 #include <iostream>
 #include <fstream>
 #include <numeric>
@@ -399,14 +400,6 @@ static void schedule_task(const std::vector<task>& tasks, const std::vector<std:
     }
 }
 
-static void notify_task_execution_about_child_process_exit(int signal) {
-    if (last_task_exec) {
-        task_event exit_event{};
-        exit_event.type = task_event_type_exit;
-        last_task_exec->event_queue->enqueue(exit_event);
-    }
-}
-
 static void terminate_active_task_or_exit(int signal) {
     if (is_active_execution(last_task_exec)) {
         last_task_exec->process->kill();
@@ -452,6 +445,14 @@ static std::function<void(const char*,size_t)> write_to(moodycamel::BlockingConc
     };
 }
 
+static std::function<void()> handle_exit(moodycamel::BlockingConcurrentQueue<task_event>& queue) {
+    return [&queue] () {
+        task_event event;
+        event.type = task_event_type_exit;
+        queue.enqueue(event);
+    };
+}
+
 static void execute_gtest_task(std::optional<size_t>& to_exec, const std::vector<task>& tasks, std::optional<task_execution>& exec,
                                const std::queue<size_t>& tasks_to_exec, gtest_execution& gtest_exec) {
     static const std::string GTEST_TASK = "__gtest";
@@ -466,7 +467,8 @@ static void execute_gtest_task(std::optional<size_t>& to_exec, const std::vector
         gtest_binary,
         "",
         write_to(*exec->event_queue, task_event_type_stdout),
-        write_to(*exec->event_queue, task_event_type_stderr));
+        write_to(*exec->event_queue, task_event_type_stderr),
+        handle_exit(*exec->event_queue));
     to_exec = std::optional<size_t>();
 }
 
@@ -479,7 +481,8 @@ static void execute_task(std::optional<size_t>& to_exec, const std::vector<task>
         tasks[*to_exec].command,
         "",
         write_to(*exec->event_queue, task_event_type_stdout),
-        write_to(*exec->event_queue, task_event_type_stderr));
+        write_to(*exec->event_queue, task_event_type_stderr),
+        handle_exit(*exec->event_queue));
     to_exec = std::optional<size_t>();
 }
 
@@ -499,20 +502,8 @@ static void process_task_event(std::optional<task_execution>& exec) {
     task_event event;
     exec->event_queue->wait_dequeue(event);
     if (event.type == task_event_type_exit) {
-        // We might get "exit" event before receiving last stdout/stderr event.
-        // Re-queue the "exit" event back and process last stdout/stderr event first.
-        if (exec->event_queue->size_approx() > 0) {
-            const auto exit_event = event;
-            // Read "out" event before queing "exit" back or we will hang!!!
-            // In the opposite order, event_queue will read just-placed "exit" event
-            // instead of "out" event.
-            exec->event_queue->wait_dequeue(event);
-            exec->event_queue->enqueue(exit_event);
-        } else {
-            exec->is_finished = true;
-        }
-    }
-    if (event.type != task_event_type_exit) {
+        exec->is_finished = true;
+    } else {
         auto& line_buffer = event.type == task_event_type_stdout ? exec->stdout_line_buffer : exec->stderr_line_buffer;
         auto to_process = line_buffer + event.data;
         std::stringstream tmp_buffer;
@@ -774,7 +765,6 @@ int main(int argc, const char** argv) {
     read_user_command_from_env(cmd);
     prompt_user_to_ask_for_help();
     display_list_of_tasks(tasks);
-    std::signal(SIGCHLD, notify_task_execution_about_child_process_exit);
     std::signal(SIGINT, terminate_active_task_or_exit);
     while (true) {
         read_user_command_from_stdin(cmd, tasks_to_exec, last_task_exec);

@@ -3,6 +3,16 @@ project(cpp-dev-tools)
 
 set(CMAKE_CXX_STANDARD 17)
 
+execute_process(COMMAND git --version RESULT_VARIABLE ret OUTPUT_QUIET ERROR_QUIET)
+if (NOT ret EQUAL 0)
+    message(FATAL_ERROR "You need to have 'git' installed. I need to apply patches to libraries :(")
+else()
+    execute_process(COMMAND git apply --check --reverse ../tiny-process-library.patch WORKING_DIRECTORY lib/tiny-process-library RESULT_VARIABLE ret OUTPUT_QUIET ERROR_QUIET)
+    if (NOT ret EQUAL 0)
+        execute_process(COMMAND git apply ../tiny-process-library.patch WORKING_DIRECTORY lib/tiny-process-library)
+    endif()
+endif()
+
 add_subdirectory(lib/tiny-process-library)
 add_subdirectory(lib/cameron314_concurrentqueue)
 add_subdirectory(lib/nlohmann-json)
