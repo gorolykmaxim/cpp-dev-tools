@@ -28,6 +28,7 @@ const auto TERM_COLOR_GREEN = "\033[32m";
 const auto TERM_COLOR_BLUE = "\033[34m";
 const auto TERM_COLOR_MAGENTA = "\033[35m";
 const auto TERM_COLOR_RESET = "\033[0m";
+const auto TERM_CLEAR_CURRENT_LINE = "\33[2K\r";
 
 const auto USER_CONFIG_PATH = std::filesystem::path(getenv("HOME")) / ".cpp-dev-tools.json";
 const auto OPEN_IN_EDITOR_COMMAND_PROPERTY = "open_in_editor_command";
@@ -576,7 +577,7 @@ static void parse_gtest_output(std::optional<task_execution>& exec, gtest_execut
                     gtest_exec.state = gtest_execution_state_parsed;
                     // Clear currently displayed test execution progress line to properly display
                     // upcoming output over it.
-                    line_to_print = "\33[2K\r";
+                    line_to_print = TERM_CLEAR_CURRENT_LINE;
                     break;
                 }
             } else if (found_word == "RUN") {
@@ -651,9 +652,19 @@ static void finish_gtest_execution(std::optional<task_execution>& exec, gtest_ex
     if (gtest_exec.state == gtest_execution_state_running) {
         exec->state = task_execution_state_failed;
         std::cout << TERM_COLOR_RED << "'" << gtest_exec.binary_path << "' is not a google test executable" << TERM_COLOR_RESET << std::endl;
+    } else if (gtest_exec.state == gtest_execution_state_parsing) {
+        exec->state = task_execution_state_failed;
+        std::cout << TERM_CLEAR_CURRENT_LINE << TERM_COLOR_RED << "Tests have finished prematurely" << TERM_COLOR_RESET << std::endl;
+        // Tests might have crashed in the middle of some test. If so - consider test failed.
+        // This is not always true however: tests might have crashed in between two test cases.
+        if (gtest_exec.current_test) {
+            gtest_exec.failed_test_ids.push_back(*gtest_exec.current_test);
+            gtest_exec.current_test = std::optional<size_t>();
+        }
     } else if (gtest_exec.failed_test_ids.empty() && exec->is_primary_task) {
         std::cout << TERM_COLOR_GREEN << "Successfully executed " << gtest_exec.tests.size() << " tests "  << gtest_exec.total_duration << TERM_COLOR_RESET << std::endl;
-    } else if (!gtest_exec.failed_test_ids.empty()) {
+    }
+    if (!gtest_exec.failed_test_ids.empty()) {
         print_failed_gtest_list(gtest_exec);
         if (gtest_exec.failed_test_ids.size() == 1) {
             print_gtest_output(out, gtest_exec.tests, gtest_exec.failed_test_ids[0], TERM_COLOR_RED);

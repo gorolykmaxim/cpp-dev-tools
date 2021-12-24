@@ -455,6 +455,9 @@ TEST_F(cdt_test, start_attempt_to_open_link_while_open_in_editor_command_is_not_
 // fail to execute gtest task with non-existent binary
 // execute gtest task with a non-gtest binary that finishes
 // execute gtest task with a non-gtest binary that does not finish and abort it
+// execute gtest task that exits in the middle of execution with 0 exit code
+// execute gtest task that exits in the middle of execution with non-0 exit code
+// execute task with gtest pre task that exits in the middle of execution with 0 exit code
 // execute gtest task with multiple suites with all tests successfull
 // execute gtest task with multiple suites with failed tests in each suite
 // execute task with gtest pre task with multiple suites with all tests successfull
