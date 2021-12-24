@@ -528,7 +528,7 @@ static void complete_current_gtest(gtest_execution& gtest_exec, const std::strin
 static void parse_gtest_output(std::optional<task_execution>& exec, gtest_execution& gtest_exec) {
     if (!is_active_execution(exec) || gtest_exec.state == gtest_execution_state_finished) return;
     static const auto test_count_index = std::string("Running ").size();
-    if (gtest_exec.state == gtest_execution_state_running) {
+    if (gtest_exec.state != gtest_execution_state_parsed) {
         std::string line_to_print;
         for (const auto& line: exec->output_lines) {
             auto line_content_index = 0;
