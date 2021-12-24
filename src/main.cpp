@@ -89,7 +89,7 @@ struct gtest_test {
 };
 
 enum gtest_execution_state {
-    gtest_execution_state_running, gtest_execution_state_parsed, gtest_execution_state_finished
+    gtest_execution_state_running, gtest_execution_state_parsing, gtest_execution_state_parsed, gtest_execution_state_finished
 };
 
 struct gtest_execution {
@@ -557,11 +557,12 @@ static void parse_gtest_output(std::optional<task_execution>& exec, gtest_execut
             const auto found_word = word_stream.str();
             const auto line_content = line.substr(line_content_index);
             if (filler_char == '=') {
-                if (gtest_exec.test_count == 0) {
+                if (gtest_exec.state == gtest_execution_state_running) {
                     const auto count_end_index = line_content.find(' ', test_count_index);
                     const auto count_str = line_content.substr(test_count_index, count_end_index - test_count_index);
                     gtest_exec.test_count = std::stoi(count_str);
                     gtest_exec.tests.reserve(gtest_exec.test_count);
+                    gtest_exec.state = gtest_execution_state_parsing;
                 } else {
                     gtest_exec.total_duration = line_content.substr(line_content.rfind('('));
                     gtest_exec.state = gtest_execution_state_parsed;
