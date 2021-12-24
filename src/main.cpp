@@ -70,11 +70,15 @@ struct task_event
     std::string data;
 };
 
+enum task_execution_state {
+    task_execution_state_running, task_execution_state_complete, task_execution_state_failed
+};
+
 struct task_execution
 {
     size_t task_id;
     bool is_primary_task = false;
-    bool is_finished = false;
+    task_execution_state state = task_execution_state_running;
     std::unique_ptr<TinyProcessLib::Process> process;
     std::unique_ptr<moodycamel::BlockingConcurrentQueue<task_event>> event_queue = std::make_unique<moodycamel::BlockingConcurrentQueue<task_event>>();
     std::string stdout_line_buffer;
@@ -123,7 +127,7 @@ const auto GTEST = push_back_and_return(USR_CMD_DEFS, {"g", "ind", "Display outp
 const auto HELP = push_back_and_return(USR_CMD_DEFS, {"h", "", "Display list of user commands"});
 
 // This is global, because it is accessed from signal handlers.
-// It is only non-empty if it is actually running. If it is not running and has been set to is_finished=true - it will become empty shortly.
+// It is only non-empty if it is actually running. If it has just stopped running - it will become empty shortly.
 std::optional<task_execution> last_task_exec;
 
 static bool accept_usr_cmd(const user_command_definition& def, user_command& cmd) {
@@ -355,7 +359,11 @@ static bool is_cmd_arg_in_range(const user_command& cmd, const std::vector<T>& r
 }
 
 static bool is_active_execution(const std::optional<task_execution>& exec) {
-    return exec && !exec->is_finished;
+    return exec && exec->state == task_execution_state_running;
+}
+
+static bool is_finished_execution(const std::optional<task_execution>& exec) {
+    return exec && exec->state != task_execution_state_running;
 }
 
 static void read_user_command_from_stdin(user_command& cmd, const std::queue<size_t>& tasks_to_exec,
@@ -502,7 +510,7 @@ static void process_task_event(std::optional<task_execution>& exec) {
     task_event event;
     exec->event_queue->wait_dequeue(event);
     if (event.type == task_event_type_exit) {
-        exec->is_finished = true;
+        exec->state = exec->process->get_exit_status() == 0 ? task_execution_state_complete : task_execution_state_failed;
     } else {
         auto& line_buffer = event.type == task_event_type_stdout ? exec->stdout_line_buffer : exec->stderr_line_buffer;
         auto to_process = line_buffer + event.data;
@@ -639,9 +647,11 @@ static void display_gtest_output(gtest_execution& exec, task_output& out, user_c
 }
 
 static void finish_gtest_execution(std::optional<task_execution>& exec, gtest_execution& gtest_exec, task_output& out) {
-    if (!exec || !exec->is_finished || gtest_exec.state == gtest_execution_state_finished) return;
-    gtest_exec.state = gtest_execution_state_finished;
-    if (gtest_exec.failed_test_ids.empty() && exec->is_primary_task) {
+    if (!is_finished_execution(exec) || gtest_exec.state == gtest_execution_state_finished) return;
+    if (gtest_exec.state == gtest_execution_state_running) {
+        exec->state = task_execution_state_failed;
+        std::cout << TERM_COLOR_RED << "'" << gtest_exec.binary_path << "' is not a google test executable" << TERM_COLOR_RESET << std::endl;
+    } else if (gtest_exec.failed_test_ids.empty() && exec->is_primary_task) {
         std::cout << TERM_COLOR_GREEN << "Successfully executed " << gtest_exec.tests.size() << " tests "  << gtest_exec.total_duration << TERM_COLOR_RESET << std::endl;
     } else if (!gtest_exec.failed_test_ids.empty()) {
         print_failed_gtest_list(gtest_exec);
@@ -649,6 +659,7 @@ static void finish_gtest_execution(std::optional<task_execution>& exec, gtest_ex
             print_gtest_output(out, gtest_exec.tests, gtest_exec.failed_test_ids[0], TERM_COLOR_RED);
         }
     }
+    gtest_exec.state = gtest_execution_state_finished;
 }
 
 static void stream_primary_task_output(std::optional<task_execution>& exec, task_output& out) {
@@ -680,8 +691,7 @@ static void print_task_output(task_output& out) {
 }
 
 static void stream_pre_task_output_on_failure(std::optional<task_execution>& exec, task_output& out) {
-    if (!exec || !exec->is_finished) return;
-    if (exec->process->get_exit_status() != 0 && !exec->is_primary_task) {
+    if (exec && exec->state == task_execution_state_failed && !exec->is_primary_task) {
         out.output_lines.insert(out.output_lines.end(), exec->output_lines.begin(), exec->output_lines.end());
         exec->output_lines.clear();
     }
@@ -689,8 +699,8 @@ static void stream_pre_task_output_on_failure(std::optional<task_execution>& exe
 
 static void restart_repeating_task_on_success(const std::optional<task_execution>& exec, const std::vector<std::vector<size_t>>& pre_tasks,
                                               std::queue<size_t>& tasks_to_exec, bool& repeat_until_fail) {
-    if (!exec || !exec->is_finished || !exec->is_primary_task || !repeat_until_fail) return;
-    if (exec->process->get_exit_status() == 0) {
+    if (!is_finished_execution(exec) || !exec->is_primary_task || !repeat_until_fail) return;
+    if (exec->state == task_execution_state_complete) {
         for (const auto& pre_task_id: pre_tasks[exec->task_id]) {
             tasks_to_exec.push(pre_task_id);
         }
@@ -701,10 +711,10 @@ static void restart_repeating_task_on_success(const std::optional<task_execution
 }
 
 static void finish_task_execution(std::optional<task_execution>& exec, const std::vector<task>& tasks, std::queue<size_t>& tasks_to_exec) {
-    if (!exec || !exec->is_finished) return;
+    if (!is_finished_execution(exec)) return;
     const auto code = exec->process->get_exit_status();
     const auto& task_name = tasks[exec->task_id].name;
-    if (code != 0) {
+    if (exec->state == task_execution_state_failed) {
         tasks_to_exec = {};
         std::cout << TERM_COLOR_RED << "'" << task_name << "' failed: return code: " << code << TERM_COLOR_RESET << std::endl;
     } else if (exec->is_primary_task) {
