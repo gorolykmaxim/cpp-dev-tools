@@ -712,9 +712,6 @@ static void restart_repeating_task_on_success(const std::optional<task_execution
                                               std::queue<size_t>& tasks_to_exec, bool& repeat_until_fail) {
     if (!is_finished_execution(exec) || !exec->is_primary_task || !repeat_until_fail) return;
     if (exec->state == task_execution_state_complete) {
-        for (const auto& pre_task_id: pre_tasks[exec->task_id]) {
-            tasks_to_exec.push(pre_task_id);
-        }
         tasks_to_exec.push(exec->task_id);
     } else {
         repeat_until_fail = false;
