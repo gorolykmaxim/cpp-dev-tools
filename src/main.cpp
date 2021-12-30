@@ -411,7 +411,7 @@ static void schedule_task(const std::vector<task>& tasks, const std::vector<std:
 
 static void terminate_active_task_or_exit(int signal) {
     if (is_active_execution(last_task_exec)) {
-        last_task_exec->process->kill();
+        TinyProcessLib::Process::kill(last_task_exec->process->get_id());
     } else {
         std::signal(signal, SIG_DFL);
         std::raise(signal);
