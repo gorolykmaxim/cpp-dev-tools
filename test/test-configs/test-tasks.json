@@ -13,6 +13,22 @@
         {"name": "restart", "command": "__restart"},
         {"name": "primary task with links", "command": "echo /a/b/c:10 && echo some random data && echo /d/e/f:15:32 something"},
         {"name": "fail primary task with links", "command": "echo /a/b/c:10 && echo some random data && echo /d/e/f:15:32 something && exit 32"},
-        {"name": "primary task with fail pre task with links", "command": "echo nop", "pre_tasks": ["fail primary task with links"]}
+        {"name": "primary task with fail pre task with links", "command": "echo nop", "pre_tasks": ["fail primary task with links"]},
+        {"name": "gtest with no tests", "command": "__gtest ${GTEST_BINARY_NAME} --gtest_filter=unknown"},
+        {"name": "gtest with non-existent binary", "command": "__gtest ./non-existent-binary"},
+        {"name": "gtest with non-gtest binary", "command": "__gtest echo hello world!"},
+        {"name": "gtest with long non-gtest binary", "command": "__gtest sleep 999999"},
+        {"name": "gtest exit in the middle with 0 exit code", "command": "__gtest ${GTEST_BINARY_NAME} --gtest_filter='normal_tests.*:exit_tests.exit_with_0'"},
+        {"name": "gtest exit in the middle with 1 exit code", "command": "__gtest ${GTEST_BINARY_NAME} --gtest_filter='normal_tests.*:exit_tests.exit_with_1'"},
+        {"name": "task with gtest pre task that exits in the middle with 0 exit code", "command": "echo hello world | tee -a ${OUTPUT_FILE}", "pre_tasks": ["gtest exit in the middle with 0 exit code"]},
+        {"name": "gtest with multiple test suites", "command": "__gtest ${GTEST_BINARY_NAME} --gtest_filter='test_suit_1.*:test_suit_2.*'"},
+        {"name": "gtest with multiple failed test suites", "command": "__gtest ${GTEST_BINARY_NAME} --gtest_filter='failed_test_suit_1.*:failed_test_suit_2.*'"},
+        {"name": "task woth gtest pre task with multiple test suites", "command": "echo hello world | tee -a ${OUTPUT_FILE}", "pre_tasks": ["gtest with multiple test suites"]},
+        {"name": "task woth gtest pre task with multiple failed test suites", "command": "echo hello world | tee -a ${OUTPUT_FILE}", "pre_tasks": ["gtest with multiple failed test suites"]},
+        {"name": "gtest with long test", "command": "__gtest ${GTEST_BINARY_NAME} --gtest_filter='normal_tests.*:long_tests.*'"},
+        {"name": "gtest with long test and failures", "command": "__gtest ${GTEST_BINARY_NAME} --gtest_filter='failed_test_suit_1.test1:long_tests.*'"},
+        {"name": "gtest with sporadically failing test", "command": "__gtest ${GTEST_BINARY_NAME} --gtest_filter='sporadically_failing_tests.*'"},
+        {"name": "gtest with single failed test", "command": "__gtest ${GTEST_BINARY_NAME} --gtest_filter='failed_test_suit_1.*'"},
+        {"name": "primary task with failed gtest pre task with single failed test", "command": "echo hello world | tee -a ${OUTPUT_FILE}", "pre_tasks": ["gtest with single failed test"]}
     ]
 }

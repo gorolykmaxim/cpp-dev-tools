@@ -22,13 +22,18 @@ add_executable(${PROJECT_NAME} src/main.cpp)
 target_include_directories(${PROJECT_NAME} PUBLIC lib/tiny-process-library PUBLIC lib/nlohmann_json PUBLIC lib/cameron314_concurrentqueue)
 target_link_libraries(${PROJECT_NAME} tiny-process-library nlohmann_json cameron314_concurrentqueue)
 
+set(TEST_GTEST_TARGET test-gtests)
+add_executable(${TEST_GTEST_TARGET} test/test-gtests/test-gtests.cpp)
+target_link_libraries(${TEST_GTEST_TARGET} gtest gtest_main)
+
 set(TEST_TARGET ${PROJECT_NAME}-test)
 add_executable(${TEST_TARGET} test/test.cpp)
 target_compile_definitions(${TEST_TARGET} PRIVATE
     "BINARY_DIR=\"${CMAKE_BINARY_DIR}\""
     "BINARY_NAME=\"${PROJECT_NAME}\""
+    "GTEST_BINARY_NAME=\"${TEST_GTEST_TARGET}\""
     "TEST_CONFIGS_DIR=\"${CMAKE_CURRENT_SOURCE_DIR}/test/test-configs\""
     "TEST_HOMES_DIR=\"${CMAKE_CURRENT_SOURCE_DIR}/test/test-homes\"")
-add_dependencies(${TEST_TARGET} ${PROJECT_NAME})
+add_dependencies(${TEST_TARGET} ${PROJECT_NAME} ${TEST_GTEST_TARGET})
 target_include_directories(${TEST_TARGET} PUBLIC lib/tiny-process-library PUBLIC lib/cameron314_concurrentqueue)
 target_link_libraries(${TEST_TARGET} gtest tiny-process-library cameron314_concurrentqueue gtest_main)
