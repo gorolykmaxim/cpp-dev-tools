@@ -120,6 +120,22 @@ struct template_string
     size_t arg_pos;
 };
 
+struct cdt {
+    std::optional<task_execution> last_task_exec;
+    task_output last_task_output;
+    gtest_execution last_gtest_exec;
+    user_command last_usr_cmd;
+    std::vector<task> tasks;
+    std::vector<std::vector<size_t>> pre_tasks;
+    std::queue<size_t> tasks_to_exec;
+    std::optional<size_t> task_to_exec;
+    bool repeat_current_task_until_it_fails = false;
+    template_string open_in_editor_cmd;
+    const char* cdt_executable;
+    std::filesystem::path tasks_config_path;
+    std::vector<std::string> config_errors;
+};
+
 std::vector<user_command_definition> USR_CMD_DEFS;
 const auto TASK = push_back_and_return(USR_CMD_DEFS, {"t", "ind", "Execute the task with the specified index"});
 const auto TASK_REPEAT = push_back_and_return(USR_CMD_DEFS, {"tr", "ind", "Keep executing the task with the specified index until it fails"});
@@ -127,9 +143,7 @@ const auto OPEN = push_back_and_return(USR_CMD_DEFS, {"o", "ind", "Open the file
 const auto GTEST = push_back_and_return(USR_CMD_DEFS, {"g", "ind", "Display output of the specified google test"});
 const auto HELP = push_back_and_return(USR_CMD_DEFS, {"h", "", "Display list of user commands"});
 
-// This is global, because it is accessed from signal handlers.
-// It is only non-empty if it is actually running. If it has just stopped running - it will become empty shortly.
-std::optional<task_execution> last_task_exec;
+std::optional<TinyProcessLib::Process::id_type> current_execution_pid;
 
 static bool accept_usr_cmd(const user_command_definition& def, user_command& cmd) {
     if (!cmd.executed && def.cmd == cmd.cmd) {
@@ -186,13 +200,13 @@ static void pre_task_names_to_indexes(const std::vector<std::string>& pre_task_n
     }
 }
 
-static bool read_argv(int argc, const char** argv, std::filesystem::path& tasks_config_path, std::vector<std::string>& errors) {
+static bool read_argv(int argc, const char** argv, cdt& cdt) {
     if (argc < 2) {
-        errors.emplace_back("usage: cpp-dev-tools tasks.json");
+        cdt.config_errors.emplace_back("usage: cpp-dev-tools tasks.json");
         return false;
     }
-    tasks_config_path = std::filesystem::absolute(argv[1]);
-    const auto& config_dir_path = tasks_config_path.parent_path();
+    cdt.tasks_config_path = std::filesystem::absolute(argv[1]);
+    const auto& config_dir_path = cdt.tasks_config_path.parent_path();
     std::filesystem::current_path(config_dir_path);
     return true;
 }
@@ -225,38 +239,37 @@ static void append_config_errors(const std::filesystem::path& config_path, const
     }
 }
 
-static void read_user_config(template_string& open_in_editor_command, std::vector<std::string>& errors) {
+static void read_user_config(cdt& cdt) {
     nlohmann::json config_json;
-    if (!parse_json_file(USER_CONFIG_PATH, false, config_json, errors)) {
+    if (!parse_json_file(USER_CONFIG_PATH, false, config_json, cdt.config_errors)) {
         return;
     }
     std::vector<std::string> config_errors;
-    read_property(config_json, OPEN_IN_EDITOR_COMMAND_PROPERTY, open_in_editor_command.str, true, "", "must be a string in format: 'notepad++ {}', where {} will be replaced with a file name", config_errors, [&open_in_editor_command] () {
-        const auto pos = open_in_editor_command.str.find(TEMPLATE_ARG_PLACEHOLDER);
+    read_property(config_json, OPEN_IN_EDITOR_COMMAND_PROPERTY, cdt.open_in_editor_cmd.str, true, "", "must be a string in format: 'notepad++ {}', where {} will be replaced with a file name", config_errors, [&cdt] () {
+        const auto pos = cdt.open_in_editor_cmd.str.find(TEMPLATE_ARG_PLACEHOLDER);
         if (pos == std::string::npos) {
             return false;
         } else {
-            open_in_editor_command.arg_pos = pos;
+            cdt.open_in_editor_cmd.arg_pos = pos;
             return true;
         }
     });
-    append_config_errors(USER_CONFIG_PATH, config_errors, errors);
+    append_config_errors(USER_CONFIG_PATH, config_errors, cdt.config_errors);
 }
 
-static void read_tasks_config(const std::filesystem::path& config_path, std::vector<task>& tasks, std::vector<std::vector<size_t>>& effective_pre_tasks,
-                              std::vector<std::string>& errors) {
+static void read_tasks_config(cdt& cdt) {
     nlohmann::json config_json;
     std::vector<std::string> config_errors;
-    if (!parse_json_file(config_path, true, config_json, errors)) {
+    if (!parse_json_file(cdt.tasks_config_path, true, config_json, cdt.config_errors)) {
         return;
     }
     std::vector<nlohmann::json> tasks_json;
     if (!read_property(config_json, "cdt_tasks", tasks_json, false, "", "must be an array of task objects", config_errors)) {
-        append_config_errors(config_path, config_errors, errors);
+        append_config_errors(cdt.tasks_config_path, config_errors, cdt.config_errors);
         return;
     }
     std::vector<std::vector<size_t>> direct_pre_tasks(tasks_json.size());
-    effective_pre_tasks = std::vector<std::vector<size_t>>(tasks_json.size());
+    cdt.pre_tasks = std::vector<std::vector<size_t>>(tasks_json.size());
     // Initialize tasks with their direct "pre_tasks" dependencies
     for (auto i = 0; i < tasks_json.size(); i++) {
         task new_task;
@@ -268,12 +281,12 @@ static void read_tasks_config(const std::filesystem::path& config_path, std::vec
         if (read_property(task_json, "pre_tasks", pre_task_names, true, err_prefix, "must be an array of other task names", config_errors)) {
             pre_task_names_to_indexes(pre_task_names, tasks_json, direct_pre_tasks[i], err_prefix, config_errors);
         }
-        tasks.push_back(new_task);
+        cdt.tasks.push_back(new_task);
     }
     // Transform the "pre_tasks" dependency graph of each task into a flat vector of effective pre_tasks.
-    for (auto i = 0; i < tasks.size(); i++) {
-        const auto& primary_task_name = tasks[i].name;
-        auto& pre_tasks = effective_pre_tasks[i];
+    for (auto i = 0; i < cdt.tasks.size(); i++) {
+        const auto& primary_task_name = cdt.tasks[i].name;
+        auto& pre_tasks = cdt.pre_tasks[i];
         std::stack<size_t> to_visit;
         std::vector<size_t> task_call_stack;
         to_visit.push(i);
@@ -307,7 +320,7 @@ static void read_tasks_config(const std::filesystem::path& config_path, std::vec
                     std::stringstream err;
                     err << "task '" << primary_task_name << "' has a circular dependency in it's 'pre_tasks':\n";
                     for (auto j = 0; j < task_call_stack.size(); j++) {
-                        err << tasks[task_call_stack[j]].name;
+                        err << cdt.tasks[task_call_stack[j]].name;
                         if (j + 1 < task_call_stack.size()) {
                             err << " -> ";
                         }
@@ -321,13 +334,13 @@ static void read_tasks_config(const std::filesystem::path& config_path, std::vec
             }
         }
     }
-    append_config_errors(config_path, config_errors, errors);
+    append_config_errors(cdt.tasks_config_path, config_errors, cdt.config_errors);
 }
 
-static bool print_errors(std::vector<std::string>& errors) {
-    if (errors.empty()) return false;
+static bool print_errors(const cdt& cdt) {
+    if (cdt.config_errors.empty()) return false;
     std::cerr << TERM_COLOR_RED;
-    for (const auto& e: errors) {
+    for (const auto& e: cdt.config_errors) {
         std::cerr << e << std::endl;
     }
     std::cerr << TERM_COLOR_RESET;
@@ -367,23 +380,22 @@ static bool is_finished_execution(const std::optional<task_execution>& exec) {
     return exec && exec->state != task_execution_state_running;
 }
 
-static void read_user_command_from_stdin(user_command& cmd, const std::queue<size_t>& tasks_to_exec,
-                                         const std::optional<task_execution>& exec) {
-    if (!tasks_to_exec.empty() || is_active_execution(exec)) return;
+static void read_user_command_from_stdin(cdt& cdt) {
+    if (!cdt.tasks_to_exec.empty() || is_active_execution(cdt.last_task_exec)) return;
     std::cout << TERM_COLOR_GREEN << "(cdt) " << TERM_COLOR_RESET;
     std::string input;
     std::getline(std::cin, input);
     if (input.empty()) {
-        cmd.executed = false;
+        cdt.last_usr_cmd.executed = false;
     } else {
-        cmd = parse_user_command(input);
+        cdt.last_usr_cmd = parse_user_command(input);
     }
 }
 
-static void read_user_command_from_env(user_command& cmd) {
+static void read_user_command_from_env(cdt& cdt) {
     const auto str = getenv(ENV_VAR_LAST_COMMAND);
     if (str) {
-        cmd = parse_user_command(str);
+        cdt.last_usr_cmd = parse_user_command(str);
     }
 }
 
@@ -394,38 +406,36 @@ static void display_list_of_tasks(const std::vector<task>& tasks) {
     }
 }
 
-static void schedule_task(const std::vector<task>& tasks, const std::vector<std::vector<size_t>>& pre_tasks,
-                          std::queue<size_t>& to_exec, user_command& cmd, bool& repeat_until_fail) {
-    if (!accept_usr_cmd(TASK, cmd) && !accept_usr_cmd(TASK_REPEAT, cmd)) return;
-    if (!is_cmd_arg_in_range(cmd, tasks)) {
-        display_list_of_tasks(tasks);
+static void schedule_task(cdt& cdt) {
+    if (!accept_usr_cmd(TASK, cdt.last_usr_cmd) && !accept_usr_cmd(TASK_REPEAT, cdt.last_usr_cmd)) return;
+    if (!is_cmd_arg_in_range(cdt.last_usr_cmd, cdt.tasks)) {
+        display_list_of_tasks(cdt.tasks);
     } else {
-        const auto id = cmd.arg - 1;
-        repeat_until_fail = TASK_REPEAT.cmd == cmd.cmd;
-        for (const auto pre_task_id: pre_tasks[id]) {
-            to_exec.push(pre_task_id);
+        const auto id = cdt.last_usr_cmd.arg - 1;
+        cdt.repeat_current_task_until_it_fails = TASK_REPEAT.cmd == cdt.last_usr_cmd.cmd;
+        for (const auto pre_task_id: cdt.pre_tasks[id]) {
+            cdt.tasks_to_exec.push(pre_task_id);
         }
-        to_exec.push(id);
+        cdt.tasks_to_exec.push(id);
     }
 }
 
 static void terminate_active_task_or_exit(int signal) {
-    if (is_active_execution(last_task_exec)) {
-        TinyProcessLib::Process::kill(last_task_exec->process->get_id());
+    if (current_execution_pid) {
+        TinyProcessLib::Process::kill(*current_execution_pid);
     } else {
         std::signal(signal, SIG_DFL);
         std::raise(signal);
     }
 }
 
-static void dequeue_task_to_execute(std::queue<size_t>& tasks_to_exec, std::optional<size_t>& task_to_exec, task_output& out,
-                         const std::optional<task_execution>& exec, const std::vector<task>& tasks) {
-    if (tasks_to_exec.empty() || is_active_execution(exec)) return;
-    task_to_exec = tasks_to_exec.front();
-    tasks_to_exec.pop();
-    out = task_output{};
-    const auto is_primary_task = tasks_to_exec.empty();
-    const auto& task_name = tasks[*task_to_exec].name;
+static void dequeue_task_to_execute(cdt& cdt) {
+    if (cdt.tasks_to_exec.empty() || is_active_execution(cdt.last_task_exec)) return;
+    cdt.task_to_exec = cdt.tasks_to_exec.front();
+    cdt.tasks_to_exec.pop();
+    cdt.last_task_output = task_output{};
+    const auto is_primary_task = cdt.tasks_to_exec.empty();
+    const auto& task_name = cdt.tasks[*cdt.task_to_exec].name;
     if (is_primary_task) {
         std::cout << TERM_COLOR_MAGENTA << "Running \"" << task_name << "\"" << TERM_COLOR_RESET << std::endl;
     } else {
@@ -433,14 +443,13 @@ static void dequeue_task_to_execute(std::queue<size_t>& tasks_to_exec, std::opti
     }
 }
 
-static void execute_restart_task(std::optional<size_t>& to_exec, const std::vector<task>& tasks, const char* executable,
-                                 const std::filesystem::path& tasks_config_path, const user_command& cmd) {
-    if (!to_exec || tasks[*to_exec].command != "__restart") return;
-    to_exec = std::optional<size_t>();
+static void execute_restart_task(cdt& cdt) {
+    if (!cdt.task_to_exec || cdt.tasks[*cdt.task_to_exec].command != "__restart") return;
+    cdt.task_to_exec.reset();
     std::cout << TERM_COLOR_MAGENTA << "Restarting program..." << TERM_COLOR_RESET << std::endl;
-    const auto cmd_str = cmd.cmd + std::to_string(cmd.arg);
+    const auto cmd_str = cdt.last_usr_cmd.cmd + std::to_string(cdt.last_usr_cmd.arg);
     setenv(ENV_VAR_LAST_COMMAND, cmd_str.c_str(), true);
-    std::vector<const char*> argv = {executable, tasks_config_path.c_str(), nullptr};
+    std::vector<const char*> argv = {cdt.cdt_executable, cdt.tasks_config_path.c_str(), nullptr};
     execvp(argv[0], const_cast<char* const*>(argv.data()));
     std::cout << TERM_COLOR_RED << "Failed to restart: " << std::strerror(errno) << TERM_COLOR_RESET << std::endl;
 }
@@ -462,37 +471,37 @@ static std::function<void()> handle_exit(moodycamel::BlockingConcurrentQueue<tas
     };
 }
 
-static void execute_gtest_task(std::optional<size_t>& to_exec, const std::vector<task>& tasks, std::optional<task_execution>& exec,
-                               const std::queue<size_t>& tasks_to_exec, gtest_execution& gtest_exec) {
+static void execute_gtest_task(cdt& cdt) {
     static const std::string GTEST_TASK = "__gtest";
-    if (!to_exec) return;
-    const auto cmd = tasks[*to_exec].command;
+    if (!cdt.task_to_exec) return;
+    const auto cmd = cdt.tasks[*cdt.task_to_exec].command;
     if (cmd.find(GTEST_TASK) != 0) return;
     const auto gtest_binary = cmd.substr(GTEST_TASK.size() + 1);
-    gtest_exec = gtest_execution{gtest_binary};
-    exec = task_execution{*to_exec};
-    exec->is_primary_task = tasks_to_exec.empty();
-    exec->process = std::make_unique<TinyProcessLib::Process>(
+    cdt.last_gtest_exec = gtest_execution{gtest_binary};
+    cdt.last_task_exec = task_execution{*cdt.task_to_exec};
+    cdt.last_task_exec->is_primary_task = cdt.tasks_to_exec.empty();
+    cdt.last_task_exec->process = std::make_unique<TinyProcessLib::Process>(
         gtest_binary,
         "",
-        write_to(*exec->event_queue, task_event_type_stdout),
-        write_to(*exec->event_queue, task_event_type_stderr),
-        handle_exit(*exec->event_queue));
-    to_exec = std::optional<size_t>();
+        write_to(*cdt.last_task_exec->event_queue, task_event_type_stdout),
+        write_to(*cdt.last_task_exec->event_queue, task_event_type_stderr),
+        handle_exit(*cdt.last_task_exec->event_queue));
+    current_execution_pid = cdt.last_task_exec->process->get_id();
+    cdt.task_to_exec.reset();
 }
 
-static void execute_task(std::optional<size_t>& to_exec, const std::vector<task>& tasks, std::optional<task_execution>& exec,
-                         const std::queue<size_t>& tasks_to_exec) {
-    if (!to_exec) return;
-    exec = task_execution{*to_exec};
-    exec->is_primary_task = tasks_to_exec.empty();
-    exec->process = std::make_unique<TinyProcessLib::Process>(
-        tasks[*to_exec].command,
+static void execute_task(cdt& cdt) {
+    if (!cdt.task_to_exec) return;
+    cdt.last_task_exec = task_execution{*cdt.task_to_exec};
+    cdt.last_task_exec->is_primary_task = cdt.tasks_to_exec.empty();
+    cdt.last_task_exec->process = std::make_unique<TinyProcessLib::Process>(
+        cdt.tasks[*cdt.task_to_exec].command,
         "",
-        write_to(*exec->event_queue, task_event_type_stdout),
-        write_to(*exec->event_queue, task_event_type_stderr),
-        handle_exit(*exec->event_queue));
-    to_exec = std::optional<size_t>();
+        write_to(*cdt.last_task_exec->event_queue, task_event_type_stdout),
+        write_to(*cdt.last_task_exec->event_queue, task_event_type_stderr),
+        handle_exit(*cdt.last_task_exec->event_queue));
+    current_execution_pid = cdt.last_task_exec->process->get_id();
+    cdt.task_to_exec.reset();
 }
 
 static void display_output_with_file_links(const task_output& out) {
@@ -506,19 +515,19 @@ static void display_output_with_file_links(const task_output& out) {
     }
 }
 
-static void process_task_event(std::optional<task_execution>& exec) {
-    if (!is_active_execution(exec)) return;
+static void process_task_event(cdt& cdt) {
+    if (!is_active_execution(cdt.last_task_exec)) return;
     task_event event;
-    exec->event_queue->wait_dequeue(event);
+    cdt.last_task_exec->event_queue->wait_dequeue(event);
     if (event.type == task_event_type_exit) {
-        exec->state = exec->process->get_exit_status() == 0 ? task_execution_state_complete : task_execution_state_failed;
+        cdt.last_task_exec->state = cdt.last_task_exec->process->get_exit_status() == 0 ? task_execution_state_complete : task_execution_state_failed;
     } else {
-        auto& line_buffer = event.type == task_event_type_stdout ? exec->stdout_line_buffer : exec->stderr_line_buffer;
+        auto& line_buffer = event.type == task_event_type_stdout ? cdt.last_task_exec->stdout_line_buffer : cdt.last_task_exec->stderr_line_buffer;
         auto to_process = line_buffer + event.data;
         std::stringstream tmp_buffer;
         for (const auto c: to_process) {
             if (c == '\n') {
-                exec->output_lines.push_back(tmp_buffer.str());
+                cdt.last_task_exec->output_lines.push_back(tmp_buffer.str());
                 tmp_buffer = std::stringstream();
             } else {
                 tmp_buffer << c;
@@ -531,15 +540,15 @@ static void process_task_event(std::optional<task_execution>& exec) {
 static void complete_current_gtest(gtest_execution& gtest_exec, const std::string& line_content, std::string& line_to_print) {
     line_to_print = "\rTests completed: " + std::to_string(*gtest_exec.current_test + 1) + " of " + std::to_string(gtest_exec.test_count);
     gtest_exec.tests[*gtest_exec.current_test].duration = line_content.substr(line_content.rfind('('));
-    gtest_exec.current_test = std::optional<size_t>();
+    gtest_exec.current_test.reset();
 }
 
-static void parse_gtest_output(std::optional<task_execution>& exec, gtest_execution& gtest_exec) {
-    if (!is_active_execution(exec) || gtest_exec.state == gtest_execution_state_finished) return;
+static void parse_gtest_output(cdt& cdt) {
+    if (!is_active_execution(cdt.last_task_exec) || cdt.last_gtest_exec.state == gtest_execution_state_finished) return;
     static const auto test_count_index = std::string("Running ").size();
-    if (gtest_exec.state != gtest_execution_state_parsed) {
+    if (cdt.last_gtest_exec.state != gtest_execution_state_parsed) {
         std::string line_to_print;
-        for (const auto& line: exec->output_lines) {
+        for (const auto& line: cdt.last_task_exec->output_lines) {
             auto line_content_index = 0;
             auto filler_char = '\0';
             std::stringstream word_stream;
@@ -566,40 +575,40 @@ static void parse_gtest_output(std::optional<task_execution>& exec, gtest_execut
             const auto found_word = word_stream.str();
             const auto line_content = line.substr(line_content_index);
             if (filler_char == '=') {
-                if (gtest_exec.state == gtest_execution_state_running) {
+                if (cdt.last_gtest_exec.state == gtest_execution_state_running) {
                     const auto count_end_index = line_content.find(' ', test_count_index);
                     const auto count_str = line_content.substr(test_count_index, count_end_index - test_count_index);
-                    gtest_exec.test_count = std::stoi(count_str);
-                    gtest_exec.tests.reserve(gtest_exec.test_count);
-                    gtest_exec.state = gtest_execution_state_parsing;
+                    cdt.last_gtest_exec.test_count = std::stoi(count_str);
+                    cdt.last_gtest_exec.tests.reserve(cdt.last_gtest_exec.test_count);
+                    cdt.last_gtest_exec.state = gtest_execution_state_parsing;
                 } else {
-                    gtest_exec.total_duration = line_content.substr(line_content.rfind('('));
-                    gtest_exec.state = gtest_execution_state_parsed;
+                    cdt.last_gtest_exec.total_duration = line_content.substr(line_content.rfind('('));
+                    cdt.last_gtest_exec.state = gtest_execution_state_parsed;
                     // Clear currently displayed test execution progress line to properly display
                     // upcoming output over it.
                     line_to_print = TERM_CLEAR_CURRENT_LINE;
                     break;
                 }
             } else if (found_word == "RUN") {
-                gtest_exec.current_test = gtest_exec.tests.size();
+                cdt.last_gtest_exec.current_test = cdt.last_gtest_exec.tests.size();
                 gtest_test test{line_content};
-                gtest_exec.tests.push_back(std::move(test));
+                cdt.last_gtest_exec.tests.push_back(std::move(test));
             } else if (found_word == "OK") {
-                complete_current_gtest(gtest_exec, line_content, line_to_print);
+                complete_current_gtest(cdt.last_gtest_exec, line_content, line_to_print);
             } else if (found_word == "FAILED") {
-                gtest_exec.failed_test_ids.push_back(*gtest_exec.current_test);
-                complete_current_gtest(gtest_exec, line_content, line_to_print);
+                cdt.last_gtest_exec.failed_test_ids.push_back(*cdt.last_gtest_exec.current_test);
+                complete_current_gtest(cdt.last_gtest_exec, line_content, line_to_print);
             } else {
-                if (gtest_exec.current_test) {
-                    gtest_exec.tests[*gtest_exec.current_test].output.push_back(line);
+                if (cdt.last_gtest_exec.current_test) {
+                    cdt.last_gtest_exec.tests[*cdt.last_gtest_exec.current_test].output.push_back(line);
                 }
             }
         }
-        if (exec->is_primary_task) {
+        if (cdt.last_task_exec->is_primary_task) {
             std::cout << std::flush << line_to_print;
         }
     }
-    exec->output_lines.clear();
+    cdt.last_task_exec->output_lines.clear();
 }
 
 static void print_gtest_list(const std::vector<size_t>& test_ids, const std::vector<gtest_test>& tests) {
@@ -625,122 +634,122 @@ static void print_gtest_output(task_output& out, const std::vector<gtest_test>& 
     out.output_lines.insert(out.output_lines.end(), test.output.begin(), test.output.end());
 }
 
-static void display_gtest_output(gtest_execution& exec, task_output& out, user_command& cmd) {
-    if (!accept_usr_cmd(GTEST, cmd)) return;
-    if (exec.test_count == 0) {
+static void display_gtest_output(cdt& cdt) {
+    if (!accept_usr_cmd(GTEST, cdt.last_usr_cmd)) return;
+    if (cdt.last_gtest_exec.test_count == 0) {
         std::cout << TERM_COLOR_GREEN << "No google tests have been executed yet." << TERM_COLOR_RESET << std::endl;
-    } else if (exec.failed_test_ids.empty()) {
-        if (!is_cmd_arg_in_range(cmd, exec.tests)) {
-            std::cout << TERM_COLOR_GREEN << "Last executed tests " << exec.total_duration << ":" << TERM_COLOR_RESET << std::endl;
-            std::vector<size_t> ids(exec.tests.size());
+    } else if (cdt.last_gtest_exec.failed_test_ids.empty()) {
+        if (!is_cmd_arg_in_range(cdt.last_usr_cmd, cdt.last_gtest_exec.tests)) {
+            std::cout << TERM_COLOR_GREEN << "Last executed tests " << cdt.last_gtest_exec.total_duration << ":" << TERM_COLOR_RESET << std::endl;
+            std::vector<size_t> ids(cdt.last_gtest_exec.tests.size());
             std::iota(ids.begin(), ids.end(), 0);
-            print_gtest_list(ids, exec.tests);
+            print_gtest_list(ids, cdt.last_gtest_exec.tests);
         } else {
-            print_gtest_output(out, exec.tests, cmd.arg - 1, TERM_COLOR_GREEN);
+            print_gtest_output(cdt.last_task_output, cdt.last_gtest_exec.tests, cdt.last_usr_cmd.arg - 1, TERM_COLOR_GREEN);
         }
     } else {
-        if (!is_cmd_arg_in_range(cmd, exec.failed_test_ids)) {
-            print_failed_gtest_list(exec);
+        if (!is_cmd_arg_in_range(cdt.last_usr_cmd, cdt.last_gtest_exec.failed_test_ids)) {
+            print_failed_gtest_list(cdt.last_gtest_exec);
         } else {
-            print_gtest_output(out, exec.tests, exec.failed_test_ids[cmd.arg - 1], TERM_COLOR_RED);
+            print_gtest_output(cdt.last_task_output, cdt.last_gtest_exec.tests, cdt.last_gtest_exec.failed_test_ids[cdt.last_usr_cmd.arg - 1], TERM_COLOR_RED);
         }
     }
 }
 
-static void finish_gtest_execution(std::optional<task_execution>& exec, gtest_execution& gtest_exec, task_output& out) {
-    if (!is_finished_execution(exec) || gtest_exec.state == gtest_execution_state_finished) return;
-    if (gtest_exec.state == gtest_execution_state_running) {
-        exec->state = task_execution_state_failed;
-        std::cout << TERM_COLOR_RED << "'" << gtest_exec.binary_path << "' is not a google test executable" << TERM_COLOR_RESET << std::endl;
-    } else if (gtest_exec.state == gtest_execution_state_parsing) {
-        exec->state = task_execution_state_failed;
+static void finish_gtest_execution(cdt& cdt) {
+    if (!is_finished_execution(cdt.last_task_exec) || cdt.last_gtest_exec.state == gtest_execution_state_finished) return;
+    if (cdt.last_gtest_exec.state == gtest_execution_state_running) {
+        cdt.last_task_exec->state = task_execution_state_failed;
+        std::cout << TERM_COLOR_RED << "'" << cdt.last_gtest_exec.binary_path << "' is not a google test executable" << TERM_COLOR_RESET << std::endl;
+    } else if (cdt.last_gtest_exec.state == gtest_execution_state_parsing) {
+        cdt.last_task_exec->state = task_execution_state_failed;
         std::cout << TERM_CLEAR_CURRENT_LINE << TERM_COLOR_RED << "Tests have finished prematurely" << TERM_COLOR_RESET << std::endl;
         // Tests might have crashed in the middle of some test. If so - consider test failed.
         // This is not always true however: tests might have crashed in between two test cases.
-        if (gtest_exec.current_test) {
-            gtest_exec.failed_test_ids.push_back(*gtest_exec.current_test);
-            gtest_exec.current_test = std::optional<size_t>();
+        if (cdt.last_gtest_exec.current_test) {
+            cdt.last_gtest_exec.failed_test_ids.push_back(*cdt.last_gtest_exec.current_test);
+            cdt.last_gtest_exec.current_test.reset();
         }
-    } else if (gtest_exec.failed_test_ids.empty() && exec->is_primary_task) {
-        std::cout << TERM_COLOR_GREEN << "Successfully executed " << gtest_exec.tests.size() << " tests "  << gtest_exec.total_duration << TERM_COLOR_RESET << std::endl;
+    } else if (cdt.last_gtest_exec.failed_test_ids.empty() && cdt.last_task_exec->is_primary_task) {
+        std::cout << TERM_COLOR_GREEN << "Successfully executed " << cdt.last_gtest_exec.tests.size() << " tests "  << cdt.last_gtest_exec.total_duration << TERM_COLOR_RESET << std::endl;
     }
-    if (!gtest_exec.failed_test_ids.empty()) {
-        print_failed_gtest_list(gtest_exec);
-        if (gtest_exec.failed_test_ids.size() == 1) {
-            print_gtest_output(out, gtest_exec.tests, gtest_exec.failed_test_ids[0], TERM_COLOR_RED);
+    if (!cdt.last_gtest_exec.failed_test_ids.empty()) {
+        print_failed_gtest_list(cdt.last_gtest_exec);
+        if (cdt.last_gtest_exec.failed_test_ids.size() == 1) {
+            print_gtest_output(cdt.last_task_output, cdt.last_gtest_exec.tests, cdt.last_gtest_exec.failed_test_ids[0], TERM_COLOR_RED);
         }
     }
-    gtest_exec.state = gtest_execution_state_finished;
+    cdt.last_gtest_exec.state = gtest_execution_state_finished;
 }
 
-static void stream_primary_task_output(std::optional<task_execution>& exec, task_output& out) {
-    if (!is_active_execution(exec) || !exec->is_primary_task) return;
-    out.output_lines.insert(out.output_lines.end(), exec->output_lines.begin(), exec->output_lines.end());
-    exec->output_lines.clear();
+static void stream_primary_task_output(cdt& cdt) {
+    if (!is_active_execution(cdt.last_task_exec) || !cdt.last_task_exec->is_primary_task) return;
+    cdt.last_task_output.output_lines.insert(cdt.last_task_output.output_lines.end(), cdt.last_task_exec->output_lines.begin(), cdt.last_task_exec->output_lines.end());
+    cdt.last_task_exec->output_lines.clear();
 }
 
-static void find_and_highlight_file_links(task_output& out, template_string& open_in_editor_cmd) {
-    if (open_in_editor_cmd.str.empty()) return;
+static void find_and_highlight_file_links(cdt& cdt) {
+    if (cdt.open_in_editor_cmd.str.empty()) return;
     static const std::regex UNIX_FILE_LINK_REGEX("^(\\/[^:]+:[0-9]+(:[0-9]+)?)");
-    for (auto i = out.lines_processed; i < out.output_lines.size(); i++) {
-        auto& line = out.output_lines[i];
+    for (auto i = cdt.last_task_output.lines_processed; i < cdt.last_task_output.output_lines.size(); i++) {
+        auto& line = cdt.last_task_output.output_lines[i];
         std::smatch link_match;
         if (std::regex_search(line, link_match, UNIX_FILE_LINK_REGEX)) {
             std::stringstream highlighted_line;
-            out.file_links.push_back(link_match[1]);
-            highlighted_line << TERM_COLOR_MAGENTA << '[' << OPEN.cmd << out.file_links.size() << "] " << link_match[1] << TERM_COLOR_RESET << link_match.suffix();
+            cdt.last_task_output.file_links.push_back(link_match[1]);
+            highlighted_line << TERM_COLOR_MAGENTA << '[' << OPEN.cmd << cdt.last_task_output.file_links.size() << "] " << link_match[1] << TERM_COLOR_RESET << link_match.suffix();
             line = highlighted_line.str();
         }
     }
 }
 
-static void print_task_output(task_output& out) {
-    for (auto i = out.lines_processed; i < out.output_lines.size(); i++) {
-        std::cout << out.output_lines[i] << std::endl;
+static void print_task_output(cdt& cdt) {
+    for (auto i = cdt.last_task_output.lines_processed; i < cdt.last_task_output.output_lines.size(); i++) {
+        std::cout << cdt.last_task_output.output_lines[i] << std::endl;
     }
-    out.lines_processed = out.output_lines.size();
+    cdt.last_task_output.lines_processed = cdt.last_task_output.output_lines.size();
 }
 
-static void stream_pre_task_output_on_failure(std::optional<task_execution>& exec, task_output& out) {
-    if (exec && exec->state == task_execution_state_failed && !exec->is_primary_task) {
-        out.output_lines.insert(out.output_lines.end(), exec->output_lines.begin(), exec->output_lines.end());
-        exec->output_lines.clear();
+static void stream_pre_task_output_on_failure(cdt& cdt) {
+    if (cdt.last_task_exec && cdt.last_task_exec->state == task_execution_state_failed && !cdt.last_task_exec->is_primary_task) {
+        cdt.last_task_output.output_lines.insert(cdt.last_task_output.output_lines.end(), cdt.last_task_exec->output_lines.begin(), cdt.last_task_exec->output_lines.end());
+        cdt.last_task_exec->output_lines.clear();
     }
 }
 
-static void restart_repeating_task_on_success(const std::optional<task_execution>& exec, const std::vector<std::vector<size_t>>& pre_tasks,
-                                              std::queue<size_t>& tasks_to_exec, bool& repeat_until_fail) {
-    if (!is_finished_execution(exec) || !exec->is_primary_task || !repeat_until_fail) return;
-    if (exec->state == task_execution_state_complete) {
-        tasks_to_exec.push(exec->task_id);
+static void restart_repeating_task_on_success(cdt& cdt) {
+    if (!is_finished_execution(cdt.last_task_exec) || !cdt.last_task_exec->is_primary_task || !cdt.repeat_current_task_until_it_fails) return;
+    if (cdt.last_task_exec->state == task_execution_state_complete) {
+        cdt.tasks_to_exec.push(cdt.last_task_exec->task_id);
     } else {
-        repeat_until_fail = false;
+        cdt.repeat_current_task_until_it_fails = false;
     }
 }
 
-static void finish_task_execution(std::optional<task_execution>& exec, const std::vector<task>& tasks, std::queue<size_t>& tasks_to_exec) {
-    if (!is_finished_execution(exec)) return;
-    const auto code = exec->process->get_exit_status();
-    const auto& task_name = tasks[exec->task_id].name;
-    if (exec->state == task_execution_state_failed) {
-        tasks_to_exec = {};
+static void finish_task_execution(cdt& cdt) {
+    if (!is_finished_execution(cdt.last_task_exec)) return;
+    const auto code = cdt.last_task_exec->process->get_exit_status();
+    const auto& task_name = cdt.tasks[cdt.last_task_exec->task_id].name;
+    if (cdt.last_task_exec->state == task_execution_state_failed) {
+        cdt.tasks_to_exec = {};
         std::cout << TERM_COLOR_RED << "'" << task_name << "' failed: return code: " << code << TERM_COLOR_RESET << std::endl;
-    } else if (exec->is_primary_task) {
+    } else if (cdt.last_task_exec->is_primary_task) {
         std::cout << TERM_COLOR_MAGENTA << "'" << task_name << "' complete: return code: " << code << TERM_COLOR_RESET << std::endl;
     }
-    exec = std::optional<task_execution>();
+    cdt.last_task_exec.reset();
+    current_execution_pid.reset();
 }
 
-static void open_file_link(task_output& out, const template_string& open_in_editor_cmd, user_command& cmd) {
-    if (!accept_usr_cmd(OPEN, cmd)) return;
-    if (open_in_editor_cmd.str.empty()) {
+static void open_file_link(cdt& cdt) {
+    if (!accept_usr_cmd(OPEN, cdt.last_usr_cmd)) return;
+    if (cdt.open_in_editor_cmd.str.empty()) {
         std::cout << TERM_COLOR_RED << '\'' << OPEN_IN_EDITOR_COMMAND_PROPERTY << "' is not specified in " << USER_CONFIG_PATH << TERM_COLOR_RESET << std::endl;
-    } else if (!is_cmd_arg_in_range(cmd, out.file_links)) {
-        display_output_with_file_links(out);
+    } else if (!is_cmd_arg_in_range(cdt.last_usr_cmd, cdt.last_task_output.file_links)) {
+        display_output_with_file_links(cdt.last_task_output);
     } else {
-        const auto& link = out.file_links[cmd.arg - 1];
-        std::string open_cmd = open_in_editor_cmd.str;
-        open_cmd.replace(open_in_editor_cmd.arg_pos, TEMPLATE_ARG_PLACEHOLDER.size(), link);
+        const auto& link = cdt.last_task_output.file_links[cdt.last_usr_cmd.arg - 1];
+        std::string open_cmd = cdt.open_in_editor_cmd.str;
+        open_cmd.replace(cdt.open_in_editor_cmd.arg_pos, TEMPLATE_ARG_PLACEHOLDER.size(), link);
         TinyProcessLib::Process(open_cmd).get_exit_status();
     }
 }
@@ -749,9 +758,9 @@ static void prompt_user_to_ask_for_help() {
     std::cout << "Type " << TERM_COLOR_GREEN << HELP.cmd << TERM_COLOR_RESET << " to see list of all the user commands." << std::endl;
 }
 
-static void display_help(const std::vector<user_command_definition>& defs, user_command& cmd) {
-    if (cmd.executed) return;
-    cmd.executed = true;
+static void display_help(const std::vector<user_command_definition>& defs, cdt& cdt) {
+    if (cdt.last_usr_cmd.executed) return;
+    cdt.last_usr_cmd.executed = true;
     std::cout << TERM_COLOR_GREEN << "User commands:" << TERM_COLOR_RESET << std::endl;
     for (const auto& def: defs) {
         std::cout << def.cmd;
@@ -763,46 +772,36 @@ static void display_help(const std::vector<user_command_definition>& defs, user_
 }
 
 int main(int argc, const char** argv) {
-    template_string open_in_editor_command;
-    std::vector<task> tasks;
-    std::vector<std::vector<size_t>> pre_tasks;
-    std::queue<size_t> tasks_to_exec;
-    std::optional<size_t> task_to_exec;
-    user_command cmd;
-    task_output last_task_output;
-    gtest_execution last_gtest_exec;
-    last_gtest_exec.state = gtest_execution_state_finished;
-    auto repeat_current_task_until_it_fails = false;
-    auto executable = argv[0];
-    std::filesystem::path tasks_config_path;
-    std::vector<std::string> errors;
-    read_argv(argc, argv, tasks_config_path, errors);
-    read_user_config(open_in_editor_command, errors);
-    if (print_errors(errors)) return 1;
-    read_tasks_config(tasks_config_path, tasks, pre_tasks, errors);
-    if (print_errors(errors)) return 1;
-    read_user_command_from_env(cmd);
+    cdt cdt;
+    cdt.last_gtest_exec.state = gtest_execution_state_finished;
+    cdt.cdt_executable = argv[0];
+    read_argv(argc, argv, cdt);
+    read_user_config(cdt);
+    if (print_errors(cdt)) return 1;
+    read_tasks_config(cdt);
+    if (print_errors(cdt)) return 1;
+    read_user_command_from_env(cdt);
     prompt_user_to_ask_for_help();
-    display_list_of_tasks(tasks);
+    display_list_of_tasks(cdt.tasks);
     std::signal(SIGINT, terminate_active_task_or_exit);
     while (true) {
-        read_user_command_from_stdin(cmd, tasks_to_exec, last_task_exec);
-        schedule_task(tasks, pre_tasks, tasks_to_exec, cmd, repeat_current_task_until_it_fails);
-        open_file_link(last_task_output, open_in_editor_command, cmd);
-        display_gtest_output(last_gtest_exec, last_task_output, cmd);
-        display_help(USR_CMD_DEFS, cmd);
-        dequeue_task_to_execute(tasks_to_exec, task_to_exec, last_task_output, last_task_exec, tasks);
-        execute_restart_task(task_to_exec, tasks, executable, tasks_config_path, cmd);
-        execute_gtest_task(task_to_exec, tasks, last_task_exec, tasks_to_exec, last_gtest_exec);
-        execute_task(task_to_exec, tasks, last_task_exec, tasks_to_exec);
-        process_task_event(last_task_exec);
-        parse_gtest_output(last_task_exec, last_gtest_exec);
-        finish_gtest_execution(last_task_exec, last_gtest_exec, last_task_output);
-        stream_primary_task_output(last_task_exec, last_task_output);
-        stream_pre_task_output_on_failure(last_task_exec, last_task_output);
-        find_and_highlight_file_links(last_task_output, open_in_editor_command);
-        print_task_output(last_task_output);
-        restart_repeating_task_on_success(last_task_exec, pre_tasks, tasks_to_exec, repeat_current_task_until_it_fails);
-        finish_task_execution(last_task_exec, tasks, tasks_to_exec);
+        read_user_command_from_stdin(cdt);
+        schedule_task(cdt);
+        open_file_link(cdt);
+        display_gtest_output(cdt);
+        display_help(USR_CMD_DEFS, cdt);
+        dequeue_task_to_execute(cdt);
+        execute_restart_task(cdt);
+        execute_gtest_task(cdt);
+        execute_task(cdt);
+        process_task_event(cdt);
+        parse_gtest_output(cdt);
+        finish_gtest_execution(cdt);
+        stream_primary_task_output(cdt);
+        stream_pre_task_output_on_failure(cdt);
+        find_and_highlight_file_links(cdt);
+        print_task_output(cdt);
+        restart_repeating_task_on_success(cdt);
+        finish_task_execution(cdt);
     }
 }
