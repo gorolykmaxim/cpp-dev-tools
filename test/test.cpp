@@ -648,7 +648,11 @@ TEST_F(cdt_test, start_repeatedly_execute_task_until_it_fails) {
     ASSERT_RUNNING_TASK("gtest with sporadically failing test");
     ASSERT_LINE("\x1B[32mSuccessfully executed 1 tests (X ms total)\x1B[0m");
     ASSERT_TASK_COMPLETE("gtest with sporadically failing test");
-    // Second execution should fail
+    // Second execution should succeed
+    ASSERT_RUNNING_TASK("gtest with sporadically failing test");
+    ASSERT_LINE("\x1B[32mSuccessfully executed 1 tests (X ms total)\x1B[0m");
+    ASSERT_TASK_COMPLETE("gtest with sporadically failing test");
+    // Third execution should fail
     ASSERT_RUNNING_TASK("gtest with sporadically failing test");
     ASSERT_LINE("\x1B[31mFailed tests:\x1B[0m");
     ASSERT_LINE("1 \"sporadically_failing_tests.test1\" (X ms)");

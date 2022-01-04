@@ -57,11 +57,15 @@ TEST(long_tests, test1) {
 }
 
 TEST(sporadically_failing_tests, test1) {
-    const auto file = "test-gtest-file";
-    if (std::filesystem::exists(file)) {
-        std::filesystem::remove(file);
+    const auto file1 = "test-gtest-file1";
+    const auto file2 = "test-gtest-file2";
+    if (std::filesystem::exists(file1) && std::filesystem::exists(file2)) {
+        std::filesystem::remove(file1);
+        std::filesystem::remove(file2);
         throw std::runtime_error("");
+    } else if (std::filesystem::exists(file1)) {
+        std::ofstream f(file2);
     } else {
-        std::ofstream f(file);
+        std::ofstream f(file1);
     }
 }

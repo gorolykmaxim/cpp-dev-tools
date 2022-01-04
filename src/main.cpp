@@ -81,6 +81,7 @@ struct execution
     std::string command;
     std::string shell_command;
     bool stream_output = false;
+    bool repeat_until_fail = false;
     execution_state state = execution_state_running;
     std::unique_ptr<TinyProcessLib::Process> process;
     std::unique_ptr<moodycamel::BlockingConcurrentQueue<execution_event>> event_queue = std::make_unique<moodycamel::BlockingConcurrentQueue<execution_event>>();
@@ -130,7 +131,6 @@ struct cdt {
     std::vector<task> tasks;
     std::vector<std::vector<size_t>> pre_tasks;
     std::queue<execution> execs_to_run;
-    bool repeat_current_exec_until_it_fails = false;
     template_string open_in_editor_cmd;
     const char* cdt_executable;
     std::filesystem::path tasks_config_path;
@@ -407,12 +407,13 @@ static void display_list_of_tasks(const std::vector<task>& tasks) {
     }
 }
 
-static void convert_task_to_execution(size_t task_id, bool stream_output, const std::vector<task> tasks, std::queue<execution>& execs_to_run) {
+static void convert_task_to_execution(size_t task_id, bool stream_output, bool repeat_until_fail, const std::vector<task> tasks, std::queue<execution>& execs_to_run) {
     const auto& task = tasks[task_id];
     execution exec{};
     exec.name = task.name;
     exec.command = task.command;
     exec.stream_output = stream_output;
+    exec.repeat_until_fail = repeat_until_fail;
     execs_to_run.push(std::move(exec));
 }
 
@@ -422,11 +423,10 @@ static void schedule_task(cdt& cdt) {
         display_list_of_tasks(cdt.tasks);
     } else {
         const auto id = cdt.last_usr_cmd.arg - 1;
-        cdt.repeat_current_exec_until_it_fails = TASK_REPEAT.cmd == cdt.last_usr_cmd.cmd;
         for (const auto pre_task_id: cdt.pre_tasks[id]) {
-            convert_task_to_execution(pre_task_id, false, cdt.tasks, cdt.execs_to_run);
+            convert_task_to_execution(pre_task_id, false, false, cdt.tasks, cdt.execs_to_run);
         }
-        convert_task_to_execution(id, true, cdt.tasks, cdt.execs_to_run);
+        convert_task_to_execution(id, true, TASK_REPEAT.cmd == cdt.last_usr_cmd.cmd, cdt.tasks, cdt.execs_to_run);
     }
 }
 
@@ -716,15 +716,13 @@ static void stream_execution_output_on_failure(cdt& cdt) {
 }
 
 static void restart_repeating_execution_on_success(cdt& cdt) {
-    if (!is_finished_execution(cdt.current_exec) || !cdt.current_exec->stream_output || !cdt.repeat_current_exec_until_it_fails) return;
-    if (cdt.current_exec->state == execution_state_complete) {
+    if (is_finished_execution(cdt.current_exec) && cdt.current_exec->repeat_until_fail) {
         execution exec{};
         exec.name = cdt.current_exec->name;
         exec.command = cdt.current_exec->command;
         exec.stream_output = cdt.current_exec->stream_output;
+        exec.repeat_until_fail = cdt.current_exec->repeat_until_fail;
         cdt.execs_to_run.push(std::move(exec));
-    } else {
-        cdt.repeat_current_exec_until_it_fails = false;
     }
 }
 
