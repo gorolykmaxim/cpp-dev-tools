@@ -51,11 +51,19 @@ protected:
     std::unique_ptr<TinyProcessLib::Process> proc;
 
     virtual void SetUp() override {
-        std::filesystem::remove(cmd_out_file);
+        remove_tmp_files();
     }
     virtual void TearDown() override {
         if (proc) {
             proc->kill();
+        }
+        remove_tmp_files();
+    }
+    void remove_tmp_files() {
+        for (const auto& file: std::filesystem::directory_iterator(test_configs_dir)) {
+            if (file.path().extension() == ".tmp") {
+                std::filesystem::remove(file.path());
+            }
         }
         std::filesystem::remove(cmd_out_file);
     }
