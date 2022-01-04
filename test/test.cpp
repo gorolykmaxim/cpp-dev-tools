@@ -173,7 +173,6 @@ protected:
     ASSERT_LINE("hello world");\
     ASSERT_TASK_COMPLETE("hello world")
 #define ASSERT_CDT_RESTARTED()\
-    ASSERT_RUNNING_TASK("restart");\
     ASSERT_LINE("\x1B[35mRestarting program...\x1B[0m");\
     ASSERT_HELP_PROMPT_DISPLAYED();\
     ASSERT_TASK_LIST_DISPLAYED()
@@ -181,17 +180,17 @@ protected:
     ASSERT_LINE("\x1B[35m[o1] /a/b/c:10\x1B[0m");\
     ASSERT_LINE("some random data");\
     ASSERT_LINE("\x1B[35m[o2] /d/e/f:15:32\x1B[0m something")
-#define ASSERT_LAST_TASK_OUTPUT_DISPLAYED() ASSERT_LINE("\x1B[32mLast task output:\x1B[0m")
+#define ASSERT_LAST_EXEC_OUTPUT_DISPLAYED() ASSERT_LINE("\x1B[32mLast execution output:\x1B[0m")
 #define ASSERT_NO_FILE_LINKS_IN_OUTPUT_DISPLAYED() ASSERT_LINE("\x1B[32mNo file links in the output\x1B[0m")
-#define ASSERT_LAST_TASK_OUTPUT_DISPLAYED_ON_LINK_INDEX_OUT_OF_BOUNDS()\
+#define ASSERT_LAST_EXEC_OUTPUT_DISPLAYED_ON_LINK_INDEX_OUT_OF_BOUNDS()\
     run_cmd("o0");\
-    ASSERT_LAST_TASK_OUTPUT_DISPLAYED();\
+    ASSERT_LAST_EXEC_OUTPUT_DISPLAYED();\
     ASSERT_OUTPUT_WITH_LINKS_DISPLAYED();\
     run_cmd("o99");\
-    ASSERT_LAST_TASK_OUTPUT_DISPLAYED();\
+    ASSERT_LAST_EXEC_OUTPUT_DISPLAYED();\
     ASSERT_OUTPUT_WITH_LINKS_DISPLAYED();\
     run_cmd("o");\
-    ASSERT_LAST_TASK_OUTPUT_DISPLAYED();\
+    ASSERT_LAST_EXEC_OUTPUT_DISPLAYED();\
     ASSERT_OUTPUT_WITH_LINKS_DISPLAYED();\
     ASSERT_CMD_OUT("") // assert that we didn't attempt to open some weird link that does not exist
 #define ASSERT_NON_GTEST_BINARY_EXECUTED(TASK_NAME, NON_GTEST_BINARY, RETURN_CODE)\
@@ -464,7 +463,7 @@ TEST_F(cdt_test, start_execute_task_with_links_in_output_attempt_to_open_non_exi
     ASSERT_RUNNING_TASK("primary task with links");
     ASSERT_OUTPUT_WITH_LINKS_DISPLAYED();
     ASSERT_TASK_COMPLETE("primary task with links");
-    ASSERT_LAST_TASK_OUTPUT_DISPLAYED_ON_LINK_INDEX_OUT_OF_BOUNDS();
+    ASSERT_LAST_EXEC_OUTPUT_DISPLAYED_ON_LINK_INDEX_OUT_OF_BOUNDS();
 }
 
 TEST_F(cdt_test, start_fail_to_execute_task_with_links_attempt_to_open_non_existent_link_and_view_task_output) {
@@ -475,7 +474,7 @@ TEST_F(cdt_test, start_fail_to_execute_task_with_links_attempt_to_open_non_exist
     ASSERT_RUNNING_TASK("fail primary task with links");
     ASSERT_OUTPUT_WITH_LINKS_DISPLAYED();
     ASSERT_TASK_FAILED("fail primary task with links", "32");
-    ASSERT_LAST_TASK_OUTPUT_DISPLAYED_ON_LINK_INDEX_OUT_OF_BOUNDS();
+    ASSERT_LAST_EXEC_OUTPUT_DISPLAYED_ON_LINK_INDEX_OUT_OF_BOUNDS();
 }
 
 TEST_F(cdt_test, start_fail_to_execute_pre_task_of_task_attempt_to_open_non_existent_link_and_view_task_output) {
@@ -486,7 +485,7 @@ TEST_F(cdt_test, start_fail_to_execute_pre_task_of_task_attempt_to_open_non_exis
     ASSERT_RUNNING_PRE_TASK("fail primary task with links");
     ASSERT_OUTPUT_WITH_LINKS_DISPLAYED();
     ASSERT_TASK_FAILED("fail primary task with links", "32");
-    ASSERT_LAST_TASK_OUTPUT_DISPLAYED_ON_LINK_INDEX_OUT_OF_BOUNDS();
+    ASSERT_LAST_EXEC_OUTPUT_DISPLAYED_ON_LINK_INDEX_OUT_OF_BOUNDS();
 }
 
 TEST_F(cdt_test, start_attempt_to_open_non_existent_link_and_view_task_output) {
