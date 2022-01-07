@@ -48,7 +48,7 @@ TEST(failed_test_suit_1, test2) {
 }
 
 TEST(failed_test_suit_2, test1) {
-    EXPECT_EQ(1, 0);
+    throw std::runtime_error("");
 }
 
 TEST(long_tests, test1) {

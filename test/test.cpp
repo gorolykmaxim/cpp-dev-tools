@@ -164,13 +164,16 @@ protected:
     ASSERT_LINE("27 \"gtest with long test and failures\"");\
     ASSERT_LINE("28 \"gtest with sporadically failing test\"");\
     ASSERT_LINE("29 \"gtest with single failed test\"");\
-    ASSERT_LINE("30 \"primary task with failed gtest pre task with single failed test\"")
+    ASSERT_LINE("30 \"primary task with failed gtest pre task with single failed test\"");\
+    ASSERT_LINE("31 \"gtest with multiple test suites and pre tasks\"");\
+    ASSERT_LINE("32 \"gtest with multiple failed test suites and pre tasks\"")
 #define ASSERT_HELP_DISPLAYED()\
     ASSERT_LINE("\x1B[32mUser commands:\x1B[0m");\
     ASSERT_LINE("t<ind>\t\tExecute the task with the specified index");\
     ASSERT_LINE("tr<ind>\t\tKeep executing the task with the specified index until it fails");\
     ASSERT_LINE("o<ind>\t\tOpen the file link with the specified index in your code editor");\
     ASSERT_LINE("g<ind>\t\tDisplay output of the specified google test");\
+    ASSERT_LINE("gt<ind>\t\tRe-run the google test with the specified index");\
     ASSERT_LINE("h\t\tDisplay list of user commands")
 #define ASSERT_RUNNING_TASK(TASK_NAME) ASSERT_LINE("\x1B[35mRunning \"" TASK_NAME "\"\x1B[0m")
 #define ASSERT_RUNNING_PRE_TASK(TASK_NAME) ASSERT_LINE("\x1B[34mRunning \"" TASK_NAME "\"...\x1B[0m")
@@ -239,6 +242,31 @@ protected:
     run_cmd("h");\
     ASSERT_HELP_DISPLAYED();\
     ASSERT_CMD_OUT("/a/b/c:10\n/d/e/f:15:32\n")
+#define ASSERT_RAW_SINGLE_GTEST_START_DISPLAYED(SUIT, NAME)\
+    get_out_line();\
+    ASSERT_LINE("Note: Google Test filter = " SUIT "." NAME);\
+    ASSERT_LINE("[==========] Running 1 test from 1 test suite.");\
+    ASSERT_LINE("[----------] Global test environment set-up.");\
+    ASSERT_LINE("[----------] 1 test from " SUIT);\
+    ASSERT_LINE("[ RUN      ] " SUIT "." NAME)
+#define ASSERT_RAW_SINGLE_GTEST_FAILURE_DISPLAYED(SUIT, NAME)\
+    ASSERT_LINE("[  FAILED  ] " SUIT "." NAME " (X ms)");\
+    ASSERT_LINE("[----------] 1 test from " SUIT " (X ms total)");\
+    ASSERT_LINE("");\
+    ASSERT_LINE("[----------] Global test environment tear-down");\
+    ASSERT_LINE("[==========] 1 test from 1 test suite ran. (X ms total)");\
+    ASSERT_LINE("[  PASSED  ] 0 tests.");\
+    ASSERT_LINE("[  FAILED  ] 1 test, listed below:");\
+    ASSERT_LINE("[  FAILED  ] " SUIT "." NAME);\
+    ASSERT_LINE("");\
+    ASSERT_LINE(" 1 FAILED TEST")
+#define ASSERT_RAW_SINGLE_GTEST_SUCCESS_DISPLAYED(SUIT, NAME)\
+    ASSERT_LINE("[       OK ] " SUIT "." NAME " (X ms)");\
+    ASSERT_LINE("[----------] 1 test from " SUIT " (X ms total)");\
+    ASSERT_LINE("");\
+    ASSERT_LINE("[----------] Global test environment tear-down");\
+    ASSERT_LINE("[==========] 1 test from 1 test suite ran. (X ms total)");\
+    ASSERT_LINE("[  PASSED  ] 1 test.")
 
 TEST_F(cdt_test, start_and_view_tasks) {
     run_cdt("test-tasks.json", "no-config");
@@ -776,4 +804,104 @@ TEST_F(cdt_test, start_execute_task_with_gtest_pre_task_fail_one_of_the_tests_an
     run_cmd("t30");
     ASSERT_RUNNING_PRE_TASK("gtest with single failed test");
     ASSERT_SINGLE_FAILED_GTEST_TEST_DISPLAYED();
+}
+
+TEST_F(cdt_test, start_attempt_to_rerun_gtest_when_no_tests_have_been_executed_yet) {
+    run_cdt("test-tasks.json", "no-config");
+    ASSERT_HELP_PROMPT_DISPLAYED();
+    ASSERT_TASK_LIST_DISPLAYED();
+    run_cmd("gt");
+    ASSERT_LINE("\x1B[32mNo google tests have been executed yet.\x1B[0m");
+}
+
+TEST_F(cdt_test, start_execute_gtest_task_with_pre_tasks_fail_attempt_to_rerun_test_that_does_not_exist_and_view_list_of_failed_tests) {
+    run_cdt("test-tasks.json", "no-config");
+    ASSERT_HELP_PROMPT_DISPLAYED();
+    ASSERT_TASK_LIST_DISPLAYED();
+    run_cmd("t32");
+    ASSERT_RUNNING_PRE_TASK("pre pre task 1");
+    ASSERT_RUNNING_PRE_TASK("pre pre task 2");
+    ASSERT_RUNNING_TASK("gtest with multiple failed test suites and pre tasks");
+    ASSERT_FAILED_GTEST_TESTS_LIST_DISPLAYED();
+    ASSERT_TASK_FAILED("gtest with multiple failed test suites and pre tasks", "1");
+    run_cmd("gt");
+    ASSERT_FAILED_GTEST_TESTS_LIST_DISPLAYED();
+    run_cmd("gt0");
+    ASSERT_FAILED_GTEST_TESTS_LIST_DISPLAYED();
+    run_cmd("gt99");
+    ASSERT_FAILED_GTEST_TESTS_LIST_DISPLAYED();
+}
+
+TEST_F(cdt_test, start_execute_gtest_task_with_pre_tasks_fail_and_rerun_failed_test) {
+    run_cdt("test-tasks.json", "test-config");
+    ASSERT_HELP_PROMPT_DISPLAYED();
+    ASSERT_TASK_LIST_DISPLAYED();
+    run_cmd("t32");
+    ASSERT_RUNNING_PRE_TASK("pre pre task 1");
+    ASSERT_RUNNING_PRE_TASK("pre pre task 2");
+    ASSERT_RUNNING_TASK("gtest with multiple failed test suites and pre tasks");
+    ASSERT_FAILED_GTEST_TESTS_LIST_DISPLAYED();
+    ASSERT_TASK_FAILED("gtest with multiple failed test suites and pre tasks", "1");
+    run_cmd("gt1");
+    ASSERT_RUNNING_PRE_TASK("pre pre task 1");
+    ASSERT_RUNNING_PRE_TASK("pre pre task 2");
+    ASSERT_RUNNING_TASK("failed_test_suit_1.test1");
+    ASSERT_RAW_SINGLE_GTEST_START_DISPLAYED("failed_test_suit_1", "test1");
+    ASSERT_OUTPUT_WITH_LINKS_DISPLAYED();
+    ASSERT_GTEST_FAILURE_REASON_DISPLAYED();
+    ASSERT_RAW_SINGLE_GTEST_FAILURE_DISPLAYED("failed_test_suit_1", "test1");
+    ASSERT_TASK_FAILED("failed_test_suit_1.test1", "1");
+    run_cmd("gt2");
+    ASSERT_RUNNING_PRE_TASK("pre pre task 1");
+    ASSERT_RUNNING_PRE_TASK("pre pre task 2");
+    ASSERT_RUNNING_TASK("failed_test_suit_2.test1");
+    ASSERT_RAW_SINGLE_GTEST_START_DISPLAYED("failed_test_suit_2", "test1");
+    ASSERT_GTEST_FAILURE_REASON_DISPLAYED();
+    ASSERT_RAW_SINGLE_GTEST_FAILURE_DISPLAYED("failed_test_suit_2", "test1");
+    ASSERT_TASK_FAILED("failed_test_suit_2.test1", "1");
+}
+
+TEST_F(cdt_test, start_execute_gtest_task_with_pre_tasks_succeed_attempt_to_rerun_test_that_does_not_exist_and_view_list_of_all_tests) {
+    run_cdt("test-tasks.json", "no-config");
+    ASSERT_HELP_PROMPT_DISPLAYED();
+    ASSERT_TASK_LIST_DISPLAYED();
+    run_cmd("t31");
+    ASSERT_RUNNING_PRE_TASK("pre pre task 1");
+    ASSERT_RUNNING_PRE_TASK("pre pre task 2");
+    ASSERT_RUNNING_TASK("gtest with multiple test suites and pre tasks");
+    ASSERT_LINE("\x1B[32mSuccessfully executed 3 tests (X ms total)\x1B[0m");
+    ASSERT_TASK_COMPLETE("gtest with multiple test suites and pre tasks");
+    run_cmd("gt");
+    ASSERT_SUCCESS_GTEST_TESTS_LIST_DISPLAYED();
+    run_cmd("gt0");
+    ASSERT_SUCCESS_GTEST_TESTS_LIST_DISPLAYED();
+    run_cmd("gt99");
+    ASSERT_SUCCESS_GTEST_TESTS_LIST_DISPLAYED();
+}
+
+TEST_F(cdt_test, start_execute_gtest_task_with_pre_tasks_succeed_and_rerun_one_of_test) {
+    run_cdt("test-tasks.json", "test-config");
+    ASSERT_HELP_PROMPT_DISPLAYED();
+    ASSERT_TASK_LIST_DISPLAYED();
+    run_cmd("t31");
+    ASSERT_RUNNING_PRE_TASK("pre pre task 1");
+    ASSERT_RUNNING_PRE_TASK("pre pre task 2");
+    ASSERT_RUNNING_TASK("gtest with multiple test suites and pre tasks");
+    ASSERT_LINE("\x1B[32mSuccessfully executed 3 tests (X ms total)\x1B[0m");
+    ASSERT_TASK_COMPLETE("gtest with multiple test suites and pre tasks");
+    run_cmd("gt1");
+    ASSERT_RUNNING_PRE_TASK("pre pre task 1");
+    ASSERT_RUNNING_PRE_TASK("pre pre task 2");
+    ASSERT_RUNNING_TASK("test_suit_1.test1");
+    ASSERT_RAW_SINGLE_GTEST_START_DISPLAYED("test_suit_1", "test1");
+    ASSERT_OUTPUT_WITH_LINKS_DISPLAYED();
+    ASSERT_RAW_SINGLE_GTEST_SUCCESS_DISPLAYED("test_suit_1", "test1");
+    ASSERT_TASK_COMPLETE("test_suit_1.test1");
+    run_cmd("gt2");
+    ASSERT_RUNNING_PRE_TASK("pre pre task 1");
+    ASSERT_RUNNING_PRE_TASK("pre pre task 2");
+    ASSERT_RUNNING_TASK("test_suit_1.test2");
+    ASSERT_RAW_SINGLE_GTEST_START_DISPLAYED("test_suit_1", "test2");
+    ASSERT_RAW_SINGLE_GTEST_SUCCESS_DISPLAYED("test_suit_1", "test2");
+    ASSERT_TASK_COMPLETE("test_suit_1.test2");
 }

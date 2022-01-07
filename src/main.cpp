@@ -34,6 +34,7 @@ const auto USER_CONFIG_PATH = std::filesystem::path(getenv("HOME")) / ".cpp-dev-
 const auto OPEN_IN_EDITOR_COMMAND_PROPERTY = "open_in_editor_command";
 const auto ENV_VAR_LAST_COMMAND = "LAST_COMMAND";
 const std::string TEMPLATE_ARG_PLACEHOLDER = "{}";
+const std::string GTEST_TASK = "__gtest";
 
 template <typename T>
 T push_back_and_return(std::vector<T>& vec, T&& t) {
@@ -77,6 +78,7 @@ enum execution_state {
 
 struct execution
 {
+    size_t task_id;
     std::string name;
     std::string command;
     std::string shell_command;
@@ -101,7 +103,7 @@ enum gtest_execution_state {
 };
 
 struct gtest_execution {
-    std::string binary_path;
+    size_t task_id;
     std::vector<gtest_test> tests;
     std::vector<size_t> failed_test_ids;
     size_t test_count = 0;
@@ -142,6 +144,7 @@ const auto TASK = push_back_and_return(USR_CMD_DEFS, {"t", "ind", "Execute the t
 const auto TASK_REPEAT = push_back_and_return(USR_CMD_DEFS, {"tr", "ind", "Keep executing the task with the specified index until it fails"});
 const auto OPEN = push_back_and_return(USR_CMD_DEFS, {"o", "ind", "Open the file link with the specified index in your code editor"});
 const auto GTEST = push_back_and_return(USR_CMD_DEFS, {"g", "ind", "Display output of the specified google test"});
+const auto GTEST_RERUN = push_back_and_return(USR_CMD_DEFS, {"gt", "ind", "Re-run the google test with the specified index"});
 const auto HELP = push_back_and_return(USR_CMD_DEFS, {"h", "", "Display list of user commands"});
 
 std::optional<TinyProcessLib::Process::id_type> current_execution_pid;
@@ -410,6 +413,7 @@ static void display_list_of_tasks(const std::vector<task>& tasks) {
 static void convert_task_to_execution(size_t task_id, bool stream_output, bool repeat_until_fail, const std::vector<task> tasks, std::queue<execution>& execs_to_run) {
     const auto& task = tasks[task_id];
     execution exec{};
+    exec.task_id = task_id;
     exec.name = task.name;
     exec.command = task.command;
     exec.stream_output = stream_output;
@@ -451,14 +455,13 @@ static void execute_restart_task(cdt& cdt) {
 }
 
 static void execute_gtest_task(cdt& cdt) {
-    static const std::string GTEST_TASK = "__gtest";
     if (cdt.execs_to_run.empty() || is_active_execution(cdt.current_exec)) return;
     if (cdt.execs_to_run.front().command.find(GTEST_TASK) != 0) return;
     cdt.current_exec = std::move(cdt.execs_to_run.front());
     cdt.execs_to_run.pop();
     cdt.last_gtest_exec = gtest_execution{};
-    cdt.last_gtest_exec.binary_path = cdt.current_exec->command.substr(GTEST_TASK.size() + 1);
-    cdt.current_exec->shell_command = cdt.last_gtest_exec.binary_path;
+    cdt.last_gtest_exec.task_id = cdt.current_exec->task_id;
+    cdt.current_exec->shell_command = cdt.current_exec->command.substr(GTEST_TASK.size() + 1);
 }
 
 static void execute_task(cdt& cdt) {
@@ -572,7 +575,28 @@ static void parse_gtest_output(cdt& cdt) {
             }
             const auto found_word = word_stream.str();
             const auto line_content = line.substr(line_content_index);
-            if (filler_char == '=') {
+            /*
+            The order of conditions here is important:
+            We might be executing google tests, that execute their own google tests as a part of their
+            routine. We must differentiate between the output of tests launched by us and any other output
+            that might look like google test output.
+            As a first priority - we handle the output as a part of output of the current test. When getting
+            "OK" and "FAILED" we also check that those two actually belong to OUR current test.
+            Only in case we are not running a test it is safe to process other cases, since they are guaranteed
+            to belong to our tests and not some other child tests.
+            */
+            if (found_word == "OK" && line_content.find(cdt.last_gtest_exec.tests.back().name) == 0) {
+                complete_current_gtest(cdt.last_gtest_exec, line_content, line_to_print);
+            } else if (found_word == "FAILED" && line_content.find(cdt.last_gtest_exec.tests.back().name) == 0) {
+                cdt.last_gtest_exec.failed_test_ids.push_back(*cdt.last_gtest_exec.current_test);
+                complete_current_gtest(cdt.last_gtest_exec, line_content, line_to_print);
+            } else if (cdt.last_gtest_exec.current_test) {
+                cdt.last_gtest_exec.tests[*cdt.last_gtest_exec.current_test].output.push_back(line);
+            } else if (found_word == "RUN") {
+                cdt.last_gtest_exec.current_test = cdt.last_gtest_exec.tests.size();
+                gtest_test test{line_content};
+                cdt.last_gtest_exec.tests.push_back(std::move(test));
+            } else if (filler_char == '=') {
                 if (cdt.last_gtest_exec.state == gtest_execution_state_running) {
                     const auto count_end_index = line_content.find(' ', test_count_index);
                     const auto count_str = line_content.substr(test_count_index, count_end_index - test_count_index);
@@ -586,19 +610,6 @@ static void parse_gtest_output(cdt& cdt) {
                     // upcoming output over it.
                     line_to_print = TERM_CLEAR_CURRENT_LINE;
                     break;
-                }
-            } else if (found_word == "RUN") {
-                cdt.last_gtest_exec.current_test = cdt.last_gtest_exec.tests.size();
-                gtest_test test{line_content};
-                cdt.last_gtest_exec.tests.push_back(std::move(test));
-            } else if (found_word == "OK") {
-                complete_current_gtest(cdt.last_gtest_exec, line_content, line_to_print);
-            } else if (found_word == "FAILED") {
-                cdt.last_gtest_exec.failed_test_ids.push_back(*cdt.last_gtest_exec.current_test);
-                complete_current_gtest(cdt.last_gtest_exec, line_content, line_to_print);
-            } else {
-                if (cdt.last_gtest_exec.current_test) {
-                    cdt.last_gtest_exec.tests[*cdt.last_gtest_exec.current_test].output.push_back(line);
                 }
             }
         }
@@ -624,33 +635,58 @@ static void print_failed_gtest_list(const gtest_execution& exec) {
     std::cout << TERM_COLOR_RED << "Tests failed: " << exec.failed_test_ids.size() << " of " << exec.tests.size() << " (" << failed_percent << "%) " << exec.total_duration << TERM_COLOR_RESET << std::endl;
 }
 
-static void print_gtest_output(execution_output& out, const std::vector<gtest_test>& tests, size_t test_id, const std::string& color) {
-    const auto& test = tests[test_id];
+static void print_gtest_output(execution_output& out, const gtest_test& test, const std::string& color) {
     out = execution_output{};
     out.output_lines.reserve(test.output.size() + 1);
     out.output_lines.emplace_back(color + "\"" + test.name + "\" output:" + TERM_COLOR_RESET);
     out.output_lines.insert(out.output_lines.end(), test.output.begin(), test.output.end());
 }
 
-static void display_gtest_output(cdt& cdt) {
-    if (!accept_usr_cmd(GTEST, cdt.last_usr_cmd)) return;
-    if (cdt.last_gtest_exec.test_count == 0) {
+static bool find_gtest_by_cmd_arg(const user_command& cmd, gtest_execution& exec, execution_output& out, gtest_test& test) {
+    if (exec.test_count == 0) {
         std::cout << TERM_COLOR_GREEN << "No google tests have been executed yet." << TERM_COLOR_RESET << std::endl;
-    } else if (cdt.last_gtest_exec.failed_test_ids.empty()) {
-        if (!is_cmd_arg_in_range(cdt.last_usr_cmd, cdt.last_gtest_exec.tests)) {
-            std::cout << TERM_COLOR_GREEN << "Last executed tests " << cdt.last_gtest_exec.total_duration << ":" << TERM_COLOR_RESET << std::endl;
-            std::vector<size_t> ids(cdt.last_gtest_exec.tests.size());
+    } else if (exec.failed_test_ids.empty()) {
+        if (!is_cmd_arg_in_range(cmd, exec.tests)) {
+            std::cout << TERM_COLOR_GREEN << "Last executed tests " << exec.total_duration << ":" << TERM_COLOR_RESET << std::endl;
+            std::vector<size_t> ids(exec.tests.size());
             std::iota(ids.begin(), ids.end(), 0);
-            print_gtest_list(ids, cdt.last_gtest_exec.tests);
+            print_gtest_list(ids, exec.tests);
         } else {
-            print_gtest_output(cdt.last_exec_output, cdt.last_gtest_exec.tests, cdt.last_usr_cmd.arg - 1, TERM_COLOR_GREEN);
+            test = exec.tests[cmd.arg - 1];
+            return true;
         }
     } else {
-        if (!is_cmd_arg_in_range(cdt.last_usr_cmd, cdt.last_gtest_exec.failed_test_ids)) {
-            print_failed_gtest_list(cdt.last_gtest_exec);
+        if (!is_cmd_arg_in_range(cmd, exec.failed_test_ids)) {
+            print_failed_gtest_list(exec);
         } else {
-            print_gtest_output(cdt.last_exec_output, cdt.last_gtest_exec.tests, cdt.last_gtest_exec.failed_test_ids[cdt.last_usr_cmd.arg - 1], TERM_COLOR_RED);
+            test = exec.tests[exec.failed_test_ids[cmd.arg - 1]];
+            return true;
         }
+    }
+    return false;
+}
+
+static void display_gtest_output(cdt& cdt) {
+    if (!accept_usr_cmd(GTEST, cdt.last_usr_cmd)) return;
+    gtest_test test;
+    if (find_gtest_by_cmd_arg(cdt.last_usr_cmd, cdt.last_gtest_exec, cdt.last_exec_output, test)) {
+        print_gtest_output(cdt.last_exec_output, test, cdt.last_gtest_exec.failed_test_ids.empty() ? TERM_COLOR_GREEN : TERM_COLOR_RED);
+    }
+}
+
+static void rerun_gtest(cdt& cdt) {
+    if (!accept_usr_cmd(GTEST_RERUN, cdt.last_usr_cmd)) return;
+    gtest_test test;
+    if (find_gtest_by_cmd_arg(cdt.last_usr_cmd, cdt.last_gtest_exec, cdt.last_exec_output, test)) {
+        for (const auto& pre_task_id: cdt.pre_tasks[cdt.last_gtest_exec.task_id]) {
+            convert_task_to_execution(pre_task_id, false, false, cdt.tasks, cdt.execs_to_run);
+        }
+        execution exec{};
+        exec.task_id = cdt.last_gtest_exec.task_id;
+        exec.name = test.name;
+        exec.command = cdt.tasks[cdt.last_gtest_exec.task_id].command.substr(GTEST_TASK.size() + 1) + " --gtest_filter='" + test.name + "'";
+        exec.stream_output = true;
+        cdt.execs_to_run.push(std::move(exec));
     }
 }
 
@@ -658,7 +694,9 @@ static void finish_gtest_execution(cdt& cdt) {
     if (!is_finished_execution(cdt.current_exec) || cdt.last_gtest_exec.state == gtest_execution_state_finished) return;
     if (cdt.last_gtest_exec.state == gtest_execution_state_running) {
         cdt.current_exec->state = execution_state_failed;
-        std::cout << TERM_COLOR_RED << "'" << cdt.last_gtest_exec.binary_path << "' is not a google test executable" << TERM_COLOR_RESET << std::endl;
+        const auto& task = cdt.tasks[cdt.last_gtest_exec.task_id];
+        const auto gtest_binary_path = task.command.substr(GTEST_TASK.size() + 1);
+        std::cout << TERM_COLOR_RED << "'" << gtest_binary_path << "' is not a google test executable" << TERM_COLOR_RESET << std::endl;
     } else if (cdt.last_gtest_exec.state == gtest_execution_state_parsing) {
         cdt.current_exec->state = execution_state_failed;
         std::cout << TERM_CLEAR_CURRENT_LINE << TERM_COLOR_RED << "Tests have finished prematurely" << TERM_COLOR_RESET << std::endl;
@@ -674,7 +712,8 @@ static void finish_gtest_execution(cdt& cdt) {
     if (!cdt.last_gtest_exec.failed_test_ids.empty()) {
         print_failed_gtest_list(cdt.last_gtest_exec);
         if (cdt.last_gtest_exec.failed_test_ids.size() == 1) {
-            print_gtest_output(cdt.last_exec_output, cdt.last_gtest_exec.tests, cdt.last_gtest_exec.failed_test_ids[0], TERM_COLOR_RED);
+            const auto& test = cdt.last_gtest_exec.tests[cdt.last_gtest_exec.failed_test_ids[0]];
+            print_gtest_output(cdt.last_exec_output, test, TERM_COLOR_RED);
         }
     }
     cdt.last_gtest_exec.state = gtest_execution_state_finished;
@@ -718,6 +757,7 @@ static void stream_execution_output_on_failure(cdt& cdt) {
 static void restart_repeating_execution_on_success(cdt& cdt) {
     if (is_finished_execution(cdt.current_exec) && cdt.current_exec->repeat_until_fail) {
         execution exec{};
+        exec.task_id = cdt.current_exec->task_id;
         exec.name = cdt.current_exec->name;
         exec.command = cdt.current_exec->command;
         exec.stream_output = cdt.current_exec->stream_output;
@@ -788,6 +828,7 @@ int main(int argc, const char** argv) {
         schedule_task(cdt);
         open_file_link(cdt);
         display_gtest_output(cdt);
+        rerun_gtest(cdt);
         display_help(USR_CMD_DEFS, cdt);
         execute_restart_task(cdt);
         execute_gtest_task(cdt);
