@@ -53,7 +53,7 @@ TEST(failed_test_suit_2, test1) {
 
 TEST(long_tests, test1) {
     using namespace std::chrono_literals;
-    std::this_thread::sleep_for(1h);
+    std::this_thread::sleep_for(20s);
 }
 
 TEST(sporadically_failing_tests, test1) {

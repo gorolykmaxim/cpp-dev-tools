@@ -56,7 +56,10 @@ protected:
     }
     virtual void TearDown() override {
         if (proc) {
-            proc->kill(true);
+            int d;
+            while (!proc->try_get_exit_status(d)) {
+                proc->kill();
+            }
         }
         remove_tmp_files();
     }
