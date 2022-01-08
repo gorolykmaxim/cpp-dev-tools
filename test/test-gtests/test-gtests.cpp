@@ -60,6 +60,8 @@ TEST(sporadically_failing_tests, test1) {
     const auto file1 = "test-gtest-file1.tmp";
     const auto file2 = "test-gtest-file2.tmp";
     if (std::filesystem::exists(file1) && std::filesystem::exists(file2)) {
+        std::filesystem::remove(file1);
+        std::filesystem::remove(file2);
         throw std::runtime_error("");
     } else if (std::filesystem::exists(file1)) {
         std::ofstream f(file2);

@@ -145,6 +145,7 @@ const auto TASK_REPEAT = push_back_and_return(USR_CMD_DEFS, {"tr", "ind", "Keep 
 const auto OPEN = push_back_and_return(USR_CMD_DEFS, {"o", "ind", "Open the file link with the specified index in your code editor"});
 const auto GTEST = push_back_and_return(USR_CMD_DEFS, {"g", "ind", "Display output of the specified google test"});
 const auto GTEST_RERUN = push_back_and_return(USR_CMD_DEFS, {"gt", "ind", "Re-run the google test with the specified index"});
+const auto GTEST_RERUN_REPEAT = push_back_and_return(USR_CMD_DEFS, {"gtr", "ind", "Keep re-running the google test with the specified index until it fails"});
 const auto HELP = push_back_and_return(USR_CMD_DEFS, {"h", "", "Display list of user commands"});
 
 std::optional<TinyProcessLib::Process::id_type> current_execution_pid;
@@ -675,7 +676,7 @@ static void display_gtest_output(cdt& cdt) {
 }
 
 static void rerun_gtest(cdt& cdt) {
-    if (!accept_usr_cmd(GTEST_RERUN, cdt.last_usr_cmd)) return;
+    if (!accept_usr_cmd(GTEST_RERUN, cdt.last_usr_cmd) && !accept_usr_cmd(GTEST_RERUN_REPEAT, cdt.last_usr_cmd)) return;
     gtest_test test;
     if (find_gtest_by_cmd_arg(cdt.last_usr_cmd, cdt.last_gtest_exec, cdt.last_exec_output, test)) {
         for (const auto& pre_task_id: cdt.pre_tasks[cdt.last_gtest_exec.task_id]) {
@@ -686,6 +687,7 @@ static void rerun_gtest(cdt& cdt) {
         exec.name = test.name;
         exec.command = cdt.tasks[cdt.last_gtest_exec.task_id].command.substr(GTEST_TASK.size() + 1) + " --gtest_filter='" + test.name + "'";
         exec.stream_output = true;
+        exec.repeat_until_fail = GTEST_RERUN_REPEAT.cmd == cdt.last_usr_cmd.cmd;
         cdt.execs_to_run.push(std::move(exec));
     }
 }
@@ -806,7 +808,7 @@ static void display_help(const std::vector<user_command_definition>& defs, cdt& 
         if (!def.arg.empty()) {
             std::cout << '<' << def.arg << '>';
         }
-        std::cout << "\t\t" << def.desc << std::endl;
+        std::cout << ((def.cmd.size() + def.arg.size()) < 6 ? "\t\t" : "\t") << def.desc << std::endl;
     }
 }
 

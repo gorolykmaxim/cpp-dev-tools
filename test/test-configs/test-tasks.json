@@ -31,6 +31,9 @@
         {"name": "gtest with single failed test", "command": "__gtest ${GTEST_BINARY_NAME} --gtest_filter='failed_test_suit_1.*'"},
         {"name": "primary task with failed gtest pre task with single failed test", "command": "echo hello world | tee -a ${OUTPUT_FILE}", "pre_tasks": ["gtest with single failed test"]},
         {"name": "gtest with multiple test suites and pre tasks", "command": "__gtest ${GTEST_BINARY_NAME} --gtest_filter='test_suit_1.*:test_suit_2.*'", "pre_tasks": ["pre pre task 1", "pre pre task 2"]},
-        {"name": "gtest with multiple failed test suites and pre tasks", "command": "__gtest ${GTEST_BINARY_NAME} --gtest_filter='failed_test_suit_1.*:failed_test_suit_2.*'", "pre_tasks": ["pre pre task 1", "pre pre task 2"]}
+        {"name": "gtest with multiple failed test suites and pre tasks", "command": "__gtest ${GTEST_BINARY_NAME} --gtest_filter='failed_test_suit_1.*:failed_test_suit_2.*'", "pre_tasks": ["pre pre task 1", "pre pre task 2"]},
+        {"name": "gtest with sporadically failing test with pre tasks", "command": "__gtest ${GTEST_BINARY_NAME} --gtest_filter='sporadically_failing_tests.*'", "pre_tasks": ["pre pre task 1", "pre pre task 2"]},
+        {"name": "gtest task with sporadically failing pre task", "command": "__gtest ${GTEST_BINARY_NAME} --gtest_filter='test_suit_1.*:test_suit_2.*'", "pre_tasks": ["gtest with sporadically failing test"]},
+        {"name": "gtest with long test with pre tasks", "command": "__gtest ${GTEST_BINARY_NAME} --gtest_filter='normal_tests.*:long_tests.*'", "pre_tasks": ["pre pre task 1", "pre pre task 2"]}
     ]
 }

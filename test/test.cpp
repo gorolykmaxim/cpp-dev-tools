@@ -38,6 +38,7 @@ static std::function<void(const char*, size_t)> write_to(moodycamel::BlockingCon
 struct cdt_test: public testing::Test {
 protected:
     const std::string TIMEOUT_ERROR_MSG = "TIMED-OUT WAITING FOR OUTPUT FROM CDT";
+    const std::string TWO_PRE_TASKS_OUTPUT = "pre pre task 1\npre pre task 2\n";
     const std::string CDT_PREFIX = "\x1B[32m(cdt) \x1B[0m";
     const std::string GTEST_PROGRESS_FINISH = "\33[2K\r";
     const std::regex GTEST_EXEC_TIME_REGEX = std::regex("[0-9]+ ms");
@@ -166,7 +167,10 @@ protected:
     ASSERT_LINE("29 \"gtest with single failed test\"");\
     ASSERT_LINE("30 \"primary task with failed gtest pre task with single failed test\"");\
     ASSERT_LINE("31 \"gtest with multiple test suites and pre tasks\"");\
-    ASSERT_LINE("32 \"gtest with multiple failed test suites and pre tasks\"")
+    ASSERT_LINE("32 \"gtest with multiple failed test suites and pre tasks\"");\
+    ASSERT_LINE("33 \"gtest with sporadically failing test with pre tasks\"");\
+    ASSERT_LINE("34 \"gtest task with sporadically failing pre task\"");\
+    ASSERT_LINE("35 \"gtest with long test with pre tasks\"")
 #define ASSERT_HELP_DISPLAYED()\
     ASSERT_LINE("\x1B[32mUser commands:\x1B[0m");\
     ASSERT_LINE("t<ind>\t\tExecute the task with the specified index");\
@@ -174,6 +178,7 @@ protected:
     ASSERT_LINE("o<ind>\t\tOpen the file link with the specified index in your code editor");\
     ASSERT_LINE("g<ind>\t\tDisplay output of the specified google test");\
     ASSERT_LINE("gt<ind>\t\tRe-run the google test with the specified index");\
+    ASSERT_LINE("gtr<ind>\tKeep re-running the google test with the specified index until it fails");\
     ASSERT_LINE("h\t\tDisplay list of user commands")
 #define ASSERT_RUNNING_TASK(TASK_NAME) ASSERT_LINE("\x1B[35mRunning \"" TASK_NAME "\"\x1B[0m")
 #define ASSERT_RUNNING_PRE_TASK(TASK_NAME) ASSERT_LINE("\x1B[34mRunning \"" TASK_NAME "\"...\x1B[0m")
@@ -236,6 +241,12 @@ protected:
 #define ASSERT_GTEST_FAILURE_REASON_DISPLAYED()\
     ASSERT_LINE("unknown file: Failure");\
     ASSERT_LINE("C++ exception with description \"\" thrown in the test body.")
+#define ASSERT_SPORIDICALLY_FAILING_TEST_FAILED()\
+    ASSERT_LINE("\x1B[31mFailed tests:\x1B[0m");\
+    ASSERT_LINE("1 \"sporadically_failing_tests.test1\" (X ms)");\
+    ASSERT_LINE("\x1B[31mTests failed: 1 of 1 (100%) (X ms total)\x1B[0m");\
+    ASSERT_LINE("\x1B[31m\"sporadically_failing_tests.test1\" output:\x1B[0m");\
+    ASSERT_GTEST_FAILURE_REASON_DISPLAYED()
 #define OPEN_FILE_LINKS_AND_ASSERT_LINKS_OPENED_IN_EDITOR()\
     run_cmd("o1");\
     run_cmd("o2");\
@@ -690,11 +701,7 @@ TEST_F(cdt_test, start_repeatedly_execute_task_until_it_fails) {
     ASSERT_TASK_COMPLETE("gtest with sporadically failing test");
     // Third execution should fail
     ASSERT_RUNNING_TASK("gtest with sporadically failing test");
-    ASSERT_LINE("\x1B[31mFailed tests:\x1B[0m");
-    ASSERT_LINE("1 \"sporadically_failing_tests.test1\" (X ms)");
-    ASSERT_LINE("\x1B[31mTests failed: 1 of 1 (100%) (X ms total)\x1B[0m");
-    ASSERT_LINE("\x1B[31m\"sporadically_failing_tests.test1\" output:\x1B[0m");
-    ASSERT_GTEST_FAILURE_REASON_DISPLAYED();
+    ASSERT_SPORIDICALLY_FAILING_TEST_FAILED();
     ASSERT_TASK_FAILED("gtest with sporadically failing test", "1");
 }
 
@@ -824,6 +831,7 @@ TEST_F(cdt_test, start_execute_gtest_task_with_pre_tasks_fail_attempt_to_rerun_t
     ASSERT_RUNNING_TASK("gtest with multiple failed test suites and pre tasks");
     ASSERT_FAILED_GTEST_TESTS_LIST_DISPLAYED();
     ASSERT_TASK_FAILED("gtest with multiple failed test suites and pre tasks", "1");
+    ASSERT_CMD_OUT(TWO_PRE_TASKS_OUTPUT);
     run_cmd("gt");
     ASSERT_FAILED_GTEST_TESTS_LIST_DISPLAYED();
     run_cmd("gt0");
@@ -859,6 +867,7 @@ TEST_F(cdt_test, start_execute_gtest_task_with_pre_tasks_fail_and_rerun_failed_t
     ASSERT_GTEST_FAILURE_REASON_DISPLAYED();
     ASSERT_RAW_SINGLE_GTEST_FAILURE_DISPLAYED("failed_test_suit_2", "test1");
     ASSERT_TASK_FAILED("failed_test_suit_2.test1", "1");
+    ASSERT_CMD_OUT(TWO_PRE_TASKS_OUTPUT + TWO_PRE_TASKS_OUTPUT + TWO_PRE_TASKS_OUTPUT);
 }
 
 TEST_F(cdt_test, start_execute_gtest_task_with_pre_tasks_succeed_attempt_to_rerun_test_that_does_not_exist_and_view_list_of_all_tests) {
@@ -871,6 +880,7 @@ TEST_F(cdt_test, start_execute_gtest_task_with_pre_tasks_succeed_attempt_to_reru
     ASSERT_RUNNING_TASK("gtest with multiple test suites and pre tasks");
     ASSERT_LINE("\x1B[32mSuccessfully executed 3 tests (X ms total)\x1B[0m");
     ASSERT_TASK_COMPLETE("gtest with multiple test suites and pre tasks");
+    ASSERT_CMD_OUT(TWO_PRE_TASKS_OUTPUT);
     run_cmd("gt");
     ASSERT_SUCCESS_GTEST_TESTS_LIST_DISPLAYED();
     run_cmd("gt0");
@@ -904,4 +914,111 @@ TEST_F(cdt_test, start_execute_gtest_task_with_pre_tasks_succeed_and_rerun_one_o
     ASSERT_RAW_SINGLE_GTEST_START_DISPLAYED("test_suit_1", "test2");
     ASSERT_RAW_SINGLE_GTEST_SUCCESS_DISPLAYED("test_suit_1", "test2");
     ASSERT_TASK_COMPLETE("test_suit_1.test2");
+    ASSERT_CMD_OUT(TWO_PRE_TASKS_OUTPUT + TWO_PRE_TASKS_OUTPUT + TWO_PRE_TASKS_OUTPUT);
+}
+
+TEST_F(cdt_test, start_repeatedly_execute_gtest_task_with_pre_tasks_until_it_fails_and_repeatedly_rerun_failed_test_until_it_fails) {
+    run_cdt("test-tasks.json", "no-config");
+    ASSERT_HELP_PROMPT_DISPLAYED();
+    ASSERT_TASK_LIST_DISPLAYED();
+    run_cmd("tr33");
+    ASSERT_RUNNING_PRE_TASK("pre pre task 1");
+    ASSERT_RUNNING_PRE_TASK("pre pre task 2");
+    // First execution should succeed
+    ASSERT_RUNNING_TASK("gtest with sporadically failing test with pre tasks");
+    ASSERT_LINE("\x1B[32mSuccessfully executed 1 tests (X ms total)\x1B[0m");
+    ASSERT_TASK_COMPLETE("gtest with sporadically failing test with pre tasks");
+    // Second execution should succeed
+    ASSERT_RUNNING_TASK("gtest with sporadically failing test with pre tasks");
+    ASSERT_LINE("\x1B[32mSuccessfully executed 1 tests (X ms total)\x1B[0m");
+    ASSERT_TASK_COMPLETE("gtest with sporadically failing test with pre tasks");
+    // Third execution should fail
+    ASSERT_RUNNING_TASK("gtest with sporadically failing test with pre tasks");
+    ASSERT_SPORIDICALLY_FAILING_TEST_FAILED();
+    ASSERT_TASK_FAILED("gtest with sporadically failing test with pre tasks", "1");
+    run_cmd("gtr1");
+    ASSERT_RUNNING_PRE_TASK("pre pre task 1");
+    ASSERT_RUNNING_PRE_TASK("pre pre task 2");
+    // First re-run should succeed
+    ASSERT_RUNNING_TASK("sporadically_failing_tests.test1");
+    ASSERT_RAW_SINGLE_GTEST_START_DISPLAYED("sporadically_failing_tests", "test1");
+    ASSERT_RAW_SINGLE_GTEST_SUCCESS_DISPLAYED("sporadically_failing_tests", "test1");
+    ASSERT_TASK_COMPLETE("sporadically_failing_tests.test1");
+    // Second re-run should succeed
+    ASSERT_RUNNING_TASK("sporadically_failing_tests.test1");
+    ASSERT_RAW_SINGLE_GTEST_START_DISPLAYED("sporadically_failing_tests", "test1");
+    ASSERT_RAW_SINGLE_GTEST_SUCCESS_DISPLAYED("sporadically_failing_tests", "test1");
+    ASSERT_TASK_COMPLETE("sporadically_failing_tests.test1");
+    ASSERT_RUNNING_TASK("sporadically_failing_tests.test1");
+    ASSERT_RAW_SINGLE_GTEST_START_DISPLAYED("sporadically_failing_tests", "test1");
+    ASSERT_GTEST_FAILURE_REASON_DISPLAYED();
+    ASSERT_RAW_SINGLE_GTEST_FAILURE_DISPLAYED("sporadically_failing_tests", "test1");
+    ASSERT_TASK_FAILED("sporadically_failing_tests.test1", "1");
+    ASSERT_CMD_OUT(TWO_PRE_TASKS_OUTPUT + TWO_PRE_TASKS_OUTPUT);
+}
+
+TEST_F(cdt_test, start_execute_gtest_task_with_pre_tasks_succeed_repeatedly_rerun_one_of_the_tests_and_fail_due_to_failed_pre_task) {
+    run_cdt("test-tasks.json", "no-config");
+    ASSERT_HELP_PROMPT_DISPLAYED();
+    ASSERT_TASK_LIST_DISPLAYED();
+    // Run the sporadically failing task once, so that it will fail after the next execution.
+    run_cmd("t28");
+    ASSERT_RUNNING_TASK("gtest with sporadically failing test");
+    ASSERT_LINE("\x1B[32mSuccessfully executed 1 tests (X ms total)\x1B[0m");
+    ASSERT_TASK_COMPLETE("gtest with sporadically failing test");
+    run_cmd("t34");
+    ASSERT_RUNNING_PRE_TASK("gtest with sporadically failing test");
+    ASSERT_RUNNING_TASK("gtest task with sporadically failing pre task");
+    ASSERT_LINE("\x1B[32mSuccessfully executed 3 tests (X ms total)\x1B[0m");
+    ASSERT_TASK_COMPLETE("gtest task with sporadically failing pre task");
+    run_cmd("gtr1");
+    ASSERT_RUNNING_PRE_TASK("gtest with sporadically failing test");
+    ASSERT_SPORIDICALLY_FAILING_TEST_FAILED();
+    ASSERT_TASK_FAILED("gtest with sporadically failing test", "1");
+}
+
+TEST_F(cdt_test, start_execute_long_gtest_task_with_pre_tasks_abort_it_repeatedly_rerun_failed_test_and_abort_it_again) {
+    run_cdt("test-tasks.json", "no-config");
+    ASSERT_HELP_PROMPT_DISPLAYED();
+    ASSERT_TASK_LIST_DISPLAYED();
+    run_cmd("t35");
+    ASSERT_RUNNING_PRE_TASK("pre pre task 1");
+    ASSERT_RUNNING_PRE_TASK("pre pre task 2");
+    ASSERT_RUNNING_TASK("gtest with long test with pre tasks");
+    interrupt_current_task();
+    ASSERT_GTEST_TASK_FINISHED_PREMATURELY("gtest with long test with pre tasks", "long_tests.test1", "2");
+    run_cmd("gtr1");
+    ASSERT_RUNNING_PRE_TASK("pre pre task 1");
+    ASSERT_RUNNING_PRE_TASK("pre pre task 2");
+    ASSERT_RUNNING_TASK("long_tests.test1");
+    ASSERT_RAW_SINGLE_GTEST_START_DISPLAYED("long_tests", "test1");
+    interrupt_current_task();
+    ASSERT_TASK_FAILED("long_tests.test1", "2");
+}
+
+TEST_F(cdt_test, start_attempt_to_repeatedly_rerun_gtest_when_no_tests_have_been_executed_yet) {
+    run_cdt("test-tasks.json", "no-config");
+    ASSERT_HELP_PROMPT_DISPLAYED();
+    ASSERT_TASK_LIST_DISPLAYED();
+    run_cmd("gtr");
+    ASSERT_LINE("\x1B[32mNo google tests have been executed yet.\x1B[0m");
+}
+
+TEST_F(cdt_test, start_execute_gtest_task_with_pre_tasks_succeed_attempt_to_repeatedly_rerun_test_that_does_not_exist_and_view_list_of_all_tests) {
+    run_cdt("test-tasks.json", "no-config");
+    ASSERT_HELP_PROMPT_DISPLAYED();
+    ASSERT_TASK_LIST_DISPLAYED();
+    run_cmd("t31");
+    ASSERT_RUNNING_PRE_TASK("pre pre task 1");
+    ASSERT_RUNNING_PRE_TASK("pre pre task 2");
+    ASSERT_RUNNING_TASK("gtest with multiple test suites and pre tasks");
+    ASSERT_LINE("\x1B[32mSuccessfully executed 3 tests (X ms total)\x1B[0m");
+    ASSERT_TASK_COMPLETE("gtest with multiple test suites and pre tasks");
+    ASSERT_CMD_OUT(TWO_PRE_TASKS_OUTPUT);
+    run_cmd("gtr");
+    ASSERT_SUCCESS_GTEST_TESTS_LIST_DISPLAYED();
+    run_cmd("gtr0");
+    ASSERT_SUCCESS_GTEST_TESTS_LIST_DISPLAYED();
+    run_cmd("gtr99");
+    ASSERT_SUCCESS_GTEST_TESTS_LIST_DISPLAYED();
 }
