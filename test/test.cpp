@@ -590,7 +590,7 @@ TEST_F(cdt_test, start_execute_gtest_task_with_non_gtest_binary_that_does_not_fi
     run_cmd("t18");
     ASSERT_RUNNING_TASK("gtest with long non-gtest binary");
     interrupt_current_task();
-    ASSERT_LINE("\x1B[31m'sleep 999999' is not a google test executable\x1B[0m");
+    ASSERT_LINE("\x1B[31m'sleep 20' is not a google test executable\x1B[0m");
     ASSERT_TASK_FAILED("gtest with long non-gtest binary", "2");
 }
 
