@@ -32,7 +32,6 @@ const auto TERM_COLOR_GREEN = "\033[32m";
 const auto TERM_COLOR_BLUE = "\033[34m";
 const auto TERM_COLOR_MAGENTA = "\033[35m";
 const auto TERM_COLOR_RESET = "\033[0m";
-const auto TERM_CLEAR_CURRENT_LINE = "\33[2K\r";
 
 const auto USER_CONFIG_PATH = std::filesystem::path(getenv("HOME")) / ".cpp-dev-tools.json";
 const auto OPEN_IN_EDITOR_COMMAND_PROPERTY = "open_in_editor_command";
@@ -104,6 +103,7 @@ enum gtest_execution_state {
 };
 
 struct gtest_execution {
+    bool rerun_of_single_test = false;
     std::vector<gtest_test> tests;
     std::vector<size_t> failed_test_ids;
     size_t test_count = 0;
@@ -194,6 +194,13 @@ static void move_component(entity source, entity target, std::unordered_map<enti
     if (find(source, components)) {
         components[target] = std::move(components[source]);
         components.erase(source);
+    }
+}
+
+template <typename T>
+static void destroy_components(const std::unordered_set<entity>& es, std::unordered_map<entity, T>& components) {
+    for (auto e: es) {
+        components.erase(e);
     }
 }
 
@@ -584,8 +591,7 @@ static void process_execution_event(cdt& cdt) {
     }
 }
 
-static void complete_current_gtest(gtest_execution& gtest_exec, const std::string& line_content, std::string& line_to_print) {
-    line_to_print = "\rTests completed: " + std::to_string(*gtest_exec.current_test + 1) + " of " + std::to_string(gtest_exec.test_count);
+static void complete_current_gtest(gtest_execution& gtest_exec, const std::string& line_content) {
     gtest_exec.tests[*gtest_exec.current_test].duration = line_content.substr(line_content.rfind('('));
     gtest_exec.current_test.reset();
 }
@@ -594,9 +600,10 @@ static void parse_gtest_output(cdt& cdt) {
     static const auto test_count_index = std::string("Running ").size();
     for (const auto& proc: cdt.processes) {
         auto& exec = cdt.execs[proc.first];
-        auto gtest_exec = find(proc.first, cdt.gtest_execs);
+        auto& exec_output = cdt.exec_outputs[proc.first];
+        const auto gtest_exec = find(proc.first, cdt.gtest_execs);
+        const auto stream_output = find(proc.first, cdt.stream_output);
         if (gtest_exec && (gtest_exec->state == gtest_execution_state_running || gtest_exec->state == gtest_execution_state_parsing)) {
-            std::string line_to_print;
             for (const auto& line: exec.output_lines) {
                 auto line_content_index = 0;
                 auto filler_char = '\0';
@@ -634,16 +641,18 @@ static void parse_gtest_output(cdt& cdt) {
                 to belong to our tests and not some other child tests.
                 */
                 if (found_word == "OK" && line_content.find(gtest_exec->tests.back().name) == 0) {
-                    complete_current_gtest(*gtest_exec, line_content, line_to_print);
+                    complete_current_gtest(*gtest_exec, line_content);
                 } else if (found_word == "FAILED" && line_content.find(gtest_exec->tests.back().name) == 0) {
                     gtest_exec->failed_test_ids.push_back(*gtest_exec->current_test);
-                    complete_current_gtest(*gtest_exec, line_content, line_to_print);
+                    complete_current_gtest(*gtest_exec, line_content);
                 } else if (gtest_exec->current_test) {
                     gtest_exec->tests[*gtest_exec->current_test].output.push_back(line);
+                    if (stream_output && gtest_exec->rerun_of_single_test) {
+                        exec_output.output_lines.push_back(line);
+                    }
                 } else if (found_word == "RUN") {
                     gtest_exec->current_test = gtest_exec->tests.size();
-                    gtest_test test{line_content};
-                    gtest_exec->tests.push_back(std::move(test));
+                    gtest_exec->tests.push_back(gtest_test{line_content});
                 } else if (filler_char == '=') {
                     if (gtest_exec->state == gtest_execution_state_running) {
                         const auto count_end_index = line_content.find(' ', test_count_index);
@@ -654,15 +663,12 @@ static void parse_gtest_output(cdt& cdt) {
                     } else {
                         gtest_exec->total_duration = line_content.substr(line_content.rfind('('));
                         gtest_exec->state = gtest_execution_state_parsed;
-                        // Clear currently displayed test execution progress line to properly display
-                        // upcoming output over it.
-                        line_to_print = TERM_CLEAR_CURRENT_LINE;
                         break;
                     }
                 }
-            }
-            if (find(proc.first, cdt.stream_output)) {
-                std::cout << std::flush << line_to_print;
+                if (stream_output && !gtest_exec->rerun_of_single_test && !gtest_exec->current_test) {
+                    std::cout << std::flush << "\rTests completed: " << gtest_exec->tests.size() << " of " << gtest_exec->test_count;
+                }
             }
             exec.output_lines.clear();
         }
@@ -737,7 +743,7 @@ static void rerun_gtest(cdt& cdt) {
         const auto exec = create_entity(cdt);
         cdt.task_ids[exec] = *gtest_task_id;
         cdt.execs[exec] = execution{test->name, cdt.tasks[*gtest_task_id].command.substr(GTEST_TASK.size() + 1) + " --gtest_filter='" + test->name + "'"};
-        cdt.gtest_execs[exec] = gtest_execution{};
+        cdt.gtest_execs[exec] = gtest_execution{true};
         cdt.stream_output.insert(exec);
         if (GTEST_RERUN_REPEAT.cmd == cdt.last_usr_cmd.cmd) {
             cdt.repeat_until_fail.insert(exec);
@@ -746,13 +752,14 @@ static void rerun_gtest(cdt& cdt) {
     }
 }
 
-static void finish_gtest_execution(cdt& cdt) {
+static void display_gtest_execution_result(cdt& cdt) {
     for (const auto& proc: cdt.processes) {
         const auto task_id = cdt.task_ids[proc.first];
         auto& exec = cdt.execs[proc.first];
         auto& exec_output = cdt.exec_outputs[proc.first];
         const auto gtest_exec = find(proc.first, cdt.gtest_execs);
-        if (gtest_exec && exec.state != execution_state_running && gtest_exec->state != gtest_execution_state_finished) {
+        if (gtest_exec && !gtest_exec->rerun_of_single_test && exec.state != execution_state_running && gtest_exec->state != gtest_execution_state_finished) {
+            std::cout << "\33[2K\r"; // Current line has test execution progress displayed. We will start displaying our output on top of it.
             if (gtest_exec->state == gtest_execution_state_running) {
                 exec.state = execution_state_failed;
                 const auto& task = cdt.tasks[task_id];
@@ -760,7 +767,7 @@ static void finish_gtest_execution(cdt& cdt) {
                 std::cout << TERM_COLOR_RED << "'" << gtest_binary_path << "' is not a google test executable" << TERM_COLOR_RESET << std::endl;
             } else if (gtest_exec->state == gtest_execution_state_parsing) {
                 exec.state = execution_state_failed;
-                std::cout << TERM_CLEAR_CURRENT_LINE << TERM_COLOR_RED << "Tests have finished prematurely" << TERM_COLOR_RESET << std::endl;
+                std::cout << TERM_COLOR_RED << "Tests have finished prematurely" << TERM_COLOR_RESET << std::endl;
                 // Tests might have crashed in the middle of some test. If so - consider test failed.
                 // This is not always true however: tests might have crashed in between two test cases.
                 if (gtest_exec->current_test) {
@@ -780,6 +787,26 @@ static void finish_gtest_execution(cdt& cdt) {
             gtest_exec->state = gtest_execution_state_finished;
         }
     }
+}
+
+static void restart_repeating_gtest_on_success(cdt& cdt) {
+    for (const auto& proc: cdt.processes) {
+        const auto gtest_exec = find(proc.first, cdt.gtest_execs);
+        if (gtest_exec && cdt.execs[proc.first].state == execution_state_complete && find(proc.first, cdt.repeat_until_fail)) {
+            cdt.gtest_execs[proc.first] = gtest_execution{gtest_exec->rerun_of_single_test};
+        }
+    }
+}
+
+static void finish_rerun_gtest_execution(cdt& cdt) {
+    std::unordered_set<entity> to_destroy;
+    for (const auto& proc: cdt.processes) {
+        const auto gtest_exec = find(proc.first, cdt.gtest_execs);
+        if (gtest_exec && cdt.execs[proc.first].state != execution_state_running && gtest_exec->rerun_of_single_test) {
+            to_destroy.insert(proc.first);
+        }
+    }
+    destroy_components(to_destroy, cdt.gtest_execs);
 }
 
 static void stream_execution_output(cdt& cdt) {
@@ -830,21 +857,30 @@ static void stream_execution_output_on_failure(cdt& cdt) {
     }
 }
 
-static void restart_repeating_execution_on_success(cdt& cdt) {
-    for (const auto& proc: cdt.processes) {
+static void display_execution_result(cdt& cdt) {
+    for (auto& proc: cdt.processes) {
         const auto& exec = cdt.execs[proc.first];
-        const auto task_id = cdt.task_ids[proc.first];
-        if (exec.state == execution_state_complete && find(proc.first, cdt.repeat_until_fail)) {
-            const auto exec_entity = create_entity(cdt);
-            cdt.task_ids[exec_entity] = task_id;
-            cdt.execs[exec_entity] = execution{exec.name, exec.shell_command};
-            if (find(proc.first, cdt.stream_output)) {
-                cdt.stream_output.insert(exec_entity);
+        if (exec.state != execution_state_running) {
+            const auto code = proc.second->get_exit_status();
+            if (exec.state == execution_state_failed) {
+                std::cout << TERM_COLOR_RED << "'" << exec.name << "' failed: return code: " << code << TERM_COLOR_RESET << std::endl;
+            } else if (find(proc.first, cdt.stream_output)) {
+                std::cout << TERM_COLOR_MAGENTA << "'" << exec.name << "' complete: return code: " << code << TERM_COLOR_RESET << std::endl;
             }
-            cdt.repeat_until_fail.insert(exec_entity);
-            cdt.execs_to_run_in_order.push_back(exec_entity);
         }
     }
+}
+
+static void restart_repeating_execution_on_success(cdt& cdt) {
+    std::unordered_set<entity> to_destroy;
+    for (const auto& proc: cdt.processes) {
+        const auto& exec = cdt.execs[proc.first];
+        if (exec.state == execution_state_complete && find(proc.first, cdt.repeat_until_fail)) {
+            cdt.execs[proc.first] = execution{exec.name, exec.shell_command};
+            to_destroy.insert(proc.first);
+        }
+    }
+    destroy_components(to_destroy, cdt.processes);
 }
 
 static void finish_task_execution(cdt& cdt) {
@@ -852,12 +888,8 @@ static void finish_task_execution(cdt& cdt) {
     for (auto& proc: cdt.processes) {
         const auto& exec = cdt.execs[proc.first];
         if (exec.state != execution_state_running) {
-            const auto code = proc.second->get_exit_status();
             if (exec.state == execution_state_failed) {
                 to_destroy.insert(cdt.execs_to_run_in_order.begin(), cdt.execs_to_run_in_order.end());
-                std::cout << TERM_COLOR_RED << "'" << exec.name << "' failed: return code: " << code << TERM_COLOR_RESET << std::endl;
-            } else if (find(proc.first, cdt.stream_output)) {
-                std::cout << TERM_COLOR_MAGENTA << "'" << exec.name << "' complete: return code: " << code << TERM_COLOR_RESET << std::endl;
             }
             to_destroy.insert(proc.first);
             move_component(proc.first, LAST_ENTITY, cdt.task_ids);
@@ -935,12 +967,15 @@ int main(int argc, const char** argv) {
         start_next_execution(cdt);
         process_execution_event(cdt);
         parse_gtest_output(cdt);
-        finish_gtest_execution(cdt);
+        display_gtest_execution_result(cdt);
         stream_execution_output(cdt);
         stream_execution_output_on_failure(cdt);
         find_and_highlight_file_links(cdt);
         print_execution_output(cdt);
+        display_execution_result(cdt);
+        restart_repeating_gtest_on_success(cdt);
         restart_repeating_execution_on_success(cdt);
+        finish_rerun_gtest_execution(cdt);
         finish_task_execution(cdt);
     }
 }

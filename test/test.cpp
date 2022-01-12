@@ -256,31 +256,6 @@ protected:
     run_cmd("h");\
     ASSERT_HELP_DISPLAYED();\
     ASSERT_CMD_OUT("/a/b/c:10\n/d/e/f:15:32\n")
-#define ASSERT_RAW_SINGLE_GTEST_START_DISPLAYED(SUIT, NAME)\
-    get_out_line();\
-    ASSERT_LINE("Note: Google Test filter = " SUIT "." NAME);\
-    ASSERT_LINE("[==========] Running 1 test from 1 test suite.");\
-    ASSERT_LINE("[----------] Global test environment set-up.");\
-    ASSERT_LINE("[----------] 1 test from " SUIT);\
-    ASSERT_LINE("[ RUN      ] " SUIT "." NAME)
-#define ASSERT_RAW_SINGLE_GTEST_FAILURE_DISPLAYED(SUIT, NAME)\
-    ASSERT_LINE("[  FAILED  ] " SUIT "." NAME " (X ms)");\
-    ASSERT_LINE("[----------] 1 test from " SUIT " (X ms total)");\
-    ASSERT_LINE("");\
-    ASSERT_LINE("[----------] Global test environment tear-down");\
-    ASSERT_LINE("[==========] 1 test from 1 test suite ran. (X ms total)");\
-    ASSERT_LINE("[  PASSED  ] 0 tests.");\
-    ASSERT_LINE("[  FAILED  ] 1 test, listed below:");\
-    ASSERT_LINE("[  FAILED  ] " SUIT "." NAME);\
-    ASSERT_LINE("");\
-    ASSERT_LINE(" 1 FAILED TEST")
-#define ASSERT_RAW_SINGLE_GTEST_SUCCESS_DISPLAYED(SUIT, NAME)\
-    ASSERT_LINE("[       OK ] " SUIT "." NAME " (X ms)");\
-    ASSERT_LINE("[----------] 1 test from " SUIT " (X ms total)");\
-    ASSERT_LINE("");\
-    ASSERT_LINE("[----------] Global test environment tear-down");\
-    ASSERT_LINE("[==========] 1 test from 1 test suite ran. (X ms total)");\
-    ASSERT_LINE("[  PASSED  ] 1 test.")
 
 TEST_F(cdt_test, start_and_view_tasks) {
     run_cdt("test-tasks.json", "no-config");
@@ -857,18 +832,14 @@ TEST_F(cdt_test, start_execute_gtest_task_with_pre_tasks_fail_and_rerun_failed_t
     ASSERT_RUNNING_PRE_TASK("pre pre task 1");
     ASSERT_RUNNING_PRE_TASK("pre pre task 2");
     ASSERT_RUNNING_TASK("failed_test_suit_1.test1");
-    ASSERT_RAW_SINGLE_GTEST_START_DISPLAYED("failed_test_suit_1", "test1");
     ASSERT_OUTPUT_WITH_LINKS_DISPLAYED();
     ASSERT_GTEST_FAILURE_REASON_DISPLAYED();
-    ASSERT_RAW_SINGLE_GTEST_FAILURE_DISPLAYED("failed_test_suit_1", "test1");
     ASSERT_TASK_FAILED("failed_test_suit_1.test1", "1");
     run_cmd("gt2");
     ASSERT_RUNNING_PRE_TASK("pre pre task 1");
     ASSERT_RUNNING_PRE_TASK("pre pre task 2");
     ASSERT_RUNNING_TASK("failed_test_suit_2.test1");
-    ASSERT_RAW_SINGLE_GTEST_START_DISPLAYED("failed_test_suit_2", "test1");
     ASSERT_GTEST_FAILURE_REASON_DISPLAYED();
-    ASSERT_RAW_SINGLE_GTEST_FAILURE_DISPLAYED("failed_test_suit_2", "test1");
     ASSERT_TASK_FAILED("failed_test_suit_2.test1", "1");
     ASSERT_CMD_OUT(TWO_PRE_TASKS_OUTPUT + TWO_PRE_TASKS_OUTPUT + TWO_PRE_TASKS_OUTPUT);
 }
@@ -906,16 +877,12 @@ TEST_F(cdt_test, start_execute_gtest_task_with_pre_tasks_succeed_and_rerun_one_o
     ASSERT_RUNNING_PRE_TASK("pre pre task 1");
     ASSERT_RUNNING_PRE_TASK("pre pre task 2");
     ASSERT_RUNNING_TASK("test_suit_1.test1");
-    ASSERT_RAW_SINGLE_GTEST_START_DISPLAYED("test_suit_1", "test1");
     ASSERT_OUTPUT_WITH_LINKS_DISPLAYED();
-    ASSERT_RAW_SINGLE_GTEST_SUCCESS_DISPLAYED("test_suit_1", "test1");
     ASSERT_TASK_COMPLETE("test_suit_1.test1");
     run_cmd("gt2");
     ASSERT_RUNNING_PRE_TASK("pre pre task 1");
     ASSERT_RUNNING_PRE_TASK("pre pre task 2");
     ASSERT_RUNNING_TASK("test_suit_1.test2");
-    ASSERT_RAW_SINGLE_GTEST_START_DISPLAYED("test_suit_1", "test2");
-    ASSERT_RAW_SINGLE_GTEST_SUCCESS_DISPLAYED("test_suit_1", "test2");
     ASSERT_TASK_COMPLETE("test_suit_1.test2");
     ASSERT_CMD_OUT(TWO_PRE_TASKS_OUTPUT + TWO_PRE_TASKS_OUTPUT + TWO_PRE_TASKS_OUTPUT);
 }
@@ -944,18 +911,13 @@ TEST_F(cdt_test, start_repeatedly_execute_gtest_task_with_pre_tasks_until_it_fai
     ASSERT_RUNNING_PRE_TASK("pre pre task 2");
     // First re-run should succeed
     ASSERT_RUNNING_TASK("sporadically_failing_tests.test1");
-    ASSERT_RAW_SINGLE_GTEST_START_DISPLAYED("sporadically_failing_tests", "test1");
-    ASSERT_RAW_SINGLE_GTEST_SUCCESS_DISPLAYED("sporadically_failing_tests", "test1");
     ASSERT_TASK_COMPLETE("sporadically_failing_tests.test1");
     // Second re-run should succeed
     ASSERT_RUNNING_TASK("sporadically_failing_tests.test1");
-    ASSERT_RAW_SINGLE_GTEST_START_DISPLAYED("sporadically_failing_tests", "test1");
-    ASSERT_RAW_SINGLE_GTEST_SUCCESS_DISPLAYED("sporadically_failing_tests", "test1");
     ASSERT_TASK_COMPLETE("sporadically_failing_tests.test1");
+    // Third re-run should fail
     ASSERT_RUNNING_TASK("sporadically_failing_tests.test1");
-    ASSERT_RAW_SINGLE_GTEST_START_DISPLAYED("sporadically_failing_tests", "test1");
     ASSERT_GTEST_FAILURE_REASON_DISPLAYED();
-    ASSERT_RAW_SINGLE_GTEST_FAILURE_DISPLAYED("sporadically_failing_tests", "test1");
     ASSERT_TASK_FAILED("sporadically_failing_tests.test1", "1");
     ASSERT_CMD_OUT(TWO_PRE_TASKS_OUTPUT + TWO_PRE_TASKS_OUTPUT);
 }
@@ -994,7 +956,6 @@ TEST_F(cdt_test, start_execute_long_gtest_task_with_pre_tasks_abort_it_repeatedl
     ASSERT_RUNNING_PRE_TASK("pre pre task 1");
     ASSERT_RUNNING_PRE_TASK("pre pre task 2");
     ASSERT_RUNNING_TASK("long_tests.test1");
-    ASSERT_RAW_SINGLE_GTEST_START_DISPLAYED("long_tests", "test1");
     interrupt_current_task();
     ASSERT_TASK_FAILED("long_tests.test1", "2");
 }
