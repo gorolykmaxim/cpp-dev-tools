@@ -40,6 +40,7 @@ protected:
     const std::string TIMEOUT_ERROR_MSG = "TIMED-OUT WAITING FOR OUTPUT FROM CDT";
     const std::string TWO_PRE_TASKS_OUTPUT = "pre pre task 1\npre pre task 2\n";
     const std::string CDT_PREFIX = "\x1B[32m(cdt) \x1B[0m";
+    const std::string GTEST_FILTER_PREFIX = "\x1B[32m--gtest_filter=\x1B[0m";
     const std::string GTEST_PROGRESS_FINISH = "\33[2K\r";
     const std::regex GTEST_EXEC_TIME_REGEX = std::regex("[0-9]+ ms");
     const std::filesystem::path cwd = std::filesystem::path(BINARY_DIR);
@@ -115,8 +116,9 @@ protected:
         if (!output.wait_dequeue_timed(msg, 1000000)) {
             msg = TIMEOUT_ERROR_MSG;
         }
-        // Ignore "(cdt) " output when waiting for a command
+        // Ignore prefix's in output when waiting for a command
         remove_before_including(msg, CDT_PREFIX);
+        remove_before_including(msg, GTEST_FILTER_PREFIX);
         // Ignore gtest progress line (that keeps updating itself). We will only see the end result, printed over that line.
         remove_before_including(msg, GTEST_PROGRESS_FINISH);
         msg = std::regex_replace(msg, GTEST_EXEC_TIME_REGEX, "X ms");
@@ -190,6 +192,7 @@ protected:
     ASSERT_LINE("g<ind>\t\tDisplay output of the specified google test");\
     ASSERT_LINE("gt<ind>\t\tRe-run the google test with the specified index");\
     ASSERT_LINE("gtr<ind>\tKeep re-running the google test with the specified index until it fails");\
+    ASSERT_LINE("gtf<ind>\tRun google tests of the task with the specified index with a specified --gtest_filter");\
     ASSERT_LINE("h\t\tDisplay list of user commands")
 #define ASSERT_RUNNING_TASK(TASK_NAME) ASSERT_LINE("\x1B[35mRunning \"" TASK_NAME "\"\x1B[0m")
 #define ASSERT_RUNNING_PRE_TASK(TASK_NAME) ASSERT_LINE("\x1B[34mRunning \"" TASK_NAME "\"...\x1B[0m")
@@ -1005,4 +1008,27 @@ TEST_F(cdt_test, start_and_not_override_existing_user_config) {
     run_cdt("test-tasks.json", "test-config");
     ASSERT_HELP_PROMPT_DISPLAYED();
     ASSERT_NE(DEFAULT_USER_CONFIG_CONTENT, read_file(to_absolute_user_config_path("test-config")));
+}
+
+TEST_F(cdt_test, start_attempt_to_execute_google_tests_with_filter_targeting_task_that_does_not_exist_and_view_list_of_task) {
+    run_cdt("test-tasks.json", "no-config");
+    ASSERT_HELP_PROMPT_DISPLAYED();
+    ASSERT_TASK_LIST_DISPLAYED();
+    run_cmd("gtf");
+    ASSERT_TASK_LIST_DISPLAYED();
+    run_cmd("gtf0");
+    ASSERT_TASK_LIST_DISPLAYED();
+    run_cmd("gtf99");
+    ASSERT_TASK_LIST_DISPLAYED();
+}
+
+TEST_F(cdt_test, start_and_execute_gtest_task_with_gtest_filter) {
+    run_cdt("test-tasks.json", "no-config");
+    ASSERT_HELP_PROMPT_DISPLAYED();
+    ASSERT_TASK_LIST_DISPLAYED();
+    run_cmd("gtf19");
+    run_cmd("normal_tests.*");
+    ASSERT_RUNNING_TASK("normal_tests.*");
+    ASSERT_LINE("\x1B[32mSuccessfully executed 1 tests (X ms total)\x1B[0m");
+    ASSERT_TASK_COMPLETE("normal_tests.*");
 }
