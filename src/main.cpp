@@ -155,7 +155,7 @@ const auto OPEN = push_back_and_return(USR_CMD_DEFS, {"o", "ind", "Open the file
 const auto GTEST = push_back_and_return(USR_CMD_DEFS, {"g", "ind", "Display output of the specified google test"});
 const auto GTEST_RERUN = push_back_and_return(USR_CMD_DEFS, {"gt", "ind", "Re-run the google test with the specified index"});
 const auto GTEST_RERUN_REPEAT = push_back_and_return(USR_CMD_DEFS, {"gtr", "ind", "Keep re-running the google test with the specified index until it fails"});
-const auto GTEST_FILTER = push_back_and_return(USR_CMD_DEFS, {"gtf", "ind", "Run google tests of the task with the specified index with a specified " + GTEST_FILTER_ARG});
+const auto GTEST_FILTER = push_back_and_return(USR_CMD_DEFS, {"gf", "ind", "Run google tests of the task with the specified index with a specified " + GTEST_FILTER_ARG});
 const auto HELP = push_back_and_return(USR_CMD_DEFS, {"h", "", "Display list of user commands"});
 
 std::optional<TinyProcessLib::Process::id_type> current_execution_pid;

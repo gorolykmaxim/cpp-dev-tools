@@ -192,7 +192,7 @@ protected:
     ASSERT_LINE("g<ind>\t\tDisplay output of the specified google test");\
     ASSERT_LINE("gt<ind>\t\tRe-run the google test with the specified index");\
     ASSERT_LINE("gtr<ind>\tKeep re-running the google test with the specified index until it fails");\
-    ASSERT_LINE("gtf<ind>\tRun google tests of the task with the specified index with a specified --gtest_filter");\
+    ASSERT_LINE("gf<ind>\t\tRun google tests of the task with the specified index with a specified --gtest_filter");\
     ASSERT_LINE("h\t\tDisplay list of user commands")
 #define ASSERT_RUNNING_TASK(TASK_NAME) ASSERT_LINE("\x1B[35mRunning \"" TASK_NAME "\"\x1B[0m")
 #define ASSERT_RUNNING_PRE_TASK(TASK_NAME) ASSERT_LINE("\x1B[34mRunning \"" TASK_NAME "\"...\x1B[0m")
@@ -1014,11 +1014,11 @@ TEST_F(cdt_test, start_attempt_to_execute_google_tests_with_filter_targeting_tas
     run_cdt("test-tasks.json", "no-config");
     ASSERT_HELP_PROMPT_DISPLAYED();
     ASSERT_TASK_LIST_DISPLAYED();
-    run_cmd("gtf");
+    run_cmd("gf");
     ASSERT_TASK_LIST_DISPLAYED();
-    run_cmd("gtf0");
+    run_cmd("gf0");
     ASSERT_TASK_LIST_DISPLAYED();
-    run_cmd("gtf99");
+    run_cmd("gf99");
     ASSERT_TASK_LIST_DISPLAYED();
 }
 
@@ -1026,7 +1026,7 @@ TEST_F(cdt_test, start_and_execute_gtest_task_with_gtest_filter) {
     run_cdt("test-tasks.json", "no-config");
     ASSERT_HELP_PROMPT_DISPLAYED();
     ASSERT_TASK_LIST_DISPLAYED();
-    run_cmd("gtf19");
+    run_cmd("gf19");
     run_cmd("normal_tests.*");
     ASSERT_RUNNING_TASK("normal_tests.*");
     ASSERT_LINE("\x1B[32mSuccessfully executed 1 tests (X ms total)\x1B[0m");
