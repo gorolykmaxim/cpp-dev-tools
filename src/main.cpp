@@ -282,7 +282,7 @@ static bool parse_json_file(const std::filesystem::path& config_path, bool shoul
     config_file >> std::noskipws;
     const std::string config_data = std::string(std::istream_iterator<char>(config_file), std::istream_iterator<char>());
     try {
-        config_json = nlohmann::json::parse(config_data);
+        config_json = nlohmann::json::parse(config_data, nullptr, true, true);
         return true;
     } catch (std::exception& e) {
         errors.emplace_back("Failed to parse " + config_path.string() + ": " + e.what());
@@ -295,6 +295,18 @@ static void append_config_errors(const std::filesystem::path& config_path, const
     if (!from.empty()) {
         to.emplace_back(config_path.string() + " is invalid:");
         to.insert(to.end(), from.begin(), from.end());
+    }
+}
+
+static void init_example_user_config() {
+    if (!std::filesystem::exists(USER_CONFIG_PATH)) {
+        std::ofstream file(USER_CONFIG_PATH);
+        file << "{" << std::endl;
+        file << "  // Open file links from the output in Sublime Text:" << std::endl;
+        file << "  //\"" << OPEN_IN_EDITOR_COMMAND_PROPERTY << "\": \"subl {}\"" << std::endl;
+        file << "  // Open file links from the output in VSCode:" << std::endl;
+        file << "  //\"" << OPEN_IN_EDITOR_COMMAND_PROPERTY << "\": \"code {}\"" << std::endl;
+        file << "}" << std::endl;
     }
 }
 
@@ -945,6 +957,7 @@ static void display_help(const std::vector<user_command_definition>& defs, cdt& 
 int main(int argc, const char** argv) {
     cdt cdt;
     cdt.cdt_executable = argv[0];
+    init_example_user_config();
     read_argv(argc, argv, cdt);
     read_user_config(cdt);
     if (print_errors(cdt)) return 1;

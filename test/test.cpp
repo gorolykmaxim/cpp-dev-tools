@@ -46,6 +46,13 @@ protected:
     const std::filesystem::path test_configs_dir = std::filesystem::path(TEST_CONFIGS_DIR);
     const std::filesystem::path test_homes_dir = std::filesystem::path(TEST_HOMES_DIR);
     const std::filesystem::path cmd_out_file = cwd / "cmd-test-output.txt";
+    const std::string DEFAULT_USER_CONFIG_CONTENT =
+    "{\n"
+    "  // Open file links from the output in Sublime Text:\n"
+    "  //\"open_in_editor_command\": \"subl {}\"\n"
+    "  // Open file links from the output in VSCode:\n"
+    "  //\"open_in_editor_command\": \"code {}\"\n"
+    "}\n";
 
     moodycamel::BlockingConcurrentQueue<std::string> output;
     std::string stdout_buffer, stderr_buffer;
@@ -70,6 +77,7 @@ protected:
             }
         }
         std::filesystem::remove(cmd_out_file);
+        std::filesystem::remove(to_absolute_user_config_path("no-config"));
     }
     void run_cdt(const std::string& config_name, const std::string& home_dir) {
         const std::vector<std::string> args = {cwd / BINARY_NAME, test_configs_dir / config_name};
@@ -126,8 +134,8 @@ protected:
         std::this_thread::sleep_for(10ms);
         proc->signal(SIGINT);
     }
-    std::string read_cmd_test_output() {
-        std::ifstream file(cmd_out_file);
+    std::string read_file(const std::filesystem::path& path) {
+        std::ifstream file(path);
         if (!file) return "";
         file >> std::noskipws;
         return std::string(std::istream_iterator<char>(file), std::istream_iterator<char>());
@@ -135,7 +143,7 @@ protected:
 };
 
 #define ASSERT_LINE(LINE) ASSERT_EQ(LINE, get_out_line())
-#define ASSERT_CMD_OUT(OUT) ASSERT_EQ(OUT, read_cmd_test_output())
+#define ASSERT_CMD_OUT(OUT) ASSERT_EQ(OUT, read_file(cmd_out_file))
 #define ASSERT_HELP_PROMPT_DISPLAYED() ASSERT_LINE("Type \x1B[32mh\x1B[0m to see list of all the user commands.")
 #define ASSERT_TASK_LIST_DISPLAYED()\
     ASSERT_LINE("\x1B[32mTasks:\x1B[0m");\
@@ -985,4 +993,16 @@ TEST_F(cdt_test, start_execute_gtest_task_with_pre_tasks_succeed_attempt_to_repe
     ASSERT_SUCCESS_GTEST_TESTS_LIST_DISPLAYED();
     run_cmd("gtr99");
     ASSERT_SUCCESS_GTEST_TESTS_LIST_DISPLAYED();
+}
+
+TEST_F(cdt_test, start_and_create_example_user_config) {
+    run_cdt("test-tasks.json", "no-config");
+    ASSERT_HELP_PROMPT_DISPLAYED();
+    ASSERT_EQ(DEFAULT_USER_CONFIG_CONTENT, read_file(to_absolute_user_config_path("no-config")));
+}
+
+TEST_F(cdt_test, start_and_not_override_existing_user_config) {
+    run_cdt("test-tasks.json", "test-config");
+    ASSERT_HELP_PROMPT_DISPLAYED();
+    ASSERT_NE(DEFAULT_USER_CONFIG_CONTENT, read_file(to_absolute_user_config_path("test-config")));
 }
