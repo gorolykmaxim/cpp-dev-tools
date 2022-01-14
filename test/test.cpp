@@ -41,6 +41,7 @@ protected:
     const std::string TWO_PRE_TASKS_OUTPUT = "pre pre task 1\npre pre task 2\n";
     const std::string CDT_PREFIX = "\x1B[32m(cdt) \x1B[0m";
     const std::string GTEST_FILTER_PREFIX = "\x1B[32m--gtest_filter=\x1B[0m";
+    const std::string REGEX_PREFIX = "\x1B[32mRegular expression: \x1B[0m";
     const std::string GTEST_PROGRESS_FINISH = "\33[2K\r";
     const std::regex GTEST_EXEC_TIME_REGEX = std::regex("[0-9]+ ms");
     const std::filesystem::path cwd = std::filesystem::path(BINARY_DIR);
@@ -119,6 +120,7 @@ protected:
         // Ignore prefix's in output when waiting for a command
         remove_before_including(msg, CDT_PREFIX);
         remove_before_including(msg, GTEST_FILTER_PREFIX);
+        remove_before_including(msg, REGEX_PREFIX);
         // Ignore gtest progress line (that keeps updating itself). We will only see the end result, printed over that line.
         remove_before_including(msg, GTEST_PROGRESS_FINISH);
         msg = std::regex_replace(msg, GTEST_EXEC_TIME_REGEX, "X ms");
@@ -189,6 +191,7 @@ protected:
     ASSERT_LINE("t<ind>\t\tExecute the task with the specified index");\
     ASSERT_LINE("tr<ind>\t\tKeep executing the task with the specified index until it fails");\
     ASSERT_LINE("o<ind>\t\tOpen the file link with the specified index in your code editor");\
+    ASSERT_LINE("s\t\tSearch through output of the last executed task with the specified regular expression.");\
     ASSERT_LINE("g<ind>\t\tDisplay output of the specified google test");\
     ASSERT_LINE("gt<ind>\t\tRe-run the google test with the specified index");\
     ASSERT_LINE("gtr<ind>\tKeep re-running the google test with the specified index until it fails");\
@@ -1031,4 +1034,52 @@ TEST_F(cdt_test, start_and_execute_gtest_task_with_gtest_filter) {
     ASSERT_RUNNING_TASK("normal_tests.*");
     ASSERT_LINE("\x1B[32mSuccessfully executed 1 tests (X ms total)\x1B[0m");
     ASSERT_TASK_COMPLETE("normal_tests.*");
+}
+
+TEST_F(cdt_test, start_attempt_to_search_execution_output_but_fail_due_to_no_task_being_executed_before_it) {
+    run_cdt("test-tasks.json", "no-config");
+    ASSERT_HELP_PROMPT_DISPLAYED();
+    ASSERT_TASK_LIST_DISPLAYED();
+    run_cmd("s");
+    ASSERT_LINE("\x1B[32mNo task has been executed yet\x1B[0m");
+}
+
+TEST_F(cdt_test, start_execute_task_attempt_to_search_its_output_with_invalid_regex_and_fail) {
+    run_cdt("test-tasks.json", "test-config");
+    ASSERT_HELP_PROMPT_DISPLAYED();
+    ASSERT_TASK_LIST_DISPLAYED();
+    run_cmd("t12");
+    ASSERT_RUNNING_TASK("primary task with links");
+    ASSERT_OUTPUT_WITH_LINKS_DISPLAYED();
+    ASSERT_TASK_COMPLETE("primary task with links");
+    run_cmd("s");
+    run_cmd("[");
+    ASSERT_LINE("\x1B[31mInvalid regular expression '[': The expression contained mismatched [ and ].");
+}
+
+TEST_F(cdt_test, start_execute_task_search_its_output_and_find_no_results) {
+    run_cdt("test-tasks.json", "test-config");
+    ASSERT_HELP_PROMPT_DISPLAYED();
+    ASSERT_TASK_LIST_DISPLAYED();
+    run_cmd("t12");
+    ASSERT_RUNNING_TASK("primary task with links");
+    ASSERT_OUTPUT_WITH_LINKS_DISPLAYED();
+    ASSERT_TASK_COMPLETE("primary task with links");
+    run_cmd("s");
+    run_cmd("non\\-existent");
+    ASSERT_LINE("\x1B[32mNo matches found\x1B[0m");
+}
+
+TEST_F(cdt_test, start_execute_task_search_its_output_and_find_results) {
+    run_cdt("test-tasks.json", "test-config");
+    ASSERT_HELP_PROMPT_DISPLAYED();
+    ASSERT_TASK_LIST_DISPLAYED();
+    run_cmd("t12");
+    ASSERT_RUNNING_TASK("primary task with links");
+    ASSERT_OUTPUT_WITH_LINKS_DISPLAYED();
+    ASSERT_TASK_COMPLETE("primary task with links");
+    run_cmd("s");
+    run_cmd("(some|data)");
+    ASSERT_LINE("\x1B[35m2:\x1B[0m\x1B[32msome\x1B[0m random \x1B[32mdata\x1B[0m");
+    ASSERT_LINE("\x1B[35m3:\x1B[0m\x1B[35m[o2] /d/e/f:15:32\x1B[0m \x1B[32msome\x1B[0mthing");
 }

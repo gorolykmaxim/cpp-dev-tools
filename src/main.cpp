@@ -1,5 +1,6 @@
 #include <cstddef>
 #include <deque>
+#include <exception>
 #include <functional>
 #include <iostream>
 #include <fstream>
@@ -152,6 +153,7 @@ std::vector<user_command_definition> USR_CMD_DEFS;
 const auto TASK = push_back_and_return(USR_CMD_DEFS, {"t", "ind", "Execute the task with the specified index"});
 const auto TASK_REPEAT = push_back_and_return(USR_CMD_DEFS, {"tr", "ind", "Keep executing the task with the specified index until it fails"});
 const auto OPEN = push_back_and_return(USR_CMD_DEFS, {"o", "ind", "Open the file link with the specified index in your code editor"});
+const auto SEARCH = push_back_and_return(USR_CMD_DEFS, {"s", "", "Search through output of the last executed task with the specified regular expression."});
 const auto GTEST = push_back_and_return(USR_CMD_DEFS, {"g", "ind", "Display output of the specified google test"});
 const auto GTEST_RERUN = push_back_and_return(USR_CMD_DEFS, {"gt", "ind", "Re-run the google test with the specified index"});
 const auto GTEST_RERUN_REPEAT = push_back_and_return(USR_CMD_DEFS, {"gtr", "ind", "Keep re-running the google test with the specified index until it fails"});
@@ -972,6 +974,50 @@ static void open_file_link(cdt& cdt) {
     }
 }
 
+static void search_through_last_execution_output(cdt& cdt) {
+    if (!accept_usr_cmd(SEARCH, cdt.last_usr_cmd)) return;
+    const auto output = find(LAST_ENTITY, cdt.exec_outputs);
+    if (!output) {
+        std::cout << TERM_COLOR_GREEN << "No task has been executed yet" << TERM_COLOR_RESET << std::endl;
+    } else {
+        const auto input = read_input_from_stdin("Regular expression: ");
+        try {
+            std::regex regex(input);
+            bool results_found = false;
+            for (auto i = 0; i < output->output_lines.size(); i++) {
+                const auto& line = output->output_lines[i];
+                const auto start = std::sregex_iterator(line.begin(), line.end(), regex);
+                const auto end = std::sregex_iterator();
+                std::unordered_set<size_t> highlight_starts, highlight_ends;
+                for (auto it = start; it != end; it++) {
+                    results_found = true;
+                    highlight_starts.insert(it->position());
+                    highlight_ends.insert(it->position() + it->length() - 1);
+                }
+                if (highlight_starts.empty()) {
+                    continue;
+                }
+                std::cout << TERM_COLOR_MAGENTA << i + 1 << ':' << TERM_COLOR_RESET;
+                for (auto j = 0; j < line.size(); j++) {
+                    if (highlight_starts.count(j) > 0) {
+                        std::cout << TERM_COLOR_GREEN;
+                    }
+                    std::cout << line[j];
+                    if (highlight_ends.count(j) > 0) {
+                        std::cout << TERM_COLOR_RESET;
+                    }
+                }
+                std::cout << std::endl;
+            }
+            if (!results_found) {
+                std::cout << TERM_COLOR_GREEN << "No matches found" << TERM_COLOR_RESET << std::endl;
+            }
+        } catch (const std::regex_error& e) {
+            std::cout << TERM_COLOR_RED << "Invalid regular expression '" << input << "': " << e.what() << std::endl;
+        }
+    }
+}
+
 static void prompt_user_to_ask_for_help() {
     std::cout << "Type " << TERM_COLOR_GREEN << HELP.cmd << TERM_COLOR_RESET << " to see list of all the user commands." << std::endl;
 }
@@ -1006,6 +1052,7 @@ int main(int argc, const char** argv) {
         read_user_command_from_stdin(cdt);
         schedule_task(cdt);
         open_file_link(cdt);
+        search_through_last_execution_output(cdt);
         display_gtest_output(cdt);
         rerun_gtest(cdt);
         schedule_gtest_task_with_filter(cdt);
