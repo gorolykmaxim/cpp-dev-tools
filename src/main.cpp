@@ -91,13 +91,13 @@ struct execution
     execution_state state = execution_state_running;
     std::string stdout_line_buffer;
     std::string stderr_line_buffer;
-    std::vector<std::string> output_lines;
 };
 
 struct gtest_test {
     std::string name;
     std::string duration;
-    std::vector<std::string> output;
+    size_t buffer_start;
+    size_t buffer_end;
 };
 
 enum gtest_execution_state {
@@ -116,7 +116,6 @@ struct gtest_execution {
 
 struct execution_output
 {
-    std::vector<std::string> output_lines;
     size_t lines_processed = 0;
     std::vector<std::string> file_links;
 };
@@ -127,6 +126,10 @@ struct template_string
     size_t arg_pos;
 };
 
+enum text_buffer_type {
+    text_buffer_type_process, text_buffer_type_gtest, text_buffer_type_output
+};
+
 struct cdt {
     std::deque<entity> execs_to_run_in_order;
     std::unordered_map<entity, size_t> task_ids;
@@ -134,6 +137,7 @@ struct cdt {
     std::unordered_map<entity, execution> execs;
     std::unordered_map<entity, execution_output> exec_outputs;
     std::unordered_map<entity, gtest_execution> gtest_execs;
+    std::unordered_map<text_buffer_type, std::unordered_map<entity, std::vector<std::string>>> text_buffers;
     std::unordered_set<entity> repeat_until_fail;
     std::unordered_set<entity> stream_output;
     moodycamel::BlockingConcurrentQueue<execution_event> exec_event_queue;
@@ -180,6 +184,9 @@ static void destroy_entity(entity e, cdt& cdt) {
     cdt.gtest_execs.erase(e);
     cdt.repeat_until_fail.erase(e);
     cdt.stream_output.erase(e);
+    for (int t = text_buffer_type_process; t <= text_buffer_type_output; t++) {
+        cdt.text_buffers[static_cast<text_buffer_type>(t)].erase(e);
+    }
 }
 
 template <typename T>
@@ -206,6 +213,14 @@ static void destroy_components(const std::unordered_set<entity>& es, std::unorde
     for (auto e: es) {
         components.erase(e);
     }
+}
+
+static void move_text_buffer(entity e, text_buffer_type from, text_buffer_type to, std::unordered_map<text_buffer_type, std::unordered_map<entity, std::vector<std::string>>>& text_buffers) {
+    auto& f = text_buffers[from][e];
+    auto& t = text_buffers[to][e];
+    t.reserve(t.size() + f.size());
+    t.insert(t.end(), f.begin(), f.end());
+    f.clear();
 }
 
 static bool accept_usr_cmd(const user_command_definition& def, user_command& cmd) {
@@ -602,6 +617,7 @@ static void process_execution_event(cdt& cdt) {
     execution_event event;
     cdt.exec_event_queue.wait_dequeue(event);
     auto& exec = cdt.execs[event.exec];
+    auto& buffer = cdt.text_buffers[text_buffer_type_process][event.exec];
     if (event.type == execution_event_type_exit) {
         exec.state = cdt.processes[event.exec]->get_exit_status() == 0 ? execution_state_complete : execution_state_failed;
     } else {
@@ -610,7 +626,7 @@ static void process_execution_event(cdt& cdt) {
         std::stringstream tmp_buffer;
         for (const auto c: to_process) {
             if (c == '\n') {
-                exec.output_lines.push_back(tmp_buffer.str());
+                buffer.push_back(tmp_buffer.str());
                 tmp_buffer = std::stringstream();
             } else {
                 tmp_buffer << c;
@@ -620,20 +636,24 @@ static void process_execution_event(cdt& cdt) {
     }
 }
 
-static void complete_current_gtest(gtest_execution& gtest_exec, const std::string& line_content) {
-    gtest_exec.tests[*gtest_exec.current_test].duration = line_content.substr(line_content.rfind('('));
+static void complete_current_gtest(gtest_execution& gtest_exec, const std::vector<std::string>& gtest_buffer, const std::string& line_content) {
+    auto& test = gtest_exec.tests[*gtest_exec.current_test];
+    test.duration = line_content.substr(line_content.rfind('('));
+    test.buffer_end = gtest_buffer.size();
     gtest_exec.current_test.reset();
 }
 
 static void parse_gtest_output(cdt& cdt) {
     static const auto test_count_index = std::string("Running ").size();
     for (const auto& proc: cdt.processes) {
-        auto& exec = cdt.execs[proc.first];
+        auto& proc_buffer = cdt.text_buffers[text_buffer_type_process][proc.first];
+        auto& gtest_buffer = cdt.text_buffers[text_buffer_type_gtest][proc.first];
+        auto& out_buffer = cdt.text_buffers[text_buffer_type_output][proc.first];
         auto& exec_output = cdt.exec_outputs[proc.first];
         const auto gtest_exec = find(proc.first, cdt.gtest_execs);
         const auto stream_output = find(proc.first, cdt.stream_output);
         if (gtest_exec && (gtest_exec->state == gtest_execution_state_running || gtest_exec->state == gtest_execution_state_parsing)) {
-            for (const auto& line: exec.output_lines) {
+            for (const auto& line: proc_buffer) {
                 auto line_content_index = 0;
                 auto filler_char = '\0';
                 std::stringstream word_stream;
@@ -670,18 +690,21 @@ static void parse_gtest_output(cdt& cdt) {
                 to belong to our tests and not some other child tests.
                 */
                 if (found_word == "OK" && line_content.find(gtest_exec->tests.back().name) == 0) {
-                    complete_current_gtest(*gtest_exec, line_content);
+                    complete_current_gtest(*gtest_exec, gtest_buffer, line_content);
                 } else if (found_word == "FAILED" && line_content.find(gtest_exec->tests.back().name) == 0) {
                     gtest_exec->failed_test_ids.push_back(*gtest_exec->current_test);
-                    complete_current_gtest(*gtest_exec, line_content);
+                    complete_current_gtest(*gtest_exec, gtest_buffer, line_content);
                 } else if (gtest_exec->current_test) {
-                    gtest_exec->tests[*gtest_exec->current_test].output.push_back(line);
+                    gtest_buffer.push_back(line);
                     if (stream_output && gtest_exec->rerun_of_single_test) {
-                        exec_output.output_lines.push_back(line);
+                        out_buffer.push_back(line);
                     }
                 } else if (found_word == "RUN") {
                     gtest_exec->current_test = gtest_exec->tests.size();
-                    gtest_exec->tests.push_back(gtest_test{line_content});
+                    gtest_test test{line_content};
+                    test.buffer_start = gtest_buffer.size();
+                    test.buffer_end = test.buffer_start;
+                    gtest_exec->tests.push_back(test);
                 } else if (filler_char == '=') {
                     if (gtest_exec->state == gtest_execution_state_running) {
                         const auto count_end_index = line_content.find(' ', test_count_index);
@@ -699,7 +722,7 @@ static void parse_gtest_output(cdt& cdt) {
                     std::cout << std::flush << "\rTests completed: " << gtest_exec->tests.size() << " of " << gtest_exec->test_count;
                 }
             }
-            exec.output_lines.clear();
+            proc_buffer.clear();
         }
     }
 }
@@ -719,11 +742,12 @@ static void print_failed_gtest_list(const gtest_execution& exec) {
     std::cout << TERM_COLOR_RED << "Tests failed: " << exec.failed_test_ids.size() << " of " << exec.tests.size() << " (" << failed_percent << "%) " << exec.total_duration << TERM_COLOR_RESET << std::endl;
 }
 
-static void print_gtest_output(execution_output& out, const gtest_test& test, const std::string& color) {
+static void print_gtest_output(execution_output& out, const std::vector<std::string>& gtest_buffer, std::vector<std::string>& out_buffer, const gtest_test& test, const std::string& color) {
     out = execution_output{};
-    out.output_lines.reserve(test.output.size() + 1);
-    out.output_lines.emplace_back(color + "\"" + test.name + "\" output:" + TERM_COLOR_RESET);
-    out.output_lines.insert(out.output_lines.end(), test.output.begin(), test.output.end());
+    out_buffer.clear();
+    out_buffer.reserve(test.buffer_end - test.buffer_start + 1);
+    out_buffer.emplace_back(color + "\"" + test.name + "\" output:" + TERM_COLOR_RESET);
+    out_buffer.insert(out_buffer.end(), gtest_buffer.begin() + test.buffer_start, gtest_buffer.begin() + test.buffer_end);
 }
 
 static gtest_test* find_gtest_by_cmd_arg(const user_command& cmd, gtest_execution* exec) {
@@ -752,9 +776,11 @@ static void display_gtest_output(cdt& cdt) {
     if (!accept_usr_cmd(GTEST, cdt.last_usr_cmd)) return;
     const auto last_gtest_exec = find(LAST_ENTITY, cdt.gtest_execs);
     const auto last_exec_output = find(LAST_ENTITY, cdt.exec_outputs);
+    const auto& gtest_buffer = cdt.text_buffers[text_buffer_type_gtest][LAST_ENTITY];
+    auto& out_buffer = cdt.text_buffers[text_buffer_type_output][LAST_ENTITY];
     const auto test = find_gtest_by_cmd_arg(cdt.last_usr_cmd, last_gtest_exec);
     if (last_gtest_exec && last_exec_output && test) {
-        print_gtest_output(*last_exec_output, *test, last_gtest_exec->failed_test_ids.empty() ? TERM_COLOR_GREEN : TERM_COLOR_RED);
+        print_gtest_output(*last_exec_output, gtest_buffer, out_buffer, *test, last_gtest_exec->failed_test_ids.empty() ? TERM_COLOR_GREEN : TERM_COLOR_RED);
     }
 }
 
@@ -830,7 +856,9 @@ static void display_gtest_execution_result(cdt& cdt) {
                 print_failed_gtest_list(*gtest_exec);
                 if (gtest_exec->failed_test_ids.size() == 1) {
                     const auto& test = gtest_exec->tests[gtest_exec->failed_test_ids[0]];
-                    print_gtest_output(exec_output, test, TERM_COLOR_RED);
+                    const auto& gtest_buffer = cdt.text_buffers[text_buffer_type_gtest][proc.first];
+                    auto& out_buffer = cdt.text_buffers[text_buffer_type_output][proc.first];
+                    print_gtest_output(exec_output, gtest_buffer, out_buffer, test, TERM_COLOR_RED);
                 }
             }
             gtest_exec->state = gtest_execution_state_finished;
@@ -860,11 +888,8 @@ static void finish_rerun_gtest_execution(cdt& cdt) {
 
 static void stream_execution_output(cdt& cdt) {
     for (const auto& proc: cdt.processes) {
-        auto& exec = cdt.execs[proc.first];
-        auto& exec_output = cdt.exec_outputs[proc.first];
         if (find(proc.first, cdt.stream_output)) {
-            exec_output.output_lines.insert(exec_output.output_lines.end(), exec.output_lines.begin(), exec.output_lines.end());
-            exec.output_lines.clear();
+            move_text_buffer(proc.first, text_buffer_type_process, text_buffer_type_output, cdt.text_buffers);
         }
     }
 }
@@ -873,8 +898,9 @@ static void find_and_highlight_file_links(cdt& cdt) {
     static const std::regex UNIX_FILE_LINK_REGEX("^(\\/[^:]+:[0-9]+(:[0-9]+)?)");
     if (cdt.open_in_editor_cmd.str.empty()) return;
     for (auto& out: cdt.exec_outputs) {
-        for (auto i = out.second.lines_processed; i < out.second.output_lines.size(); i++) {
-            auto& line = out.second.output_lines[i];
+        auto& buffer = cdt.text_buffers[text_buffer_type_output][out.first];
+        for (auto i = out.second.lines_processed; i < buffer.size(); i++) {
+            auto& line = buffer[i];
             std::smatch link_match;
             if (std::regex_search(line, link_match, UNIX_FILE_LINK_REGEX)) {
                 std::stringstream highlighted_line;
@@ -888,20 +914,18 @@ static void find_and_highlight_file_links(cdt& cdt) {
 
 static void print_execution_output(cdt& cdt) {
     for (auto& out: cdt.exec_outputs) {
-        for (auto i = out.second.lines_processed; i < out.second.output_lines.size(); i++) {
-            std::cout << out.second.output_lines[i] << std::endl;
+        auto& buffer = cdt.text_buffers[text_buffer_type_output][out.first];
+        for (auto i = out.second.lines_processed; i < buffer.size(); i++) {
+            std::cout << buffer[i] << std::endl;
         }
-        out.second.lines_processed = out.second.output_lines.size();
+        out.second.lines_processed = buffer.size();
     }
 }
 
 static void stream_execution_output_on_failure(cdt& cdt) {
     for (const auto& proc: cdt.processes) {
-        auto& exec = cdt.execs[proc.first];
-        auto& exec_output = cdt.exec_outputs[proc.first];
-        if (exec.state == execution_state_failed && !find(proc.first, cdt.stream_output)) {
-            exec_output.output_lines.insert(exec_output.output_lines.end(), exec.output_lines.begin(), exec.output_lines.end());
-            exec.output_lines.clear();
+        if (cdt.execs[proc.first].state == execution_state_failed && !find(proc.first, cdt.stream_output)) {
+            move_text_buffer(proc.first, text_buffer_type_process, text_buffer_type_output, cdt.text_buffers);
         }
     }
 }
@@ -944,6 +968,9 @@ static void finish_task_execution(cdt& cdt) {
             move_component(proc.first, LAST_ENTITY, cdt.task_ids);
             move_component(proc.first, LAST_ENTITY, cdt.exec_outputs);
             move_component(proc.first, LAST_ENTITY, cdt.gtest_execs);
+            for (int t = text_buffer_type_process; t <= text_buffer_type_output; t++) {
+                move_component(proc.first, LAST_ENTITY, cdt.text_buffers[static_cast<text_buffer_type>(t)]);
+            }
             current_execution_pid.reset();
         }
     }
@@ -967,7 +994,7 @@ static void open_file_link(cdt& cdt) {
             TinyProcessLib::Process(open_cmd).get_exit_status();
         } else {
             std::cout << TERM_COLOR_GREEN << "Last execution output:" << TERM_COLOR_RESET << std::endl;
-            for (const auto& line: exec_output->output_lines) {
+            for (const auto& line: cdt.text_buffers[text_buffer_type_output][LAST_ENTITY]) {
                 std::cout << line << std::endl;
             }
         }
@@ -976,16 +1003,16 @@ static void open_file_link(cdt& cdt) {
 
 static void search_through_last_execution_output(cdt& cdt) {
     if (!accept_usr_cmd(SEARCH, cdt.last_usr_cmd)) return;
-    const auto output = find(LAST_ENTITY, cdt.exec_outputs);
-    if (!output) {
+    const auto& buffer = cdt.text_buffers[text_buffer_type_output][LAST_ENTITY];
+    if (!find(LAST_ENTITY, cdt.exec_outputs)) {
         std::cout << TERM_COLOR_GREEN << "No task has been executed yet" << TERM_COLOR_RESET << std::endl;
     } else {
         const auto input = read_input_from_stdin("Regular expression: ");
         try {
             std::regex regex(input);
             bool results_found = false;
-            for (auto i = 0; i < output->output_lines.size(); i++) {
-                const auto& line = output->output_lines[i];
+            for (auto i = 0; i < buffer.size(); i++) {
+                const auto& line = buffer[i];
                 const auto start = std::sregex_iterator(line.begin(), line.end(), regex);
                 const auto end = std::sregex_iterator();
                 std::unordered_set<size_t> highlight_starts, highlight_ends;

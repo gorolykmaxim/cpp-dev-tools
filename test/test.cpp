@@ -784,6 +784,10 @@ TEST_F(cdt_test, start_execute_gtest_task_fail_view_gtest_test_output_with_file_
     ASSERT_LINE("\x1B[31m\"failed_test_suit_1.test1\" output:\x1B[0m");
     ASSERT_OUTPUT_WITH_LINKS_DISPLAYED();
     ASSERT_GTEST_FAILURE_REASON_DISPLAYED();
+    run_cmd("g1");
+    ASSERT_LINE("\x1B[31m\"failed_test_suit_1.test1\" output:\x1B[0m");
+    ASSERT_OUTPUT_WITH_LINKS_DISPLAYED();
+    ASSERT_GTEST_FAILURE_REASON_DISPLAYED();
     OPEN_FILE_LINKS_AND_ASSERT_LINKS_OPENED_IN_EDITOR();
 }
 
