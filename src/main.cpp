@@ -854,9 +854,7 @@ static void display_gtest_execution_result(cdt& cdt) {
             std::cout << "\33[2K\r"; // Current line has test execution progress displayed. We will start displaying our output on top of it.
             if (gtest_exec->state == gtest_execution_state_running) {
                 exec.state = execution_state_failed;
-                const auto& task = cdt.tasks[task_id];
-                const auto gtest_binary_path = task.command.substr(GTEST_TASK.size() + 1);
-                std::cout << TERM_COLOR_RED << "'" << gtest_binary_path << "' is not a google test executable" << TERM_COLOR_RESET << std::endl;
+                std::cout << TERM_COLOR_RED << "'" << gtest_task_to_shell_command(cdt.tasks[task_id]) << "' is not a google test executable" << TERM_COLOR_RESET << std::endl;
             } else if (gtest_exec->state == gtest_execution_state_parsing) {
                 exec.state = execution_state_failed;
                 std::cout << TERM_COLOR_RED << "Tests have finished prematurely" << TERM_COLOR_RESET << std::endl;
