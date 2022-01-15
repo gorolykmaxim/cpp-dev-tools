@@ -130,6 +130,12 @@ enum text_buffer_type {
     text_buffer_type_process, text_buffer_type_gtest, text_buffer_type_output
 };
 
+struct text_buffer_search {
+    text_buffer_type type;
+    size_t search_start;
+    size_t search_end;
+};
+
 struct cdt {
     std::deque<entity> execs_to_run_in_order;
     std::unordered_map<entity, size_t> task_ids;
@@ -138,6 +144,7 @@ struct cdt {
     std::unordered_map<entity, execution_output> exec_outputs;
     std::unordered_map<entity, gtest_execution> gtest_execs;
     std::unordered_map<text_buffer_type, std::unordered_map<entity, std::vector<std::string>>> text_buffers;
+    std::unordered_map<entity, text_buffer_search> text_buffer_searchs;
     std::unordered_set<entity> repeat_until_fail;
     std::unordered_set<entity> stream_output;
     moodycamel::BlockingConcurrentQueue<execution_event> exec_event_queue;
@@ -1003,15 +1010,24 @@ static void open_file_link(cdt& cdt) {
 
 static void search_through_last_execution_output(cdt& cdt) {
     if (!accept_usr_cmd(SEARCH, cdt.last_usr_cmd)) return;
-    const auto& buffer = cdt.text_buffers[text_buffer_type_output][LAST_ENTITY];
     if (!find(LAST_ENTITY, cdt.exec_outputs)) {
         std::cout << TERM_COLOR_GREEN << "No task has been executed yet" << TERM_COLOR_RESET << std::endl;
     } else {
+        const auto& buffer = cdt.text_buffers[text_buffer_type_output][LAST_ENTITY];
+        cdt.text_buffer_searchs[LAST_ENTITY] = text_buffer_search{text_buffer_type_output, 0, buffer.size()};
+    }
+}
+
+static void search_through_text_buffer(cdt& cdt) {
+    std::unordered_set<entity> to_destroy;
+    for (const auto& it: cdt.text_buffer_searchs) {
         const auto input = read_input_from_stdin("Regular expression: ");
+        const auto& search = it.second;
+        const auto& buffer = cdt.text_buffers[search.type][it.first];
         try {
             std::regex regex(input);
             bool results_found = false;
-            for (auto i = 0; i < buffer.size(); i++) {
+            for (auto i = search.search_start; i < search.search_end; i++) {
                 const auto& line = buffer[i];
                 const auto start = std::sregex_iterator(line.begin(), line.end(), regex);
                 const auto end = std::sregex_iterator();
@@ -1042,7 +1058,9 @@ static void search_through_last_execution_output(cdt& cdt) {
         } catch (const std::regex_error& e) {
             std::cout << TERM_COLOR_RED << "Invalid regular expression '" << input << "': " << e.what() << std::endl;
         }
+        to_destroy.insert(it.first);
     }
+    destroy_components(to_destroy, cdt.text_buffer_searchs);
 }
 
 static void prompt_user_to_ask_for_help() {
@@ -1084,6 +1102,7 @@ int main(int argc, const char** argv) {
         rerun_gtest(cdt);
         schedule_gtest_task_with_filter(cdt);
         display_help(USR_CMD_DEFS, cdt);
+        search_through_text_buffer(cdt);
         execute_restart_task(cdt);
         schedule_gtest_executions(cdt);
         schedule_task_executions(cdt);
