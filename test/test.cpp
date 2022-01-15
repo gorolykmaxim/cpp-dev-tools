@@ -191,8 +191,9 @@ protected:
     ASSERT_LINE("t<ind>\t\tExecute the task with the specified index");\
     ASSERT_LINE("tr<ind>\t\tKeep executing the task with the specified index until it fails");\
     ASSERT_LINE("o<ind>\t\tOpen the file link with the specified index in your code editor");\
-    ASSERT_LINE("s\t\tSearch through output of the last executed task with the specified regular expression.");\
+    ASSERT_LINE("s\t\tSearch through output of the last executed task with the specified regular expression");\
     ASSERT_LINE("g<ind>\t\tDisplay output of the specified google test");\
+    ASSERT_LINE("gs<ind>\t\tSearch through output of the specified google test with the specified regular expression");\
     ASSERT_LINE("gt<ind>\t\tRe-run the google test with the specified index");\
     ASSERT_LINE("gtr<ind>\tKeep re-running the google test with the specified index until it fails");\
     ASSERT_LINE("gf<ind>\t\tRun google tests of the task with the specified index with a specified --gtest_filter");\
@@ -270,6 +271,15 @@ protected:
     run_cmd("h");\
     ASSERT_HELP_DISPLAYED();\
     ASSERT_CMD_OUT("/a/b/c:10\n/d/e/f:15:32\n")
+#define ASSERT_SEARCH_COMMAND_HANDLES_INVALID_REGULAR_EXPRESSION(CMD)\
+    run_cmd(CMD);\
+    run_cmd("[");\
+    ASSERT_LINE("\x1B[31mInvalid regular expression '[': The expression contained mismatched [ and ].")
+#define ASSERT_NO_SEARCH_RESULTS() ASSERT_LINE("\x1B[32mNo matches found\x1B[0m")
+#define ASSERT_SEARCH_COMMAND_HANDLES_NO_RESULTS(CMD)\
+    run_cmd(CMD);\
+    run_cmd("non\\-existent");\
+    ASSERT_NO_SEARCH_RESULTS()
 
 TEST_F(cdt_test, start_and_view_tasks) {
     run_cdt("test-tasks.json", "no-config");
@@ -1056,9 +1066,7 @@ TEST_F(cdt_test, start_execute_task_attempt_to_search_its_output_with_invalid_re
     ASSERT_RUNNING_TASK("primary task with links");
     ASSERT_OUTPUT_WITH_LINKS_DISPLAYED();
     ASSERT_TASK_COMPLETE("primary task with links");
-    run_cmd("s");
-    run_cmd("[");
-    ASSERT_LINE("\x1B[31mInvalid regular expression '[': The expression contained mismatched [ and ].");
+    ASSERT_SEARCH_COMMAND_HANDLES_INVALID_REGULAR_EXPRESSION("s");
 }
 
 TEST_F(cdt_test, start_execute_task_search_its_output_and_find_no_results) {
@@ -1069,9 +1077,7 @@ TEST_F(cdt_test, start_execute_task_search_its_output_and_find_no_results) {
     ASSERT_RUNNING_TASK("primary task with links");
     ASSERT_OUTPUT_WITH_LINKS_DISPLAYED();
     ASSERT_TASK_COMPLETE("primary task with links");
-    run_cmd("s");
-    run_cmd("non\\-existent");
-    ASSERT_LINE("\x1B[32mNo matches found\x1B[0m");
+    ASSERT_SEARCH_COMMAND_HANDLES_NO_RESULTS("s");
 }
 
 TEST_F(cdt_test, start_execute_task_search_its_output_and_find_results) {
@@ -1086,4 +1092,93 @@ TEST_F(cdt_test, start_execute_task_search_its_output_and_find_results) {
     run_cmd("(some|data)");
     ASSERT_LINE("\x1B[35m2:\x1B[0m\x1B[32msome\x1B[0m random \x1B[32mdata\x1B[0m");
     ASSERT_LINE("\x1B[35m3:\x1B[0m\x1B[35m[o2] /d/e/f:15:32\x1B[0m \x1B[32msome\x1B[0mthing");
+}
+
+TEST_F(cdt_test, start_attempt_to_search_gtest_output_when_no_tests_have_been_executed_yet) {
+    run_cdt("test-tasks.json", "no-config");
+    ASSERT_HELP_PROMPT_DISPLAYED();
+    ASSERT_TASK_LIST_DISPLAYED();
+    run_cmd("gs");
+    ASSERT_LINE("\x1B[32mNo google tests have been executed yet.\x1B[0m");
+}
+
+TEST_F(cdt_test, start_execute_gtest_task_with_pre_tasks_fail_attempt_to_search_output_of_test_that_does_not_exist_and_view_list_of_failed_tests) {
+    run_cdt("test-tasks.json", "no-config");
+    ASSERT_HELP_PROMPT_DISPLAYED();
+    ASSERT_TASK_LIST_DISPLAYED();
+    run_cmd("t32");
+    ASSERT_RUNNING_PRE_TASK("pre pre task 1");
+    ASSERT_RUNNING_PRE_TASK("pre pre task 2");
+    ASSERT_RUNNING_TASK("gtest with multiple failed test suites and pre tasks");
+    ASSERT_FAILED_GTEST_TESTS_LIST_DISPLAYED();
+    ASSERT_TASK_FAILED("gtest with multiple failed test suites and pre tasks", "1");
+    ASSERT_CMD_OUT(TWO_PRE_TASKS_OUTPUT);
+    run_cmd("gs");
+    ASSERT_FAILED_GTEST_TESTS_LIST_DISPLAYED();
+    run_cmd("gs0");
+    ASSERT_FAILED_GTEST_TESTS_LIST_DISPLAYED();
+    run_cmd("gs99");
+    ASSERT_FAILED_GTEST_TESTS_LIST_DISPLAYED();
+}
+
+TEST_F(cdt_test, start_execute_gtest_task_with_pre_tasks_fail_and_search_output_of_the_test) {
+    run_cdt("test-tasks.json", "no-config");
+    ASSERT_HELP_PROMPT_DISPLAYED();
+    ASSERT_TASK_LIST_DISPLAYED();
+    run_cmd("t32");
+    ASSERT_RUNNING_PRE_TASK("pre pre task 1");
+    ASSERT_RUNNING_PRE_TASK("pre pre task 2");
+    ASSERT_RUNNING_TASK("gtest with multiple failed test suites and pre tasks");
+    ASSERT_FAILED_GTEST_TESTS_LIST_DISPLAYED();
+    ASSERT_TASK_FAILED("gtest with multiple failed test suites and pre tasks", "1");
+    ASSERT_SEARCH_COMMAND_HANDLES_INVALID_REGULAR_EXPRESSION("gs1");
+    ASSERT_SEARCH_COMMAND_HANDLES_NO_RESULTS("gs1");
+    run_cmd("gs1");
+    run_cmd("(C\\+\\+|with description|Failure)");
+    ASSERT_LINE("\x1B[35m4:\x1B[0munknown file: \x1B[32mFailure\x1B[0m");
+    ASSERT_LINE("\x1B[35m5:\x1B[0m\x1B[32mC++\x1B[0m exception \x1B[32mwith description\x1B[0m \"\" thrown in the test body.");
+    run_cmd("gs2");
+    run_cmd("(C\\+\\+|with description|Failure)");
+    ASSERT_LINE("\x1B[35m1:\x1B[0munknown file: \x1B[32mFailure\x1B[0m");
+    ASSERT_LINE("\x1B[35m2:\x1B[0m\x1B[32mC++\x1B[0m exception \x1B[32mwith description\x1B[0m \"\" thrown in the test body.");
+}
+
+TEST_F(cdt_test, start_execute_gtest_task_with_pre_tasks_succeed_attempt_to_search_output_of_test_that_does_not_exist_and_view_list_of_all_tests) {
+    run_cdt("test-tasks.json", "no-config");
+    ASSERT_HELP_PROMPT_DISPLAYED();
+    ASSERT_TASK_LIST_DISPLAYED();
+    run_cmd("t31");
+    ASSERT_RUNNING_PRE_TASK("pre pre task 1");
+    ASSERT_RUNNING_PRE_TASK("pre pre task 2");
+    ASSERT_RUNNING_TASK("gtest with multiple test suites and pre tasks");
+    ASSERT_LINE("\x1B[32mSuccessfully executed 3 tests (X ms total)\x1B[0m");
+    ASSERT_TASK_COMPLETE("gtest with multiple test suites and pre tasks");
+    ASSERT_CMD_OUT(TWO_PRE_TASKS_OUTPUT);
+    run_cmd("gs");
+    ASSERT_SUCCESS_GTEST_TESTS_LIST_DISPLAYED();
+    run_cmd("gs0");
+    ASSERT_SUCCESS_GTEST_TESTS_LIST_DISPLAYED();
+    run_cmd("gs99");
+    ASSERT_SUCCESS_GTEST_TESTS_LIST_DISPLAYED();
+}
+
+TEST_F(cdt_test, start_execute_gtest_task_with_pre_tasks_succeed_and_search_output_of_one_of_the_tests) {
+    run_cdt("test-tasks.json", "no-config");
+    ASSERT_HELP_PROMPT_DISPLAYED();
+    ASSERT_TASK_LIST_DISPLAYED();
+    run_cmd("t31");
+    ASSERT_RUNNING_PRE_TASK("pre pre task 1");
+    ASSERT_RUNNING_PRE_TASK("pre pre task 2");
+    ASSERT_RUNNING_TASK("gtest with multiple test suites and pre tasks");
+    ASSERT_LINE("\x1B[32mSuccessfully executed 3 tests (X ms total)\x1B[0m");
+    ASSERT_TASK_COMPLETE("gtest with multiple test suites and pre tasks");
+    ASSERT_SEARCH_COMMAND_HANDLES_INVALID_REGULAR_EXPRESSION("gs1");
+    ASSERT_SEARCH_COMMAND_HANDLES_NO_RESULTS("gs1");
+    run_cmd("gs1");
+    run_cmd("(some|data)");
+    ASSERT_LINE("\x1B[35m2:\x1B[0m\x1B[32msome\x1B[0m random \x1B[32mdata\x1B[0m");
+    ASSERT_LINE("\x1B[35m3:\x1B[0m/d/e/f:15:32 \x1B[32msome\x1B[0mthing");
+    run_cmd("gs2");
+    run_cmd("(some|data)");
+    ASSERT_NO_SEARCH_RESULTS();
 }

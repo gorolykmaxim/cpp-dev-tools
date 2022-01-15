@@ -164,8 +164,9 @@ std::vector<user_command_definition> USR_CMD_DEFS;
 const auto TASK = push_back_and_return(USR_CMD_DEFS, {"t", "ind", "Execute the task with the specified index"});
 const auto TASK_REPEAT = push_back_and_return(USR_CMD_DEFS, {"tr", "ind", "Keep executing the task with the specified index until it fails"});
 const auto OPEN = push_back_and_return(USR_CMD_DEFS, {"o", "ind", "Open the file link with the specified index in your code editor"});
-const auto SEARCH = push_back_and_return(USR_CMD_DEFS, {"s", "", "Search through output of the last executed task with the specified regular expression."});
+const auto SEARCH = push_back_and_return(USR_CMD_DEFS, {"s", "", "Search through output of the last executed task with the specified regular expression"});
 const auto GTEST = push_back_and_return(USR_CMD_DEFS, {"g", "ind", "Display output of the specified google test"});
+const auto GTEST_SEARCH = push_back_and_return(USR_CMD_DEFS, {"gs", "ind", "Search through output of the specified google test with the specified regular expression"});
 const auto GTEST_RERUN = push_back_and_return(USR_CMD_DEFS, {"gt", "ind", "Re-run the google test with the specified index"});
 const auto GTEST_RERUN_REPEAT = push_back_and_return(USR_CMD_DEFS, {"gtr", "ind", "Keep re-running the google test with the specified index until it fails"});
 const auto GTEST_FILTER = push_back_and_return(USR_CMD_DEFS, {"gf", "ind", "Run google tests of the task with the specified index with a specified " + GTEST_FILTER_ARG});
@@ -791,6 +792,15 @@ static void display_gtest_output(cdt& cdt) {
     }
 }
 
+static void search_through_gtest_output(cdt& cdt) {
+    if (!accept_usr_cmd(GTEST_SEARCH, cdt.last_usr_cmd)) return;
+    const auto last_gtest_exec = find(LAST_ENTITY, cdt.gtest_execs);
+    const auto test = find_gtest_by_cmd_arg(cdt.last_usr_cmd, last_gtest_exec);
+    if (test) {
+        cdt.text_buffer_searchs[LAST_ENTITY] = text_buffer_search{text_buffer_type_gtest, test->buffer_start, test->buffer_end};
+    }
+}
+
 static void rerun_gtest(cdt& cdt) {
     if (!accept_usr_cmd(GTEST_RERUN, cdt.last_usr_cmd) && !accept_usr_cmd(GTEST_RERUN_REPEAT, cdt.last_usr_cmd)) return;
     const auto last_gtest_exec = find(LAST_ENTITY, cdt.gtest_execs);
@@ -1040,7 +1050,7 @@ static void search_through_text_buffer(cdt& cdt) {
                 if (highlight_starts.empty()) {
                     continue;
                 }
-                std::cout << TERM_COLOR_MAGENTA << i + 1 << ':' << TERM_COLOR_RESET;
+                std::cout << TERM_COLOR_MAGENTA << i - search.search_start + 1 << ':' << TERM_COLOR_RESET;
                 for (auto j = 0; j < line.size(); j++) {
                     if (highlight_starts.count(j) > 0) {
                         std::cout << TERM_COLOR_GREEN;
@@ -1099,6 +1109,7 @@ int main(int argc, const char** argv) {
         open_file_link(cdt);
         search_through_last_execution_output(cdt);
         display_gtest_output(cdt);
+        search_through_gtest_output(cdt);
         rerun_gtest(cdt);
         schedule_gtest_task_with_filter(cdt);
         display_help(USR_CMD_DEFS, cdt);
