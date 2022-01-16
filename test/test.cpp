@@ -1351,3 +1351,25 @@ TEST_F(cdt_test, start_execute_gtest_task_execute_non_gtest_task_and_display_out
     ASSERT_LINE("\x1B[32m\"test_suit_1.test1\" output:\x1B[0m");
     ASSERT_OUTPUT_WITH_LINKS_DISPLAYED();
 }
+
+TEST_F(cdt_test, start_execute_gtest_task_rerun_one_of_its_tests_and_search_output_of_the_rerun_test) {
+    run_cdt("test-tasks.json", "test-config");
+    ASSERT_HELP_PROMPT_DISPLAYED();
+    ASSERT_TASK_LIST_DISPLAYED();
+    run_cmd("t31");
+    ASSERT_RUNNING_PRE_TASK("pre pre task 1");
+    ASSERT_RUNNING_PRE_TASK("pre pre task 2");
+    ASSERT_RUNNING_TASK("gtest with multiple test suites and pre tasks");
+    ASSERT_LINE("\x1B[32mSuccessfully executed 3 tests (X ms total)\x1B[0m");
+    ASSERT_TASK_COMPLETE("gtest with multiple test suites and pre tasks");
+    run_cmd("gt1");
+    ASSERT_RUNNING_PRE_TASK("pre pre task 1");
+    ASSERT_RUNNING_PRE_TASK("pre pre task 2");
+    ASSERT_RUNNING_TASK("test_suit_1.test1");
+    ASSERT_OUTPUT_WITH_LINKS_DISPLAYED();
+    ASSERT_TASK_COMPLETE("test_suit_1.test1");
+    run_cmd("s");
+    run_cmd("(some|data)");
+    ASSERT_LINE("\x1B[35m2:\x1B[0m\x1B[32msome\x1B[0m random \x1B[32mdata\x1B[0m");
+    ASSERT_LINE("\x1B[35m3:\x1B[0m\x1B[35m[o2] /d/e/f:15:32\x1B[0m \x1B[32msome\x1B[0mthing");
+}
