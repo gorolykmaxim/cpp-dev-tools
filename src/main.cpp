@@ -502,14 +502,6 @@ static bool is_cmd_arg_in_range(const user_command& cmd, const std::vector<T>& r
     return cmd.arg > 0 && cmd.arg <= range.size();
 }
 
-static bool is_active_execution(const std::optional<execution>& exec) {
-    return exec && exec->state == execution_state_running;
-}
-
-static bool is_finished_execution(const std::optional<execution>& exec) {
-    return exec && exec->state != execution_state_running;
-}
-
 static std::string read_input_from_stdin(const std::string& prefix) {
     std::cout << TERM_COLOR_GREEN << prefix << TERM_COLOR_RESET;
     std::string input;
