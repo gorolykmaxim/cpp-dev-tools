@@ -1,6 +1,14 @@
 # cpp-dev-tools
 A command line tool to automate command execution and much more.
 
+## How to install
+```
+mkdir build
+cmake -B build -DCMAKE_BUILD_TYPE=Release
+cmake --build build
+sudo cmake --install build
+```
+
 ## Why?
 I used to use CLion. And i liked it a lot. In fact i've used Jetbrains' stuff most of my career.
 However, CLion's autocomplete became slower and slower over time up to the point where i've said that enough is enough and decided to switch to a more lightweight editors with more responsive autocomplete and typing experience.
