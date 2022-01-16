@@ -175,6 +175,7 @@ const auto GTEST = push_back_and_return(USR_CMD_DEFS, {"g", "ind", "Display outp
 const auto GTEST_SEARCH = push_back_and_return(USR_CMD_DEFS, {"gs", "ind", "Search through output of the specified google test with the specified regular expression"});
 const auto GTEST_RERUN = push_back_and_return(USR_CMD_DEFS, {"gt", "ind", "Re-run the google test with the specified index"});
 const auto GTEST_RERUN_REPEAT = push_back_and_return(USR_CMD_DEFS, {"gtr", "ind", "Keep re-running the google test with the specified index until it fails"});
+const auto GTEST_DEBUG = push_back_and_return(USR_CMD_DEFS, {"gd", "ind", "Re-run the google test with the specified index with debugger attached"});
 const auto GTEST_FILTER = push_back_and_return(USR_CMD_DEFS, {"gf", "ind", "Run google tests of the task with the specified index with a specified " + GTEST_FILTER_ARG});
 const auto HELP = push_back_and_return(USR_CMD_DEFS, {"h", "", "Display list of user commands"});
 
@@ -541,7 +542,7 @@ static void display_list_of_tasks(const std::vector<task>& tasks) {
 }
 
 static void schedule_task(cdt& cdt) {
-    if (!accept_usr_cmd(TASK, cdt.last_usr_cmd) && !accept_usr_cmd(TASK_REPEAT, cdt.last_usr_cmd)) return;
+    if (!accept_usr_cmd(TASK, cdt.last_usr_cmd) && !accept_usr_cmd(TASK_REPEAT, cdt.last_usr_cmd) && !accept_usr_cmd(DEBUG, cdt.last_usr_cmd)) return;
     if (!is_cmd_arg_in_range(cdt.last_usr_cmd, cdt.tasks)) {
         display_list_of_tasks(cdt.tasks);
     } else {
@@ -556,6 +557,9 @@ static void schedule_task(cdt& cdt) {
         cdt.stream_output.insert(task_exec);
         if (TASK_REPEAT.cmd == cdt.last_usr_cmd.cmd) {
             cdt.repeat_until_fail.insert(task_exec);
+        }
+        if (DEBUG.cmd == cdt.last_usr_cmd.cmd) {
+            cdt.debug.insert(task_exec);
         }
         cdt.execs_to_run_in_order.push_back(task_exec);
     }
@@ -833,7 +837,7 @@ static void search_through_gtest_output(cdt& cdt) {
 }
 
 static void rerun_gtest(cdt& cdt) {
-    if (!accept_usr_cmd(GTEST_RERUN, cdt.last_usr_cmd) && !accept_usr_cmd(GTEST_RERUN_REPEAT, cdt.last_usr_cmd)) return;
+    if (!accept_usr_cmd(GTEST_RERUN, cdt.last_usr_cmd) && !accept_usr_cmd(GTEST_RERUN_REPEAT, cdt.last_usr_cmd) && !accept_usr_cmd(GTEST_DEBUG, cdt.last_usr_cmd)) return;
     const auto last_gtest_exec = find(LAST_ENTITY, cdt.gtest_execs);
     const auto gtest_task_id = find(LAST_ENTITY, cdt.task_ids);
     const auto test = find_gtest_by_cmd_arg(cdt.last_usr_cmd, last_gtest_exec);
@@ -850,6 +854,9 @@ static void rerun_gtest(cdt& cdt) {
         cdt.stream_output.insert(exec);
         if (GTEST_RERUN_REPEAT.cmd == cdt.last_usr_cmd.cmd) {
             cdt.repeat_until_fail.insert(exec);
+        }
+        if (GTEST_DEBUG.cmd == cdt.last_usr_cmd.cmd) {
+            cdt.debug.insert(exec);
         }
         cdt.execs_to_run_in_order.push_back(exec);
     }
@@ -1101,8 +1108,8 @@ static void search_through_text_buffer(cdt& cdt) {
     destroy_components(to_destroy, cdt.text_buffer_searchs);
 }
 
-static void debug_task(cdt& cdt) {
-    if (!accept_usr_cmd(DEBUG, cdt.last_usr_cmd)) return;
+static void validate_if_debugger_available(cdt& cdt) {
+    if (!accept_usr_cmd(DEBUG, cdt.last_usr_cmd) && !accept_usr_cmd(GTEST_DEBUG, cdt.last_usr_cmd)) return;
     std::vector<std::string> mandatory_props_not_specified;
     if (cdt.debug_cmd.str.empty()) mandatory_props_not_specified.push_back(DEBUG_COMMAND_PROPERTY);
     if (cdt.execute_in_new_terminal_tab_cmd.str.empty()) mandatory_props_not_specified.push_back(EXECUTE_IN_NEW_TERMINAL_TAB_COMMAND_PROPERTY);
@@ -1110,20 +1117,9 @@ static void debug_task(cdt& cdt) {
         for (const auto& prop: mandatory_props_not_specified) {
             warn_user_config_prop_not_specified(prop);
         }
-    } else if (!is_cmd_arg_in_range(cdt.last_usr_cmd, cdt.tasks)) {
-        display_list_of_tasks(cdt.tasks);
     } else {
-        const auto id = cdt.last_usr_cmd.arg - 1;
-        for (const auto pre_task_id: cdt.pre_tasks[id]) {
-            const auto pre_task_exec = create_entity(cdt);
-            cdt.task_ids[pre_task_exec] = pre_task_id;
-            cdt.execs_to_run_in_order.push_back(pre_task_exec);
-        }
-        const auto& task = cdt.tasks[id];
-        const auto task_exec = create_entity(cdt);
-        cdt.task_ids[task_exec] = id;
-        cdt.debug.insert(task_exec);
-        cdt.execs_to_run_in_order.push_back(task_exec);
+        // Forward the command to be executed by the actual systems.
+        cdt.last_usr_cmd.executed = false;
     }
 }
 
@@ -1172,8 +1168,8 @@ int main(int argc, const char** argv) {
     std::signal(SIGINT, terminate_current_execution_or_exit);
     while (true) {
         read_user_command_from_stdin(cdt);
+        validate_if_debugger_available(cdt);
         schedule_task(cdt);
-        debug_task(cdt);
         open_file_link(cdt);
         search_through_last_execution_output(cdt);
         display_gtest_output(cdt);

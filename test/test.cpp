@@ -39,6 +39,7 @@ struct cdt_test: public testing::Test {
 protected:
     const std::string TIMEOUT_ERROR_MSG = "TIMED-OUT WAITING FOR OUTPUT FROM CDT";
     const std::string TWO_PRE_TASKS_OUTPUT = "pre pre task 1\npre pre task 2\n";
+    const std::string IN_TERMINAL_DEBUG_GTEST_BINARY_OUTPUT = "in new terminal: cd " TEST_CONFIGS_DIR  " && debug ${GTEST_BINARY_NAME}";
     const std::string CDT_PREFIX = "\x1B[32m(cdt) \x1B[0m";
     const std::string GTEST_FILTER_PREFIX = "\x1B[32m--gtest_filter=\x1B[0m";
     const std::string REGEX_PREFIX = "\x1B[32mRegular expression: \x1B[0m";
@@ -205,6 +206,7 @@ protected:
     ASSERT_LINE("gs<ind>\t\tSearch through output of the specified google test with the specified regular expression");\
     ASSERT_LINE("gt<ind>\t\tRe-run the google test with the specified index");\
     ASSERT_LINE("gtr<ind>\tKeep re-running the google test with the specified index until it fails");\
+    ASSERT_LINE("gd<ind>\t\tRe-run the google test with the specified index with debugger attached");\
     ASSERT_LINE("gf<ind>\t\tRun google tests of the task with the specified index with a specified --gtest_filter");\
     ASSERT_LINE("h\t\tDisplay list of user commands")
 #define ASSERT_RUNNING_TASK(TASK_NAME) ASSERT_LINE("\x1B[35mRunning \"" TASK_NAME "\"\x1B[0m")
@@ -275,6 +277,7 @@ protected:
     ASSERT_LINE("\x1B[31mTests failed: 1 of 1 (100%) (X ms total)\x1B[0m");\
     ASSERT_LINE("\x1B[31m\"sporadically_failing_tests.test1\" output:\x1B[0m");\
     ASSERT_GTEST_FAILURE_REASON_DISPLAYED()
+#define ASSERT_NO_GTESTS_EXECUTED_YET() ASSERT_LINE("\x1B[32mNo google tests have been executed yet.\x1B[0m")
 #define OPEN_FILE_LINKS_AND_ASSERT_LINKS_OPENED_IN_EDITOR()\
     run_cmd("o1");\
     run_cmd("o2");\
@@ -290,6 +293,9 @@ protected:
     run_cmd(CMD);\
     run_cmd("non\\-existent");\
     ASSERT_NO_SEARCH_RESULTS()
+#define ASSERT_MANDATORY_DEBUG_PROPERTIES_NOT_SPECIFIED()\
+    ASSERT_LINE("\x1B[31m'debug_command' is not specified in \"" + to_absolute_user_config_path("no-config") + "\"\x1B[0m");\
+    ASSERT_LINE("\x1B[31m'execute_in_new_terminal_tab_command' is not specified in \"" + to_absolute_user_config_path("no-config") + "\"\x1B[0m")
 
 TEST_F(cdt_test, start_and_view_tasks) {
     run_cdt("test-tasks.json", "no-config");
@@ -745,7 +751,7 @@ TEST_F(cdt_test, start_attempt_to_view_gtest_tests_but_see_no_tests_have_been_ex
     ASSERT_HELP_PROMPT_DISPLAYED();
     ASSERT_TASK_LIST_DISPLAYED();
     run_cmd("g");
-    ASSERT_LINE("\x1B[32mNo google tests have been executed yet.\x1B[0m");
+    ASSERT_NO_GTESTS_EXECUTED_YET();
 }
 
 TEST_F(cdt_test, start_execute_gtest_task_try_to_view_gtest_test_output_with_index_out_of_range_and_see_all_tests_list) {
@@ -836,7 +842,7 @@ TEST_F(cdt_test, start_attempt_to_rerun_gtest_when_no_tests_have_been_executed_y
     ASSERT_HELP_PROMPT_DISPLAYED();
     ASSERT_TASK_LIST_DISPLAYED();
     run_cmd("gt");
-    ASSERT_LINE("\x1B[32mNo google tests have been executed yet.\x1B[0m");
+    ASSERT_NO_GTESTS_EXECUTED_YET();
 }
 
 TEST_F(cdt_test, start_execute_gtest_task_with_pre_tasks_fail_attempt_to_rerun_test_that_does_not_exist_and_view_list_of_failed_tests) {
@@ -1005,7 +1011,7 @@ TEST_F(cdt_test, start_attempt_to_repeatedly_rerun_gtest_when_no_tests_have_been
     ASSERT_HELP_PROMPT_DISPLAYED();
     ASSERT_TASK_LIST_DISPLAYED();
     run_cmd("gtr");
-    ASSERT_LINE("\x1B[32mNo google tests have been executed yet.\x1B[0m");
+    ASSERT_NO_GTESTS_EXECUTED_YET();
 }
 
 TEST_F(cdt_test, start_execute_gtest_task_with_pre_tasks_succeed_attempt_to_repeatedly_rerun_test_that_does_not_exist_and_view_list_of_all_tests) {
@@ -1111,7 +1117,7 @@ TEST_F(cdt_test, start_attempt_to_search_gtest_output_when_no_tests_have_been_ex
     ASSERT_HELP_PROMPT_DISPLAYED();
     ASSERT_TASK_LIST_DISPLAYED();
     run_cmd("gs");
-    ASSERT_LINE("\x1B[32mNo google tests have been executed yet.\x1B[0m");
+    ASSERT_NO_GTESTS_EXECUTED_YET();
 }
 
 TEST_F(cdt_test, start_execute_gtest_task_with_pre_tasks_fail_attempt_to_search_output_of_test_that_does_not_exist_and_view_list_of_failed_tests) {
@@ -1200,8 +1206,7 @@ TEST_F(cdt_test, start_attempt_to_debug_task_while_mandatory_properties_are_not_
     ASSERT_HELP_PROMPT_DISPLAYED();
     ASSERT_TASK_LIST_DISPLAYED();
     run_cmd("d");
-    ASSERT_LINE("\x1B[31m'debug_command' is not specified in \"" + to_absolute_user_config_path("no-config") + "\"\x1B[0m");
-    ASSERT_LINE("\x1B[31m'execute_in_new_terminal_tab_command' is not specified in \"" + to_absolute_user_config_path("no-config") + "\"\x1B[0m");
+    ASSERT_MANDATORY_DEBUG_PROPERTIES_NOT_SPECIFIED();
     ASSERT_CMD_OUT("");
 }
 
@@ -1215,6 +1220,7 @@ TEST_F(cdt_test, start_attempt_debug_task_that_does_not_exist_and_view_list_of_a
     ASSERT_TASK_LIST_DISPLAYED();
     run_cmd("d99");
     ASSERT_TASK_LIST_DISPLAYED();
+    ASSERT_CMD_OUT("");
 }
 
 TEST_F(cdt_test, start_debug_primary_task_with_pre_tasks) {
@@ -1238,5 +1244,94 @@ TEST_F(cdt_test, start_debug_gtest_primary_task_with_pre_tasks) {
     ASSERT_RUNNING_PRE_TASK("pre pre task 1");
     ASSERT_RUNNING_PRE_TASK("pre pre task 2");
     ASSERT_DEBUG_TASK("gtest with multiple test suites and pre tasks");
-    ASSERT_CMD_OUT("pre pre task 1\npre pre task 2\nin new terminal: cd " + test_configs_dir.string() + " && debug ${GTEST_BINARY_NAME} --gtest_filter=test_suit_1.*:test_suit_2.*\n");
+    ASSERT_CMD_OUT(TWO_PRE_TASKS_OUTPUT + IN_TERMINAL_DEBUG_GTEST_BINARY_OUTPUT + " --gtest_filter=test_suit_1.*:test_suit_2.*\n");
+}
+
+TEST_F(cdt_test, start_attempt_to_rerun_gtest_with_debugger_while_mandatory_properties_are_not_specified_in_user_config) {
+    run_cdt("test-tasks.json", "no-config");
+    ASSERT_HELP_PROMPT_DISPLAYED();
+    ASSERT_TASK_LIST_DISPLAYED();
+    run_cmd("gd");
+    ASSERT_MANDATORY_DEBUG_PROPERTIES_NOT_SPECIFIED();
+    ASSERT_CMD_OUT("");
+}
+
+TEST_F(cdt_test, start_attempt_to_rerun_gtest_with_debugger_when_no_tests_have_been_executed_yet) {
+    run_cdt("test-tasks.json", "test-config");
+    ASSERT_HELP_PROMPT_DISPLAYED();
+    ASSERT_TASK_LIST_DISPLAYED();
+    run_cmd("gd");
+    ASSERT_NO_GTESTS_EXECUTED_YET();
+}
+
+TEST_F(cdt_test, start_execute_gtest_task_with_pre_tasks_fail_attempt_to_rerun_test_that_does_not_exist_with_debugger_and_view_list_of_failed_tests) {
+    run_cdt("test-tasks.json", "test-config");
+    ASSERT_HELP_PROMPT_DISPLAYED();
+    ASSERT_TASK_LIST_DISPLAYED();
+    run_cmd("t32");
+    ASSERT_RUNNING_PRE_TASK("pre pre task 1");
+    ASSERT_RUNNING_PRE_TASK("pre pre task 2");
+    ASSERT_RUNNING_TASK("gtest with multiple failed test suites and pre tasks");
+    ASSERT_FAILED_GTEST_TESTS_LIST_DISPLAYED();
+    ASSERT_TASK_FAILED("gtest with multiple failed test suites and pre tasks", "1");
+    run_cmd("gd");
+    ASSERT_FAILED_GTEST_TESTS_LIST_DISPLAYED();
+    run_cmd("gd0");
+    ASSERT_FAILED_GTEST_TESTS_LIST_DISPLAYED();
+    run_cmd("gd99");
+    ASSERT_FAILED_GTEST_TESTS_LIST_DISPLAYED();
+    ASSERT_CMD_OUT(TWO_PRE_TASKS_OUTPUT);
+}
+
+TEST_F(cdt_test, start_execute_gtest_task_with_pre_tasks_fail_and_rerun_failed_test_with_debugger) {
+    run_cdt("test-tasks.json", "test-config");
+    ASSERT_HELP_PROMPT_DISPLAYED();
+    ASSERT_TASK_LIST_DISPLAYED();
+    run_cmd("t32");
+    ASSERT_RUNNING_PRE_TASK("pre pre task 1");
+    ASSERT_RUNNING_PRE_TASK("pre pre task 2");
+    ASSERT_RUNNING_TASK("gtest with multiple failed test suites and pre tasks");
+    ASSERT_FAILED_GTEST_TESTS_LIST_DISPLAYED();
+    ASSERT_TASK_FAILED("gtest with multiple failed test suites and pre tasks", "1");
+    run_cmd("gd1");
+    ASSERT_RUNNING_PRE_TASK("pre pre task 1");
+    ASSERT_RUNNING_PRE_TASK("pre pre task 2");
+    ASSERT_DEBUG_TASK("failed_test_suit_1.test1");
+    ASSERT_CMD_OUT(TWO_PRE_TASKS_OUTPUT + TWO_PRE_TASKS_OUTPUT + IN_TERMINAL_DEBUG_GTEST_BINARY_OUTPUT + " --gtest_filter=failed_test_suit_1.*:failed_test_suit_2.* --gtest_filter=failed_test_suit_1.test1\n");
+}
+
+TEST_F(cdt_test, start_execute_gtest_task_with_pre_tasks_succeed_attempt_to_rerun_test_that_does_not_exist_with_debugger_and_view_list_of_all_tests) {
+    run_cdt("test-tasks.json", "test-config");
+    ASSERT_HELP_PROMPT_DISPLAYED();
+    ASSERT_TASK_LIST_DISPLAYED();
+    run_cmd("t31");
+    ASSERT_RUNNING_PRE_TASK("pre pre task 1");
+    ASSERT_RUNNING_PRE_TASK("pre pre task 2");
+    ASSERT_RUNNING_TASK("gtest with multiple test suites and pre tasks");
+    ASSERT_LINE("\x1B[32mSuccessfully executed 3 tests (X ms total)\x1B[0m");
+    ASSERT_TASK_COMPLETE("gtest with multiple test suites and pre tasks");
+    run_cmd("gd");
+    ASSERT_SUCCESS_GTEST_TESTS_LIST_DISPLAYED();
+    run_cmd("gd0");
+    ASSERT_SUCCESS_GTEST_TESTS_LIST_DISPLAYED();
+    run_cmd("gd99");
+    ASSERT_SUCCESS_GTEST_TESTS_LIST_DISPLAYED();
+    ASSERT_CMD_OUT(TWO_PRE_TASKS_OUTPUT);
+}
+
+TEST_F(cdt_test, start_execute_gtest_task_with_pre_tasks_succeed_and_rerun_one_of_tests_with_debugger) {
+    run_cdt("test-tasks.json", "test-config");
+    ASSERT_HELP_PROMPT_DISPLAYED();
+    ASSERT_TASK_LIST_DISPLAYED();
+    run_cmd("t31");
+    ASSERT_RUNNING_PRE_TASK("pre pre task 1");
+    ASSERT_RUNNING_PRE_TASK("pre pre task 2");
+    ASSERT_RUNNING_TASK("gtest with multiple test suites and pre tasks");
+    ASSERT_LINE("\x1B[32mSuccessfully executed 3 tests (X ms total)\x1B[0m");
+    ASSERT_TASK_COMPLETE("gtest with multiple test suites and pre tasks");
+    run_cmd("gd1");
+    ASSERT_RUNNING_PRE_TASK("pre pre task 1");
+    ASSERT_RUNNING_PRE_TASK("pre pre task 2");
+    ASSERT_DEBUG_TASK("test_suit_1.test1");
+    ASSERT_CMD_OUT(TWO_PRE_TASKS_OUTPUT + TWO_PRE_TASKS_OUTPUT + IN_TERMINAL_DEBUG_GTEST_BINARY_OUTPUT + " --gtest_filter=test_suit_1.*:test_suit_2.* --gtest_filter=test_suit_1.test1\n");
 }
