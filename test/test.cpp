@@ -1297,7 +1297,17 @@ TEST_F(cdt_test, start_execute_gtest_task_with_pre_tasks_fail_and_rerun_failed_t
     ASSERT_RUNNING_PRE_TASK("pre pre task 1");
     ASSERT_RUNNING_PRE_TASK("pre pre task 2");
     ASSERT_DEBUG_TASK("failed_test_suit_1.test1");
-    ASSERT_CMD_OUT(TWO_PRE_TASKS_OUTPUT + TWO_PRE_TASKS_OUTPUT + IN_TERMINAL_DEBUG_GTEST_BINARY_OUTPUT + " --gtest_filter=failed_test_suit_1.*:failed_test_suit_2.* --gtest_filter=failed_test_suit_1.test1\n");
+    run_cmd("gd2");
+    ASSERT_RUNNING_PRE_TASK("pre pre task 1");
+    ASSERT_RUNNING_PRE_TASK("pre pre task 2");
+    ASSERT_DEBUG_TASK("failed_test_suit_2.test1");
+    ASSERT_CMD_OUT(
+        TWO_PRE_TASKS_OUTPUT +
+        TWO_PRE_TASKS_OUTPUT +
+        IN_TERMINAL_DEBUG_GTEST_BINARY_OUTPUT + " --gtest_filter=failed_test_suit_1.*:failed_test_suit_2.* --gtest_filter=failed_test_suit_1.test1\n" +
+        TWO_PRE_TASKS_OUTPUT +
+        IN_TERMINAL_DEBUG_GTEST_BINARY_OUTPUT + " --gtest_filter=failed_test_suit_1.*:failed_test_suit_2.* --gtest_filter=failed_test_suit_2.test1\n"
+    );
 }
 
 TEST_F(cdt_test, start_execute_gtest_task_with_pre_tasks_succeed_attempt_to_rerun_test_that_does_not_exist_with_debugger_and_view_list_of_all_tests) {
@@ -1333,7 +1343,17 @@ TEST_F(cdt_test, start_execute_gtest_task_with_pre_tasks_succeed_and_rerun_one_o
     ASSERT_RUNNING_PRE_TASK("pre pre task 1");
     ASSERT_RUNNING_PRE_TASK("pre pre task 2");
     ASSERT_DEBUG_TASK("test_suit_1.test1");
-    ASSERT_CMD_OUT(TWO_PRE_TASKS_OUTPUT + TWO_PRE_TASKS_OUTPUT + IN_TERMINAL_DEBUG_GTEST_BINARY_OUTPUT + " --gtest_filter=test_suit_1.*:test_suit_2.* --gtest_filter=test_suit_1.test1\n");
+    run_cmd("gd2");
+    ASSERT_RUNNING_PRE_TASK("pre pre task 1");
+    ASSERT_RUNNING_PRE_TASK("pre pre task 2");
+    ASSERT_DEBUG_TASK("test_suit_1.test2");
+    ASSERT_CMD_OUT(
+        TWO_PRE_TASKS_OUTPUT +
+        TWO_PRE_TASKS_OUTPUT +
+        IN_TERMINAL_DEBUG_GTEST_BINARY_OUTPUT + " --gtest_filter=test_suit_1.*:test_suit_2.* --gtest_filter=test_suit_1.test1\n" +
+        TWO_PRE_TASKS_OUTPUT +
+        IN_TERMINAL_DEBUG_GTEST_BINARY_OUTPUT + " --gtest_filter=test_suit_1.*:test_suit_2.* --gtest_filter=test_suit_1.test2\n"
+    );
 }
 
 TEST_F(cdt_test, start_execute_gtest_task_execute_non_gtest_task_and_display_output_of_one_of_the_tests_executed_previously) {

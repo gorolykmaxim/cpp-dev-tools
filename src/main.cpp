@@ -924,6 +924,7 @@ static void finish_gtest_execution(cdt& cdt) {
     for (const auto& proc: cdt.processes) {
         const auto gtest_exec = find(proc.first, cdt.gtest_execs);
         if (gtest_exec && cdt.execs[proc.first].state != execution_state_running && !gtest_exec->rerun_of_single_test) {
+            move_component(proc.first, LAST_ENTITY, cdt.task_ids);
             move_component(proc.first, LAST_ENTITY, cdt.text_buffers[text_buffer_type_gtest]);
             move_component(proc.first, LAST_ENTITY, cdt.gtest_execs);
         }
@@ -1009,7 +1010,6 @@ static void finish_task_execution(cdt& cdt) {
                 to_destroy.insert(cdt.execs_to_run_in_order.begin(), cdt.execs_to_run_in_order.end());
             }
             to_destroy.insert(proc.first);
-            move_component(proc.first, LAST_ENTITY, cdt.task_ids);
             move_component(proc.first, LAST_ENTITY, cdt.exec_outputs);
             move_component(proc.first, LAST_ENTITY, cdt.text_buffers[text_buffer_type_output]);
             current_execution_pid.reset();
