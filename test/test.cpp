@@ -1335,3 +1335,19 @@ TEST_F(cdt_test, start_execute_gtest_task_with_pre_tasks_succeed_and_rerun_one_o
     ASSERT_DEBUG_TASK("test_suit_1.test1");
     ASSERT_CMD_OUT(TWO_PRE_TASKS_OUTPUT + TWO_PRE_TASKS_OUTPUT + IN_TERMINAL_DEBUG_GTEST_BINARY_OUTPUT + " --gtest_filter=test_suit_1.*:test_suit_2.* --gtest_filter=test_suit_1.test1\n");
 }
+
+TEST_F(cdt_test, start_execute_gtest_task_execute_non_gtest_task_and_display_output_of_one_of_the_tests_executed_previously) {
+    run_cdt("test-tasks.json", "test-config");
+    ASSERT_HELP_PROMPT_DISPLAYED();
+    ASSERT_TASK_LIST_DISPLAYED();
+    run_cmd("t22");
+    ASSERT_RUNNING_TASK("gtest with multiple test suites");
+    ASSERT_LINE("\x1B[32mSuccessfully executed 3 tests (X ms total)\x1B[0m");
+    ASSERT_TASK_COMPLETE("gtest with multiple test suites");
+    run_cmd("t1");
+    ASSERT_HELLO_WORLD_TASK_RAN();
+    ASSERT_CMD_OUT("hello world\n");
+    run_cmd("g1");
+    ASSERT_LINE("\x1B[32m\"test_suit_1.test1\" output:\x1B[0m");
+    ASSERT_OUTPUT_WITH_LINKS_DISPLAYED();
+}

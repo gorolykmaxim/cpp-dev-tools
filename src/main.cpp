@@ -920,15 +920,14 @@ static void restart_repeating_gtest_on_success(cdt& cdt) {
     }
 }
 
-static void finish_rerun_gtest_execution(cdt& cdt) {
-    std::unordered_set<entity> to_destroy;
+static void finish_gtest_execution(cdt& cdt) {
     for (const auto& proc: cdt.processes) {
         const auto gtest_exec = find(proc.first, cdt.gtest_execs);
-        if (gtest_exec && cdt.execs[proc.first].state != execution_state_running && gtest_exec->rerun_of_single_test) {
-            to_destroy.insert(proc.first);
+        if (gtest_exec && cdt.execs[proc.first].state != execution_state_running && !gtest_exec->rerun_of_single_test) {
+            move_component(proc.first, LAST_ENTITY, cdt.text_buffers[text_buffer_type_gtest]);
+            move_component(proc.first, LAST_ENTITY, cdt.gtest_execs);
         }
     }
-    destroy_components(to_destroy, cdt.gtest_execs);
 }
 
 static void stream_execution_output(cdt& cdt) {
@@ -1012,10 +1011,7 @@ static void finish_task_execution(cdt& cdt) {
             to_destroy.insert(proc.first);
             move_component(proc.first, LAST_ENTITY, cdt.task_ids);
             move_component(proc.first, LAST_ENTITY, cdt.exec_outputs);
-            move_component(proc.first, LAST_ENTITY, cdt.gtest_execs);
-            for (int t = text_buffer_type_process; t <= text_buffer_type_output; t++) {
-                move_component(proc.first, LAST_ENTITY, cdt.text_buffers[static_cast<text_buffer_type>(t)]);
-            }
+            move_component(proc.first, LAST_ENTITY, cdt.text_buffers[text_buffer_type_output]);
             current_execution_pid.reset();
         }
     }
@@ -1185,7 +1181,7 @@ int main(int argc, const char** argv) {
         display_execution_result(cdt);
         restart_repeating_gtest_on_success(cdt);
         restart_repeating_execution_on_success(cdt);
-        finish_rerun_gtest_execution(cdt);
+        finish_gtest_execution(cdt);
         finish_task_execution(cdt);
     }
 }
