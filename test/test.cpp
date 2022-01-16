@@ -54,6 +54,14 @@ protected:
     "  //\"open_in_editor_command\": \"subl {}\"\n"
     "  // Open file links from the output in VSCode:\n"
     "  //\"open_in_editor_command\": \"code {}\"\n"
+    "  // Execute in a new terminal tab on MacOS:\n"
+    "  // \"execute_in_new_terminal_tab_command\": \"osascript -e 'tell application \\\"Terminal\\\" to do script \\\"{}\\\"'\"\n"
+    "  // Execute in a new terminal tab on Windows:\n"
+    "  // \"execute_in_new_terminal_tab_command\": \"/c/Program\\ Files/Git/git-bash -c '{}'\"\n"
+    "  // Debug tasks via lldb:\n"
+    "  //\"debug_command\": \"lldb -- {}\"\n"
+    "  // Debug tasks via gdb:\n"
+    "  //\"debug_command\": \"gdb --args {}\"\n"
     "}\n";
 
     moodycamel::BlockingConcurrentQueue<std::string> output;
@@ -190,6 +198,7 @@ protected:
     ASSERT_LINE("\x1B[32mUser commands:\x1B[0m");\
     ASSERT_LINE("t<ind>\t\tExecute the task with the specified index");\
     ASSERT_LINE("tr<ind>\t\tKeep executing the task with the specified index until it fails");\
+    ASSERT_LINE("d<ind>\t\tExecute the task with the specified index with a debugger attached");\
     ASSERT_LINE("o<ind>\t\tOpen the file link with the specified index in your code editor");\
     ASSERT_LINE("s\t\tSearch through output of the last executed task with the specified regular expression");\
     ASSERT_LINE("g<ind>\t\tDisplay output of the specified google test");\
@@ -200,6 +209,7 @@ protected:
     ASSERT_LINE("h\t\tDisplay list of user commands")
 #define ASSERT_RUNNING_TASK(TASK_NAME) ASSERT_LINE("\x1B[35mRunning \"" TASK_NAME "\"\x1B[0m")
 #define ASSERT_RUNNING_PRE_TASK(TASK_NAME) ASSERT_LINE("\x1B[34mRunning \"" TASK_NAME "\"...\x1B[0m")
+#define ASSERT_DEBUG_TASK(TASK_NAME) ASSERT_LINE("\x1B[35mStarting debugger for \"" TASK_NAME "\"...\x1B[0m")
 #define ASSERT_TASK_COMPLETE(TASK_NAME) ASSERT_LINE("\x1B[35m'" TASK_NAME "' complete: return code: 0\x1B[0m")
 #define ASSERT_TASK_FAILED(TASK_NAME, RETURN_CODE) ASSERT_LINE("\x1B[31m'" TASK_NAME "' failed: return code: " RETURN_CODE "\x1B[0m")
 #define ASSERT_HELLO_WORLD_TASK_RAN()\
@@ -296,7 +306,9 @@ TEST_F(cdt_test, fail_to_start_due_to_user_config_not_being_json) {
 TEST_F(cdt_test, fail_to_start_due_to_user_config_having_open_in_editor_command_in_incorrect_format) {
     run_cdt("test-tasks.json", "incorrect-open-in-editor-command");
     ASSERT_LINE(is_invalid_error_message(to_absolute_user_config_path("incorrect-open-in-editor-command")));
-    ASSERT_LINE("'open_in_editor_command': must be a string in format: 'notepad++ {}', where {} will be replaced with a file name");
+    ASSERT_LINE("'open_in_editor_command': must be a string in format, examples of which you can find in the config");
+    ASSERT_LINE("'debug_command': must be a string in format, examples of which you can find in the config");
+    ASSERT_LINE("'execute_in_new_terminal_tab_command': must be a string in format, examples of which you can find in the config");
 }
 
 TEST_F(cdt_test, fail_to_start_due_to_tasks_config_not_specified) {
@@ -1181,4 +1193,50 @@ TEST_F(cdt_test, start_execute_gtest_task_with_pre_tasks_succeed_and_search_outp
     run_cmd("gs2");
     run_cmd("(some|data)");
     ASSERT_NO_SEARCH_RESULTS();
+}
+
+TEST_F(cdt_test, start_attempt_to_debug_task_while_mandatory_properties_are_not_specified_in_user_config) {
+    run_cdt("test-tasks.json", "no-config");
+    ASSERT_HELP_PROMPT_DISPLAYED();
+    ASSERT_TASK_LIST_DISPLAYED();
+    run_cmd("d");
+    ASSERT_LINE("\x1B[31m'debug_command' is not specified in \"" + to_absolute_user_config_path("no-config") + "\"\x1B[0m");
+    ASSERT_LINE("\x1B[31m'execute_in_new_terminal_tab_command' is not specified in \"" + to_absolute_user_config_path("no-config") + "\"\x1B[0m");
+    ASSERT_CMD_OUT("");
+}
+
+TEST_F(cdt_test, start_attempt_debug_task_that_does_not_exist_and_view_list_of_all_tasks) {
+    run_cdt("test-tasks.json", "test-config");
+    ASSERT_HELP_PROMPT_DISPLAYED();
+    ASSERT_TASK_LIST_DISPLAYED();
+    run_cmd("d");
+    ASSERT_TASK_LIST_DISPLAYED();
+    run_cmd("d0");
+    ASSERT_TASK_LIST_DISPLAYED();
+    run_cmd("d99");
+    ASSERT_TASK_LIST_DISPLAYED();
+}
+
+TEST_F(cdt_test, start_debug_primary_task_with_pre_tasks) {
+    run_cdt("test-tasks.json", "test-config");
+    ASSERT_HELP_PROMPT_DISPLAYED();
+    ASSERT_TASK_LIST_DISPLAYED();
+    run_cmd("d2");
+    ASSERT_RUNNING_PRE_TASK("pre task 1");
+    ASSERT_RUNNING_PRE_TASK("pre pre task 1");
+    ASSERT_RUNNING_PRE_TASK("pre pre task 2");
+    ASSERT_RUNNING_PRE_TASK("pre task 2");
+    ASSERT_DEBUG_TASK("primary task");
+    ASSERT_CMD_OUT("pre task 1\npre pre task 1\npre pre task 2\npre task 2\nin new terminal: cd " + test_configs_dir.string() + " && debug echo primary task | tee -a ${OUTPUT_FILE}\n");
+}
+
+TEST_F(cdt_test, start_debug_gtest_primary_task_with_pre_tasks) {
+    run_cdt("test-tasks.json", "test-config");
+    ASSERT_HELP_PROMPT_DISPLAYED();
+    ASSERT_TASK_LIST_DISPLAYED();
+    run_cmd("d31");
+    ASSERT_RUNNING_PRE_TASK("pre pre task 1");
+    ASSERT_RUNNING_PRE_TASK("pre pre task 2");
+    ASSERT_DEBUG_TASK("gtest with multiple test suites and pre tasks");
+    ASSERT_CMD_OUT("pre pre task 1\npre pre task 2\nin new terminal: cd " + test_configs_dir.string() + " && debug ${GTEST_BINARY_NAME} --gtest_filter=test_suit_1.*:test_suit_2.*\n");
 }

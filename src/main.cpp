@@ -36,6 +36,8 @@ const auto TERM_COLOR_RESET = "\033[0m";
 
 const auto USER_CONFIG_PATH = std::filesystem::path(getenv("HOME")) / ".cpp-dev-tools.json";
 const auto OPEN_IN_EDITOR_COMMAND_PROPERTY = "open_in_editor_command";
+const auto EXECUTE_IN_NEW_TERMINAL_TAB_COMMAND_PROPERTY = "execute_in_new_terminal_tab_command";
+const auto DEBUG_COMMAND_PROPERTY = "debug_command";
 const auto ENV_VAR_LAST_COMMAND = "LAST_COMMAND";
 const std::string TEMPLATE_ARG_PLACEHOLDER = "{}";
 const std::string GTEST_TASK = "__gtest";
@@ -147,11 +149,14 @@ struct cdt {
     std::unordered_map<entity, text_buffer_search> text_buffer_searchs;
     std::unordered_set<entity> repeat_until_fail;
     std::unordered_set<entity> stream_output;
+    std::unordered_set<entity> debug;
     moodycamel::BlockingConcurrentQueue<execution_event> exec_event_queue;
     user_command last_usr_cmd;
     std::vector<task> tasks;
     std::vector<std::vector<size_t>> pre_tasks;
     template_string open_in_editor_cmd;
+    template_string debug_cmd;
+    template_string execute_in_new_terminal_tab_cmd;
     const char* cdt_executable;
     std::filesystem::path tasks_config_path;
     std::vector<std::string> config_errors;
@@ -163,6 +168,7 @@ const entity LAST_ENTITY = 0;
 std::vector<user_command_definition> USR_CMD_DEFS;
 const auto TASK = push_back_and_return(USR_CMD_DEFS, {"t", "ind", "Execute the task with the specified index"});
 const auto TASK_REPEAT = push_back_and_return(USR_CMD_DEFS, {"tr", "ind", "Keep executing the task with the specified index until it fails"});
+const auto DEBUG = push_back_and_return(USR_CMD_DEFS, {"d", "ind", "Execute the task with the specified index with a debugger attached"});
 const auto OPEN = push_back_and_return(USR_CMD_DEFS, {"o", "ind", "Open the file link with the specified index in your code editor"});
 const auto SEARCH = push_back_and_return(USR_CMD_DEFS, {"s", "", "Search through output of the last executed task with the specified regular expression"});
 const auto GTEST = push_back_and_return(USR_CMD_DEFS, {"g", "ind", "Display output of the specified google test"});
@@ -229,6 +235,16 @@ static void move_text_buffer(entity e, text_buffer_type from, text_buffer_type t
     t.reserve(t.size() + f.size());
     t.insert(t.end(), f.begin(), f.end());
     f.clear();
+}
+
+static void warn_user_config_prop_not_specified(const std::string& property) {
+    std::cout << TERM_COLOR_RED << '\'' << property << "' is not specified in " << USER_CONFIG_PATH << TERM_COLOR_RESET << std::endl;
+}
+
+static std::string format_template(const template_string& templ, const std::string& str) {
+    std::string res = templ.str;
+    res.replace(templ.arg_pos, TEMPLATE_ARG_PLACEHOLDER.size(), str);
+    return res;
 }
 
 static bool accept_usr_cmd(const user_command_definition& def, user_command& cmd) {
@@ -333,25 +349,40 @@ static void init_example_user_config() {
         file << "  //\"" << OPEN_IN_EDITOR_COMMAND_PROPERTY << "\": \"subl {}\"" << std::endl;
         file << "  // Open file links from the output in VSCode:" << std::endl;
         file << "  //\"" << OPEN_IN_EDITOR_COMMAND_PROPERTY << "\": \"code {}\"" << std::endl;
+        file << "  // Execute in a new terminal tab on MacOS:" << std::endl;
+        file << "  // \"" << EXECUTE_IN_NEW_TERMINAL_TAB_COMMAND_PROPERTY << "\": \"osascript -e 'tell application \\\"Terminal\\\" to do script \\\"{}\\\"'\"" << std::endl;
+        file << "  // Execute in a new terminal tab on Windows:" << std::endl;
+        file << "  // \"" << EXECUTE_IN_NEW_TERMINAL_TAB_COMMAND_PROPERTY << "\": \"/c/Program\\ Files/Git/git-bash -c '{}'\"" << std::endl;
+        file << "  // Debug tasks via lldb:" << std::endl;
+        file << "  //\"" << DEBUG_COMMAND_PROPERTY << "\": \"lldb -- {}\"" << std::endl;
+        file << "  // Debug tasks via gdb:" << std::endl;
+        file << "  //\"" << DEBUG_COMMAND_PROPERTY << "\": \"gdb --args {}\"" << std::endl;
         file << "}" << std::endl;
     }
 }
 
+static std::function<bool()> parse_template_string(template_string& temp_str) {
+    return [&temp_str] () {
+        const auto pos = temp_str.str.find(TEMPLATE_ARG_PLACEHOLDER);
+        if (pos == std::string::npos) {
+            return false;
+        } else {
+            temp_str.arg_pos = pos;
+            return true;
+        }
+    };
+}
+
 static void read_user_config(cdt& cdt) {
+    static const std::string err_suffix = "must be a string in format, examples of which you can find in the config";
     nlohmann::json config_json;
     if (!parse_json_file(USER_CONFIG_PATH, false, config_json, cdt.config_errors)) {
         return;
     }
     std::vector<std::string> config_errors;
-    read_property(config_json, OPEN_IN_EDITOR_COMMAND_PROPERTY, cdt.open_in_editor_cmd.str, true, "", "must be a string in format: 'notepad++ {}', where {} will be replaced with a file name", config_errors, [&cdt] () {
-        const auto pos = cdt.open_in_editor_cmd.str.find(TEMPLATE_ARG_PLACEHOLDER);
-        if (pos == std::string::npos) {
-            return false;
-        } else {
-            cdt.open_in_editor_cmd.arg_pos = pos;
-            return true;
-        }
-    });
+    read_property(config_json, OPEN_IN_EDITOR_COMMAND_PROPERTY, cdt.open_in_editor_cmd.str, true, "", err_suffix, config_errors, parse_template_string(cdt.open_in_editor_cmd));
+    read_property(config_json, DEBUG_COMMAND_PROPERTY, cdt.debug_cmd.str, true, "", err_suffix, config_errors, parse_template_string(cdt.debug_cmd));
+    read_property(config_json, EXECUTE_IN_NEW_TERMINAL_TAB_COMMAND_PROPERTY, cdt.execute_in_new_terminal_tab_cmd.str, true, "", err_suffix, config_errors, parse_template_string(cdt.execute_in_new_terminal_tab_cmd));
     append_config_errors(USER_CONFIG_PATH, config_errors, cdt.config_errors);
 }
 
@@ -998,15 +1029,14 @@ static void open_file_link(cdt& cdt) {
     if (!accept_usr_cmd(OPEN, cdt.last_usr_cmd)) return;
     const auto exec_output = find(LAST_ENTITY, cdt.exec_outputs);
     if (cdt.open_in_editor_cmd.str.empty()) {
-        std::cout << TERM_COLOR_RED << '\'' << OPEN_IN_EDITOR_COMMAND_PROPERTY << "' is not specified in " << USER_CONFIG_PATH << TERM_COLOR_RESET << std::endl;
+        warn_user_config_prop_not_specified(OPEN_IN_EDITOR_COMMAND_PROPERTY);
     } else if (!exec_output || exec_output->file_links.empty()) {
         std::cout << TERM_COLOR_GREEN << "No file links in the output" << TERM_COLOR_RESET << std::endl;
     } else if (exec_output) {
         if (is_cmd_arg_in_range(cdt.last_usr_cmd, exec_output->file_links)) {
             const auto& link = exec_output->file_links[cdt.last_usr_cmd.arg - 1];
-            std::string open_cmd = cdt.open_in_editor_cmd.str;
-            open_cmd.replace(cdt.open_in_editor_cmd.arg_pos, TEMPLATE_ARG_PLACEHOLDER.size(), link);
-            TinyProcessLib::Process(open_cmd).get_exit_status();
+            const auto& shell_command = format_template(cdt.open_in_editor_cmd, link);
+            TinyProcessLib::Process(shell_command).get_exit_status();
         } else {
             std::cout << TERM_COLOR_GREEN << "Last execution output:" << TERM_COLOR_RESET << std::endl;
             for (const auto& line: cdt.text_buffers[text_buffer_type_output][LAST_ENTITY]) {
@@ -1071,6 +1101,45 @@ static void search_through_text_buffer(cdt& cdt) {
     destroy_components(to_destroy, cdt.text_buffer_searchs);
 }
 
+static void debug_task(cdt& cdt) {
+    if (!accept_usr_cmd(DEBUG, cdt.last_usr_cmd)) return;
+    std::vector<std::string> mandatory_props_not_specified;
+    if (cdt.debug_cmd.str.empty()) mandatory_props_not_specified.push_back(DEBUG_COMMAND_PROPERTY);
+    if (cdt.execute_in_new_terminal_tab_cmd.str.empty()) mandatory_props_not_specified.push_back(EXECUTE_IN_NEW_TERMINAL_TAB_COMMAND_PROPERTY);
+    if (!mandatory_props_not_specified.empty()) {
+        for (const auto& prop: mandatory_props_not_specified) {
+            warn_user_config_prop_not_specified(prop);
+        }
+    } else if (!is_cmd_arg_in_range(cdt.last_usr_cmd, cdt.tasks)) {
+        display_list_of_tasks(cdt.tasks);
+    } else {
+        const auto id = cdt.last_usr_cmd.arg - 1;
+        for (const auto pre_task_id: cdt.pre_tasks[id]) {
+            const auto pre_task_exec = create_entity(cdt);
+            cdt.task_ids[pre_task_exec] = pre_task_id;
+            cdt.execs_to_run_in_order.push_back(pre_task_exec);
+        }
+        const auto& task = cdt.tasks[id];
+        const auto task_exec = create_entity(cdt);
+        cdt.task_ids[task_exec] = id;
+        cdt.debug.insert(task_exec);
+        cdt.execs_to_run_in_order.push_back(task_exec);
+    }
+}
+
+static void start_next_execution_with_debugger(cdt& cdt) {
+    if (cdt.execs_to_run_in_order.empty() || !cdt.processes.empty()) return;
+    const auto exec_entity = cdt.execs_to_run_in_order.front();
+    if (!find(exec_entity, cdt.debug)) return;
+    const auto& exec = cdt.execs[exec_entity];
+    const auto debug_cmd = format_template(cdt.debug_cmd, exec.shell_command);
+    const auto cmds_to_exec = "cd " + std::filesystem::current_path().string() + " && " + debug_cmd;
+    const auto shell_cmd = format_template(cdt.execute_in_new_terminal_tab_cmd, cmds_to_exec);
+    TinyProcessLib::Process(shell_cmd).get_exit_status();
+    std::cout << TERM_COLOR_MAGENTA << "Starting debugger for \"" << exec.name << "\"..." << TERM_COLOR_RESET << std::endl;
+    destroy_entity(exec_entity, cdt);
+}
+
 static void prompt_user_to_ask_for_help() {
     std::cout << "Type " << TERM_COLOR_GREEN << HELP.cmd << TERM_COLOR_RESET << " to see list of all the user commands." << std::endl;
 }
@@ -1104,6 +1173,7 @@ int main(int argc, const char** argv) {
     while (true) {
         read_user_command_from_stdin(cdt);
         schedule_task(cdt);
+        debug_task(cdt);
         open_file_link(cdt);
         search_through_last_execution_output(cdt);
         display_gtest_output(cdt);
@@ -1115,6 +1185,7 @@ int main(int argc, const char** argv) {
         execute_restart_task(cdt);
         schedule_gtest_executions(cdt);
         schedule_task_executions(cdt);
+        start_next_execution_with_debugger(cdt);
         start_next_execution(cdt);
         process_execution_event(cdt);
         parse_gtest_output(cdt);
