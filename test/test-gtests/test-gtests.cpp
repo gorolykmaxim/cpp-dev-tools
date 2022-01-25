@@ -68,4 +68,5 @@ TEST(sporadically_failing_tests, test1) {
     } else {
         std::ofstream f(file1);
     }
+    display_file_links_data();
 }

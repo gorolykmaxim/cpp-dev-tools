@@ -934,7 +934,7 @@ TEST_F(cdt_test, start_execute_gtest_task_with_pre_tasks_succeed_and_rerun_one_o
 }
 
 TEST_F(cdt_test, start_repeatedly_execute_gtest_task_with_pre_tasks_until_it_fails_and_repeatedly_rerun_failed_test_until_it_fails) {
-    run_cdt("test-tasks.json", "no-config");
+    run_cdt("test-tasks.json", "test-config");
     ASSERT_HELP_PROMPT_DISPLAYED();
     ASSERT_TASK_LIST_DISPLAYED();
     run_cmd("tr33");
@@ -957,9 +957,11 @@ TEST_F(cdt_test, start_repeatedly_execute_gtest_task_with_pre_tasks_until_it_fai
     ASSERT_RUNNING_PRE_TASK("pre pre task 2");
     // First re-run should succeed
     ASSERT_RUNNING_TASK("sporadically_failing_tests.test1");
+    ASSERT_OUTPUT_WITH_LINKS_DISPLAYED();
     ASSERT_TASK_COMPLETE("sporadically_failing_tests.test1");
     // Second re-run should succeed
     ASSERT_RUNNING_TASK("sporadically_failing_tests.test1");
+    ASSERT_OUTPUT_WITH_LINKS_DISPLAYED();
     ASSERT_TASK_COMPLETE("sporadically_failing_tests.test1");
     // Third re-run should fail
     ASSERT_RUNNING_TASK("sporadically_failing_tests.test1");

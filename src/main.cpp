@@ -916,6 +916,7 @@ static void restart_repeating_gtest_on_success(cdt& cdt) {
         const auto gtest_exec = find(proc.first, cdt.gtest_execs);
         if (gtest_exec && cdt.execs[proc.first].state == execution_state_complete && find(proc.first, cdt.repeat_until_fail)) {
             cdt.gtest_execs[proc.first] = gtest_execution{gtest_exec->rerun_of_single_test};
+            cdt.text_buffers[text_buffer_type_gtest][proc.first].clear();
         }
     }
 }
@@ -995,6 +996,7 @@ static void restart_repeating_execution_on_success(cdt& cdt) {
         const auto& exec = cdt.execs[proc.first];
         if (exec.state == execution_state_complete && find(proc.first, cdt.repeat_until_fail)) {
             cdt.execs[proc.first] = execution{exec.name, exec.shell_command};
+            cdt.text_buffers[text_buffer_type_output][proc.first].clear();
             to_destroy.insert(proc.first);
         }
     }
