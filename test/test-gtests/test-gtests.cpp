@@ -11,6 +11,7 @@ static void display_file_links_data() {
     std::cout << "/a/b/c:10" << std::endl;
     std::cout << "some random data" << std::endl;
     std::cout << "/d/e/f:15:32 something" << std::endl;
+    std::cout << "line /a/b/c:11 and /b/c:32:1" << std::endl;
 }
 
 TEST(normal_tests, hello_world) {

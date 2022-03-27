@@ -225,7 +225,8 @@ protected:
 #define ASSERT_OUTPUT_WITH_LINKS_DISPLAYED()\
     ASSERT_LINE("\x1B[35m[o1] /a/b/c:10\x1B[0m");\
     ASSERT_LINE("some random data");\
-    ASSERT_LINE("\x1B[35m[o2] /d/e/f:15:32\x1B[0m something")
+    ASSERT_LINE("\x1B[35m[o2] /d/e/f:15:32\x1B[0m something");\
+    ASSERT_LINE("line \x1B[35m[o3] /a/b/c:11\x1B[0m and \x1B[35m[o4] /b/c:32:1\x1B[0m")
 #define ASSERT_LAST_EXEC_OUTPUT_DISPLAYED() ASSERT_LINE("\x1B[32mLast execution output:\x1B[0m")
 #define ASSERT_NO_FILE_LINKS_IN_OUTPUT_DISPLAYED() ASSERT_LINE("\x1B[32mNo file links in the output\x1B[0m")
 #define ASSERT_LAST_EXEC_OUTPUT_DISPLAYED_ON_LINK_INDEX_OUT_OF_BOUNDS()\
@@ -1155,8 +1156,8 @@ TEST_F(cdt_test, start_execute_gtest_task_with_pre_tasks_fail_and_search_output_
     ASSERT_SEARCH_COMMAND_HANDLES_NO_RESULTS("gs1");
     run_cmd("gs1");
     run_cmd("(C\\+\\+|with description|Failure)");
-    ASSERT_LINE("\x1B[35m4:\x1B[0munknown file: \x1B[32mFailure\x1B[0m");
-    ASSERT_LINE("\x1B[35m5:\x1B[0m\x1B[32mC++\x1B[0m exception \x1B[32mwith description\x1B[0m \"\" thrown in the test body.");
+    ASSERT_LINE("\x1B[35m5:\x1B[0munknown file: \x1B[32mFailure\x1B[0m");
+    ASSERT_LINE("\x1B[35m6:\x1B[0m\x1B[32mC++\x1B[0m exception \x1B[32mwith description\x1B[0m \"\" thrown in the test body.");
     run_cmd("gs2");
     run_cmd("(C\\+\\+|with description|Failure)");
     ASSERT_LINE("\x1B[35m1:\x1B[0munknown file: \x1B[32mFailure\x1B[0m");

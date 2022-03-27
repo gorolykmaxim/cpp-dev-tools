@@ -941,19 +941,27 @@ static void stream_execution_output(cdt& cdt) {
 }
 
 static void find_and_highlight_file_links(cdt& cdt) {
-    static const std::regex UNIX_FILE_LINK_REGEX("^(\\/[^:]+:[0-9]+(:[0-9]+)?)");
+    static const std::regex FILE_LINK_REGEX("(\\/[^:]+):([0-9]+):?([0-9]+)?");
     if (cdt.open_in_editor_cmd.str.empty()) return;
     for (auto& out: cdt.exec_outputs) {
         auto& buffer = cdt.text_buffers[text_buffer_type_output][out.first];
         for (auto i = out.second.lines_processed; i < buffer.size(); i++) {
             auto& line = buffer[i];
-            std::smatch link_match;
-            if (std::regex_search(line, link_match, UNIX_FILE_LINK_REGEX)) {
-                std::stringstream highlighted_line;
-                out.second.file_links.push_back(link_match[1]);
-                highlighted_line << TERM_COLOR_MAGENTA << '[' << OPEN.cmd << out.second.file_links.size() << "] " << link_match[1] << TERM_COLOR_RESET << link_match.suffix();
-                line = highlighted_line.str();
+            std::stringstream highlighted_line;
+            auto last_link_end_pos = 0;
+            for (auto it = std::sregex_iterator(line.begin(), line.end(), FILE_LINK_REGEX); it != std::sregex_iterator(); it++) {
+                std::stringstream link_stream;
+                link_stream << (*it)[1] << ':' << (*it)[2];
+                if (it->size() > 3 && (*it)[3].matched) {
+                    link_stream << ':' << (*it)[3];
+                }
+                const auto link = link_stream.str();
+                out.second.file_links.push_back(link);
+                highlighted_line << line.substr(last_link_end_pos, it->position() - last_link_end_pos) << TERM_COLOR_MAGENTA << '[' << OPEN.cmd << out.second.file_links.size() << "] " << link << TERM_COLOR_RESET;
+                last_link_end_pos = it->position() + it->length();
             }
+            highlighted_line << line.substr(last_link_end_pos, line.size() - last_link_end_pos);
+            line = highlighted_line.str();
         }
     }
 }
