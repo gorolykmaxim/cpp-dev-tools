@@ -30,9 +30,9 @@ target_link_libraries(${TEST_GTEST_TARGET} gtest gtest_main)
 set(TEST_TARGET ${PROJECT_NAME}-test)
 add_executable(${TEST_TARGET} EXCLUDE_FROM_ALL test/test.cpp)
 target_compile_definitions(${TEST_TARGET} PRIVATE
-    "BINARY_DIR=\"${CMAKE_BINARY_DIR}\""
-    "BINARY_NAME=\"${PROJECT_NAME}\""
-    "GTEST_BINARY_NAME=\"${TEST_GTEST_TARGET}\""
+    "BINARY_DIR=\"$<TARGET_FILE_DIR:${PROJECT_NAME}>\""
+    "BINARY_PATH=\"$<TARGET_FILE:${PROJECT_NAME}>\""
+    "GTEST_BINARY_PATH=\"$<TARGET_FILE:${TEST_GTEST_TARGET}>\""
     "TEST_CONFIGS_DIR=\"${CMAKE_CURRENT_SOURCE_DIR}/test/test-configs\""
     "TEST_HOMES_DIR=\"${CMAKE_CURRENT_SOURCE_DIR}/test/test-homes\"")
 add_dependencies(${TEST_TARGET} ${PROJECT_NAME} ${TEST_GTEST_TARGET})

@@ -45,10 +45,9 @@ protected:
     const std::string REGEX_PREFIX = "\x1B[32mRegular expression: \x1B[0m";
     const std::string GTEST_PROGRESS_FINISH = "\33[2K\r";
     const std::regex GTEST_EXEC_TIME_REGEX = std::regex("[0-9]+ ms");
-    const std::filesystem::path cwd = std::filesystem::path(BINARY_DIR);
     const std::filesystem::path test_configs_dir = std::filesystem::path(TEST_CONFIGS_DIR);
     const std::filesystem::path test_homes_dir = std::filesystem::path(TEST_HOMES_DIR);
-    const std::filesystem::path cmd_out_file = cwd / "cmd-test-output.txt";
+    const std::filesystem::path cmd_out_file = std::filesystem::path(BINARY_DIR) / "cmd-test-output.txt";
     const std::string DEFAULT_USER_CONFIG_CONTENT =
     "{\n"
     "  // Open file links from the output in Sublime Text:\n"
@@ -91,11 +90,11 @@ protected:
         std::filesystem::remove(to_absolute_user_config_path("no-config"));
     }
     void run_cdt(const std::string& config_name, const std::string& home_dir) {
-        const std::vector<std::string> args = {cwd / BINARY_NAME, test_configs_dir / config_name};
+        const std::vector<std::string> args = {BINARY_PATH, test_configs_dir / config_name};
         const std::unordered_map<std::string, std::string> env = {
             {"HOME", test_homes_dir / home_dir},
             {"OUTPUT_FILE", cmd_out_file},
-            {"GTEST_BINARY_NAME", cwd / GTEST_BINARY_NAME}
+            {"GTEST_BINARY_NAME", GTEST_BINARY_PATH}
         };
         proc = std::make_unique<TinyProcessLib::Process>(args, "", env, write_to(output, stdout_buffer), write_to(output, stderr_buffer), true);
     }
@@ -319,7 +318,7 @@ TEST_F(cdt_test, fail_to_start_due_to_user_config_having_open_in_editor_command_
 }
 
 TEST_F(cdt_test, fail_to_start_due_to_tasks_config_not_specified) {
-    const std::vector<std::string> args = {cwd / BINARY_NAME};
+    const std::vector<std::string> args = {BINARY_PATH};
     proc = std::make_unique<TinyProcessLib::Process>(args, "", write_to(output, stdout_buffer), write_to(output, stderr_buffer), true);
     ASSERT_LINE("\x1B[31musage: cpp-dev-tools tasks.json");
 }
