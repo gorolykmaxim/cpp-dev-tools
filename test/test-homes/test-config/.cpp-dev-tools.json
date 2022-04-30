@@ -1,5 +1,0 @@
-{
-    "open_in_editor_command": "echo {} >> ${OUTPUT_FILE}",
-    "execute_in_new_terminal_tab_command": "echo 'in new terminal: {}' >> ${OUTPUT_FILE}",
-    "debug_command": "debug {}"
-}

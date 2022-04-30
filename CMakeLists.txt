@@ -18,23 +18,14 @@ add_subdirectory(lib/cameron314_concurrentqueue)
 add_subdirectory(lib/nlohmann-json)
 add_subdirectory(lib/googletest EXCLUDE_FROM_ALL)
 
-add_executable(${PROJECT_NAME} src/main.cpp)
-target_include_directories(${PROJECT_NAME} PUBLIC lib/tiny-process-library PUBLIC lib/nlohmann_json PUBLIC lib/cameron314_concurrentqueue)
-target_link_libraries(${PROJECT_NAME} tiny-process-library nlohmann_json cameron314_concurrentqueue)
-install(TARGETS ${PROJECT_NAME} DESTINATION bin)
+add_library(cdt STATIC include/cdt.h src/cdt.cpp)
+target_include_directories(cdt PUBLIC include PUBLIC lib/tiny-process-library PUBLIC lib/nlohmann_json PUBLIC lib/cameron314_concurrentqueue)
+target_link_libraries(cdt tiny-process-library nlohmann_json cameron314_concurrentqueue)
 
-set(TEST_GTEST_TARGET test-gtests)
-add_executable(${TEST_GTEST_TARGET} EXCLUDE_FROM_ALL test/test-gtests/test-gtests.cpp)
-target_link_libraries(${TEST_GTEST_TARGET} gtest gtest_main)
+add_executable(${PROJECT_NAME} src/main.cpp)
+target_link_libraries(${PROJECT_NAME} cdt)
+install(TARGETS ${PROJECT_NAME} DESTINATION bin)
 
 set(TEST_TARGET ${PROJECT_NAME}-test)
 add_executable(${TEST_TARGET} EXCLUDE_FROM_ALL test/test.cpp)
-target_compile_definitions(${TEST_TARGET} PRIVATE
-    "BINARY_DIR=\"$<TARGET_FILE_DIR:${PROJECT_NAME}>\""
-    "BINARY_PATH=\"$<TARGET_FILE:${PROJECT_NAME}>\""
-    "GTEST_BINARY_PATH=\"$<TARGET_FILE:${TEST_GTEST_TARGET}>\""
-    "TEST_CONFIGS_DIR=\"${CMAKE_CURRENT_SOURCE_DIR}/test/test-configs\""
-    "TEST_HOMES_DIR=\"${CMAKE_CURRENT_SOURCE_DIR}/test/test-homes\"")
-add_dependencies(${TEST_TARGET} ${PROJECT_NAME} ${TEST_GTEST_TARGET})
-target_include_directories(${TEST_TARGET} PUBLIC lib/tiny-process-library PUBLIC lib/cameron314_concurrentqueue)
-target_link_libraries(${TEST_TARGET} gtest tiny-process-library cameron314_concurrentqueue gtest_main)
+target_link_libraries(${TEST_TARGET} cdt gtest gmock gtest_main)

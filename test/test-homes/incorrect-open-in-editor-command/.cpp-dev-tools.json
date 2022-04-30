@@ -1,5 +1,0 @@
-{
-    "open_in_editor_command": "my-editor",
-    "execute_in_new_terminal_tab_command": "my-terminal",
-    "debug_command": "my-debugger"
-}
