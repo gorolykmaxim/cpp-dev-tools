@@ -632,10 +632,8 @@ static void process_execution_event(cdt& cdt) {
     }
 }
 
-static void complete_current_gtest(gtest_execution& gtest_exec, const std::vector<std::string>& gtest_buffer, const std::string& line_content, bool& test_completed) {
-    auto& test = gtest_exec.tests[*gtest_exec.current_test];
-    test.duration = line_content.substr(line_content.rfind('('));
-    test.buffer_end = gtest_buffer.size();
+static void complete_current_gtest(gtest_execution& gtest_exec, const std::string& line_content, bool& test_completed) {
+    gtest_exec.tests[*gtest_exec.current_test].duration = line_content.substr(line_content.rfind('('));
     gtest_exec.current_test.reset();
     test_completed = true;
 }
@@ -691,11 +689,12 @@ static void parse_gtest_output(cdt& cdt) {
                 to belong to our tests and not some other child tests.
                 */
                 if (found_word == "OK" && line_content.find(gtest_exec->tests.back().name) == 0) {
-                    complete_current_gtest(*gtest_exec, gtest_buffer, line_content, test_completed);
+                    complete_current_gtest(*gtest_exec, line_content, test_completed);
                 } else if (found_word == "FAILED" && line_content.find(gtest_exec->tests.back().name) == 0) {
                     gtest_exec->failed_test_ids.push_back(*gtest_exec->current_test);
-                    complete_current_gtest(*gtest_exec, gtest_buffer, line_content, test_completed);
+                    complete_current_gtest(*gtest_exec, line_content, test_completed);
                 } else if (gtest_exec->current_test) {
+                    gtest_exec->tests[*gtest_exec->current_test].buffer_end++;
                     gtest_buffer.push_back(line);
                     if (stream_output && gtest_exec->rerun_of_single_test) {
                         out_buffer.push_back(line);

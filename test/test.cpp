@@ -158,7 +158,8 @@ public:
     "\x1B[31mFailed tests:\x1B[0m\n"\
     "1 \"exit_tests.exit_in_the_middle\" \n"\
     "\x1B[31mTests failed: 1 of 2 (50%) \x1B[0m\n"\
-    "\x1B[31m\"exit_tests.exit_in_the_middle\" output:\x1B[0m\n"
+    "\x1B[31m\"exit_tests.exit_in_the_middle\" output:\x1B[0m\n"\
+    OUT_TEST_ERROR()
 
 #define OUT_TESTS_COMPLETED_SUCCESSFULLY()\
     "\rTests completed: 1 of 3\rTests completed: 2 of 3\rTests completed: 3 of 3"\
@@ -308,7 +309,8 @@ public:
             "[       OK ] normal_tests.hello_world (0 ms)\n",
             "[----------] 1 test from normal_tests (0 ms total)\n\n",
             "[----------] 1 test from exit_tests\n",
-            "[ RUN      ] exit_tests.exit_in_the_middle\n"
+            "[ RUN      ] exit_tests.exit_in_the_middle\n",
+            out_test_error
         };
         failed_gtest_exec.exit_code = 1;
         failed_gtest_exec.output_lines = {
