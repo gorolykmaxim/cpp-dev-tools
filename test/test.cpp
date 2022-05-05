@@ -26,66 +26,66 @@
 #include "json.hpp"
 #include "process.hpp"
 
-struct paths {
-    const std::filesystem::path home = std::filesystem::path("/users/my-user");
-    const std::filesystem::path user_config = home / ".cpp-dev-tools.json";
-    const std::filesystem::path tasks_config = std::filesystem::absolute("tasks.json");
+struct Paths {
+    const std::filesystem::path kHome = std::filesystem::path("/users/my-user");
+    const std::filesystem::path kUserConfig = kHome / ".cpp-dev-tools.json";
+    const std::filesystem::path kTasksConfig = std::filesystem::absolute("tasks.json");
 };
 
-struct executables {
-    const std::string cdt = "cpp-dev-tools";
-    const std::string editor = "subl";
-    const std::string new_terminal_tab = "terminal";
-    const std::string debugger = "lldb";
-    const std::string hello_world = "echo hello world!";
-    const std::string tests = "tests";
+struct Executables {
+    const std::string kCdt = "cpp-dev-tools";
+    const std::string kEditor = "subl";
+    const std::string kNewTerminalTab = "terminal";
+    const std::string kDebugger = "lldb";
+    const std::string kHelloWorld = "echo hello world!";
+    const std::string kTests = "tests";
 };
 
-struct process_exec {
+struct ProcessExec {
     std::vector<std::string> output_lines;
     std::unordered_set<int> stderr_lines;
     bool is_long = false;
     int exit_code = 0;
 };
 
-struct process_exit_info {
+struct ProcessExitInfo {
     int exit_code;
     std::function<void()> exit_cb;
 };
 
-class os_api_mock: public os_api {
+class OsApiMock: public OsApi {
 public:
-    MOCK_METHOD(std::istream&, in, (), (override));
-    MOCK_METHOD(std::ostream&, out, (), (override));
-    MOCK_METHOD(std::ostream&, err, (), (override));
-    MOCK_METHOD(std::string, get_env, (const std::string&), (override));
-    MOCK_METHOD(void, set_env, (const std::string&, const std::string&), (override));
-    MOCK_METHOD(void, set_current_path, (const std::filesystem::path&), (override));
-    MOCK_METHOD(std::filesystem::path, get_current_path, (), (override));
-    MOCK_METHOD(bool, read_file, (const std::filesystem::path&, std::string&), (override));
-    MOCK_METHOD(void, write_file, (const std::filesystem::path&, const std::string&), (override));
-    MOCK_METHOD(bool, file_exists, (const std::filesystem::path&), (override));
-    MOCK_METHOD(void, signal, (int, void(*)(int)), (override));
-    MOCK_METHOD(void, raise_signal, (int), (override));
-    MOCK_METHOD(int, exec, (const std::vector<const char*>&), (override));
-    MOCK_METHOD(void, exec_process, (const std::string&), (override));
-    void kill_process(entity e, std::unordered_map<entity, std::unique_ptr<TinyProcessLib::Process>>& map) override {
-        process_exit_info& info = proc_exit_info.at(e);
+    MOCK_METHOD(std::istream&, In, (), (override));
+    MOCK_METHOD(std::ostream&, Out, (), (override));
+    MOCK_METHOD(std::ostream&, Err, (), (override));
+    MOCK_METHOD(std::string, GetEnv, (const std::string&), (override));
+    MOCK_METHOD(void, SetEnv, (const std::string&, const std::string&), (override));
+    MOCK_METHOD(void, SetCurrentPath, (const std::filesystem::path&), (override));
+    MOCK_METHOD(std::filesystem::path, GetCurrentPath, (), (override));
+    MOCK_METHOD(bool, ReadFile, (const std::filesystem::path&, std::string&), (override));
+    MOCK_METHOD(void, WriteFile, (const std::filesystem::path&, const std::string&), (override));
+    MOCK_METHOD(bool, FileExists, (const std::filesystem::path&), (override));
+    MOCK_METHOD(void, Signal, (int, void(*)(int)), (override));
+    MOCK_METHOD(void, RaiseSignal, (int), (override));
+    MOCK_METHOD(int, Exec, (const std::vector<const char*>&), (override));
+    MOCK_METHOD(void, ExecProcess, (const std::string&), (override));
+    void KillProcess(Entity e, std::unordered_map<Entity, std::unique_ptr<TinyProcessLib::Process>>& map) override {
+        ProcessExitInfo& info = proc_exit_info.at(e);
         info.exit_cb();
         info.exit_code = -1;
     }
-    void start_process(entity e, const std::string& cmd, const std::function<void(const char*, size_t)>& stdout_cb, const std::function<void(const char*, size_t)>& stderr_cb, const std::function<void()>& exit_cb, std::unordered_map<entity, std::unique_ptr<TinyProcessLib::Process>>& map) override {
+    void StartProcess(Entity e, const std::string& cmd, const std::function<void(const char*, size_t)>& stdout_cb, const std::function<void(const char*, size_t)>& stderr_cb, const std::function<void()>& exit_cb, std::unordered_map<Entity, std::unique_ptr<TinyProcessLib::Process>>& map) override {
         auto it = cmd_to_process_execs.find(cmd);
         if (it == cmd_to_process_execs.end()) {
             throw std::runtime_error("Unexpected command called: " + cmd);
         }
-        std::deque<process_exec>& execs = it->second;
-        process_exec exec = execs.front();
+        std::deque<ProcessExec>& execs = it->second;
+        ProcessExec exec = execs.front();
         if (execs.size() > 1) {
             execs.pop_front();
         }
         map[e] = std::unique_ptr<TinyProcessLib::Process>();
-        proc_exit_info[e] = process_exit_info{exec.exit_code, exit_cb};
+        proc_exit_info[e] = ProcessExitInfo{exec.exit_code, exit_cb};
         for (int i = 0; i < exec.output_lines.size(); i++) {
             std::string& line = exec.output_lines[i];
             if (exec.stderr_lines.count(i) == 0) {
@@ -98,18 +98,18 @@ public:
             exit_cb();
         }
     }
-    int get_process_exit_code(entity e, std::unordered_map<entity, std::unique_ptr<TinyProcessLib::Process>>& map) override {
+    int GetProcessExitCode(Entity e, std::unordered_map<Entity, std::unique_ptr<TinyProcessLib::Process>>& map) override {
         return proc_exit_info.at(e).exit_code;
     }
-    void mock_read_file(const std::filesystem::path& p, const std::string& d) {
-        EXPECT_CALL(*this, read_file(testing::Eq(p), testing::_)).WillRepeatedly(testing::DoAll(testing::SetArgReferee<1>(d), testing::Return(true)));
+    void MockReadFile(const std::filesystem::path& p, const std::string& d) {
+        EXPECT_CALL(*this, ReadFile(testing::Eq(p), testing::_)).WillRepeatedly(testing::DoAll(testing::SetArgReferee<1>(d), testing::Return(true)));
     }
-    void mock_read_file(const std::filesystem::path& p) {
-        EXPECT_CALL(*this, read_file(testing::Eq(p), testing::_)).WillRepeatedly(testing::Return(false));
+    void MockReadFile(const std::filesystem::path& p) {
+        EXPECT_CALL(*this, ReadFile(testing::Eq(p), testing::_)).WillRepeatedly(testing::Return(false));
     }
 
-    std::unordered_map<std::string, std::deque<process_exec>> cmd_to_process_execs;
-    std::unordered_map<entity, process_exit_info> proc_exit_info;
+    std::unordered_map<std::string, std::deque<ProcessExec>> cmd_to_process_execs;
+    std::unordered_map<Entity, ProcessExitInfo> proc_exit_info;
 };
 
 #define OUT_LINKS_NOT_HIGHLIGHTED()\
@@ -184,42 +184,42 @@ public:
     out.str("")
 
 #define EXPECT_CDT_STARTED()\
-    EXPECT_TRUE(init_test_cdt());\
+    EXPECT_TRUE(InitTestCdt());\
     EXPECT_OUTEQ("Type \x1B[32mh\x1B[0m to see list of all the user commands.\n" OUT_LIST_OF_TASKS())
 
 #define EXPECT_CDT_ABORTED(MSG)\
-    EXPECT_FALSE(init_test_cdt());\
+    EXPECT_FALSE(InitTestCdt());\
     EXPECT_EQ(MSG, out.str())
 
 #define EXPECT_CMD(CMD, OUTPUT)\
-    run_cmd(CMD);\
+    RunCmd(CMD);\
     EXPECT_OUTEQ(std::string("\x1B[32m(cdt) \x1B[0m") + OUTPUT)
 
 #define EXPECT_INTERRUPTED_CMD(CMD, OUTPUT)\
-    run_cmd(CMD, true);\
+    RunCmd(CMD, true);\
     sigint_handler(SIGINT);\
-    exec_cdt_systems(cdt);\
+    ExecCdtSystems(cdt);\
     EXPECT_OUTEQ(std::string("\x1B[32m(cdt) \x1B[0m") + OUTPUT)
 
 #define EXPECT_OUTPUT_LINKS_TO_OPEN()\
     testing::InSequence seq;\
-    EXPECT_CALL(mock, exec_process(execs.editor + " /a/b/c:10"));\
-    EXPECT_CALL(mock, exec_process(execs.editor + " /d/e/f:15:32"));\
-    EXPECT_CALL(mock, exec_process(execs.editor + " /a/b/c:11"));\
-    EXPECT_CALL(mock, exec_process(execs.editor + " /b/c:32:1"));\
-    run_cmd("o1");\
-    run_cmd("o2");\
-    run_cmd("o3");\
-    run_cmd("o4")
+    EXPECT_CALL(mock, ExecProcess(execs.kEditor + " /a/b/c:10"));\
+    EXPECT_CALL(mock, ExecProcess(execs.kEditor + " /d/e/f:15:32"));\
+    EXPECT_CALL(mock, ExecProcess(execs.kEditor + " /a/b/c:11"));\
+    EXPECT_CALL(mock, ExecProcess(execs.kEditor + " /b/c:32:1"));\
+    RunCmd("o1");\
+    RunCmd("o2");\
+    RunCmd("o3");\
+    RunCmd("o4")
 
 #define EXPECT_LAST_EXEC_OUTPUT_DISPLAYED_ON_LINK_INDEX_OUT_OF_BOUNDS()\
-    EXPECT_CALL(mock, exec_process(testing::_)).Times(0);\
+    EXPECT_CALL(mock, ExecProcess(testing::_)).Times(0);\
     std::string expected_header = "\x1B[32mLast execution output:\x1B[0m\n";\
     EXPECT_CMD("o0", expected_header + OUT_LINKS());\
     EXPECT_CMD("o99", expected_header + OUT_LINKS());\
     EXPECT_CMD("o", expected_header + OUT_LINKS())
 
-#define EXPECT_DEBUGGER_CALL(CMD) EXPECT_CALL(mock, exec_process("terminal cd " + paths.tasks_config.parent_path().string() + " && lldb " + CMD))
+#define EXPECT_DEBUGGER_CALL(CMD) EXPECT_CALL(mock, ExecProcess("terminal cd " + paths.kTasksConfig.parent_path().string() + " && lldb " + CMD))
 
 MATCHER_P(StrVecEq, expected, "") {
     if (arg.size() != expected.size()) {
@@ -235,48 +235,48 @@ MATCHER_P(StrVecEq, expected, "") {
     return true;
 }
 
-class cdt_test: public testing::Test {
+class CdtTest: public testing::Test {
 public:
-    paths paths;
-    executables execs;
+    Paths paths;
+    Executables execs;
     std::string out_links, out_test_error;
-    process_exec successful_gtest_exec, failed_gtest_exec, successful_single_gtest_exec, failed_single_gtest_exec, aborted_gtest_exec;
+    ProcessExec successful_gtest_exec, failed_gtest_exec, successful_single_gtest_exec, failed_single_gtest_exec, aborted_gtest_exec;
     std::stringstream in, out;
     std::function<void(int)> sigint_handler;
-    testing::NiceMock<os_api_mock> mock;
-    cdt cdt;
+    testing::NiceMock<OsApiMock> mock;
+    Cdt cdt;
 
     void SetUp() override {
         cdt.os = &mock;
-        EXPECT_CALL(mock, in()).Times(testing::AnyNumber()).WillRepeatedly(testing::ReturnRef(in));
-        EXPECT_CALL(mock, out()).Times(testing::AnyNumber()).WillRepeatedly(testing::ReturnRef(out));
-        EXPECT_CALL(mock, err()).Times(testing::AnyNumber()).WillRepeatedly(testing::ReturnRef(out));
-        EXPECT_CALL(mock, get_env("HOME")).Times(testing::AnyNumber()).WillRepeatedly(testing::Return(paths.home));
-        EXPECT_CALL(mock, get_env("LAST_COMMAND")).Times(testing::AnyNumber()).WillRepeatedly(testing::Return(""));
-        EXPECT_CALL(mock, get_current_path()).Times(testing::AnyNumber()).WillRepeatedly(testing::Return(paths.tasks_config.parent_path()));
-        EXPECT_CALL(mock, signal(testing::Eq(SIGINT), testing::_)).WillRepeatedly(testing::SaveArg<1>(&sigint_handler));
+        EXPECT_CALL(mock, In()).Times(testing::AnyNumber()).WillRepeatedly(testing::ReturnRef(in));
+        EXPECT_CALL(mock, Out()).Times(testing::AnyNumber()).WillRepeatedly(testing::ReturnRef(out));
+        EXPECT_CALL(mock, Err()).Times(testing::AnyNumber()).WillRepeatedly(testing::ReturnRef(out));
+        EXPECT_CALL(mock, GetEnv("HOME")).Times(testing::AnyNumber()).WillRepeatedly(testing::Return(paths.kHome));
+        EXPECT_CALL(mock, GetEnv("LAST_COMMAND")).Times(testing::AnyNumber()).WillRepeatedly(testing::Return(""));
+        EXPECT_CALL(mock, GetCurrentPath()).Times(testing::AnyNumber()).WillRepeatedly(testing::Return(paths.kTasksConfig.parent_path()));
+        EXPECT_CALL(mock, Signal(testing::Eq(SIGINT), testing::_)).WillRepeatedly(testing::SaveArg<1>(&sigint_handler));
         // mock tasks config
         std::vector<nlohmann::json> tasks;
-        tasks.push_back(create_task_and_process("hello world!"));
-        tasks.push_back(create_task_and_process("primary task", {"pre task 1", "pre task 2"}));
-        tasks.push_back(create_task_and_process("pre task 1", {"pre pre task 1", "pre pre task 2"}));
-        tasks.push_back(create_task_and_process("pre task 2"));
-        tasks.push_back(create_task_and_process("pre pre task 1"));
-        tasks.push_back(create_task_and_process("pre pre task 2"));
-        tasks.push_back(create_task("restart", "__restart"));
-        tasks.push_back(create_task("run tests", "__gtest " + execs.tests));
-        tasks.push_back(create_task_and_process("task with gtest pre task", {"run tests"}));
-        tasks.push_back(create_task("run tests with pre tasks", "__gtest " + execs.tests, {"pre pre task 1", "pre pre task 2"}));
+        tasks.push_back(CreateTaskAndProcess("hello world!"));
+        tasks.push_back(CreateTaskAndProcess("primary task", {"pre task 1", "pre task 2"}));
+        tasks.push_back(CreateTaskAndProcess("pre task 1", {"pre pre task 1", "pre pre task 2"}));
+        tasks.push_back(CreateTaskAndProcess("pre task 2"));
+        tasks.push_back(CreateTaskAndProcess("pre pre task 1"));
+        tasks.push_back(CreateTaskAndProcess("pre pre task 2"));
+        tasks.push_back(CreateTask("restart", "__restart"));
+        tasks.push_back(CreateTask("run tests", "__gtest " + execs.kTests));
+        tasks.push_back(CreateTaskAndProcess("task with gtest pre task", {"run tests"}));
+        tasks.push_back(CreateTask("run tests with pre tasks", "__gtest " + execs.kTests, {"pre pre task 1", "pre pre task 2"}));
         nlohmann::json tasks_config_data;
         tasks_config_data["cdt_tasks"] = tasks;
-        mock.mock_read_file(paths.tasks_config, tasks_config_data.dump());
+        mock.MockReadFile(paths.kTasksConfig, tasks_config_data.dump());
         // mock user config
         nlohmann::json user_config_data;
-        user_config_data["open_in_editor_command"] = execs.editor + " {}";
-        user_config_data["execute_in_new_terminal_tab_command"] = execs.new_terminal_tab + " {}";
-        user_config_data["debug_command"] = execs.debugger + " {}";
-        mock.mock_read_file(paths.user_config, user_config_data.dump());
-        EXPECT_CALL(mock, file_exists(paths.user_config)).WillRepeatedly(testing::Return(true));
+        user_config_data["open_in_editor_command"] = execs.kEditor + " {}";
+        user_config_data["execute_in_new_terminal_tab_command"] = execs.kNewTerminalTab + " {}";
+        user_config_data["debug_command"] = execs.kDebugger + " {}";
+        mock.MockReadFile(paths.kUserConfig, user_config_data.dump());
+        EXPECT_CALL(mock, FileExists(paths.kUserConfig)).WillRepeatedly(testing::Return(true));
         // mock default test execution
         out_links = OUT_LINKS_NOT_HIGHLIGHTED();
         out_test_error = OUT_TEST_ERROR();
@@ -372,14 +372,14 @@ public:
             "[  FAILED  ] failed_test_suit_1.test1\n\n",
             " 1 FAILED TEST\n"
         };
-        mock.cmd_to_process_execs[execs.tests].push_back(successful_gtest_exec);
-        mock.cmd_to_process_execs[execs.tests + " --gtest_filter='test_suit_1.test1'"].push_back(successful_single_gtest_exec);
+        mock.cmd_to_process_execs[execs.kTests].push_back(successful_gtest_exec);
+        mock.cmd_to_process_execs[execs.kTests + " --gtest_filter='test_suit_1.test1'"].push_back(successful_single_gtest_exec);
     }
-    bool init_test_cdt() {
-        std::vector<const char*> argv = {execs.cdt.c_str(), paths.tasks_config.filename().c_str()};
-        return init_cdt(argv.size(), argv.data(), cdt);
+    bool InitTestCdt() {
+        std::vector<const char*> argv = {execs.kCdt.c_str(), paths.kTasksConfig.filename().c_str()};
+        return InitCdt(argv.size(), argv.data(), cdt);
     }
-    nlohmann::json create_task(const nlohmann::json& name = nullptr, const nlohmann::json& command = nullptr, const nlohmann::json& pre_tasks = nullptr) {
+    nlohmann::json CreateTask(const nlohmann::json& name = nullptr, const nlohmann::json& command = nullptr, const nlohmann::json& pre_tasks = nullptr) {
         nlohmann::json json;
         if (!name.is_null()) {
             json["name"] = name;
@@ -392,18 +392,18 @@ public:
         }
         return json;
     }
-    nlohmann::json create_task_and_process(const std::string& name, std::vector<std::string> pre_tasks = {}) {
+    nlohmann::json CreateTaskAndProcess(const std::string& name, std::vector<std::string> pre_tasks = {}) {
         std::string cmd = "echo " + name;
-        process_exec exec;
+        ProcessExec exec;
         exec.output_lines = {name + '\n'};
         mock.cmd_to_process_execs[cmd].push_back(exec);
-        return create_task(name, cmd, std::move(pre_tasks));
+        return CreateTask(name, cmd, std::move(pre_tasks));
     }
-    void run_cmd(const std::string& cmd, bool break_when_process_events_stop = false) {
+    void RunCmd(const std::string& cmd, bool break_when_process_events_stop = false) {
         in << cmd << std::endl;
         while (true) {
-            exec_cdt_systems(cdt);
-            if (!break_when_process_events_stop && will_wait_for_input(cdt)) {
+            ExecCdtSystems(cdt);
+            if (!break_when_process_events_stop && WillWaitForInput(cdt)) {
                 break;
             }
             if (break_when_process_events_stop && cdt.exec_event_queue.size_approx() == 0 && cdt.execs_to_run_in_order.size() == 1 && cdt.processes.size() == 1) {
@@ -413,80 +413,80 @@ public:
     }
 };
 
-TEST_F(cdt_test, start_and_view_tasks) {
+TEST_F(CdtTest, StartAndViewTasks) {
     EXPECT_CDT_STARTED();
 }
 
-TEST_F(cdt_test, fail_to_start_due_to_user_config_not_being_json) {
-    mock.mock_read_file(paths.user_config, "not a json");
+TEST_F(CdtTest, FailToStartDueToUserConfigNotBeingJson) {
+    mock.MockReadFile(paths.kUserConfig, "not a json");
     EXPECT_CDT_ABORTED(
-        "\x1B[31mFailed to parse " + paths.user_config.string() + ": [json.exception.parse_error.101] parse error at line 1, column 2: syntax error while parsing value - invalid literal; last read: 'no'\n\x1B[0m"
+        "\x1B[31mFailed to parse " + paths.kUserConfig.string() + ": [json.exception.parse_error.101] parse error at line 1, column 2: syntax error while parsing value - invalid literal; last read: 'no'\n\x1B[0m"
     );
 }
 
-TEST_F(cdt_test, fail_to_start_due_to_user_config_having_properties_in_incorrect_format) {
+TEST_F(CdtTest, FailToStartDueToUserConfigHavingPropertiesInIncorrectFormat) {
     nlohmann::json user_config_data;
     user_config_data["open_in_editor_command"] = "my-editor";
     user_config_data["execute_in_new_terminal_tab_command"] = "my-terminal";
     user_config_data["debug_command"] = "my-debugger";
-    mock.mock_read_file(paths.user_config, user_config_data.dump());
+    mock.MockReadFile(paths.kUserConfig, user_config_data.dump());
     EXPECT_CDT_ABORTED(
-        "\x1B[31m" + paths.user_config.string() + " is invalid:\n"
+        "\x1B[31m" + paths.kUserConfig.string() + " is invalid:\n"
         "'open_in_editor_command': must be a string in format, examples of which you can find in the config\n"
         "'debug_command': must be a string in format, examples of which you can find in the config\n"
         "'execute_in_new_terminal_tab_command': must be a string in format, examples of which you can find in the config\n\x1B[0m"
     );
 }
 
-TEST_F(cdt_test, fail_to_start_due_to_tasks_config_not_specified) {
-    std::vector<const char*> argv = {execs.cdt.c_str()};
-    EXPECT_FALSE(init_cdt(argv.size(), argv.data(), cdt));
+TEST_F(CdtTest, FailToStartDueToTasksConfigNotSpecified) {
+    std::vector<const char*> argv = {execs.kCdt.c_str()};
+    EXPECT_FALSE(InitCdt(argv.size(), argv.data(), cdt));
     EXPECT_EQ("\x1B[31musage: cpp-dev-tools tasks.json\n\x1B[0m", out.str());
 }
 
-TEST_F(cdt_test, fail_to_start_due_to_tasks_config_not_existing) {
-    mock.mock_read_file(paths.tasks_config);
-    EXPECT_CDT_ABORTED("\x1B[31m" + paths.tasks_config.string() + " does not exist\n\x1B[0m");
+TEST_F(CdtTest, FailToStartDueToTasksConfigNotExisting) {
+    mock.MockReadFile(paths.kTasksConfig);
+    EXPECT_CDT_ABORTED("\x1B[31m" + paths.kTasksConfig.string() + " does not exist\n\x1B[0m");
 }
 
-TEST_F(cdt_test, fail_to_start_due_to_tasks_config_not_being_json) {
-    mock.mock_read_file(paths.tasks_config, "not a json");
+TEST_F(CdtTest, FailToStartDueToTasksConfigNotBeingJson) {
+    mock.MockReadFile(paths.kTasksConfig, "not a json");
     EXPECT_CDT_ABORTED(
-        "\x1B[31mFailed to parse " + paths.tasks_config.string() + ": [json.exception.parse_error.101] parse error at line 1, column 2: syntax error while parsing value - invalid literal; last read: 'no'\n\x1B[0m"
+        "\x1B[31mFailed to parse " + paths.kTasksConfig.string() + ": [json.exception.parse_error.101] parse error at line 1, column 2: syntax error while parsing value - invalid literal; last read: 'no'\n\x1B[0m"
     );
 }
 
-TEST_F(cdt_test, fail_to_start_due_to_cdt_tasks_not_being_specified_in_config) {
-    mock.mock_read_file(paths.tasks_config, "{}");
+TEST_F(CdtTest, FailToStartDueToCdtTasksNotBeingSpecifiedInConfig) {
+    mock.MockReadFile(paths.kTasksConfig, "{}");
     EXPECT_CDT_ABORTED(
-        "\x1B[31m" + paths.tasks_config.string() + " is invalid:\n"
+        "\x1B[31m" + paths.kTasksConfig.string() + " is invalid:\n"
         "'cdt_tasks': must be an array of task objects\n\x1B[0m"
     );
 }
 
-TEST_F(cdt_test, fail_to_start_due_to_cdt_tasks_not_being_array_of_objects) {
+TEST_F(CdtTest, FailToStartDueToCdtTasksNotBeingArrayOfObjects) {
     nlohmann::json tasks_config_data;
     tasks_config_data["cdt_tasks"] = "string";
-    mock.mock_read_file(paths.tasks_config, tasks_config_data.dump());
+    mock.MockReadFile(paths.kTasksConfig, tasks_config_data.dump());
     EXPECT_CDT_ABORTED(
-        "\x1B[31m" + paths.tasks_config.string() + " is invalid:\n"
+        "\x1B[31m" + paths.kTasksConfig.string() + " is invalid:\n"
         "'cdt_tasks': must be an array of task objects\n\x1B[0m"
     );
 }
 
-TEST_F(cdt_test, fail_to_start_due_to_tasks_config_having_errors) {
+TEST_F(CdtTest, FailToStartDueToTasksConfigHavingErrors) {
     nlohmann::json tasks_config_data;
     tasks_config_data["cdt_tasks"] = std::vector<nlohmann::json>{
-        create_task(nullptr, "command"),
-        create_task("name", nullptr, true),
-        create_task("name 2", "command", std::vector<std::string>{"non-existent-task"}),
-        create_task("cycle-1", "command", std::vector<std::string>{"cycle-2"}),
-        create_task("cycle-2", "command", std::vector<std::string>{"cycle-3"}),
-        create_task("cycle-3", "command", std::vector<std::string>{"cycle-1"}),
+        CreateTask(nullptr, "command"),
+        CreateTask("name", nullptr, true),
+        CreateTask("name 2", "command", std::vector<std::string>{"non-existent-task"}),
+        CreateTask("cycle-1", "command", std::vector<std::string>{"cycle-2"}),
+        CreateTask("cycle-2", "command", std::vector<std::string>{"cycle-3"}),
+        CreateTask("cycle-3", "command", std::vector<std::string>{"cycle-1"}),
     };
-    mock.mock_read_file(paths.tasks_config, tasks_config_data.dump());
+    mock.MockReadFile(paths.kTasksConfig, tasks_config_data.dump());
     EXPECT_CDT_ABORTED(
-        "\x1B[31m" + paths.tasks_config.string() + " is invalid:\n"
+        "\x1B[31m" + paths.kTasksConfig.string() + " is invalid:\n"
         "task #1: 'name': must be a string\n"
         "task #2: 'command': must be a string\n"
         "task #2: 'pre_tasks': must be an array of other task names\n"
@@ -500,7 +500,7 @@ TEST_F(cdt_test, fail_to_start_due_to_tasks_config_having_errors) {
     );
 }
 
-TEST_F(cdt_test, start_and_display_help) {
+TEST_F(CdtTest, StartAndDisplayHelp) {
     std::string expected_help = "\x1B[32mUser commands:\x1B[0m\n"
         "t<ind>\t\tExecute the task with the specified index\n"
         "tr<ind>\t\tKeep executing the task with the specified index until it fails\n"
@@ -521,7 +521,7 @@ TEST_F(cdt_test, start_and_display_help) {
     EXPECT_CMD("h", expected_help);
 }
 
-TEST_F(cdt_test, start_and_display_list_of_tasks_on_task_command) {
+TEST_F(CdtTest, StartAndDisplayListOfTasksOnTaskCommand) {
     EXPECT_CDT_STARTED();
     // Display tasks list on no index
     EXPECT_CMD("t", OUT_LIST_OF_TASKS());
@@ -530,7 +530,7 @@ TEST_F(cdt_test, start_and_display_list_of_tasks_on_task_command) {
     EXPECT_CMD("t99", OUT_LIST_OF_TASKS());
 }
 
-TEST_F(cdt_test, start_and_execute_single_task) {
+TEST_F(CdtTest, StartAndExecuteSingleTask) {
     EXPECT_CDT_STARTED();
     EXPECT_CMD(
         "t1",
@@ -540,8 +540,8 @@ TEST_F(cdt_test, start_and_execute_single_task) {
     );
 }
 
-TEST_F(cdt_test, start_and_execute_task_that_prints_to_stdout_and_stderr) {
-    process_exec& exec = mock.cmd_to_process_execs[execs.hello_world].front();
+TEST_F(CdtTest, StartAndExecuteTaskThatPrintsToStdoutAndStderr) {
+    ProcessExec& exec = mock.cmd_to_process_execs[execs.kHelloWorld].front();
     exec.output_lines = {"stdo", "stde", "ut\n", "rr\n"};
     exec.stderr_lines = {1, 3};
     EXPECT_CDT_STARTED();
@@ -554,7 +554,7 @@ TEST_F(cdt_test, start_and_execute_task_that_prints_to_stdout_and_stderr) {
     );
 }
 
-TEST_F(cdt_test, start_and_execute_task_with_pre_tasks_with_pre_tasks) {
+TEST_F(CdtTest, StartAndExecuteTaskWithPreTasksWithPreTasks) {
     EXPECT_CDT_STARTED();
     EXPECT_CMD(
         "t2",
@@ -568,8 +568,8 @@ TEST_F(cdt_test, start_and_execute_task_with_pre_tasks_with_pre_tasks) {
     );
 }
 
-TEST_F(cdt_test, start_and_fail_primary_task) {
-    process_exec& exec = mock.cmd_to_process_execs[execs.hello_world].front();
+TEST_F(CdtTest, StartAndFailPrimaryTask) {
+    ProcessExec& exec = mock.cmd_to_process_execs[execs.kHelloWorld].front();
     exec.exit_code = 1;
     exec.output_lines = {"starting...\n", "error!!!\n"};
     exec.stderr_lines = {1};
@@ -583,8 +583,8 @@ TEST_F(cdt_test, start_and_fail_primary_task) {
     );
 }
 
-TEST_F(cdt_test, start_and_fail_one_of_pre_tasks) {
-    process_exec& exec = mock.cmd_to_process_execs["echo pre pre task 2"].front();
+TEST_F(CdtTest, StartAndFailOneOfPreTasks) {
+    ProcessExec& exec = mock.cmd_to_process_execs["echo pre pre task 2"].front();
     exec.exit_code = 1;
     exec.output_lines = {"error!!!\n"};
     exec.stderr_lines = {0};
@@ -598,8 +598,8 @@ TEST_F(cdt_test, start_and_fail_one_of_pre_tasks) {
     );
 }
 
-TEST_F(cdt_test, start_execute_task_and_abort_it) {
-    mock.cmd_to_process_execs[execs.hello_world][0].is_long = true;
+TEST_F(CdtTest, StartExecuteTaskAndAbortIt) {
+    mock.cmd_to_process_execs[execs.kHelloWorld][0].is_long = true;
     EXPECT_CDT_STARTED();
     EXPECT_INTERRUPTED_CMD(
         "t1",
@@ -609,20 +609,20 @@ TEST_F(cdt_test, start_execute_task_and_abort_it) {
     );
 }
 
-TEST_F(cdt_test, start_and_exit) {
+TEST_F(CdtTest, StartAndExit) {
     EXPECT_CDT_STARTED();
     testing::InSequence seq;
-    EXPECT_CALL(mock, signal(SIGINT, SIG_DFL));
-    EXPECT_CALL(mock, raise_signal(SIGINT));
+    EXPECT_CALL(mock, Signal(SIGINT, SIG_DFL));
+    EXPECT_CALL(mock, RaiseSignal(SIGINT));
     sigint_handler(SIGINT);
 }
 
-TEST_F(cdt_test, start_and_change_cwd_to_tasks_configs_directory) {
-    EXPECT_CALL(mock, set_current_path(paths.tasks_config.parent_path()));
+TEST_F(CdtTest, StartAndChangeCwdToTasksConfigsDirectory) {
+    EXPECT_CALL(mock, SetCurrentPath(paths.kTasksConfig.parent_path()));
     EXPECT_CDT_STARTED();
 }
 
-TEST_F(cdt_test, start_execute_single_task_and_repeate_the_last_command_on_enter) {
+TEST_F(CdtTest, StartExecuteSingleTaskAndRepeateTheLastCommandOnEnter) {
     std::string expected_output = "\x1B[35mRunning \"hello world!\"\x1B[0m\n"
         "hello world!\n"
         "\x1B[35m'hello world!' complete: return code: 0\x1B[0m\n";
@@ -631,18 +631,18 @@ TEST_F(cdt_test, start_execute_single_task_and_repeate_the_last_command_on_enter
     EXPECT_CMD("", expected_output);
 }
 
-TEST_F(cdt_test, start_and_execute_restart_task) {
+TEST_F(CdtTest, StartAndExecuteRestartTask) {
     testing::InSequence seq;
-    EXPECT_CALL(mock, set_env("LAST_COMMAND", "t7"));
-    std::vector<const char*> expected_argv = {execs.cdt.c_str(), paths.tasks_config.c_str(), nullptr};
-    EXPECT_CALL(mock, exec(StrVecEq(expected_argv))).WillRepeatedly(testing::Return(0));
+    EXPECT_CALL(mock, SetEnv("LAST_COMMAND", "t7"));
+    std::vector<const char*> expected_argv = {execs.kCdt.c_str(), paths.kTasksConfig.c_str(), nullptr};
+    EXPECT_CALL(mock, Exec(StrVecEq(expected_argv))).WillRepeatedly(testing::Return(0));
     EXPECT_CDT_STARTED();
     EXPECT_CMD("t7", "\x1B[35mRestarting program...\x1B[0m\n");
 }
 
-TEST_F(cdt_test, start_and_fail_to_execute_restart_task) {
-    std::vector<const char*> expected_argv = {execs.cdt.c_str(), paths.tasks_config.c_str(), nullptr};
-    EXPECT_CALL(mock, exec(StrVecEq(expected_argv))).WillRepeatedly(testing::Return(ENOEXEC));
+TEST_F(CdtTest, StartAndFailToExecuteRestartTask) {
+    std::vector<const char*> expected_argv = {execs.kCdt.c_str(), paths.kTasksConfig.c_str(), nullptr};
+    EXPECT_CALL(mock, Exec(StrVecEq(expected_argv))).WillRepeatedly(testing::Return(ENOEXEC));
     EXPECT_CDT_STARTED();
     EXPECT_CMD(
         "t7",
@@ -651,8 +651,8 @@ TEST_F(cdt_test, start_and_fail_to_execute_restart_task) {
     );
 }
 
-TEST_F(cdt_test, start_execute_task_and_open_links_from_output) {
-    mock.cmd_to_process_execs[execs.hello_world].front().output_lines = {OUT_LINKS_NOT_HIGHLIGHTED()};
+TEST_F(CdtTest, StartExecuteTaskAndOpenLinksFromOutput) {
+    mock.cmd_to_process_execs[execs.kHelloWorld].front().output_lines = {OUT_LINKS_NOT_HIGHLIGHTED()};
     EXPECT_CDT_STARTED();
     EXPECT_CMD(
         "t1",
@@ -663,8 +663,8 @@ TEST_F(cdt_test, start_execute_task_and_open_links_from_output) {
     EXPECT_OUTPUT_LINKS_TO_OPEN();
 }
 
-TEST_F(cdt_test, start_fail_to_execute_task_with_links_and_open_links_from_output) {
-    process_exec& exec = mock.cmd_to_process_execs[execs.hello_world].front();
+TEST_F(CdtTest, StartFailToExecuteTaskWithLinksAndOpenLinksFromOutput) {
+    ProcessExec& exec = mock.cmd_to_process_execs[execs.kHelloWorld].front();
     exec.exit_code = 1;
     exec.output_lines = {OUT_LINKS_NOT_HIGHLIGHTED()};
     EXPECT_CDT_STARTED();
@@ -677,8 +677,8 @@ TEST_F(cdt_test, start_fail_to_execute_task_with_links_and_open_links_from_outpu
     EXPECT_OUTPUT_LINKS_TO_OPEN();
 }
 
-TEST_F(cdt_test, start_fail_to_execute_pre_task_of_task_and_open_links_from_output) {
-    process_exec& exec = mock.cmd_to_process_execs["echo pre pre task 1"].front();
+TEST_F(CdtTest, StartFailToExecutePreTaskOfTaskAndOpenLinksFromOutput) {
+    ProcessExec& exec = mock.cmd_to_process_execs["echo pre pre task 1"].front();
     exec.exit_code = 1;
     exec.output_lines = {OUT_LINKS_NOT_HIGHLIGHTED()};
     EXPECT_CDT_STARTED();
@@ -691,8 +691,8 @@ TEST_F(cdt_test, start_fail_to_execute_pre_task_of_task_and_open_links_from_outp
     EXPECT_OUTPUT_LINKS_TO_OPEN();
 }
 
-TEST_F(cdt_test, start_execute_task_with_links_in_output_attempt_to_open_non_existent_link_and_view_task_output) {
-    mock.cmd_to_process_execs[execs.hello_world].front().output_lines = {OUT_LINKS_NOT_HIGHLIGHTED()};
+TEST_F(CdtTest, StartExecuteTaskWithLinksInOutputAttemptToOpenNonExistentLinkAndViewTaskOutput) {
+    mock.cmd_to_process_execs[execs.kHelloWorld].front().output_lines = {OUT_LINKS_NOT_HIGHLIGHTED()};
     EXPECT_CDT_STARTED();
     EXPECT_CMD(
         "t1",
@@ -703,8 +703,8 @@ TEST_F(cdt_test, start_execute_task_with_links_in_output_attempt_to_open_non_exi
     EXPECT_LAST_EXEC_OUTPUT_DISPLAYED_ON_LINK_INDEX_OUT_OF_BOUNDS();
 }
 
-TEST_F(cdt_test, start_fail_to_execute_task_with_links_attempt_to_open_non_existent_link_and_view_task_output) {
-    process_exec& exec = mock.cmd_to_process_execs[execs.hello_world].front();
+TEST_F(CdtTest, StartFailToExecuteTaskWithLinksAttemptToOpenNonExistentLinkAndViewTaskOutput) {
+    ProcessExec& exec = mock.cmd_to_process_execs[execs.kHelloWorld].front();
     exec.exit_code = 1;
     exec.output_lines = {OUT_LINKS_NOT_HIGHLIGHTED()};
     EXPECT_CDT_STARTED();
@@ -717,8 +717,8 @@ TEST_F(cdt_test, start_fail_to_execute_task_with_links_attempt_to_open_non_exist
     EXPECT_LAST_EXEC_OUTPUT_DISPLAYED_ON_LINK_INDEX_OUT_OF_BOUNDS();
 }
 
-TEST_F(cdt_test, start_fail_to_execute_pre_task_of_task_attempt_to_open_non_existent_link_and_view_task_output) {
-    process_exec& exec = mock.cmd_to_process_execs["echo pre pre task 1"].front();
+TEST_F(CdtTest, StartFailToExecutePreTaskOfTaskAttemptToOpenNonExistentLinkAndViewTaskOutput) {
+    ProcessExec& exec = mock.cmd_to_process_execs["echo pre pre task 1"].front();
     exec.exit_code = 1;
     exec.output_lines = {OUT_LINKS_NOT_HIGHLIGHTED()};
     EXPECT_CDT_STARTED();
@@ -731,21 +731,21 @@ TEST_F(cdt_test, start_fail_to_execute_pre_task_of_task_attempt_to_open_non_exis
     EXPECT_LAST_EXEC_OUTPUT_DISPLAYED_ON_LINK_INDEX_OUT_OF_BOUNDS();
 }
 
-TEST_F(cdt_test, start_attempt_to_open_non_existent_link_and_view_task_output) {
+TEST_F(CdtTest, StartAttemptToOpenNonExistentLinkAndViewTaskOutput) {
     std::string expected_output = "\x1B[32mNo file links in the output\x1B[0m\n";
     EXPECT_CDT_STARTED();
     EXPECT_CMD("o1", expected_output);
     EXPECT_CMD("o", expected_output);
 }
 
-TEST_F(cdt_test, start_attempt_to_open_link_while_open_in_editor_command_is_not_specified_and_see_error) {
-    mock.mock_read_file(paths.user_config);
+TEST_F(CdtTest, StartAttemptToOpenLinkWhileOpenInEditorCommandIsNotSpecifiedAndSeeError) {
+    mock.MockReadFile(paths.kUserConfig);
     EXPECT_CDT_STARTED();
-    EXPECT_CMD("o", "\x1B[31m'open_in_editor_command' is not specified in \"" + paths.user_config.string() + "\"\x1B[0m\n");
+    EXPECT_CMD("o", "\x1B[31m'open_in_editor_command' is not specified in \"" + paths.kUserConfig.string() + "\"\x1B[0m\n");
 }
 
-TEST_F(cdt_test, start_and_execute_gtest_task_with_no_tests) {
-    mock.cmd_to_process_execs[execs.tests].front().output_lines = {
+TEST_F(CdtTest, StartAndExecuteGtestTaskWithNoTests) {
+    mock.cmd_to_process_execs[execs.kTests].front().output_lines = {
         "Running main() from /lib/gtest_main.cc\n",
         "[==========] Running 0 tests from 0 test suites.\n",
         "[==========] 0 tests from 0 test suites ran. (0 ms total)\n",
@@ -760,10 +760,10 @@ TEST_F(cdt_test, start_and_execute_gtest_task_with_no_tests) {
     );
 }
 
-TEST_F(cdt_test, start_attempt_to_execute_gtest_task_with_non_existent_binary_and_fail) {
-    process_exec& exec = mock.cmd_to_process_execs[execs.tests].front();
+TEST_F(CdtTest, StartAttemptToExecuteGtestTaskWithNonExistentBinaryAndFail) {
+    ProcessExec& exec = mock.cmd_to_process_execs[execs.kTests].front();
     exec.exit_code = 127;
-    exec.output_lines = {execs.tests + " does not exist\n"};
+    exec.output_lines = {execs.kTests + " does not exist\n"};
     exec.stderr_lines = {0};
     EXPECT_CDT_STARTED();
     EXPECT_CMD(
@@ -774,8 +774,8 @@ TEST_F(cdt_test, start_attempt_to_execute_gtest_task_with_non_existent_binary_an
     );
 }
 
-TEST_F(cdt_test, start_and_execute_gtest_task_with_non_gtest_binary) {
-    mock.cmd_to_process_execs[execs.tests].front() = mock.cmd_to_process_execs[execs.hello_world].front();
+TEST_F(CdtTest, StartAndExecuteGtestTaskWithNonGtestBinary) {
+    mock.cmd_to_process_execs[execs.kTests].front() = mock.cmd_to_process_execs[execs.kHelloWorld].front();
     EXPECT_CDT_STARTED();
     EXPECT_CMD(
         "t8",
@@ -785,10 +785,10 @@ TEST_F(cdt_test, start_and_execute_gtest_task_with_non_gtest_binary) {
     );
 }
 
-TEST_F(cdt_test, start_execute_gtest_task_with_non_gtest_binary_that_does_not_finish_and_abort_it_manually) {
-    process_exec exec = mock.cmd_to_process_execs[execs.hello_world].front();
+TEST_F(CdtTest, StartExecuteGtestTaskWithNonGtestBinaryThatDoesNotFinishAndAbortItManually) {
+    ProcessExec exec = mock.cmd_to_process_execs[execs.kHelloWorld].front();
     exec.is_long = true;
-    mock.cmd_to_process_execs[execs.tests].front() = exec;
+    mock.cmd_to_process_execs[execs.kTests].front() = exec;
     EXPECT_CDT_STARTED();
     EXPECT_INTERRUPTED_CMD(
         "t8",
@@ -798,9 +798,9 @@ TEST_F(cdt_test, start_execute_gtest_task_with_non_gtest_binary_that_does_not_fi
     );
 }
 
-TEST_F(cdt_test, start_and_execute_gtest_task_that_exits_with_0_exit_code_in_the_middle) {
+TEST_F(CdtTest, StartAndExecuteGtestTaskThatExitsWith0ExitCodeInTheMiddle) {
     aborted_gtest_exec.exit_code = 0;
-    mock.cmd_to_process_execs[execs.tests].front() = aborted_gtest_exec;
+    mock.cmd_to_process_execs[execs.kTests].front() = aborted_gtest_exec;
     EXPECT_CDT_STARTED();
     EXPECT_CMD(
         "t8",
@@ -811,8 +811,8 @@ TEST_F(cdt_test, start_and_execute_gtest_task_that_exits_with_0_exit_code_in_the
     );
 }
 
-TEST_F(cdt_test, start_and_execute_gtest_task_that_exits_with_1_exit_code_in_the_middle) {
-    mock.cmd_to_process_execs[execs.tests].front() = aborted_gtest_exec;
+TEST_F(CdtTest, StartAndExecuteGtestTaskThatExitsWith1ExitCodeInTheMiddle) {
+    mock.cmd_to_process_execs[execs.kTests].front() = aborted_gtest_exec;
     EXPECT_CDT_STARTED();
     EXPECT_CMD(
         "t8",
@@ -823,8 +823,8 @@ TEST_F(cdt_test, start_and_execute_gtest_task_that_exits_with_1_exit_code_in_the
     );
 }
 
-TEST_F(cdt_test, start_attempt_to_execute_task_with_gtest_pre_task_that_exits_with_0_exit_code_in_the_middle_and_fail) {
-    mock.cmd_to_process_execs[execs.tests].front() = aborted_gtest_exec;
+TEST_F(CdtTest, StartAttemptToExecuteTaskWithGtestPreTaskThatExitsWith0ExitCodeInTheMiddleAndFail) {
+    mock.cmd_to_process_execs[execs.kTests].front() = aborted_gtest_exec;
     EXPECT_CDT_STARTED();
     EXPECT_CMD(
         "t9",
@@ -834,7 +834,7 @@ TEST_F(cdt_test, start_attempt_to_execute_task_with_gtest_pre_task_that_exits_wi
     );
 }
 
-TEST_F(cdt_test, start_and_execute_gtest_task_with_multiple_suites) {
+TEST_F(CdtTest, StartAndExecuteGtestTaskWithMultipleSuites) {
     EXPECT_CDT_STARTED();
     EXPECT_CMD(
         "t8",
@@ -844,8 +844,8 @@ TEST_F(cdt_test, start_and_execute_gtest_task_with_multiple_suites) {
     );
 }
 
-TEST_F(cdt_test, start_and_execute_gtest_task_with_multiple_suites_each_having_failed_tests) {
-    mock.cmd_to_process_execs[execs.tests].front() = failed_gtest_exec;
+TEST_F(CdtTest, StartAndExecuteGtestTaskWithMultipleSuitesEachHavingFailedTests) {
+    mock.cmd_to_process_execs[execs.kTests].front() = failed_gtest_exec;
     EXPECT_CDT_STARTED();
     EXPECT_CMD(
         "t8",
@@ -856,7 +856,7 @@ TEST_F(cdt_test, start_and_execute_gtest_task_with_multiple_suites_each_having_f
     );
 }
 
-TEST_F(cdt_test, start_and_execute_task_with_gtest_pre_task_with_multiple_suites) {
+TEST_F(CdtTest, StartAndExecuteTaskWithGtestPreTaskWithMultipleSuites) {
     EXPECT_CDT_STARTED();
     EXPECT_CMD(
         "t9",
@@ -867,8 +867,8 @@ TEST_F(cdt_test, start_and_execute_task_with_gtest_pre_task_with_multiple_suites
     );
 }
 
-TEST_F(cdt_test, start_and_execute_task_with_gtest_pre_task_with_multiple_suites_each_having_failed_tests) {
-    mock.cmd_to_process_execs[execs.tests].front() = failed_gtest_exec;
+TEST_F(CdtTest, StartAndExecuteTaskWithGtestPreTaskWithMultipleSuitesEachHavingFailedTests) {
+    mock.cmd_to_process_execs[execs.kTests].front() = failed_gtest_exec;
     EXPECT_CDT_STARTED();
     EXPECT_CMD(
         "t9",
@@ -878,9 +878,9 @@ TEST_F(cdt_test, start_and_execute_task_with_gtest_pre_task_with_multiple_suites
     );
 }
 
-TEST_F(cdt_test, start_execute_gtest_task_with_long_test_and_abort_it) {
+TEST_F(CdtTest, StartExecuteGtestTaskWithLongTestAndAbortIt) {
     aborted_gtest_exec.is_long = true;
-    mock.cmd_to_process_execs[execs.tests].front() = aborted_gtest_exec;
+    mock.cmd_to_process_execs[execs.kTests].front() = aborted_gtest_exec;
     EXPECT_CDT_STARTED();
     EXPECT_INTERRUPTED_CMD(
         "t8",
@@ -891,8 +891,8 @@ TEST_F(cdt_test, start_execute_gtest_task_with_long_test_and_abort_it) {
     );
 }
 
-TEST_F(cdt_test, start_execute_gtest_task_with_failed_tests_and_long_test_and_abort_it) {
-    process_exec& exec = mock.cmd_to_process_execs[execs.tests].front();
+TEST_F(CdtTest, StartExecuteGtestTaskWithFailedTestsAndLongTestAndAbortIt) {
+    ProcessExec& exec = mock.cmd_to_process_execs[execs.kTests].front();
     exec.exit_code = 1;
     exec.is_long = true;
     exec.output_lines = {
@@ -922,12 +922,12 @@ TEST_F(cdt_test, start_execute_gtest_task_with_failed_tests_and_long_test_and_ab
     );
 }
 
-TEST_F(cdt_test, start_repeatedly_execute_task_until_it_fails) {
+TEST_F(CdtTest, StartRepeatedlyExecuteTaskUntilItFails) {
     std::string tests_success = "\x1B[35mRunning \"run tests\"\x1B[0m\n"
         OUT_TESTS_COMPLETED_SUCCESSFULLY()
         "\x1B[35m'run tests' complete: return code: 0\x1B[0m\n";
-    mock.cmd_to_process_execs[execs.tests].push_back(successful_gtest_exec);
-    mock.cmd_to_process_execs[execs.tests].push_back(failed_gtest_exec);
+    mock.cmd_to_process_execs[execs.kTests].push_back(successful_gtest_exec);
+    mock.cmd_to_process_execs[execs.kTests].push_back(failed_gtest_exec);
     EXPECT_CDT_STARTED();
     EXPECT_CMD(
         "tr8",
@@ -940,8 +940,8 @@ TEST_F(cdt_test, start_repeatedly_execute_task_until_it_fails) {
     );
 }
 
-TEST_F(cdt_test, start_repeatedly_execute_task_until_one_of_its_pre_tasks_fails) {
-    mock.cmd_to_process_execs[execs.tests].front() = failed_gtest_exec;
+TEST_F(CdtTest, StartRepeatedlyExecuteTaskUntilOneOfItsPreTasksFails) {
+    mock.cmd_to_process_execs[execs.kTests].front() = failed_gtest_exec;
     EXPECT_CDT_STARTED();
     EXPECT_CMD(
         "tr9",
@@ -951,8 +951,8 @@ TEST_F(cdt_test, start_repeatedly_execute_task_until_one_of_its_pre_tasks_fails)
     );
 }
 
-TEST_F(cdt_test, start_repeatedly_execute_long_task_and_abort_it) {
-    mock.cmd_to_process_execs[execs.hello_world].front().is_long = true;
+TEST_F(CdtTest, StartRepeatedlyExecuteLongTaskAndAbortIt) {
+    mock.cmd_to_process_execs[execs.kHelloWorld].front().is_long = true;
     EXPECT_CDT_STARTED();
     EXPECT_INTERRUPTED_CMD(
         "tr1",
@@ -962,12 +962,12 @@ TEST_F(cdt_test, start_repeatedly_execute_long_task_and_abort_it) {
     );
 }
 
-TEST_F(cdt_test, start_attempt_to_view_gtest_tests_but_see_no_tests_have_been_executed_yet) {
+TEST_F(CdtTest, StartAttemptToViewGtestTestsButSeeNoTestsHaveBeenExecutedYet) {
     EXPECT_CDT_STARTED();
     EXPECT_CMD("g", "\x1B[32mNo google tests have been executed yet.\x1B[0m\n");
 }
 
-TEST_F(cdt_test, start_execute_gtest_task_try_to_view_gtest_test_output_with_index_out_of_range_and_see_all_tests_list) {
+TEST_F(CdtTest, StartExecuteGtestTaskTryToViewGtestTestOutputWithIndexOutOfRangeAndSeeAllTestsList) {
     EXPECT_CDT_STARTED();
     EXPECT_CMD(
         "t8",
@@ -980,7 +980,7 @@ TEST_F(cdt_test, start_execute_gtest_task_try_to_view_gtest_test_output_with_ind
     EXPECT_CMD("g", OUT_LAST_EXECUTED_TESTS());
 }
 
-TEST_F(cdt_test, start_execute_gtest_task_view_gtest_task_output_with_file_links_highlighted_in_the_output_and_open_links) {
+TEST_F(CdtTest, StartExecuteGtestTaskViewGtestTaskOutputWithFileLinksHighlightedInTheOutputAndOpenLinks) {
     EXPECT_CDT_STARTED();
     EXPECT_CMD(
         "t8",
@@ -996,8 +996,8 @@ TEST_F(cdt_test, start_execute_gtest_task_view_gtest_task_output_with_file_links
     EXPECT_OUTPUT_LINKS_TO_OPEN();
 }
 
-TEST_F(cdt_test, start_execute_gtest_task_fail_try_to_view_gtest_test_output_with_index_out_of_range_and_see_failed_tests_list) {
-    mock.cmd_to_process_execs[execs.tests].front() = failed_gtest_exec;
+TEST_F(CdtTest, StartExecuteGtestTaskFailTryToViewGtestTestOutputWithIndexOutOfRangeAndSeeFailedTestsList) {
+    mock.cmd_to_process_execs[execs.kTests].front() = failed_gtest_exec;
     EXPECT_CDT_STARTED();
     EXPECT_CMD(
         "t8",
@@ -1011,8 +1011,8 @@ TEST_F(cdt_test, start_execute_gtest_task_fail_try_to_view_gtest_test_output_wit
     EXPECT_CMD("g", OUT_FAILED_TESTS());
 }
 
-TEST_F(cdt_test, start_execute_gtest_task_fail_view_gtest_test_output_with_file_links_highlighted_in_the_output_and_open_links) {
-    mock.cmd_to_process_execs[execs.tests].front() = failed_gtest_exec;
+TEST_F(CdtTest, StartExecuteGtestTaskFailViewGtestTestOutputWithFileLinksHighlightedInTheOutputAndOpenLinks) {
+    mock.cmd_to_process_execs[execs.kTests].front() = failed_gtest_exec;
     EXPECT_CDT_STARTED();
     EXPECT_CMD(
         "t8",
@@ -1030,8 +1030,8 @@ TEST_F(cdt_test, start_execute_gtest_task_fail_view_gtest_test_output_with_file_
     EXPECT_OUTPUT_LINKS_TO_OPEN();
 }
 
-TEST_F(cdt_test, start_execute_gtest_task_fail_one_of_the_tests_and_view_automatically_displayed_test_output) {
-    mock.cmd_to_process_execs[execs.tests].front() = failed_single_gtest_exec;
+TEST_F(CdtTest, StartExecuteGtestTaskFailOneOfTheTestsAndViewAutomaticallyDisplayedTestOutput) {
+    mock.cmd_to_process_execs[execs.kTests].front() = failed_single_gtest_exec;
     EXPECT_CDT_STARTED();
     EXPECT_CMD(
         "t8",
@@ -1042,8 +1042,8 @@ TEST_F(cdt_test, start_execute_gtest_task_fail_one_of_the_tests_and_view_automat
     );
 }
 
-TEST_F(cdt_test, start_execute_task_with_gtest_pre_task_fail_one_of_the_tests_and_view_automatically_displayed_test_output) {
-    mock.cmd_to_process_execs[execs.tests].front() = failed_single_gtest_exec;
+TEST_F(CdtTest, StartExecuteTaskWithGtestPreTaskFailOneOfTheTestsAndViewAutomaticallyDisplayedTestOutput) {
+    mock.cmd_to_process_execs[execs.kTests].front() = failed_single_gtest_exec;
     EXPECT_CDT_STARTED();
     EXPECT_CMD(
         "t9",
@@ -1053,13 +1053,13 @@ TEST_F(cdt_test, start_execute_task_with_gtest_pre_task_fail_one_of_the_tests_an
     );
 }
 
-TEST_F(cdt_test, start_attempt_to_rerun_gtest_when_no_tests_have_been_executed_yet) {
+TEST_F(CdtTest, StartAttemptToRerunGtestWhenNoTestsHaveBeenExecutedYet) {
     EXPECT_CDT_STARTED();
     EXPECT_CMD("gt", "\x1B[32mNo google tests have been executed yet.\x1B[0m\n");
 }
 
-TEST_F(cdt_test, start_execute_gtest_task_with_pre_tasks_fail_attempt_to_rerun_test_that_does_not_exist_and_view_list_of_failed_tests) {
-    mock.cmd_to_process_execs[execs.tests].front() = failed_gtest_exec;
+TEST_F(CdtTest, StartExecuteGtestTaskWithPreTasksFailAttemptToRerunTestThatDoesNotExistAndViewListOfFailedTests) {
+    mock.cmd_to_process_execs[execs.kTests].front() = failed_gtest_exec;
     EXPECT_CDT_STARTED();
     EXPECT_CMD(
         "t10",
@@ -1075,8 +1075,8 @@ TEST_F(cdt_test, start_execute_gtest_task_with_pre_tasks_fail_attempt_to_rerun_t
     EXPECT_CMD("gt99", OUT_FAILED_TESTS());
 }
 
-TEST_F(cdt_test, start_execute_gtest_task_with_pre_tasks_fail_and_rerun_failed_test) {
-    process_exec first_test_rerun;
+TEST_F(CdtTest, StartExecuteGtestTaskWithPreTasksFailAndRerunFailedTest) {
+    ProcessExec first_test_rerun;
     first_test_rerun.exit_code = 1;
     first_test_rerun.output_lines = {
         "Running main() from /lib/gtest_main.cc\n",
@@ -1096,7 +1096,7 @@ TEST_F(cdt_test, start_execute_gtest_task_with_pre_tasks_fail_and_rerun_failed_t
         "[  FAILED  ] failed_test_suit_1.test1\n\n",
         " 1 FAILED TEST\n",
     };
-    process_exec second_test_rerun;
+    ProcessExec second_test_rerun;
     second_test_rerun.exit_code = 1;
     second_test_rerun.output_lines = {
         "Running main() from /lib/gtest_main.cc\n",
@@ -1115,9 +1115,9 @@ TEST_F(cdt_test, start_execute_gtest_task_with_pre_tasks_fail_and_rerun_failed_t
         "[  FAILED  ] failed_test_suit_2.test1\n\n",
         " 1 FAILED TEST\n",
     };
-    mock.cmd_to_process_execs[execs.tests].front() = failed_gtest_exec;
-    mock.cmd_to_process_execs[execs.tests + " --gtest_filter='failed_test_suit_1.test1'"].push_back(first_test_rerun);
-    mock.cmd_to_process_execs[execs.tests + " --gtest_filter='failed_test_suit_2.test1'"].push_back(second_test_rerun);
+    mock.cmd_to_process_execs[execs.kTests].front() = failed_gtest_exec;
+    mock.cmd_to_process_execs[execs.kTests + " --gtest_filter='failed_test_suit_1.test1'"].push_back(first_test_rerun);
+    mock.cmd_to_process_execs[execs.kTests + " --gtest_filter='failed_test_suit_2.test1'"].push_back(second_test_rerun);
     EXPECT_CDT_STARTED();
     EXPECT_CMD(
         "t10",
@@ -1147,7 +1147,7 @@ TEST_F(cdt_test, start_execute_gtest_task_with_pre_tasks_fail_and_rerun_failed_t
     );
 }
 
-TEST_F(cdt_test, start_execute_gtest_task_with_pre_tasks_succeed_attempt_to_rerun_test_that_does_not_exist_and_view_list_of_all_tests) {
+TEST_F(CdtTest, StartExecuteGtestTaskWithPreTasksSucceedAttemptToRerunTestThatDoesNotExistAndViewListOfAllTests) {
     EXPECT_CDT_STARTED();
     EXPECT_CMD(
         "t10",
@@ -1162,8 +1162,8 @@ TEST_F(cdt_test, start_execute_gtest_task_with_pre_tasks_succeed_attempt_to_reru
     EXPECT_CMD("gt99", OUT_LAST_EXECUTED_TESTS());
 }
 
-TEST_F(cdt_test, start_execute_gtest_task_with_pre_tasks_succeed_and_rerun_one_of_test) {
-    process_exec second_test_rerun;
+TEST_F(CdtTest, StartExecuteGtestTaskWithPreTasksSucceedAndRerunOneOfTest) {
+    ProcessExec second_test_rerun;
     second_test_rerun.output_lines = {
         "Running main() from /lib/gtest_main.cc\n",
         "Note: Google Test filter = test_suit_1.test2\n",
@@ -1177,7 +1177,7 @@ TEST_F(cdt_test, start_execute_gtest_task_with_pre_tasks_succeed_and_rerun_one_o
         "[==========] 1 test from 1 test suite ran. (0 ms total)\n",
         "[  PASSED  ] 1 test.\n",
     };
-    mock.cmd_to_process_execs[execs.tests + " --gtest_filter='test_suit_1.test2'"].push_back(second_test_rerun);
+    mock.cmd_to_process_execs[execs.kTests + " --gtest_filter='test_suit_1.test2'"].push_back(second_test_rerun);
     EXPECT_CDT_STARTED();
     EXPECT_CMD(
         "t10",
@@ -1204,8 +1204,8 @@ TEST_F(cdt_test, start_execute_gtest_task_with_pre_tasks_succeed_and_rerun_one_o
     );
 }
 
-TEST_F(cdt_test, start_repeatedly_execute_gtest_task_with_pre_tasks_until_it_fails_and_repeatedly_rerun_failed_test_until_it_fails) {
-    process_exec successful_rerun;
+TEST_F(CdtTest, StartRepeatedlyExecuteGtestTaskWithPreTasksUntilItFailsAndRepeatedlyRerunFailedTestUntilItFails) {
+    ProcessExec successful_rerun;
     successful_rerun.output_lines = {
         "Running main() from /lib/gtest_main.cc\n",
         "Note: Google Test filter = failed_test_suit_1.test1\n",
@@ -1220,7 +1220,7 @@ TEST_F(cdt_test, start_repeatedly_execute_gtest_task_with_pre_tasks_until_it_fai
         "[==========] 1 test from 1 test suite ran. (0 ms total)\n",
         "[  PASSED  ] 1 test.\n",
     };
-    process_exec failed_rerun;
+    ProcessExec failed_rerun;
     failed_rerun.exit_code = 1;
     failed_rerun.output_lines = {
         "Running main() from /lib/gtest_main.cc\n",
@@ -1240,11 +1240,11 @@ TEST_F(cdt_test, start_repeatedly_execute_gtest_task_with_pre_tasks_until_it_fai
         "[  FAILED  ] failed_test_suit_1.test1\n\n",
         " 1 FAILED TEST\n",
     };
-    mock.cmd_to_process_execs[execs.tests + " --gtest_filter='failed_test_suit_1.test1'"].push_back(successful_rerun);
-    mock.cmd_to_process_execs[execs.tests + " --gtest_filter='failed_test_suit_1.test1'"].push_back(successful_rerun);
-    mock.cmd_to_process_execs[execs.tests + " --gtest_filter='failed_test_suit_1.test1'"].push_back(failed_rerun);
-    mock.cmd_to_process_execs[execs.tests].push_back(successful_gtest_exec);
-    mock.cmd_to_process_execs[execs.tests].push_back(failed_gtest_exec);
+    mock.cmd_to_process_execs[execs.kTests + " --gtest_filter='failed_test_suit_1.test1'"].push_back(successful_rerun);
+    mock.cmd_to_process_execs[execs.kTests + " --gtest_filter='failed_test_suit_1.test1'"].push_back(successful_rerun);
+    mock.cmd_to_process_execs[execs.kTests + " --gtest_filter='failed_test_suit_1.test1'"].push_back(failed_rerun);
+    mock.cmd_to_process_execs[execs.kTests].push_back(successful_gtest_exec);
+    mock.cmd_to_process_execs[execs.kTests].push_back(failed_gtest_exec);
     EXPECT_CDT_STARTED();
     std::string tests_completed = "\x1B[35mRunning \"run tests with pre tasks\"\x1B[0m\n"
         OUT_TESTS_COMPLETED_SUCCESSFULLY()
@@ -1276,8 +1276,8 @@ TEST_F(cdt_test, start_repeatedly_execute_gtest_task_with_pre_tasks_until_it_fai
     );
 }
 
-TEST_F(cdt_test, start_execute_gtest_task_with_pre_tasks_succeed_repeatedly_rerun_one_of_the_tests_and_fail_due_to_failed_pre_task) {
-    process_exec failed_pre_task = mock.cmd_to_process_execs["echo pre pre task 1"].front();
+TEST_F(CdtTest, StartExecuteGtestTaskWithPreTasksSucceedRepeatedlyRerunOneOfTheTestsAndFailDueToFailedPreTask) {
+    ProcessExec failed_pre_task = mock.cmd_to_process_execs["echo pre pre task 1"].front();
     failed_pre_task.exit_code = 1;
     mock.cmd_to_process_execs["echo pre pre task 1"].push_back(failed_pre_task);
     EXPECT_CDT_STARTED();
@@ -1297,8 +1297,8 @@ TEST_F(cdt_test, start_execute_gtest_task_with_pre_tasks_succeed_repeatedly_reru
     );
 }
 
-TEST_F(cdt_test, start_execute_long_gtest_task_with_pre_tasks_abort_it_repeatedly_rerun_failed_test_and_abort_it_again) {
-    process_exec rerun;
+TEST_F(CdtTest, StartExecuteLongGtestTaskWithPreTasksAbortItRepeatedlyRerunFailedTestAndAbortItAgain) {
+    ProcessExec rerun;
     rerun.exit_code = 1;
     rerun.is_long = true;
     rerun.output_lines = {
@@ -1310,8 +1310,8 @@ TEST_F(cdt_test, start_execute_long_gtest_task_with_pre_tasks_abort_it_repeatedl
         "[ RUN      ] exit_tests.exit_in_the_middle\n",
     };
     aborted_gtest_exec.is_long = true;
-    mock.cmd_to_process_execs[execs.tests].front() = aborted_gtest_exec;
-    mock.cmd_to_process_execs[execs.tests + " --gtest_filter='exit_tests.exit_in_the_middle'"].push_back(rerun);
+    mock.cmd_to_process_execs[execs.kTests].front() = aborted_gtest_exec;
+    mock.cmd_to_process_execs[execs.kTests + " --gtest_filter='exit_tests.exit_in_the_middle'"].push_back(rerun);
     EXPECT_CDT_STARTED();
     EXPECT_INTERRUPTED_CMD(
         "t10",
@@ -1331,12 +1331,12 @@ TEST_F(cdt_test, start_execute_long_gtest_task_with_pre_tasks_abort_it_repeatedl
     );
 }
 
-TEST_F(cdt_test, start_attempt_to_repeatedly_rerun_gtest_when_no_tests_have_been_executed_yet) {
+TEST_F(CdtTest, StartAttemptToRepeatedlyRerunGtestWhenNoTestsHaveBeenExecutedYet) {
     EXPECT_CDT_STARTED();
     EXPECT_CMD("gtr", "\x1B[32mNo google tests have been executed yet.\x1B[0m\n");
 }
 
-TEST_F(cdt_test, start_execute_gtest_task_with_pre_tasks_succeed_attempt_to_repeatedly_rerun_test_that_does_not_exist_and_view_list_of_all_tests) {
+TEST_F(CdtTest, StartExecuteGtestTaskWithPreTasksSucceedAttemptToRepeatedlyRerunTestThatDoesNotExistAndViewListOfAllTests) {
     EXPECT_CDT_STARTED();
     EXPECT_CMD(
         "t10",
@@ -1351,7 +1351,7 @@ TEST_F(cdt_test, start_execute_gtest_task_with_pre_tasks_succeed_attempt_to_repe
     EXPECT_CMD("gtr99", OUT_LAST_EXECUTED_TESTS());
 }
 
-TEST_F(cdt_test, start_and_create_example_user_config) {
+TEST_F(CdtTest, StartAndCreateExampleUserConfig) {
     std::string default_user_config_content = "{\n"
         "  // Open file links from the output in Sublime Text:\n"
         "  //\"open_in_editor_command\": \"subl {}\"\n"
@@ -1366,25 +1366,25 @@ TEST_F(cdt_test, start_and_create_example_user_config) {
         "  // Debug tasks via gdb:\n"
         "  //\"debug_command\": \"gdb --args {}\"\n"
         "}\n";
-    EXPECT_CALL(mock, file_exists(paths.user_config)).WillRepeatedly(testing::Return(false));
-    EXPECT_CALL(mock, write_file(paths.user_config, default_user_config_content));
+    EXPECT_CALL(mock, FileExists(paths.kUserConfig)).WillRepeatedly(testing::Return(false));
+    EXPECT_CALL(mock, WriteFile(paths.kUserConfig, default_user_config_content));
     EXPECT_CDT_STARTED();
 }
 
-TEST_F(cdt_test, start_and_not_override_existing_user_config) {
-    EXPECT_CALL(mock, write_file(testing::Eq(paths.user_config), testing::_)).Times(0);
+TEST_F(CdtTest, StartAndNotOverrideExistingUserConfig) {
+    EXPECT_CALL(mock, WriteFile(testing::Eq(paths.kUserConfig), testing::_)).Times(0);
     EXPECT_CDT_STARTED();
 }
 
-TEST_F(cdt_test, start_attempt_to_execute_google_tests_with_filter_targeting_task_that_does_not_exist_and_view_list_of_task) {
+TEST_F(CdtTest, StartAttemptToExecuteGoogleTestsWithFilterTargetingTaskThatDoesNotExistAndViewListOfTask) {
     EXPECT_CDT_STARTED();
     EXPECT_CMD("gf", OUT_LIST_OF_TASKS());
     EXPECT_CMD("gf0", OUT_LIST_OF_TASKS());
     EXPECT_CMD("gf99", OUT_LIST_OF_TASKS());
 }
 
-TEST_F(cdt_test, start_and_execute_gtest_task_with_gtest_filter) {
-    process_exec filtered_tests;
+TEST_F(CdtTest, StartAndExecuteGtestTaskWithGtestFilter) {
+    ProcessExec filtered_tests;
     filtered_tests.output_lines = {
         "Running main() from /lib/gtest_main.cc\n",
         "[==========] Running 2 tests from 1 test suite.\n",
@@ -1400,7 +1400,7 @@ TEST_F(cdt_test, start_and_execute_gtest_task_with_gtest_filter) {
         "[==========] 2 tests from 1 test suite ran. (0 ms total)\n",
         "[  PASSED  ] 2 tests.\n",
     };
-    mock.cmd_to_process_execs[execs.tests + " --gtest_filter='test_suit_1.*'"].push_back(filtered_tests);
+    mock.cmd_to_process_execs[execs.kTests + " --gtest_filter='test_suit_1.*'"].push_back(filtered_tests);
     EXPECT_CDT_STARTED();
     EXPECT_CMD(
         "gf8\ntest_suit_1.*",
@@ -1412,13 +1412,13 @@ TEST_F(cdt_test, start_and_execute_gtest_task_with_gtest_filter) {
     );
 }
 
-TEST_F(cdt_test, start_attempt_to_search_execution_output_but_fail_due_to_no_task_being_executed_before_it) {
+TEST_F(CdtTest, StartAttemptToSearchExecutionOutputButFailDueToNoTaskBeingExecutedBeforeIt) {
     EXPECT_CDT_STARTED();
     EXPECT_CMD("s", "\x1B[32mNo task has been executed yet\x1B[0m\n");
 }
 
-TEST_F(cdt_test, start_execute_task_attempt_to_search_its_output_with_invalid_regex_and_fail) {
-    mock.cmd_to_process_execs[execs.hello_world].front().output_lines = {OUT_LINKS_NOT_HIGHLIGHTED()};
+TEST_F(CdtTest, StartExecuteTaskAttemptToSearchItsOutputWithInvalidRegexAndFail) {
+    mock.cmd_to_process_execs[execs.kHelloWorld].front().output_lines = {OUT_LINKS_NOT_HIGHLIGHTED()};
     EXPECT_CDT_STARTED();
     EXPECT_CMD(
         "t1",
@@ -1433,7 +1433,7 @@ TEST_F(cdt_test, start_execute_task_attempt_to_search_its_output_with_invalid_re
     );
 }
 
-TEST_F(cdt_test, start_execute_task_search_its_output_and_find_no_results) {
+TEST_F(CdtTest, StartExecuteTaskSearchItsOutputAndFindNoResults) {
     EXPECT_CDT_STARTED();
     EXPECT_CMD(
         "t1",
@@ -1448,8 +1448,8 @@ TEST_F(cdt_test, start_execute_task_search_its_output_and_find_no_results) {
     );
 }
 
-TEST_F(cdt_test, start_execute_task_search_its_output_and_find_results) {
-    mock.cmd_to_process_execs[execs.hello_world].front().output_lines = {OUT_LINKS_NOT_HIGHLIGHTED()};
+TEST_F(CdtTest, StartExecuteTaskSearchItsOutputAndFindResults) {
+    mock.cmd_to_process_execs[execs.kHelloWorld].front().output_lines = {OUT_LINKS_NOT_HIGHLIGHTED()};
     EXPECT_CDT_STARTED();
     EXPECT_CMD(
         "t1",
@@ -1465,13 +1465,13 @@ TEST_F(cdt_test, start_execute_task_search_its_output_and_find_results) {
     );
 }
 
-TEST_F(cdt_test, start_attempt_to_search_gtest_output_when_no_tests_have_been_executed_yet) {
+TEST_F(CdtTest, StartAttemptToSearchGtestOutputWhenNoTestsHaveBeenExecutedYet) {
     EXPECT_CDT_STARTED();
     EXPECT_CMD("gs", "\x1B[32mNo google tests have been executed yet.\x1B[0m\n");
 }
 
-TEST_F(cdt_test, start_execute_gtest_task_with_pre_tasks_fail_attempt_to_search_output_of_test_that_does_not_exist_and_view_list_of_failed_tests) {
-    mock.cmd_to_process_execs[execs.tests].front() = failed_gtest_exec;
+TEST_F(CdtTest, StartExecuteGtestTaskWithPreTasksFailAttemptToSearchOutputOfTestThatDoesNotExistAndViewListOfFailedTests) {
+    mock.cmd_to_process_execs[execs.kTests].front() = failed_gtest_exec;
     EXPECT_CDT_STARTED();
     EXPECT_CMD(
         "t10",
@@ -1487,8 +1487,8 @@ TEST_F(cdt_test, start_execute_gtest_task_with_pre_tasks_fail_attempt_to_search_
     EXPECT_CMD("gs99", OUT_FAILED_TESTS());
 }
 
-TEST_F(cdt_test, start_execute_gtest_task_with_pre_tasks_fail_and_search_output_of_the_test) {
-    mock.cmd_to_process_execs[execs.tests].front() = failed_gtest_exec;
+TEST_F(CdtTest, StartExecuteGtestTaskWithPreTasksFailAndSearchOutputOfTheTest) {
+    mock.cmd_to_process_execs[execs.kTests].front() = failed_gtest_exec;
     EXPECT_CDT_STARTED();
     EXPECT_CMD(
         "t10",
@@ -1513,7 +1513,7 @@ TEST_F(cdt_test, start_execute_gtest_task_with_pre_tasks_fail_and_search_output_
     );
 }
 
-TEST_F(cdt_test, start_execute_gtest_task_with_pre_tasks_succeed_attempt_to_search_output_of_test_that_does_not_exist_and_view_list_of_all_tests) {
+TEST_F(CdtTest, StartExecuteGtestTaskWithPreTasksSucceedAttemptToSearchOutputOfTestThatDoesNotExistAndViewListOfAllTests) {
     EXPECT_CDT_STARTED();
     EXPECT_CMD(
         "t10",
@@ -1528,7 +1528,7 @@ TEST_F(cdt_test, start_execute_gtest_task_with_pre_tasks_succeed_attempt_to_sear
     EXPECT_CMD("gs99", OUT_LAST_EXECUTED_TESTS());
 }
 
-TEST_F(cdt_test, start_execute_gtest_task_with_pre_tasks_succeed_and_search_output_of_one_of_the_tests) {
+TEST_F(CdtTest, StartExecuteGtestTaskWithPreTasksSucceedAndSearchOutputOfOneOfTheTests) {
     EXPECT_CDT_STARTED();
     EXPECT_CMD(
         "t10",
@@ -1551,24 +1551,24 @@ TEST_F(cdt_test, start_execute_gtest_task_with_pre_tasks_succeed_and_search_outp
     );
 }
 
-TEST_F(cdt_test, start_attempt_to_debug_task_while_mandatory_properties_are_not_specified_in_user_config) {
-    mock.mock_read_file(paths.user_config);
+TEST_F(CdtTest, StartAttemptToDebugTaskWhileMandatoryPropertiesAreNotSpecifiedInUserConfig) {
+    mock.MockReadFile(paths.kUserConfig);
     EXPECT_CDT_STARTED();
     EXPECT_CMD(
         "d",
-        "\x1B[31m'debug_command' is not specified in \"" + paths.user_config.string() + "\"\x1B[0m\n"
-        "\x1B[31m'execute_in_new_terminal_tab_command' is not specified in \"" + paths.user_config.string() + "\"\x1B[0m\n"
+        "\x1B[31m'debug_command' is not specified in \"" + paths.kUserConfig.string() + "\"\x1B[0m\n"
+        "\x1B[31m'execute_in_new_terminal_tab_command' is not specified in \"" + paths.kUserConfig.string() + "\"\x1B[0m\n"
     );
 }
 
-TEST_F(cdt_test, start_attempt_debug_task_that_does_not_exist_and_view_list_of_all_tasks) {
+TEST_F(CdtTest, StartAttemptDebugTaskThatDoesNotExistAndViewListOfAllTasks) {
     EXPECT_CDT_STARTED();
     EXPECT_CMD("d", OUT_LIST_OF_TASKS());
     EXPECT_CMD("d0", OUT_LIST_OF_TASKS());
     EXPECT_CMD("d99", OUT_LIST_OF_TASKS());
 }
 
-TEST_F(cdt_test, start_debug_primary_task_with_pre_tasks) {
+TEST_F(CdtTest, StartDebugPrimaryTaskWithPreTasks) {
     EXPECT_DEBUGGER_CALL("echo primary task");
     EXPECT_CDT_STARTED();
     EXPECT_CMD(
@@ -1581,7 +1581,7 @@ TEST_F(cdt_test, start_debug_primary_task_with_pre_tasks) {
     );
 }
 
-TEST_F(cdt_test, start_debug_gtest_primary_task_with_pre_tasks) {
+TEST_F(CdtTest, StartDebugGtestPrimaryTaskWithPreTasks) {
     EXPECT_DEBUGGER_CALL("tests");
     EXPECT_CDT_STARTED();
     EXPECT_CMD(
@@ -1592,23 +1592,23 @@ TEST_F(cdt_test, start_debug_gtest_primary_task_with_pre_tasks) {
     );
 }
 
-TEST_F(cdt_test, start_attempt_to_rerun_gtest_with_debugger_while_mandatory_properties_are_not_specified_in_user_config) {
-    mock.mock_read_file(paths.user_config);
+TEST_F(CdtTest, StartAttemptToRerunGtestWithDebuggerWhileMandatoryPropertiesAreNotSpecifiedInUserConfig) {
+    mock.MockReadFile(paths.kUserConfig);
     EXPECT_CDT_STARTED();
     EXPECT_CMD(
         "gd",
-        "\x1B[31m'debug_command' is not specified in \"" + paths.user_config.string() + "\"\x1B[0m\n"
-        "\x1B[31m'execute_in_new_terminal_tab_command' is not specified in \"" + paths.user_config.string() + "\"\x1B[0m\n"
+        "\x1B[31m'debug_command' is not specified in \"" + paths.kUserConfig.string() + "\"\x1B[0m\n"
+        "\x1B[31m'execute_in_new_terminal_tab_command' is not specified in \"" + paths.kUserConfig.string() + "\"\x1B[0m\n"
     );
 }
 
-TEST_F(cdt_test, start_attempt_to_rerun_gtest_with_debugger_when_no_tests_have_been_executed_yet) {
+TEST_F(CdtTest, StartAttemptToRerunGtestWithDebuggerWhenNoTestsHaveBeenExecutedYet) {
     EXPECT_CDT_STARTED();
     EXPECT_CMD("gd", "\x1B[32mNo google tests have been executed yet.\x1B[0m\n");
 }
 
-TEST_F(cdt_test, start_execute_gtest_task_with_pre_tasks_fail_attempt_to_rerun_test_that_does_not_exist_with_debugger_and_view_list_of_failed_tests) {
-    mock.cmd_to_process_execs[execs.tests].front() = failed_gtest_exec;
+TEST_F(CdtTest, StartExecuteGtestTaskWithPreTasksFailAttemptToRerunTestThatDoesNotExistWithDebuggerAndViewListOfFailedTests) {
+    mock.cmd_to_process_execs[execs.kTests].front() = failed_gtest_exec;
     EXPECT_CDT_STARTED();
     EXPECT_CMD(
         "t10",
@@ -1624,11 +1624,11 @@ TEST_F(cdt_test, start_execute_gtest_task_with_pre_tasks_fail_attempt_to_rerun_t
     EXPECT_CMD("gd99", OUT_FAILED_TESTS());
 }
 
-TEST_F(cdt_test, start_execute_gtest_task_with_pre_tasks_fail_and_rerun_failed_test_with_debugger) {
+TEST_F(CdtTest, StartExecuteGtestTaskWithPreTasksFailAndRerunFailedTestWithDebugger) {
     testing::InSequence seq;
     EXPECT_DEBUGGER_CALL("tests --gtest_filter='failed_test_suit_1.test1'");
     EXPECT_DEBUGGER_CALL("tests --gtest_filter='failed_test_suit_2.test1'");
-    mock.cmd_to_process_execs[execs.tests].front() = failed_gtest_exec;
+    mock.cmd_to_process_execs[execs.kTests].front() = failed_gtest_exec;
     EXPECT_CDT_STARTED();
     EXPECT_CMD(
         "t10",
@@ -1653,7 +1653,7 @@ TEST_F(cdt_test, start_execute_gtest_task_with_pre_tasks_fail_and_rerun_failed_t
     );
 }
 
-TEST_F(cdt_test, start_execute_gtest_task_with_pre_tasks_succeed_attempt_to_rerun_test_that_does_not_exist_with_debugger_and_view_list_of_all_tests) {
+TEST_F(CdtTest, StartExecuteGtestTaskWithPreTasksSucceedAttemptToRerunTestThatDoesNotExistWithDebuggerAndViewListOfAllTests) {
     EXPECT_CDT_STARTED();
     EXPECT_CMD(
         "t10",
@@ -1668,7 +1668,7 @@ TEST_F(cdt_test, start_execute_gtest_task_with_pre_tasks_succeed_attempt_to_reru
     EXPECT_CMD("gd99", OUT_LAST_EXECUTED_TESTS());
 }
 
-TEST_F(cdt_test, start_execute_gtest_task_with_pre_tasks_succeed_and_rerun_one_of_tests_with_debugger) {
+TEST_F(CdtTest, StartExecuteGtestTaskWithPreTasksSucceedAndRerunOneOfTestsWithDebugger) {
     testing::InSequence seq;
     EXPECT_DEBUGGER_CALL("tests --gtest_filter='test_suit_1.test1'");
     EXPECT_DEBUGGER_CALL("tests --gtest_filter='test_suit_1.test2'");
@@ -1695,7 +1695,7 @@ TEST_F(cdt_test, start_execute_gtest_task_with_pre_tasks_succeed_and_rerun_one_o
     );
 }
 
-TEST_F(cdt_test, start_execute_gtest_task_execute_non_gtest_task_and_display_output_of_one_of_the_tests_executed_previously) {
+TEST_F(CdtTest, StartExecuteGtestTaskExecuteNonGtestTaskAndDisplayOutputOfOneOfTheTestsExecutedPreviously) {
     EXPECT_CDT_STARTED();
     EXPECT_CMD(
         "t8",
@@ -1716,7 +1716,7 @@ TEST_F(cdt_test, start_execute_gtest_task_execute_non_gtest_task_and_display_out
     );
 }
 
-TEST_F(cdt_test, start_execute_gtest_task_rerun_one_of_its_tests_and_search_output_of_the_rerun_test) {
+TEST_F(CdtTest, StartExecuteGtestTaskRerunOneOfItsTestsAndSearchOutputOfTheRerunTest) {
     EXPECT_CDT_STARTED();
     EXPECT_CMD(
         "t8",
