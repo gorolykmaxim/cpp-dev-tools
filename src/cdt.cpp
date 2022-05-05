@@ -39,7 +39,6 @@ T push_back_and_return(std::vector<T>& vec, T&& t) {
     return t;
 }
 
-const entity LAST_ENTITY = 0;
 cdt* global_cdt;
 std::vector<user_command_definition> USR_CMD_DEFS;
 const auto TASK = push_back_and_return(USR_CMD_DEFS, {"t", "ind", "Execute the task with the specified index"});
@@ -138,12 +137,7 @@ int os_api::get_process_exit_code(entity e, std::unordered_map<entity, std::uniq
 }
 
 static entity create_entity(cdt& cdt) {
-    const auto res = cdt.entity_seed++;
-    if (res != LAST_ENTITY) {
-        return res;
-    } else {
-        return cdt.entity_seed++;
-    }
+    return cdt.entity_seed++;
 }
 
 static void destroy_entity(entity e, cdt& cdt) {
@@ -774,10 +768,10 @@ static gtest_test* find_gtest_by_cmd_arg(const user_command& cmd, gtest_executio
 
 static void display_gtest_output(cdt& cdt) {
     if (!accept_usr_cmd(GTEST, cdt.last_usr_cmd)) return;
-    const auto last_gtest_exec = find(LAST_ENTITY, cdt.gtest_execs);
-    const auto last_exec_output = find(LAST_ENTITY, cdt.exec_outputs);
-    const auto& gtest_buffer = cdt.text_buffers[text_buffer_type_gtest][LAST_ENTITY];
-    auto& out_buffer = cdt.text_buffers[text_buffer_type_output][LAST_ENTITY];
+    const auto last_gtest_exec = find(cdt.last_entity, cdt.gtest_execs);
+    const auto last_exec_output = find(cdt.last_entity, cdt.exec_outputs);
+    const auto& gtest_buffer = cdt.text_buffers[text_buffer_type_gtest][cdt.last_entity];
+    auto& out_buffer = cdt.text_buffers[text_buffer_type_output][cdt.last_entity];
     const auto test = find_gtest_by_cmd_arg(cdt.last_usr_cmd, last_gtest_exec, cdt);
     if (last_gtest_exec && last_exec_output && test) {
         print_gtest_output(*last_exec_output, gtest_buffer, out_buffer, *test, last_gtest_exec->failed_test_ids.empty() ? TC_GREEN : TC_RED);
@@ -786,17 +780,17 @@ static void display_gtest_output(cdt& cdt) {
 
 static void search_through_gtest_output(cdt& cdt) {
     if (!accept_usr_cmd(GTEST_SEARCH, cdt.last_usr_cmd)) return;
-    const auto last_gtest_exec = find(LAST_ENTITY, cdt.gtest_execs);
+    const auto last_gtest_exec = find(cdt.last_entity, cdt.gtest_execs);
     const auto test = find_gtest_by_cmd_arg(cdt.last_usr_cmd, last_gtest_exec, cdt);
     if (test) {
-        cdt.text_buffer_searchs[LAST_ENTITY] = text_buffer_search{text_buffer_type_gtest, test->buffer_start, test->buffer_end};
+        cdt.text_buffer_searchs[cdt.last_entity] = text_buffer_search{text_buffer_type_gtest, test->buffer_start, test->buffer_end};
     }
 }
 
 static void rerun_gtest(cdt& cdt) {
     if (!accept_usr_cmd(GTEST_RERUN, cdt.last_usr_cmd) && !accept_usr_cmd(GTEST_RERUN_REPEAT, cdt.last_usr_cmd) && !accept_usr_cmd(GTEST_DEBUG, cdt.last_usr_cmd)) return;
-    const auto last_gtest_exec = find(LAST_ENTITY, cdt.gtest_execs);
-    const auto gtest_task_id = find(LAST_ENTITY, cdt.task_ids);
+    const auto last_gtest_exec = find(cdt.last_entity, cdt.gtest_execs);
+    const auto gtest_task_id = find(cdt.last_entity, cdt.task_ids);
     const auto test = find_gtest_by_cmd_arg(cdt.last_usr_cmd, last_gtest_exec, cdt);
     if (last_gtest_exec && gtest_task_id && test) {
         for (const auto& pre_task_id: cdt.pre_tasks[*gtest_task_id]) {
@@ -890,9 +884,9 @@ static void finish_gtest_execution(cdt& cdt) {
     for (const auto& proc: cdt.processes) {
         const auto gtest_exec = find(proc.first, cdt.gtest_execs);
         if (gtest_exec && cdt.execs[proc.first].state != execution_state_running && !gtest_exec->rerun_of_single_test) {
-            move_component(proc.first, LAST_ENTITY, cdt.task_ids);
-            move_component(proc.first, LAST_ENTITY, cdt.text_buffers[text_buffer_type_gtest]);
-            move_component(proc.first, LAST_ENTITY, cdt.gtest_execs);
+            move_component(proc.first, cdt.last_entity, cdt.task_ids);
+            move_component(proc.first, cdt.last_entity, cdt.text_buffers[text_buffer_type_gtest]);
+            move_component(proc.first, cdt.last_entity, cdt.gtest_execs);
         }
     }
 }
@@ -985,8 +979,8 @@ static void finish_task_execution(cdt& cdt) {
                 to_destroy.insert(cdt.execs_to_run_in_order.begin(), cdt.execs_to_run_in_order.end());
             }
             to_destroy.insert(proc.first);
-            move_component(proc.first, LAST_ENTITY, cdt.exec_outputs);
-            move_component(proc.first, LAST_ENTITY, cdt.text_buffers[text_buffer_type_output]);
+            move_component(proc.first, cdt.last_entity, cdt.exec_outputs);
+            move_component(proc.first, cdt.last_entity, cdt.text_buffers[text_buffer_type_output]);
         }
     }
     for (const auto e: to_destroy) {
@@ -996,7 +990,7 @@ static void finish_task_execution(cdt& cdt) {
 
 static void open_file_link(cdt& cdt) {
     if (!accept_usr_cmd(OPEN, cdt.last_usr_cmd)) return;
-    const auto exec_output = find(LAST_ENTITY, cdt.exec_outputs);
+    const auto exec_output = find(cdt.last_entity, cdt.exec_outputs);
     if (cdt.open_in_editor_cmd.str.empty()) {
         warn_user_config_prop_not_specified(OPEN_IN_EDITOR_COMMAND_PROPERTY, cdt);
     } else if (!exec_output || exec_output->file_links.empty()) {
@@ -1008,7 +1002,7 @@ static void open_file_link(cdt& cdt) {
             cdt.os->exec_process(shell_command);
         } else {
             cdt.os->out() << TC_GREEN << "Last execution output:" << TC_RESET << std::endl;
-            for (const auto& line: cdt.text_buffers[text_buffer_type_output][LAST_ENTITY]) {
+            for (const auto& line: cdt.text_buffers[text_buffer_type_output][cdt.last_entity]) {
                 cdt.os->out() << line << std::endl;
             }
         }
@@ -1017,11 +1011,11 @@ static void open_file_link(cdt& cdt) {
 
 static void search_through_last_execution_output(cdt& cdt) {
     if (!accept_usr_cmd(SEARCH, cdt.last_usr_cmd)) return;
-    if (!find(LAST_ENTITY, cdt.exec_outputs)) {
+    if (!find(cdt.last_entity, cdt.exec_outputs)) {
         cdt.os->out() << TC_GREEN << "No task has been executed yet" << TC_RESET << std::endl;
     } else {
-        const auto& buffer = cdt.text_buffers[text_buffer_type_output][LAST_ENTITY];
-        cdt.text_buffer_searchs[LAST_ENTITY] = text_buffer_search{text_buffer_type_output, 0, buffer.size()};
+        const auto& buffer = cdt.text_buffers[text_buffer_type_output][cdt.last_entity];
+        cdt.text_buffer_searchs[cdt.last_entity] = text_buffer_search{text_buffer_type_output, 0, buffer.size()};
     }
 }
 
@@ -1118,6 +1112,7 @@ static void display_help(const std::vector<user_command_definition>& defs, cdt& 
 bool init_cdt(int argc, const char **argv, cdt &cdt) {
     global_cdt = &cdt;
     cdt.cdt_executable = argv[0];
+    cdt.last_entity = create_entity(cdt);
     init_example_user_config(cdt);
     read_argv(argc, argv, cdt);
     read_user_config(cdt);

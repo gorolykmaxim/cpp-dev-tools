@@ -154,6 +154,7 @@ struct cdt {
     std::filesystem::path tasks_config_path;
     std::vector<std::string> config_errors;
     entity entity_seed = 1;
+    entity last_entity;
     os_api* os;
 };
 
