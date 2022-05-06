@@ -1730,4 +1730,10 @@ TEST_F(CdtTest, StartExecuteGtestTaskRerunOneOfItsTestsAndSearchOutputOfTheRerun
         OUT_LINKS()
         "\x1B[35m'test_suit_1.test1' complete: return code: 0\x1B[0m\n"
     );
+    EXPECT_CMD(
+        "s\n(some|data)",
+        "\x1B[32mRegular expression: \x1B[0m"
+        "\x1B[35m2:\x1B[0m\x1B[32msome\x1B[0m random \x1B[32mdata\x1B[0m\n"
+        "\x1B[35m3:\x1B[0m\x1B[35m[o2] /d/e/f:15:32\x1B[0m \x1B[32msome\x1B[0mthing\n"
+    );
 }
