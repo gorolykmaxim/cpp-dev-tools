@@ -1737,3 +1737,20 @@ TEST_F(CdtTest, StartExecuteGtestTaskRerunOneOfItsTestsAndSearchOutputOfTheRerun
         "\x1B[35m3:\x1B[0m\x1B[35m[o2] /d/e/f:15:32\x1B[0m \x1B[32msome\x1B[0mthing\n"
     );
 }
+
+TEST_F(CdtTest, StartExecuteGtestTaskRerunOneOfItsTestsAndDisplayListOfOriginallyExecutedTests) {
+    EXPECT_CDT_STARTED();
+    EXPECT_CMD(
+        "t8",
+        "\x1B[35mRunning \"run tests\"\x1B[0m\n"
+        OUT_TESTS_COMPLETED_SUCCESSFULLY()
+        "\x1B[35m'run tests' complete: return code: 0\x1B[0m\n"
+    );
+    EXPECT_CMD(
+        "gt1",
+        "\x1B[35mRunning \"test_suit_1.test1\"\x1B[0m\n"
+        OUT_LINKS()
+        "\x1B[35m'test_suit_1.test1' complete: return code: 0\x1B[0m\n"
+    );
+    EXPECT_CMD("g", OUT_LAST_EXECUTED_TESTS());
+}
