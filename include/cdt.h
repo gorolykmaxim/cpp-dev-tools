@@ -73,7 +73,7 @@ enum class GtestExecutionState {
     kRunning, kParsing, kParsed, kFinished
 };
 
-struct gtest_execution {
+struct GtestExecution {
     bool rerun_of_single_test = false;
     std::vector<GtestTest> tests;
     std::vector<size_t> failed_test_ids;
@@ -136,7 +136,7 @@ struct Cdt {
     std::unordered_map<Entity, std::unique_ptr<TinyProcessLib::Process>> processes;
     std::unordered_map<Entity, Execution> execs;
     std::unordered_map<Entity, ExecutionOutput> exec_outputs;
-    std::unordered_map<Entity, gtest_execution> gtest_execs;
+    std::unordered_map<Entity, GtestExecution> gtest_execs;
     std::unordered_map<TextBufferType, std::unordered_map<Entity, std::vector<std::string>>> text_buffers;
     std::unordered_map<Entity, TextBufferSearch> text_buffer_searchs;
     std::unordered_set<Entity> repeat_until_fail;

@@ -548,7 +548,7 @@ static void ScheduleGtestExecutions(Cdt& cdt) {
                 cdt.execs[exec] = Execution{task.name, GtestTaskToShellCommand(task)};
             }
             if (!Find(exec, cdt.gtest_execs)) {
-                cdt.gtest_execs[exec] = gtest_execution{};
+                cdt.gtest_execs[exec] = GtestExecution{};
             }
         }
     }
@@ -626,7 +626,7 @@ static void ProcessExecutionEvent(Cdt& cdt) {
     }
 }
 
-static void CompleteCurrentGtest(gtest_execution& gtest_exec, const std::string& line_content, bool& test_completed) {
+static void CompleteCurrentGtest(GtestExecution& gtest_exec, const std::string& line_content, bool& test_completed) {
     gtest_exec.tests[*gtest_exec.current_test].duration = line_content.substr(line_content.rfind('('));
     gtest_exec.current_test.reset();
     test_completed = true;
@@ -729,7 +729,7 @@ static void PrintGtestList(const std::vector<size_t>& test_ids, const std::vecto
     }
 }
 
-static void PrintFailedGtestList(const gtest_execution& exec, Cdt& cdt) {
+static void PrintFailedGtestList(const GtestExecution& exec, Cdt& cdt) {
     cdt.os->Out() << kTcRed << "Failed tests:" << kTcReset << std::endl;
     PrintGtestList(exec.failed_test_ids, exec.tests, cdt);
     const int failed_percent = exec.failed_test_ids.size() / (float)exec.tests.size() * 100;
@@ -744,7 +744,7 @@ static void PrintGtestOutput(ExecutionOutput& out, const std::vector<std::string
     out_buffer.insert(out_buffer.end(), gtest_buffer.begin() + test.buffer_start, gtest_buffer.begin() + test.buffer_end);
 }
 
-static GtestTest* FindGtestByCmdArg(const UserCommand& cmd, gtest_execution* exec, Cdt& cdt) {
+static GtestTest* FindGtestByCmdArg(const UserCommand& cmd, GtestExecution* exec, Cdt& cdt) {
     if (!exec || exec->test_count == 0) {
         cdt.os->Out() << kTcGreen << "No google tests have been executed yet." << kTcReset << std::endl;
     } else if (exec->failed_test_ids.empty()) {
@@ -801,7 +801,7 @@ static void RerunGtest(Cdt& cdt) {
         const auto exec = CreateEntity(cdt);
         cdt.task_ids[exec] = *gtest_task_id;
         cdt.execs[exec] = Execution{test->name, GtestTaskToShellCommand(cdt.tasks[*gtest_task_id], test->name)};
-        cdt.gtest_execs[exec] = gtest_execution{true};
+        cdt.gtest_execs[exec] = GtestExecution{true};
         cdt.stream_output.insert(exec);
         if (kGtestRerunRepeat.cmd == cdt.last_usr_cmd.cmd) {
             cdt.repeat_until_fail.insert(exec);
@@ -874,7 +874,7 @@ static void RestartRepeatingGtestOnSuccess(Cdt& cdt) {
     for (const auto& proc: cdt.processes) {
         const auto gtest_exec = Find(proc.first, cdt.gtest_execs);
         if (gtest_exec && cdt.execs[proc.first].state == ExecutionState::kComplete && Find(proc.first, cdt.repeat_until_fail)) {
-            cdt.gtest_execs[proc.first] = gtest_execution{gtest_exec->rerun_of_single_test};
+            cdt.gtest_execs[proc.first] = GtestExecution{gtest_exec->rerun_of_single_test};
             cdt.text_buffers[TextBufferType::kGtest][proc.first].clear();
         }
     }
