@@ -159,7 +159,7 @@ struct Cdt {
     std::filesystem::path tasks_config_path;
     std::vector<std::string> config_errors;
     Entity entity_seed = 1;
-    size_t selected_exec_index = 0;
+    std::optional<Entity> selected_exec;
     OsApi* os;
 };
 

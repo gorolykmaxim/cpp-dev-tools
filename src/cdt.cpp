@@ -1,4 +1,5 @@
 #include "cdt.h"
+#include <algorithm>
 #include <chrono>
 #include <cstddef>
 #include <cstdio>
@@ -747,7 +748,14 @@ static void PrintGtestOutput(ExecutionOutput& out, const std::vector<std::string
 }
 
 static bool FindGtestByCmdArgInLastEntityWithGtestExec(const UserCommand& cmd, Cdt& cdt, Entity& entity, GtestExecution& exec, GtestTest& test) {
-    for (size_t i = cdt.selected_exec_index; i < cdt.exec_history.size(); i++) {
+    size_t lookup_start = 0;
+    if (cdt.selected_exec) {
+        const auto it = std::find(cdt.exec_history.begin(), cdt.exec_history.end(), *cdt.selected_exec);
+        if (it != cdt.exec_history.end()) {
+            lookup_start = it - cdt.exec_history.begin();
+        }
+    }
+    for (size_t i = lookup_start; i < cdt.exec_history.size(); i++) {
         entity = cdt.exec_history[i];
         const auto it = cdt.gtest_execs.find(entity);
         if (it != cdt.gtest_execs.end()) {
@@ -1004,7 +1012,6 @@ static void FinishTaskExecution(Cdt& cdt) {
         if (exec.state != ExecutionState::kRunning) {
             cdt.execs_to_run_in_order.pop_front();
             cdt.exec_history.push_front(proc.first);
-            cdt.selected_exec_index = 0;
             if (exec.state == ExecutionState::kFailed) {
                 to_destroy.insert(to_destroy.begin(), cdt.execs_to_run_in_order.begin(), cdt.execs_to_run_in_order.end());
                 cdt.execs_to_run_in_order.clear();
@@ -1022,7 +1029,8 @@ static void RemoveOldExecutionsFromHistory(Cdt& cdt) {
     static const size_t kMaxHistoryLength = 100;
     std::vector<size_t> to_destroy;
     for (size_t i = cdt.exec_history.size() - 1; cdt.exec_history.size() - to_destroy.size() > kMaxHistoryLength; i--) {
-        if (!cdt.execs[cdt.exec_history[i]].is_pinned) {
+        Entity entity = cdt.exec_history[i];
+        if (!cdt.execs[entity].is_pinned && cdt.selected_exec != entity) {
             to_destroy.push_back(i);
         }
     }
@@ -1037,8 +1045,8 @@ static void OpenFileLink(Cdt& cdt) {
     if (!AcceptUsrCmd(kOpen, cdt.last_usr_cmd)) return;
     ExecutionOutput* exec_output = nullptr;
     const std::vector<std::string>* buffer = nullptr;
-    if (cdt.selected_exec_index < cdt.exec_history.size()) {
-        Entity entity = cdt.exec_history[cdt.selected_exec_index];
+    if (!cdt.exec_history.empty()) {
+        Entity entity = cdt.selected_exec ? *cdt.selected_exec : cdt.exec_history.front();
         exec_output = &cdt.exec_outputs[entity];
         buffer = &cdt.text_buffers[TextBufferType::kOutput][entity];
     }
@@ -1062,10 +1070,10 @@ static void OpenFileLink(Cdt& cdt) {
 
 static void SearchThroughLastExecutionOutput(Cdt& cdt) {
     if (!AcceptUsrCmd(kSearch, cdt.last_usr_cmd)) return;
-    if (cdt.selected_exec_index >= cdt.exec_history.size()) {
+    if (cdt.exec_history.empty()) {
         cdt.os->Out() << kTcGreen << "No task has been executed yet" << kTcReset << std::endl;
     } else {
-        Entity entity = cdt.exec_history[cdt.selected_exec_index];
+        Entity entity = cdt.selected_exec ? *cdt.selected_exec : cdt.exec_history.front();
         size_t buffer_size = cdt.text_buffers[TextBufferType::kOutput][entity].size();
         cdt.text_buffer_searchs[entity] = TextBufferSearch{TextBufferType::kOutput, 0, buffer_size};
     }
@@ -1137,7 +1145,6 @@ static void StartNextExecutionWithDebugger(Cdt& cdt) {
     if (!Find(exec_entity, cdt.debug)) return;
     cdt.execs_to_run_in_order.pop_front();
     cdt.exec_history.push_front(exec_entity);
-    cdt.selected_exec_index = 0;
     Execution& exec = cdt.execs[exec_entity];
     exec.start_time = cdt.os->TimeNow();
     exec.state = ExecutionState::kComplete;
@@ -1155,10 +1162,12 @@ static void ChangeSelectedExecution(Cdt& cdt) {
         cdt.os->Out() << kTcGreen << "No task has been executed yet" << kTcReset << std::endl;
     } else if (!IsCmdArgInRange(cdt.last_usr_cmd, cdt.exec_history)) {
         cdt.os->Out() << kTcGreen << "Execution history:" << kTcReset << std::endl;
+        Entity selected_exec = cdt.selected_exec ? *cdt.selected_exec : cdt.exec_history.front();
         for (int i = cdt.exec_history.size() - 1; i >= 0; i--) {
             std::stringstream line;
-            Execution& exec = cdt.execs[cdt.exec_history[i]];
-            line << (i == cdt.selected_exec_index ? kCurrentIcon : std::string(kCurrentIcon.size(), ' ')) << ' ';
+            Entity entity = cdt.exec_history[i];
+            Execution& exec = cdt.execs[entity];
+            line << (selected_exec == entity ? kCurrentIcon : std::string(kCurrentIcon.size(), ' ')) << ' ';
             line << i + 1 << ' ';
             std::time_t time = std::chrono::system_clock::to_time_t(exec.start_time);
             line << std::put_time(std::localtime(&time), "%T") << ' ';
@@ -1166,9 +1175,14 @@ static void ChangeSelectedExecution(Cdt& cdt) {
             cdt.os->Out() << line.str() << std::endl;
         }
     } else {
-        cdt.selected_exec_index = cdt.last_usr_cmd.arg - 1;
-        Entity entity = cdt.exec_history[cdt.selected_exec_index];
-        cdt.os->Out() << kTcMagenta << "Selected execution \"" << cdt.execs[entity].name << '"' << kTcReset << std::endl;
+        size_t index = cdt.last_usr_cmd.arg - 1;
+        if (index == 0) {
+            cdt.selected_exec.reset();
+            cdt.os->Out() << kTcMagenta << "Selected execution reset" << kTcReset << std::endl;
+        } else {
+            cdt.selected_exec = cdt.exec_history[index];
+            cdt.os->Out() << kTcMagenta << "Selected execution \"" << cdt.execs[*cdt.selected_exec].name << '"' << kTcReset << std::endl;
+        }
     }
 }
 

@@ -143,6 +143,11 @@ public:
     "9 \"task with gtest pre task\"\n"\
     "10 \"run tests with pre tasks\"\n"
 
+#define OUT_HELLO_WORLD_TASK()\
+    "\x1B[35mRunning \"hello world!\"\x1B[0m\n"\
+    "hello world!\n"\
+    "\x1B[35m'hello world!' complete: return code: 0\x1B[0m\n"
+
 #define OUT_TEST_ERROR()\
     "unknown file: Failure\n"\
     "C++ exception with description \"\" thrown in the test body.\n"
@@ -578,12 +583,7 @@ TEST_F(CdtTest, StartAndDisplayListOfTasksOnTaskCommand) {
 
 TEST_F(CdtTest, StartAndExecuteSingleTask) {
     EXPECT_CDT_STARTED();
-    EXPECT_CMD(
-        "t1",
-        "\x1B[35mRunning \"hello world!\"\x1B[0m\n"
-        "hello world!\n"
-        "\x1B[35m'hello world!' complete: return code: 0\x1B[0m\n"
-    );
+    EXPECT_CMD("t1", OUT_HELLO_WORLD_TASK());
 }
 
 TEST_F(CdtTest, StartAndExecuteTaskThatPrintsToStdoutAndStderr) {
@@ -669,12 +669,9 @@ TEST_F(CdtTest, StartAndChangeCwdToTasksConfigsDirectory) {
 }
 
 TEST_F(CdtTest, StartExecuteSingleTaskAndRepeateTheLastCommandOnEnter) {
-    std::string expected_output = "\x1B[35mRunning \"hello world!\"\x1B[0m\n"
-        "hello world!\n"
-        "\x1B[35m'hello world!' complete: return code: 0\x1B[0m\n";
     EXPECT_CDT_STARTED();
-    EXPECT_CMD("t1", expected_output);
-    EXPECT_CMD("", expected_output);
+    EXPECT_CMD("t1", OUT_HELLO_WORLD_TASK());
+    EXPECT_CMD("", OUT_HELLO_WORLD_TASK());
 }
 
 TEST_F(CdtTest, StartAndExecuteRestartTask) {
@@ -1427,12 +1424,7 @@ TEST_F(CdtTest, StartExecuteTaskAttemptToSearchItsOutputWithInvalidRegexAndFail)
 
 TEST_F(CdtTest, StartExecuteTaskSearchItsOutputAndFindNoResults) {
     EXPECT_CDT_STARTED();
-    EXPECT_CMD(
-        "t1",
-        "\x1B[35mRunning \"hello world!\"\x1B[0m\n"
-        "hello world!\n"
-        "\x1B[35m'hello world!' complete: return code: 0\x1B[0m\n"
-    );
+    EXPECT_CMD("t1", OUT_HELLO_WORLD_TASK());
     EXPECT_CMD(
         "s\nnon\\-existent",
         "\x1B[32mRegular expression: \x1B[0m"
@@ -1695,12 +1687,7 @@ TEST_F(CdtTest, StartExecuteGtestTaskExecuteNonGtestTaskAndDisplayOutputOfOneOfT
         OUT_TESTS_COMPLETED_SUCCESSFULLY()
         "\x1B[35m'run tests' complete: return code: 0\x1B[0m\n"
     );
-    EXPECT_CMD(
-        "t1",
-        "\x1B[35mRunning \"hello world!\"\x1B[0m\n"
-        "hello world!\n"
-        "\x1B[35m'hello world!' complete: return code: 0\x1B[0m\n"
-    );
+    EXPECT_CMD("t1", OUT_HELLO_WORLD_TASK());
     EXPECT_CMD(
         "g1",
         "\x1B[32m\"test_suit_1.test1\" output:\x1B[0m\n"
@@ -1753,15 +1740,12 @@ TEST_F(CdtTest, StartAndListExecutions) {
 }
 
 TEST_F(CdtTest, StartExecuteTwoTasksAndListExecutions) {
-    std::string out_hello_world = "\x1B[35mRunning \"hello world!\"\x1B[0m\n"
-        "hello world!\n"
-        "\x1B[35m'hello world!' complete: return code: 0\x1B[0m\n";
     std::string out_exec_list = "\x1B[32mExecution history:\x1B[0m\n"
         "   2 03:00:01 \"hello world!\"\n"
         "-> 1 03:00:02 \"hello world!\"\n";
     EXPECT_CDT_STARTED();
-    EXPECT_CMD("t1", out_hello_world);
-    EXPECT_CMD("t1", out_hello_world);
+    EXPECT_CMD("t1", OUT_HELLO_WORLD_TASK());
+    EXPECT_CMD("t1", OUT_HELLO_WORLD_TASK());
     EXPECT_CMD("exec", out_exec_list);
     EXPECT_CMD("exec0", out_exec_list);
     EXPECT_CMD("exec99", out_exec_list);
@@ -1778,12 +1762,7 @@ TEST_F(CdtTest, StartExecuteTwoTasksSelectFirstExecutionAndOpenFileLinksFromIt) 
         OUT_LINKS()
         "\x1B[35m'hello world!' complete: return code: 0\x1B[0m\n"
     );
-    EXPECT_CMD(
-        "t1",
-        "\x1B[35mRunning \"hello world!\"\x1B[0m\n"
-        "hello world!\n"
-        "\x1B[35m'hello world!' complete: return code: 0\x1B[0m\n"
-    );
+    EXPECT_CMD("t1", OUT_HELLO_WORLD_TASK());
     EXPECT_CMD("exec2", "\x1B[35mSelected execution \"hello world!\"\x1B[0m\n");
     EXPECT_LAST_EXEC_OUTPUT_DISPLAYED_ON_LINK_INDEX_OUT_OF_BOUNDS();
     EXPECT_OUTPUT_LINKS_TO_OPEN();
@@ -1800,12 +1779,7 @@ TEST_F(CdtTest, StartExecuteTwoTasksSelectFirstExecutionAndSearchItsOutput) {
         OUT_LINKS()
         "\x1B[35m'hello world!' complete: return code: 0\x1B[0m\n"
     );
-    EXPECT_CMD(
-        "t1",
-        "\x1B[35mRunning \"hello world!\"\x1B[0m\n"
-        "hello world!\n"
-        "\x1B[35m'hello world!' complete: return code: 0\x1B[0m\n"
-    );
+    EXPECT_CMD("t1", OUT_HELLO_WORLD_TASK());
     EXPECT_CMD("exec2", "\x1B[35mSelected execution \"hello world!\"\x1B[0m\n");
     EXPECT_CMD(
         "s\n(some|data)",
@@ -1961,13 +1935,10 @@ TEST_F(CdtTest, StartExecuteTwoGtestTasksSelectFirstExecutionAndRerunGtestWithDe
     EXPECT_CMD("gd1", "\x1B[35mStarting debugger for \"failed_test_suit_1.test1\"...\x1B[0m\n");
 }
 
-TEST_F(CdtTest, StartExecuteTaskTwiceSelectFirstExecutionExecuteAnotherTaskListExecutionsAndSeeLatestExecutionSelected) {
-    std::string out_hello_world = "\x1B[35mRunning \"hello world!\"\x1B[0m\n"
-        "hello world!\n"
-        "\x1B[35m'hello world!' complete: return code: 0\x1B[0m\n";
+TEST_F(CdtTest, StartExecuteTaskTwiceSelectFirstExecutionExecuteAnotherTaskSeeFirstTaskStillSelectedSelectLastExecutionExecuteAnotherTaskAndSeeItBeingSelectedAutomatically) {
     EXPECT_CDT_STARTED();
-    EXPECT_CMD("t1", out_hello_world);
-    EXPECT_CMD("t1", out_hello_world);
+    EXPECT_CMD("t1", OUT_HELLO_WORLD_TASK());
+    EXPECT_CMD("t1", OUT_HELLO_WORLD_TASK());
     EXPECT_CMD("exec2", "\x1B[35mSelected execution \"hello world!\"\x1B[0m\n");
     EXPECT_CMD(
         "exec",
@@ -1975,17 +1946,27 @@ TEST_F(CdtTest, StartExecuteTaskTwiceSelectFirstExecutionExecuteAnotherTaskListE
         "-> 2 03:00:01 \"hello world!\"\n"
         "   1 03:00:02 \"hello world!\"\n"
     );
-    EXPECT_CMD("t1", out_hello_world);
+    EXPECT_CMD("t1", OUT_HELLO_WORLD_TASK());
     EXPECT_CMD(
         "exec",
         "\x1B[32mExecution history:\x1B[0m\n"
-        "   3 03:00:01 \"hello world!\"\n"
+        "-> 3 03:00:01 \"hello world!\"\n"
         "   2 03:00:02 \"hello world!\"\n"
-        "-> 1 03:00:03 \"hello world!\"\n"
+        "   1 03:00:03 \"hello world!\"\n"
+    );
+    EXPECT_CMD("exec1", "\x1B[35mSelected execution reset\x1B[0m\n");
+    EXPECT_CMD("t1", OUT_HELLO_WORLD_TASK());
+    EXPECT_CMD(
+        "exec",
+        "\x1B[32mExecution history:\x1B[0m\n"
+        "   4 03:00:01 \"hello world!\"\n"
+        "   3 03:00:02 \"hello world!\"\n"
+        "   2 03:00:03 \"hello world!\"\n"
+        "-> 1 03:00:04 \"hello world!\"\n"
     );
 }
 
-TEST_F(CdtTest, StartExecuteGtestTaskTwiceExecuteNormalTask110TimesAndViewHistoryOf100ExecutionsThatIncludesOnlyOneLastGtestTask) {
+TEST_F(CdtTest, StartExecuteGtestTaskTwiceExecuteNormalTask110TimesWhileSelectingFirstNormalExecutionAndViewHistoryOf100ExecutionsThatIncludesOnlyOneLastGtestTaskAndSelectedFirstNormalExecution) {
     EXPECT_CDT_STARTED();
     for (int i = 0; i < 2; i++) {
         EXPECT_CMD(
@@ -1996,17 +1977,16 @@ TEST_F(CdtTest, StartExecuteGtestTaskTwiceExecuteNormalTask110TimesAndViewHistor
         );
     }
     for (int i = 0; i < 100; i++) {
-        EXPECT_CMD(
-            "t1",
-            "\x1B[35mRunning \"hello world!\"\x1B[0m\n"
-            "hello world!\n"
-            "\x1B[35m'hello world!' complete: return code: 0\x1B[0m\n"
-        );
+        EXPECT_CMD("t1", OUT_HELLO_WORLD_TASK());
+        if (i == 1) {
+            EXPECT_CMD("exec2", "\x1B[35mSelected execution \"hello world!\"\x1B[0m\n");
+        }
     }
     std::stringstream expected;
     expected << "\x1B[32mExecution history:\x1B[0m\n";
     expected << "   100 03:00:02 \"run tests\"\n";
-    int i = 99, sec = 4;
+    expected << "-> 99 03:00:03 \"hello world!\"\n";
+    int i = 98, sec = 5;
     while (sec < 10) {
         expected << "   " << i-- << " 03:00:0" << sec++ << " \"hello world!\"\n";
     }
@@ -2020,6 +2000,6 @@ TEST_F(CdtTest, StartExecuteGtestTaskTwiceExecuteNormalTask110TimesAndViewHistor
     while (sec < 42) {
         expected << "   " << i-- << " 03:01:" << sec++ << " \"hello world!\"\n";
     }
-    expected << "-> 1 03:01:42 \"hello world!\"\n";
+    expected << "   1 03:01:42 \"hello world!\"\n";
     EXPECT_CMD("exec", expected.str());
 }
