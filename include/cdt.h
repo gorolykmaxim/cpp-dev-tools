@@ -1,6 +1,7 @@
 #ifndef CDT_H
 #define CDT_H
 
+#include <chrono>
 #include <cstddef>
 #include <functional>
 #include <istream>
@@ -60,6 +61,8 @@ struct Execution
     ExecutionState state = ExecutionState::kRunning;
     std::string stdout_line_buffer;
     std::string stderr_line_buffer;
+    std::chrono::system_clock::time_point start_time;
+    bool is_pinned = false;
 };
 
 struct GtestTest {
@@ -128,10 +131,12 @@ public:
                                const std::function<void()>& exit_cb,
                                std::unordered_map<Entity, std::unique_ptr<TinyProcessLib::Process>>& processes);
     virtual int GetProcessExitCode(Entity e, std::unordered_map<Entity, std::unique_ptr<TinyProcessLib::Process>>& processes);
+    virtual std::chrono::system_clock::time_point TimeNow();
 };
 
 struct Cdt {
-    std::deque<Entity> execs_to_run_in_order;
+    std::deque<Entity> execs_to_run_in_order; // Execution entities to execute where first entity is the first execution to execute
+    std::deque<Entity> exec_history; // History of executed entities where first entity is the most recently executed entity
     std::unordered_map<Entity, size_t> task_ids;
     std::unordered_map<Entity, std::unique_ptr<TinyProcessLib::Process>> processes;
     std::unordered_map<Entity, Execution> execs;
@@ -154,7 +159,7 @@ struct Cdt {
     std::filesystem::path tasks_config_path;
     std::vector<std::string> config_errors;
     Entity entity_seed = 1;
-    Entity last_entity;
+    size_t selected_exec_index = 0;
     OsApi* os;
 };
 

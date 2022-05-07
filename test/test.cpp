@@ -1,3 +1,4 @@
+#include <chrono>
 #include <cstddef>
 #include <cstring>
 #include <deque>
@@ -5,6 +6,7 @@
 #include <functional>
 #include <gmock/gmock-actions.h>
 #include <gmock/gmock-cardinalities.h>
+#include <gmock/gmock-function-mocker.h>
 #include <gmock/gmock-matchers.h>
 #include <gmock/gmock-nice-strict.h>
 #include <gmock/gmock-spec-builders.h>
@@ -101,6 +103,9 @@ public:
     int GetProcessExitCode(Entity e, std::unordered_map<Entity, std::unique_ptr<TinyProcessLib::Process>>& map) override {
         return proc_exit_info.at(e).exit_code;
     }
+    std::chrono::system_clock::time_point TimeNow() override {
+        return time_now += std::chrono::seconds(1);
+    }
     void MockReadFile(const std::filesystem::path& p, const std::string& d) {
         EXPECT_CALL(*this, ReadFile(testing::Eq(p), testing::_)).WillRepeatedly(testing::DoAll(testing::SetArgReferee<1>(d), testing::Return(true)));
     }
@@ -108,6 +113,7 @@ public:
         EXPECT_CALL(*this, ReadFile(testing::Eq(p), testing::_)).WillRepeatedly(testing::Return(false));
     }
 
+    std::chrono::system_clock::time_point time_now;
     std::unordered_map<std::string, std::deque<ProcessExec>> cmd_to_process_execs;
     std::unordered_map<Entity, ProcessExitInfo> proc_exit_info;
 };
@@ -240,7 +246,13 @@ public:
     Paths paths;
     Executables execs;
     std::string out_links, out_test_error;
-    ProcessExec successful_gtest_exec, failed_gtest_exec, successful_single_gtest_exec, failed_single_gtest_exec, aborted_gtest_exec;
+    ProcessExec successful_gtest_exec,
+                failed_gtest_exec,
+                successful_single_gtest_exec,
+                failed_single_gtest_exec,
+                aborted_gtest_exec,
+                successful_rerun_gtest_exec,
+                failed_rerun_gtest_exec;
     std::stringstream in, out;
     std::function<void(int)> sigint_handler;
     testing::NiceMock<OsApiMock> mock;
@@ -371,6 +383,39 @@ public:
             "[  FAILED  ] 1 test, listed below:\n",
             "[  FAILED  ] failed_test_suit_1.test1\n\n",
             " 1 FAILED TEST\n"
+        };
+        successful_rerun_gtest_exec.output_lines = {
+            "Running main() from /lib/gtest_main.cc\n",
+            "Note: Google Test filter = failed_test_suit_1.test1\n",
+            "[==========] Running 1 test from 1 test suite.\n",
+            "[----------] Global test environment set-up.\n",
+            "[----------] 1 test from failed_test_suit_1\n",
+            "[ RUN      ] failed_test_suit_1.test1\n",
+            out_links,
+            "[       OK ] failed_test_suit_1.test1 (0 ms)\n",
+            "[----------] 1 test from failed_test_suit_1 (0 ms total)\n\n",
+            "[----------] Global test environment tear-down\n",
+            "[==========] 1 test from 1 test suite ran. (0 ms total)\n",
+            "[  PASSED  ] 1 test.\n",
+        };
+        failed_rerun_gtest_exec.exit_code = 1;
+        failed_rerun_gtest_exec.output_lines = {
+            "Running main() from /lib/gtest_main.cc\n",
+            "Note: Google Test filter = failed_test_suit_1.test1\n",
+            "[==========] Running 1 test from 1 test suite.\n",
+            "[----------] Global test environment set-up.\n",
+            "[----------] 1 test from failed_test_suit_1\n",
+            "[ RUN      ] failed_test_suit_1.test1\n",
+            out_links,
+            out_test_error,
+            "[  FAILED  ] failed_test_suit_1.test1 (0 ms)\n",
+            "[----------] 1 test from failed_test_suit_1 (0 ms total)\n\n",
+            "[----------] Global test environment tear-down\n",
+            "[==========] 1 test from 1 test suite ran. (0 ms total)\n",
+            "[  PASSED  ] 0 tests.\n",
+            "[  FAILED  ] 1 test, listed below:\n",
+            "[  FAILED  ] failed_test_suit_1.test1\n\n",
+            " 1 FAILED TEST\n",
         };
         mock.cmd_to_process_execs[execs.kTests].push_back(successful_gtest_exec);
         mock.cmd_to_process_execs[execs.kTests + " --gtest_filter='test_suit_1.test1'"].push_back(successful_single_gtest_exec);
@@ -506,13 +551,14 @@ TEST_F(CdtTest, StartAndDisplayHelp) {
         "tr<ind>\t\tKeep executing the task with the specified index until it fails\n"
         "d<ind>\t\tExecute the task with the specified index with a debugger attached\n"
         "o<ind>\t\tOpen the file link with the specified index in your code editor\n"
-        "s\t\tSearch through output of the last executed task with the specified regular expression\n"
+        "s\t\tSearch through output of the selected executed task with the specified regular expression\n"
         "g<ind>\t\tDisplay output of the specified google test\n"
         "gs<ind>\t\tSearch through output of the specified google test with the specified regular expression\n"
         "gt<ind>\t\tRe-run the google test with the specified index\n"
         "gtr<ind>\tKeep re-running the google test with the specified index until it fails\n"
         "gd<ind>\t\tRe-run the google test with the specified index with debugger attached\n"
         "gf<ind>\t\tRun google tests of the task with the specified index with a specified --gtest_filter\n"
+        "exec<ind>\tChange currently selected execution (gets reset to the most recent one after every new execution)\n"
         "h\t\tDisplay list of user commands\n";
     EXPECT_CDT_STARTED();
     // Display help on unknown command
@@ -1076,26 +1122,7 @@ TEST_F(CdtTest, StartExecuteGtestTaskWithPreTasksFailAttemptToRerunTestThatDoesN
 }
 
 TEST_F(CdtTest, StartExecuteGtestTaskWithPreTasksFailAndRerunFailedTest) {
-    ProcessExec first_test_rerun;
-    first_test_rerun.exit_code = 1;
-    first_test_rerun.output_lines = {
-        "Running main() from /lib/gtest_main.cc\n",
-        "Note: Google Test filter = failed_test_suit_1.test1\n",
-        "[==========] Running 1 test from 1 test suite.\n",
-        "[----------] Global test environment set-up.\n",
-        "[----------] 1 test from failed_test_suit_1\n",
-        "[ RUN      ] failed_test_suit_1.test1\n",
-        out_links,
-        out_test_error,
-        "[  FAILED  ] failed_test_suit_1.test1 (0 ms)\n",
-        "[----------] 1 test from failed_test_suit_1 (0 ms total)\n\n",
-        "[----------] Global test environment tear-down\n",
-        "[==========] 1 test from 1 test suite ran. (0 ms total)\n",
-        "[  PASSED  ] 0 tests.\n",
-        "[  FAILED  ] 1 test, listed below:\n",
-        "[  FAILED  ] failed_test_suit_1.test1\n\n",
-        " 1 FAILED TEST\n",
-    };
+    ProcessExec first_test_rerun = failed_rerun_gtest_exec;
     ProcessExec second_test_rerun;
     second_test_rerun.exit_code = 1;
     second_test_rerun.output_lines = {
@@ -1205,44 +1232,9 @@ TEST_F(CdtTest, StartExecuteGtestTaskWithPreTasksSucceedAndRerunOneOfTest) {
 }
 
 TEST_F(CdtTest, StartRepeatedlyExecuteGtestTaskWithPreTasksUntilItFailsAndRepeatedlyRerunFailedTestUntilItFails) {
-    ProcessExec successful_rerun;
-    successful_rerun.output_lines = {
-        "Running main() from /lib/gtest_main.cc\n",
-        "Note: Google Test filter = failed_test_suit_1.test1\n",
-        "[==========] Running 1 test from 1 test suite.\n",
-        "[----------] Global test environment set-up.\n",
-        "[----------] 1 test from failed_test_suit_1\n",
-        "[ RUN      ] failed_test_suit_1.test1\n",
-        out_links,
-        "[       OK ] failed_test_suit_1.test1 (0 ms)\n",
-        "[----------] 1 test from failed_test_suit_1 (0 ms total)\n\n",
-        "[----------] Global test environment tear-down\n",
-        "[==========] 1 test from 1 test suite ran. (0 ms total)\n",
-        "[  PASSED  ] 1 test.\n",
-    };
-    ProcessExec failed_rerun;
-    failed_rerun.exit_code = 1;
-    failed_rerun.output_lines = {
-        "Running main() from /lib/gtest_main.cc\n",
-        "Note: Google Test filter = failed_test_suit_1.test1\n",
-        "[==========] Running 1 test from 1 test suite.\n",
-        "[----------] Global test environment set-up.\n",
-        "[----------] 1 test from failed_test_suit_1\n",
-        "[ RUN      ] failed_test_suit_1.test1\n",
-        out_links,
-        out_test_error,
-        "[  FAILED  ] failed_test_suit_1.test1 (0 ms)\n",
-        "[----------] 1 test from failed_test_suit_1 (0 ms total)\n\n",
-        "[----------] Global test environment tear-down\n",
-        "[==========] 1 test from 1 test suite ran. (0 ms total)\n",
-        "[  PASSED  ] 0 tests.\n",
-        "[  FAILED  ] 1 test, listed below:\n",
-        "[  FAILED  ] failed_test_suit_1.test1\n\n",
-        " 1 FAILED TEST\n",
-    };
-    mock.cmd_to_process_execs[execs.kTests + " --gtest_filter='failed_test_suit_1.test1'"].push_back(successful_rerun);
-    mock.cmd_to_process_execs[execs.kTests + " --gtest_filter='failed_test_suit_1.test1'"].push_back(successful_rerun);
-    mock.cmd_to_process_execs[execs.kTests + " --gtest_filter='failed_test_suit_1.test1'"].push_back(failed_rerun);
+    mock.cmd_to_process_execs[execs.kTests + " --gtest_filter='failed_test_suit_1.test1'"].push_back(successful_rerun_gtest_exec);
+    mock.cmd_to_process_execs[execs.kTests + " --gtest_filter='failed_test_suit_1.test1'"].push_back(successful_rerun_gtest_exec);
+    mock.cmd_to_process_execs[execs.kTests + " --gtest_filter='failed_test_suit_1.test1'"].push_back(failed_rerun_gtest_exec);
     mock.cmd_to_process_execs[execs.kTests].push_back(successful_gtest_exec);
     mock.cmd_to_process_execs[execs.kTests].push_back(failed_gtest_exec);
     EXPECT_CDT_STARTED();
@@ -1753,4 +1745,281 @@ TEST_F(CdtTest, StartExecuteGtestTaskRerunOneOfItsTestsAndDisplayListOfOriginall
         "\x1B[35m'test_suit_1.test1' complete: return code: 0\x1B[0m\n"
     );
     EXPECT_CMD("g", OUT_LAST_EXECUTED_TESTS());
+}
+
+TEST_F(CdtTest, StartAndListExecutions) {
+    EXPECT_CDT_STARTED();
+    EXPECT_CMD("exec", "\x1B[32mNo task has been executed yet\x1B[0m\n");
+}
+
+TEST_F(CdtTest, StartExecuteTwoTasksAndListExecutions) {
+    std::string out_hello_world = "\x1B[35mRunning \"hello world!\"\x1B[0m\n"
+        "hello world!\n"
+        "\x1B[35m'hello world!' complete: return code: 0\x1B[0m\n";
+    std::string out_exec_list = "\x1B[32mExecution history:\x1B[0m\n"
+        "   2 03:00:01 \"hello world!\"\n"
+        "-> 1 03:00:02 \"hello world!\"\n";
+    EXPECT_CDT_STARTED();
+    EXPECT_CMD("t1", out_hello_world);
+    EXPECT_CMD("t1", out_hello_world);
+    EXPECT_CMD("exec", out_exec_list);
+    EXPECT_CMD("exec0", out_exec_list);
+    EXPECT_CMD("exec99", out_exec_list);
+}
+
+TEST_F(CdtTest, StartExecuteTwoTasksSelectFirstExecutionAndOpenFileLinksFromIt) {
+    std::deque<ProcessExec>& proc_execs = mock.cmd_to_process_execs[execs.kHelloWorld];
+    proc_execs.push_back(proc_execs.front());
+    proc_execs.front().output_lines = {OUT_LINKS_NOT_HIGHLIGHTED()};
+    EXPECT_CDT_STARTED();
+    EXPECT_CMD(
+        "t1",
+        "\x1B[35mRunning \"hello world!\"\x1B[0m\n"
+        OUT_LINKS()
+        "\x1B[35m'hello world!' complete: return code: 0\x1B[0m\n"
+    );
+    EXPECT_CMD(
+        "t1",
+        "\x1B[35mRunning \"hello world!\"\x1B[0m\n"
+        "hello world!\n"
+        "\x1B[35m'hello world!' complete: return code: 0\x1B[0m\n"
+    );
+    EXPECT_CMD("exec2", "\x1B[35mSelected execution \"hello world!\"\x1B[0m\n");
+    EXPECT_LAST_EXEC_OUTPUT_DISPLAYED_ON_LINK_INDEX_OUT_OF_BOUNDS();
+    EXPECT_OUTPUT_LINKS_TO_OPEN();
+}
+
+TEST_F(CdtTest, StartExecuteTwoTasksSelectFirstExecutionAndSearchItsOutput) {
+    std::deque<ProcessExec>& proc_execs = mock.cmd_to_process_execs[execs.kHelloWorld];
+    proc_execs.push_back(proc_execs.front());
+    proc_execs.front().output_lines = {OUT_LINKS_NOT_HIGHLIGHTED()};
+    EXPECT_CDT_STARTED();
+    EXPECT_CMD(
+        "t1",
+        "\x1B[35mRunning \"hello world!\"\x1B[0m\n"
+        OUT_LINKS()
+        "\x1B[35m'hello world!' complete: return code: 0\x1B[0m\n"
+    );
+    EXPECT_CMD(
+        "t1",
+        "\x1B[35mRunning \"hello world!\"\x1B[0m\n"
+        "hello world!\n"
+        "\x1B[35m'hello world!' complete: return code: 0\x1B[0m\n"
+    );
+    EXPECT_CMD("exec2", "\x1B[35mSelected execution \"hello world!\"\x1B[0m\n");
+    EXPECT_CMD(
+        "s\n(some|data)",
+        "\x1B[32mRegular expression: \x1B[0m"
+        "\x1B[35m2:\x1B[0m\x1B[32msome\x1B[0m random \x1B[32mdata\x1B[0m\n"
+        "\x1B[35m3:\x1B[0m\x1B[35m[o2] /d/e/f:15:32\x1B[0m \x1B[32msome\x1B[0mthing\n"
+    );
+}
+
+TEST_F(CdtTest, StartExecuteTwoGtestTasksSelectFirstExecutionAndViewGtestOutput) {
+    mock.cmd_to_process_execs[execs.kTests].push_back(failed_gtest_exec);
+    EXPECT_CDT_STARTED();
+    EXPECT_CMD(
+        "t8",
+        "\x1B[35mRunning \"run tests\"\x1B[0m\n"
+        OUT_TESTS_COMPLETED_SUCCESSFULLY()
+        "\x1B[35m'run tests' complete: return code: 0\x1B[0m\n"
+    );
+    EXPECT_CMD(
+        "t8",
+        "\x1B[35mRunning \"run tests\"\x1B[0m\n"
+        "\rTests completed: 1 of 3\rTests completed: 2 of 3\rTests completed: 3 of 3"
+        OUT_TESTS_FAILED()
+        "\x1B[31m'run tests' failed: return code: 1\x1B[0m\n"
+    );
+    EXPECT_CMD("exec2", "\x1B[35mSelected execution \"run tests\"\x1B[0m\n");
+    EXPECT_CMD("g0", OUT_LAST_EXECUTED_TESTS());
+    EXPECT_CMD("g99", OUT_LAST_EXECUTED_TESTS());
+    EXPECT_CMD("g", OUT_LAST_EXECUTED_TESTS());
+    EXPECT_CMD(
+        "g1",
+        "\x1B[32m\"test_suit_1.test1\" output:\x1B[0m\n"
+        OUT_LINKS()
+    );
+}
+
+TEST_F(CdtTest, StartExecuteTwoGtestTasksSelectFirstExecutionAndSearchGtestOutput) {
+    mock.cmd_to_process_execs[execs.kTests].push_back(failed_gtest_exec);
+    EXPECT_CDT_STARTED();
+    EXPECT_CMD(
+        "t8",
+        "\x1B[35mRunning \"run tests\"\x1B[0m\n"
+        OUT_TESTS_COMPLETED_SUCCESSFULLY()
+        "\x1B[35m'run tests' complete: return code: 0\x1B[0m\n"
+    );
+    EXPECT_CMD(
+        "t8",
+        "\x1B[35mRunning \"run tests\"\x1B[0m\n"
+        "\rTests completed: 1 of 3\rTests completed: 2 of 3\rTests completed: 3 of 3"
+        OUT_TESTS_FAILED()
+        "\x1B[31m'run tests' failed: return code: 1\x1B[0m\n"
+    );
+    EXPECT_CMD("exec2", "\x1B[35mSelected execution \"run tests\"\x1B[0m\n");
+    EXPECT_CMD("gs", OUT_LAST_EXECUTED_TESTS());
+    EXPECT_CMD("gs0", OUT_LAST_EXECUTED_TESTS());
+    EXPECT_CMD("gs99", OUT_LAST_EXECUTED_TESTS());
+    EXPECT_CMD(
+        "gs1\n(some|data)",
+        "\x1B[32mRegular expression: \x1B[0m"
+        "\x1B[35m2:\x1B[0m\x1B[32msome\x1B[0m random \x1B[32mdata\x1B[0m\n"
+        "\x1B[35m3:\x1B[0m/d/e/f:15:32 \x1B[32msome\x1B[0mthing\n"
+    );
+}
+
+TEST_F(CdtTest, StartExecuteTwoGtestTasksSelectFirstExecutionAndRerunGtest) {
+    mock.cmd_to_process_execs[execs.kTests].push_back(failed_gtest_exec);
+    EXPECT_CDT_STARTED();
+    EXPECT_CMD(
+        "t8",
+        "\x1B[35mRunning \"run tests\"\x1B[0m\n"
+        OUT_TESTS_COMPLETED_SUCCESSFULLY()
+        "\x1B[35m'run tests' complete: return code: 0\x1B[0m\n"
+    );
+    EXPECT_CMD(
+        "t8",
+        "\x1B[35mRunning \"run tests\"\x1B[0m\n"
+        "\rTests completed: 1 of 3\rTests completed: 2 of 3\rTests completed: 3 of 3"
+        OUT_TESTS_FAILED()
+        "\x1B[31m'run tests' failed: return code: 1\x1B[0m\n"
+    );
+    EXPECT_CMD("exec2", "\x1B[35mSelected execution \"run tests\"\x1B[0m\n");
+    EXPECT_CMD("gt", OUT_LAST_EXECUTED_TESTS());
+    EXPECT_CMD("gt0", OUT_LAST_EXECUTED_TESTS());
+    EXPECT_CMD("gt99", OUT_LAST_EXECUTED_TESTS());
+    EXPECT_CMD(
+        "gt1",
+        "\x1B[35mRunning \"test_suit_1.test1\"\x1B[0m\n"
+        OUT_LINKS()
+        "\x1B[35m'test_suit_1.test1' complete: return code: 0\x1B[0m\n"
+    );
+}
+
+TEST_F(CdtTest, StartExecuteTwoGtestTasksSelectFirstExecutionAndRerunGtestUntilItFails) {
+    mock.cmd_to_process_execs[execs.kTests + " --gtest_filter='failed_test_suit_1.test1'"].push_back(successful_rerun_gtest_exec);
+    mock.cmd_to_process_execs[execs.kTests + " --gtest_filter='failed_test_suit_1.test1'"].push_back(successful_rerun_gtest_exec);
+    mock.cmd_to_process_execs[execs.kTests + " --gtest_filter='failed_test_suit_1.test1'"].push_back(failed_rerun_gtest_exec);
+    mock.cmd_to_process_execs[execs.kTests].front() = failed_gtest_exec;
+    mock.cmd_to_process_execs[execs.kTests].push_back(successful_gtest_exec);
+    EXPECT_CDT_STARTED();
+    EXPECT_CMD(
+        "t8",
+        "\x1B[35mRunning \"run tests\"\x1B[0m\n"
+        "\rTests completed: 1 of 3\rTests completed: 2 of 3\rTests completed: 3 of 3"
+        OUT_TESTS_FAILED()
+        "\x1B[31m'run tests' failed: return code: 1\x1B[0m\n"
+    );
+    EXPECT_CMD(
+        "t8",
+        "\x1B[35mRunning \"run tests\"\x1B[0m\n"
+        OUT_TESTS_COMPLETED_SUCCESSFULLY()
+        "\x1B[35m'run tests' complete: return code: 0\x1B[0m\n"
+    );
+    EXPECT_CMD("exec2", "\x1B[35mSelected execution \"run tests\"\x1B[0m\n");
+    EXPECT_CMD("gtr", OUT_FAILED_TESTS());
+    EXPECT_CMD("gtr0", OUT_FAILED_TESTS());
+    EXPECT_CMD("gtr99", OUT_FAILED_TESTS());
+    std::string test_completed = "\x1B[35mRunning \"failed_test_suit_1.test1\"\x1B[0m\n"
+        OUT_LINKS()
+        "\x1B[35m'failed_test_suit_1.test1' complete: return code: 0\x1B[0m\n";
+    EXPECT_CMD(
+        "gtr1",
+        test_completed +
+        test_completed +
+        "\x1B[35mRunning \"failed_test_suit_1.test1\"\x1B[0m\n"
+        OUT_LINKS()
+        OUT_TEST_ERROR()
+        "\x1B[31m'failed_test_suit_1.test1' failed: return code: 1\x1B[0m\n"
+    );
+}
+
+TEST_F(CdtTest, StartExecuteTwoGtestTasksSelectFirstExecutionAndRerunGtestWithDebugger) {
+    EXPECT_DEBUGGER_CALL("tests --gtest_filter='failed_test_suit_1.test1'");
+    mock.cmd_to_process_execs[execs.kTests].front() = failed_gtest_exec;
+    mock.cmd_to_process_execs[execs.kTests].push_back(successful_gtest_exec);
+    EXPECT_CDT_STARTED();
+    EXPECT_CMD(
+        "t8",
+        "\x1B[35mRunning \"run tests\"\x1B[0m\n"
+        "\rTests completed: 1 of 3\rTests completed: 2 of 3\rTests completed: 3 of 3"
+        OUT_TESTS_FAILED()
+        "\x1B[31m'run tests' failed: return code: 1\x1B[0m\n"
+    );
+    EXPECT_CMD(
+        "t8",
+        "\x1B[35mRunning \"run tests\"\x1B[0m\n"
+        OUT_TESTS_COMPLETED_SUCCESSFULLY()
+        "\x1B[35m'run tests' complete: return code: 0\x1B[0m\n"
+    );
+    EXPECT_CMD("exec2", "\x1B[35mSelected execution \"run tests\"\x1B[0m\n");
+    EXPECT_CMD("gd", OUT_FAILED_TESTS());
+    EXPECT_CMD("gd0", OUT_FAILED_TESTS());
+    EXPECT_CMD("gd99", OUT_FAILED_TESTS());
+    EXPECT_CMD("gd1", "\x1B[35mStarting debugger for \"failed_test_suit_1.test1\"...\x1B[0m\n");
+}
+
+TEST_F(CdtTest, StartExecuteTaskTwiceSelectFirstExecutionExecuteAnotherTaskListExecutionsAndSeeLatestExecutionSelected) {
+    std::string out_hello_world = "\x1B[35mRunning \"hello world!\"\x1B[0m\n"
+        "hello world!\n"
+        "\x1B[35m'hello world!' complete: return code: 0\x1B[0m\n";
+    EXPECT_CDT_STARTED();
+    EXPECT_CMD("t1", out_hello_world);
+    EXPECT_CMD("t1", out_hello_world);
+    EXPECT_CMD("exec2", "\x1B[35mSelected execution \"hello world!\"\x1B[0m\n");
+    EXPECT_CMD(
+        "exec",
+        "\x1B[32mExecution history:\x1B[0m\n"
+        "-> 2 03:00:01 \"hello world!\"\n"
+        "   1 03:00:02 \"hello world!\"\n"
+    );
+    EXPECT_CMD("t1", out_hello_world);
+    EXPECT_CMD(
+        "exec",
+        "\x1B[32mExecution history:\x1B[0m\n"
+        "   3 03:00:01 \"hello world!\"\n"
+        "   2 03:00:02 \"hello world!\"\n"
+        "-> 1 03:00:03 \"hello world!\"\n"
+    );
+}
+
+TEST_F(CdtTest, StartExecuteGtestTaskTwiceExecuteNormalTask110TimesAndViewHistoryOf100ExecutionsThatIncludesOnlyOneLastGtestTask) {
+    EXPECT_CDT_STARTED();
+    for (int i = 0; i < 2; i++) {
+        EXPECT_CMD(
+            "t8",
+            "\x1B[35mRunning \"run tests\"\x1B[0m\n"
+            OUT_TESTS_COMPLETED_SUCCESSFULLY()
+            "\x1B[35m'run tests' complete: return code: 0\x1B[0m\n"
+        );
+    }
+    for (int i = 0; i < 100; i++) {
+        EXPECT_CMD(
+            "t1",
+            "\x1B[35mRunning \"hello world!\"\x1B[0m\n"
+            "hello world!\n"
+            "\x1B[35m'hello world!' complete: return code: 0\x1B[0m\n"
+        );
+    }
+    std::stringstream expected;
+    expected << "\x1B[32mExecution history:\x1B[0m\n";
+    expected << "   100 03:00:02 \"run tests\"\n";
+    int i = 99, sec = 4;
+    while (sec < 10) {
+        expected << "   " << i-- << " 03:00:0" << sec++ << " \"hello world!\"\n";
+    }
+    while (sec < 60) {
+        expected << "   " << i-- << " 03:00:" << sec++ << " \"hello world!\"\n";
+    }
+    sec = 0;
+    while (sec < 10) {
+        expected << "   " << i-- << " 03:01:0" << sec++ << " \"hello world!\"\n";
+    }
+    while (sec < 42) {
+        expected << "   " << i-- << " 03:01:" << sec++ << " \"hello world!\"\n";
+    }
+    expected << "-> 1 03:01:42 \"hello world!\"\n";
+    EXPECT_CMD("exec", expected.str());
 }

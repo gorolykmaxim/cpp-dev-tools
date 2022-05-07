@@ -1,8 +1,12 @@
 #include "cdt.h"
+#include <chrono>
+#include <cstddef>
 #include <cstdio>
 #include <cstdlib>
+#include <ctime>
 #include <filesystem>
 #include <functional>
+#include <iomanip>
 #include <ios>
 #include <iostream>
 #include <fstream>
@@ -13,9 +17,12 @@
 #include <sstream>
 #include <csignal>
 #include <string>
+#include <sys/_types/_time_t.h>
 #include <unistd.h>
 #include <regex>
 #include <unordered_map>
+#include <unordered_set>
+#include <vector>
 #include "json.hpp"
 #include "process.hpp"
 
@@ -33,26 +40,21 @@ const std::string kTemplateArgPlaceholder = "{}";
 const std::string kGtestTask = "__gtest";
 const std::string kGtestFilterArg = "--gtest_filter";
 
-template <typename T>
-T PushBackAndReturn(std::vector<T>& vec, T&& t) {
-    vec.push_back(t);
-    return t;
-}
-
 Cdt* global_cdt;
 std::vector<UserCommandDefinition> kUsrCmdDefs;
-const auto kTask = PushBackAndReturn(kUsrCmdDefs, {"t", "ind", "Execute the task with the specified index"});
-const auto kTaskRepeat = PushBackAndReturn(kUsrCmdDefs, {"tr", "ind", "Keep executing the task with the specified index until it fails"});
-const auto kDebug = PushBackAndReturn(kUsrCmdDefs, {"d", "ind", "Execute the task with the specified index with a debugger attached"});
-const auto kOpen = PushBackAndReturn(kUsrCmdDefs, {"o", "ind", "Open the file link with the specified index in your code editor"});
-const auto kSearch = PushBackAndReturn(kUsrCmdDefs, {"s", "", "Search through output of the last executed task with the specified regular expression"});
-const auto kGtest = PushBackAndReturn(kUsrCmdDefs, {"g", "ind", "Display output of the specified google test"});
-const auto kGtestSearch = PushBackAndReturn(kUsrCmdDefs, {"gs", "ind", "Search through output of the specified google test with the specified regular expression"});
-const auto kGtestRerun = PushBackAndReturn(kUsrCmdDefs, {"gt", "ind", "Re-run the google test with the specified index"});
-const auto kGtestRerunRepeat = PushBackAndReturn(kUsrCmdDefs, {"gtr", "ind", "Keep re-running the google test with the specified index until it fails"});
-const auto kGtestDebug = PushBackAndReturn(kUsrCmdDefs, {"gd", "ind", "Re-run the google test with the specified index with debugger attached"});
-const auto kGtestFilter = PushBackAndReturn(kUsrCmdDefs, {"gf", "ind", "Run google tests of the task with the specified index with a specified " + kGtestFilterArg});
-const auto kHelp = PushBackAndReturn(kUsrCmdDefs, {"h", "", "Display list of user commands"});
+const auto kTask = kUsrCmdDefs.emplace_back(UserCommandDefinition{"t", "ind", "Execute the task with the specified index"});
+const auto kTaskRepeat = kUsrCmdDefs.emplace_back(UserCommandDefinition{"tr", "ind", "Keep executing the task with the specified index until it fails"});
+const auto kDebug = kUsrCmdDefs.emplace_back(UserCommandDefinition{"d", "ind", "Execute the task with the specified index with a debugger attached"});
+const auto kOpen = kUsrCmdDefs.emplace_back(UserCommandDefinition{"o", "ind", "Open the file link with the specified index in your code editor"});
+const auto kSearch = kUsrCmdDefs.emplace_back(UserCommandDefinition{"s", "", "Search through output of the selected executed task with the specified regular expression"});
+const auto kGtest = kUsrCmdDefs.emplace_back(UserCommandDefinition{"g", "ind", "Display output of the specified google test"});
+const auto kGtestSearch = kUsrCmdDefs.emplace_back(UserCommandDefinition{"gs", "ind", "Search through output of the specified google test with the specified regular expression"});
+const auto kGtestRerun = kUsrCmdDefs.emplace_back(UserCommandDefinition{"gt", "ind", "Re-run the google test with the specified index"});
+const auto kGtestRerunRepeat = kUsrCmdDefs.emplace_back(UserCommandDefinition{"gtr", "ind", "Keep re-running the google test with the specified index until it fails"});
+const auto kGtestDebug = kUsrCmdDefs.emplace_back(UserCommandDefinition{"gd", "ind", "Re-run the google test with the specified index with debugger attached"});
+const auto kGtestFilter = kUsrCmdDefs.emplace_back(UserCommandDefinition{"gf", "ind", "Run google tests of the task with the specified index with a specified " + kGtestFilterArg});
+const auto kSelectExecution = kUsrCmdDefs.emplace_back(UserCommandDefinition{"exec", "ind", "Change currently selected execution (gets reset to the most recent one after every new execution)"});
+const auto kHelp = kUsrCmdDefs.emplace_back(UserCommandDefinition{"h", "", "Display list of user commands"});
 
 std::istream& OsApi::In() {
     return std::cin;
@@ -136,12 +138,15 @@ int OsApi::GetProcessExitCode(Entity e, std::unordered_map<Entity, std::unique_p
     return processes[e]->get_exit_status();
 }
 
+std::chrono::system_clock::time_point OsApi::TimeNow() {
+    return std::chrono::system_clock::now();
+}
+
 static Entity CreateEntity(Cdt& cdt) {
     return cdt.entity_seed++;
 }
 
 static void DestroyEntity(Entity e, Cdt& cdt) {
-    cdt.execs_to_run_in_order.erase(std::remove(cdt.execs_to_run_in_order.begin(), cdt.execs_to_run_in_order.end(), e), cdt.execs_to_run_in_order.end());
     cdt.task_ids.erase(e);
     cdt.processes.erase(e);
     cdt.execs.erase(e);
@@ -164,18 +169,9 @@ static bool Find(Entity e, const std::unordered_set<Entity>& components) {
     return components.count(e) > 0;
 }
 
-
 template <typename T>
-static void MoveComponent(Entity source, Entity target, std::unordered_map<Entity, T>& components) {
-    if (Find(source, components)) {
-        components[target] = std::move(components[source]);
-        components.erase(source);
-    }
-}
-
-template <typename T>
-static void DestroyComponents(const std::unordered_set<Entity>& es, std::unordered_map<Entity, T>& components) {
-    for (auto e: es) {
+static void DestroyComponents(const std::vector<Entity>& es, std::unordered_map<Entity, T>& components) {
+    for (Entity e: es) {
         components.erase(e);
     }
 }
@@ -448,7 +444,7 @@ static UserCommand ParseUserCommand(const std::string& str) {
 }
 
 template<typename T>
-static bool IsCmdArgInRange(const UserCommand& cmd, const std::vector<T>& range) {
+static bool IsCmdArgInRange(const UserCommand& cmd, const T& range) {
     return cmd.arg > 0 && cmd.arg <= range.size();
 }
 
@@ -520,8 +516,9 @@ static void TerminateCurrentExecutionOrExit(int signal) {
 
 static void ExecuteRestartTask(Cdt& cdt) {
     if (cdt.execs_to_run_in_order.empty() || !cdt.processes.empty()) return;
-    const auto exec = cdt.execs_to_run_in_order.front();
+    Entity exec = cdt.execs_to_run_in_order.front();
     if (cdt.tasks[cdt.task_ids[exec]].command != "__restart") return;
+    cdt.execs_to_run_in_order.pop_front();
     DestroyEntity(exec, cdt);
     cdt.os->Out() << kTcMagenta << "Restarting program..." << kTcReset << std::endl;
     const auto cmd_str = cdt.last_usr_cmd.cmd + std::to_string(cdt.last_usr_cmd.arg);
@@ -545,7 +542,11 @@ static void ScheduleGtestExecutions(Cdt& cdt) {
         const auto& task = cdt.tasks[cdt.task_ids[exec]];
         if (task.command.find(kGtestTask) == 0) {
             if (!Find(exec, cdt.execs)) {
-                cdt.execs[exec] = Execution{task.name, GtestTaskToShellCommand(task)};
+                Execution e;
+                e.name = task.name;
+                e.shell_command = GtestTaskToShellCommand(task);
+                e.is_pinned = true;
+                cdt.execs[exec] = e;
             }
             if (!Find(exec, cdt.gtest_execs)) {
                 cdt.gtest_execs[exec] = GtestExecution{};
@@ -584,8 +585,9 @@ static std::function<void()> HandleExit(moodycamel::BlockingConcurrentQueue<Exec
 
 static void StartNextExecution(Cdt& cdt) {
     if (cdt.execs_to_run_in_order.empty() || !cdt.processes.empty()) return;
-    const auto exec_entity = cdt.execs_to_run_in_order.front();
-    const auto& exec = cdt.execs[exec_entity];
+    Entity exec_entity = cdt.execs_to_run_in_order.front();
+    Execution& exec = cdt.execs[exec_entity];
+    exec.start_time = cdt.os->TimeNow();
     cdt.os->StartProcess(
         exec_entity,
         exec.shell_command,
@@ -744,73 +746,89 @@ static void PrintGtestOutput(ExecutionOutput& out, const std::vector<std::string
     out_buffer.insert(out_buffer.end(), gtest_buffer.begin() + test.buffer_start, gtest_buffer.begin() + test.buffer_end);
 }
 
-static GtestTest* FindGtestByCmdArg(const UserCommand& cmd, GtestExecution* exec, Cdt& cdt) {
-    if (!exec || exec->test_count == 0) {
-        cdt.os->Out() << kTcGreen << "No google tests have been executed yet." << kTcReset << std::endl;
-    } else if (exec->failed_test_ids.empty()) {
-        if (!IsCmdArgInRange(cmd, exec->tests)) {
-            cdt.os->Out() << kTcGreen << "Last executed tests " << exec->total_duration << ":" << kTcReset << std::endl;
-            std::vector<size_t> ids(exec->tests.size());
-            std::iota(ids.begin(), ids.end(), 0);
-            PrintGtestList(ids, exec->tests, cdt);
-        } else {
-            return &exec->tests[cmd.arg - 1];
-        }
-    } else {
-        if (!IsCmdArgInRange(cmd, exec->failed_test_ids)) {
-            PrintFailedGtestList(*exec, cdt);
-        } else {
-            return &exec->tests[exec->failed_test_ids[cmd.arg - 1]];
+static bool FindGtestByCmdArgInLastEntityWithGtestExec(const UserCommand& cmd, Cdt& cdt, Entity& entity, GtestExecution& exec, GtestTest& test) {
+    for (size_t i = cdt.selected_exec_index; i < cdt.exec_history.size(); i++) {
+        entity = cdt.exec_history[i];
+        const auto it = cdt.gtest_execs.find(entity);
+        if (it != cdt.gtest_execs.end()) {
+            exec = it->second;
+            break;
         }
     }
-    return nullptr;
+    if (exec.test_count == 0) {
+        cdt.os->Out() << kTcGreen << "No google tests have been executed yet." << kTcReset << std::endl;
+    } else if (exec.failed_test_ids.empty()) {
+        if (!IsCmdArgInRange(cmd, exec.tests)) {
+            cdt.os->Out() << kTcGreen << "Last executed tests " << exec.total_duration << ":" << kTcReset << std::endl;
+            std::vector<size_t> ids(exec.tests.size());
+            std::iota(ids.begin(), ids.end(), 0);
+            PrintGtestList(ids, exec.tests, cdt);
+        } else {
+            test = exec.tests[cmd.arg - 1];
+            return true;
+        }
+    } else {
+        if (!IsCmdArgInRange(cmd, exec.failed_test_ids)) {
+            PrintFailedGtestList(exec, cdt);
+        } else {
+            test = exec.tests[exec.failed_test_ids[cmd.arg - 1]];
+            return true;
+        }
+    }
+    return false;
 }
 
 static void DisplayGtestOutput(Cdt& cdt) {
     if (!AcceptUsrCmd(kGtest, cdt.last_usr_cmd)) return;
-    const auto last_gtest_exec = Find(cdt.last_entity, cdt.gtest_execs);
-    const auto last_exec_output = Find(cdt.last_entity, cdt.exec_outputs);
-    const auto& gtest_buffer = cdt.text_buffers[TextBufferType::kGtest][cdt.last_entity];
-    auto& out_buffer = cdt.text_buffers[TextBufferType::kOutput][cdt.last_entity];
-    const auto test = FindGtestByCmdArg(cdt.last_usr_cmd, last_gtest_exec, cdt);
-    if (last_gtest_exec && last_exec_output && test) {
-        PrintGtestOutput(*last_exec_output, gtest_buffer, out_buffer, *test, last_gtest_exec->failed_test_ids.empty() ? kTcGreen : kTcRed);
+    Entity entity;
+    GtestExecution gtest_exec;
+    GtestTest test;
+    if (!FindGtestByCmdArgInLastEntityWithGtestExec(cdt.last_usr_cmd, cdt, entity, gtest_exec, test)) {
+        return;
     }
+    ExecutionOutput& exec_output = cdt.exec_outputs[entity];
+    const std::vector<std::string>& gtest_buffer = cdt.text_buffers[TextBufferType::kGtest][entity];
+    std::vector<std::string>& out_buffer = cdt.text_buffers[TextBufferType::kOutput][entity];
+    PrintGtestOutput(exec_output, gtest_buffer, out_buffer, test, gtest_exec.failed_test_ids.empty() ? kTcGreen : kTcRed);
 }
 
 static void SearchThroughGtestOutput(Cdt& cdt) {
     if (!AcceptUsrCmd(kGtestSearch, cdt.last_usr_cmd)) return;
-    const auto last_gtest_exec = Find(cdt.last_entity, cdt.gtest_execs);
-    const auto test = FindGtestByCmdArg(cdt.last_usr_cmd, last_gtest_exec, cdt);
-    if (test) {
-        cdt.text_buffer_searchs[cdt.last_entity] = TextBufferSearch{TextBufferType::kGtest, test->buffer_start, test->buffer_end};
+    Entity entity;
+    GtestExecution gtest_exec;
+    GtestTest test;
+    if (!FindGtestByCmdArgInLastEntityWithGtestExec(cdt.last_usr_cmd, cdt, entity, gtest_exec, test)) {
+        return;
     }
+    cdt.text_buffer_searchs[entity] = TextBufferSearch{TextBufferType::kGtest, test.buffer_start, test.buffer_end};
 }
 
 static void RerunGtest(Cdt& cdt) {
     if (!AcceptUsrCmd(kGtestRerun, cdt.last_usr_cmd) && !AcceptUsrCmd(kGtestRerunRepeat, cdt.last_usr_cmd) && !AcceptUsrCmd(kGtestDebug, cdt.last_usr_cmd)) return;
-    const auto last_gtest_exec = Find(cdt.last_entity, cdt.gtest_execs);
-    const auto gtest_task_id = Find(cdt.last_entity, cdt.task_ids);
-    const auto test = FindGtestByCmdArg(cdt.last_usr_cmd, last_gtest_exec, cdt);
-    if (last_gtest_exec && gtest_task_id && test) {
-        for (const auto& pre_task_id: cdt.pre_tasks[*gtest_task_id]) {
-            const auto pre_task_exec = CreateEntity(cdt);
-            cdt.task_ids[pre_task_exec] = pre_task_id;
-            cdt.execs_to_run_in_order.push_back(pre_task_exec);
-        }
-        const auto exec = CreateEntity(cdt);
-        cdt.task_ids[exec] = *gtest_task_id;
-        cdt.execs[exec] = Execution{test->name, GtestTaskToShellCommand(cdt.tasks[*gtest_task_id], test->name)};
-        cdt.gtest_execs[exec] = GtestExecution{true};
-        cdt.stream_output.insert(exec);
-        if (kGtestRerunRepeat.cmd == cdt.last_usr_cmd.cmd) {
-            cdt.repeat_until_fail.insert(exec);
-        }
-        if (kGtestDebug.cmd == cdt.last_usr_cmd.cmd) {
-            cdt.debug.insert(exec);
-        }
-        cdt.execs_to_run_in_order.push_back(exec);
+    Entity entity;
+    GtestExecution gtest_exec;
+    GtestTest test;
+    if (!FindGtestByCmdArgInLastEntityWithGtestExec(cdt.last_usr_cmd, cdt, entity, gtest_exec, test)) {
+        return;
     }
+    size_t gtest_task_id = cdt.task_ids[entity];
+    for (const auto& pre_task_id: cdt.pre_tasks[gtest_task_id]) {
+        const auto pre_task_exec = CreateEntity(cdt);
+        cdt.task_ids[pre_task_exec] = pre_task_id;
+        cdt.execs_to_run_in_order.push_back(pre_task_exec);
+    }
+    const auto exec = CreateEntity(cdt);
+    cdt.task_ids[exec] = gtest_task_id;
+    cdt.execs[exec] = Execution{test.name, GtestTaskToShellCommand(cdt.tasks[gtest_task_id], test.name)};
+    cdt.gtest_execs[exec] = GtestExecution{true};
+    cdt.stream_output.insert(exec);
+    if (kGtestRerunRepeat.cmd == cdt.last_usr_cmd.cmd) {
+        cdt.repeat_until_fail.insert(exec);
+    }
+    if (kGtestDebug.cmd == cdt.last_usr_cmd.cmd) {
+        cdt.debug.insert(exec);
+    }
+    cdt.execs_to_run_in_order.push_back(exec);
 }
 
 static void ScheduleGtestTaskWithFilter(Cdt& cdt) {
@@ -881,14 +899,22 @@ static void RestartRepeatingGtestOnSuccess(Cdt& cdt) {
 }
 
 static void FinishGtestExecution(Cdt& cdt) {
-    for (const auto& proc: cdt.processes) {
-        const auto gtest_exec = Find(proc.first, cdt.gtest_execs);
-        if (gtest_exec && cdt.execs[proc.first].state != ExecutionState::kRunning && !gtest_exec->rerun_of_single_test) {
-            MoveComponent(proc.first, cdt.last_entity, cdt.task_ids);
-            MoveComponent(proc.first, cdt.last_entity, cdt.text_buffers[TextBufferType::kGtest]);
-            MoveComponent(proc.first, cdt.last_entity, cdt.gtest_execs);
+    std::vector<Entity> to_destroy;
+    for (auto& [entity, gtest_exec]: cdt.gtest_execs) {
+        if (cdt.execs[entity].state == ExecutionState::kRunning) {
+            continue;
+        }
+        if (gtest_exec.rerun_of_single_test) {
+            to_destroy.push_back(entity);
+        } else if (Find(entity, cdt.processes)) {
+            for (Entity& old_entity: cdt.exec_history) {
+                if (Find(old_entity, cdt.gtest_execs)) {
+                    cdt.execs[old_entity].is_pinned = false;
+                }
+            }
         }
     }
+    DestroyComponents(to_destroy, cdt.gtest_execs);
 }
 
 static void StreamExecutionOutput(Cdt& cdt) {
@@ -958,39 +984,64 @@ static void DisplayExecutionResult(Cdt& cdt) {
 }
 
 static void RestartRepeatingExecutionOnSuccess(Cdt& cdt) {
-    std::unordered_set<Entity> to_destroy;
+    std::vector<Entity> to_destroy;
     for (const auto& proc: cdt.processes) {
         const auto& exec = cdt.execs[proc.first];
         if (exec.state == ExecutionState::kComplete && Find(proc.first, cdt.repeat_until_fail)) {
             cdt.execs[proc.first] = Execution{exec.name, exec.shell_command};
             cdt.text_buffers[TextBufferType::kOutput][proc.first].clear();
-            to_destroy.insert(proc.first);
+            to_destroy.push_back(proc.first);
         }
     }
     DestroyComponents(to_destroy, cdt.processes);
 }
 
 static void FinishTaskExecution(Cdt& cdt) {
-    std::unordered_set<Entity> to_destroy;
+    std::vector<Entity> to_destroy;
+    std::vector<Entity> processes_to_remove;
     for (auto& proc: cdt.processes) {
         const auto& exec = cdt.execs[proc.first];
         if (exec.state != ExecutionState::kRunning) {
+            cdt.execs_to_run_in_order.pop_front();
+            cdt.exec_history.push_front(proc.first);
+            cdt.selected_exec_index = 0;
             if (exec.state == ExecutionState::kFailed) {
-                to_destroy.insert(cdt.execs_to_run_in_order.begin(), cdt.execs_to_run_in_order.end());
+                to_destroy.insert(to_destroy.begin(), cdt.execs_to_run_in_order.begin(), cdt.execs_to_run_in_order.end());
+                cdt.execs_to_run_in_order.clear();
             }
-            to_destroy.insert(proc.first);
-            MoveComponent(proc.first, cdt.last_entity, cdt.exec_outputs);
-            MoveComponent(proc.first, cdt.last_entity, cdt.text_buffers[TextBufferType::kOutput]);
+            processes_to_remove.push_back(proc.first);
         }
     }
     for (const auto e: to_destroy) {
         DestroyEntity(e, cdt);
     }
+    DestroyComponents(processes_to_remove, cdt.processes);
+}
+
+static void RemoveOldExecutionsFromHistory(Cdt& cdt) {
+    static const size_t kMaxHistoryLength = 100;
+    std::vector<size_t> to_destroy;
+    for (size_t i = cdt.exec_history.size() - 1; cdt.exec_history.size() - to_destroy.size() > kMaxHistoryLength; i--) {
+        if (!cdt.execs[cdt.exec_history[i]].is_pinned) {
+            to_destroy.push_back(i);
+        }
+    }
+    for (size_t i: to_destroy) {
+        Entity entity = cdt.exec_history[i];
+        cdt.exec_history.erase(cdt.exec_history.begin() + i);
+        DestroyEntity(entity, cdt);
+    }
 }
 
 static void OpenFileLink(Cdt& cdt) {
     if (!AcceptUsrCmd(kOpen, cdt.last_usr_cmd)) return;
-    const auto exec_output = Find(cdt.last_entity, cdt.exec_outputs);
+    ExecutionOutput* exec_output = nullptr;
+    const std::vector<std::string>* buffer = nullptr;
+    if (cdt.selected_exec_index < cdt.exec_history.size()) {
+        Entity entity = cdt.exec_history[cdt.selected_exec_index];
+        exec_output = &cdt.exec_outputs[entity];
+        buffer = &cdt.text_buffers[TextBufferType::kOutput][entity];
+    }
     if (cdt.open_in_editor_cmd.str.empty()) {
         WarnUserConfigPropNotSpecified(kOpenInEditorCommandProperty, cdt);
     } else if (!exec_output || exec_output->file_links.empty()) {
@@ -1002,7 +1053,7 @@ static void OpenFileLink(Cdt& cdt) {
             cdt.os->ExecProcess(shell_command);
         } else {
             cdt.os->Out() << kTcGreen << "Last execution output:" << kTcReset << std::endl;
-            for (const auto& line: cdt.text_buffers[TextBufferType::kOutput][cdt.last_entity]) {
+            for (const auto& line: *buffer) {
                 cdt.os->Out() << line << std::endl;
             }
         }
@@ -1011,16 +1062,17 @@ static void OpenFileLink(Cdt& cdt) {
 
 static void SearchThroughLastExecutionOutput(Cdt& cdt) {
     if (!AcceptUsrCmd(kSearch, cdt.last_usr_cmd)) return;
-    if (!Find(cdt.last_entity, cdt.exec_outputs)) {
+    if (cdt.selected_exec_index >= cdt.exec_history.size()) {
         cdt.os->Out() << kTcGreen << "No task has been executed yet" << kTcReset << std::endl;
     } else {
-        const auto& buffer = cdt.text_buffers[TextBufferType::kOutput][cdt.last_entity];
-        cdt.text_buffer_searchs[cdt.last_entity] = TextBufferSearch{TextBufferType::kOutput, 0, buffer.size()};
+        Entity entity = cdt.exec_history[cdt.selected_exec_index];
+        size_t buffer_size = cdt.text_buffers[TextBufferType::kOutput][entity].size();
+        cdt.text_buffer_searchs[entity] = TextBufferSearch{TextBufferType::kOutput, 0, buffer_size};
     }
 }
 
 static void SearchThroughTextBuffer(Cdt& cdt) {
-    std::unordered_set<Entity> to_destroy;
+    std::vector<Entity> to_destroy;
     for (const auto& it: cdt.text_buffer_searchs) {
         const auto input = ReadInputFromStdin("Regular expression: ", cdt);
         const auto& search = it.second;
@@ -1059,7 +1111,7 @@ static void SearchThroughTextBuffer(Cdt& cdt) {
         } catch (const std::regex_error& e) {
             cdt.os->Out() << kTcRed << "Invalid regular expression '" << input << "': " << e.what() << kTcReset << std::endl;
         }
-        to_destroy.insert(it.first);
+        to_destroy.push_back(it.first);
     }
     DestroyComponents(to_destroy, cdt.text_buffer_searchs);
 }
@@ -1081,15 +1133,43 @@ static void ValidateIfDebuggerAvailable(Cdt& cdt) {
 
 static void StartNextExecutionWithDebugger(Cdt& cdt) {
     if (cdt.execs_to_run_in_order.empty() || !cdt.processes.empty()) return;
-    const auto exec_entity = cdt.execs_to_run_in_order.front();
+    Entity exec_entity = cdt.execs_to_run_in_order.front();
     if (!Find(exec_entity, cdt.debug)) return;
-    const auto& exec = cdt.execs[exec_entity];
-    const auto debug_cmd = FormatTemplate(cdt.debug_cmd, exec.shell_command);
-    const auto cmds_to_exec = "cd " + cdt.os->GetCurrentPath().string() + " && " + debug_cmd;
-    const auto shell_cmd = FormatTemplate(cdt.execute_in_new_terminal_tab_cmd, cmds_to_exec);
+    cdt.execs_to_run_in_order.pop_front();
+    cdt.exec_history.push_front(exec_entity);
+    cdt.selected_exec_index = 0;
+    Execution& exec = cdt.execs[exec_entity];
+    exec.start_time = cdt.os->TimeNow();
+    exec.state = ExecutionState::kComplete;
+    std::string debug_cmd = FormatTemplate(cdt.debug_cmd, exec.shell_command);
+    std::string cmds_to_exec = "cd " + cdt.os->GetCurrentPath().string() + " && " + debug_cmd;
+    std::string shell_cmd = FormatTemplate(cdt.execute_in_new_terminal_tab_cmd, cmds_to_exec);
     cdt.os->Out() << kTcMagenta << "Starting debugger for \"" << exec.name << "\"..." << kTcReset << std::endl;
     cdt.os->ExecProcess(shell_cmd);
-    DestroyEntity(exec_entity, cdt);
+}
+
+static void ChangeSelectedExecution(Cdt& cdt) {
+    static const std::string kCurrentIcon = "->";
+    if (!AcceptUsrCmd(kSelectExecution, cdt.last_usr_cmd)) return;
+    if (cdt.exec_history.empty()) {
+        cdt.os->Out() << kTcGreen << "No task has been executed yet" << kTcReset << std::endl;
+    } else if (!IsCmdArgInRange(cdt.last_usr_cmd, cdt.exec_history)) {
+        cdt.os->Out() << kTcGreen << "Execution history:" << kTcReset << std::endl;
+        for (int i = cdt.exec_history.size() - 1; i >= 0; i--) {
+            std::stringstream line;
+            Execution& exec = cdt.execs[cdt.exec_history[i]];
+            line << (i == cdt.selected_exec_index ? kCurrentIcon : std::string(kCurrentIcon.size(), ' ')) << ' ';
+            line << i + 1 << ' ';
+            std::time_t time = std::chrono::system_clock::to_time_t(exec.start_time);
+            line << std::put_time(std::localtime(&time), "%T") << ' ';
+            line << '"' << exec.name << '"';
+            cdt.os->Out() << line.str() << std::endl;
+        }
+    } else {
+        cdt.selected_exec_index = cdt.last_usr_cmd.arg - 1;
+        Entity entity = cdt.exec_history[cdt.selected_exec_index];
+        cdt.os->Out() << kTcMagenta << "Selected execution \"" << cdt.execs[entity].name << '"' << kTcReset << std::endl;
+    }
 }
 
 static void PromptUserToAskForHelp(Cdt& cdt) {
@@ -1112,7 +1192,6 @@ static void DisplayHelp(const std::vector<UserCommandDefinition>& defs, Cdt& cdt
 bool InitCdt(int argc, const char **argv, Cdt &cdt) {
     global_cdt = &cdt;
     cdt.cdt_executable = argv[0];
-    cdt.last_entity = CreateEntity(cdt);
     InitExampleUserConfig(cdt);
     ReadArgv(argc, argv, cdt);
     ReadUserConfig(cdt);
@@ -1140,6 +1219,7 @@ void ExecCdtSystems(Cdt &cdt) {
     SearchThroughGtestOutput(cdt);
     RerunGtest(cdt);
     ScheduleGtestTaskWithFilter(cdt);
+    ChangeSelectedExecution(cdt);
     DisplayHelp(kUsrCmdDefs, cdt);
     SearchThroughTextBuffer(cdt);
     ExecuteRestartTask(cdt);
@@ -1159,4 +1239,5 @@ void ExecCdtSystems(Cdt &cdt) {
     RestartRepeatingExecutionOnSuccess(cdt);
     FinishGtestExecution(cdt);
     FinishTaskExecution(cdt);
+    RemoveOldExecutionsFromHistory(cdt);
 }
