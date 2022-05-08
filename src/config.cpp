@@ -1,4 +1,8 @@
+#include <cstddef>
+#include <filesystem>
 #include <sstream>
+#include <string>
+#include <vector>
 
 #include "config.h"
 #include "json.hpp"
@@ -8,7 +12,7 @@ static bool ReadProperty(const nlohmann::json& json, const std::string& name, T&
                          bool is_optional, const std::string& err_prefix, const std::string& err_suffix,
                          std::vector<std::string>& errors, std::function<bool()> validate_result = [] {return true;}) {
     auto it = json.find(name);
-    const auto err_msg = err_prefix + "'" + name + "': " + err_suffix;
+    std::string err_msg = err_prefix + "'" + name + "': " + err_suffix;
     if (it == json.end()) {
         if (!is_optional) {
             errors.emplace_back(err_msg);
@@ -31,10 +35,10 @@ static bool ReadProperty(const nlohmann::json& json, const std::string& name, T&
 
 static void PreTaskNamesToIndexes(const std::vector<std::string>& pre_task_names, const std::vector<nlohmann::json>& tasks_json,
                                   std::vector<size_t>& pre_tasks, const std::string& err_prefix, std::vector<std::string>& errors) {
-    for (const auto& pre_task_name: pre_task_names) {
-        auto pre_task_id = -1;
-        for (auto i = 0; i < tasks_json.size(); i++) {
-            const auto& another_task = tasks_json[i];
+    for (const std::string& pre_task_name: pre_task_names) {
+        int pre_task_id = -1;
+        for (int i = 0; i < tasks_json.size(); i++) {
+            const nlohmann::json& another_task = tasks_json[i];
             const auto& another_task_name = another_task.find("name");
             if (another_task_name != another_task.end() && *another_task_name == pre_task_name) {
                 pre_task_id = i;
@@ -55,7 +59,7 @@ bool ReadArgv(int argc, const char** argv, Cdt& cdt) {
         return false;
     }
     cdt.tasks_config_path = std::filesystem::absolute(argv[1]);
-    const auto& config_dir_path = cdt.tasks_config_path.parent_path();
+    std::filesystem::path config_dir_path = cdt.tasks_config_path.parent_path();
     cdt.os->SetCurrentPath(config_dir_path);
     return true;
 }
@@ -110,7 +114,7 @@ void InitExampleUserConfig(Cdt& cdt) {
 
 static std::function<bool()> ParseTemplateString(TemplateString& temp_str) {
     return [&temp_str] () {
-        const auto pos = temp_str.str.find(kTemplateArgPlaceholder);
+        std::string::size_type pos = temp_str.str.find(kTemplateArgPlaceholder);
         if (pos == std::string::npos) {
             return false;
         } else {
@@ -147,10 +151,10 @@ void ReadTasksConfig(Cdt& cdt) {
     std::vector<std::vector<size_t>> direct_pre_tasks(tasks_json.size());
     cdt.pre_tasks = std::vector<std::vector<size_t>>(tasks_json.size());
     // Initialize tasks with their direct "pre_tasks" dependencies
-    for (auto i = 0; i < tasks_json.size(); i++) {
+    for (int i = 0; i < tasks_json.size(); i++) {
         Task new_task;
-        const auto& task_json = tasks_json[i];
-        const auto err_prefix = "task #" + std::to_string(i + 1) + ": ";
+        nlohmann::json& task_json = tasks_json[i];
+        std::string err_prefix = "task #" + std::to_string(i + 1) + ": ";
         ReadProperty(task_json, "name", new_task.name, false, err_prefix, "must be a string", config_errors);
         ReadProperty(task_json, "command", new_task.command, false, err_prefix, "must be a string", config_errors);
         std::vector<std::string> pre_task_names;
@@ -160,24 +164,24 @@ void ReadTasksConfig(Cdt& cdt) {
         cdt.tasks.push_back(new_task);
     }
     // Transform the "pre_tasks" dependency graph of each task into a flat vector of effective pre_tasks.
-    for (auto i = 0; i < cdt.tasks.size(); i++) {
-        const auto& primary_task_name = cdt.tasks[i].name;
-        auto& pre_tasks = cdt.pre_tasks[i];
+    for (int i = 0; i < cdt.tasks.size(); i++) {
+        std::string& primary_task_name = cdt.tasks[i].name;
+        std::vector<size_t>& pre_tasks = cdt.pre_tasks[i];
         std::stack<size_t> to_visit;
         std::vector<size_t> task_call_stack;
         to_visit.push(i);
         task_call_stack.push_back(i);
         while (!to_visit.empty()) {
-            const auto task_id = to_visit.top();
-            const auto& pre_pre_tasks = direct_pre_tasks[task_id];
+            size_t task_id = to_visit.top();
+            std::vector<size_t>& pre_pre_tasks = direct_pre_tasks[task_id];
             // We are visiting each task with non-empty "pre_tasks" twice, so when we get to a task the second time - the
             // task should already be on top of the task_call_stack. If that's the case - don't push the task to stack
             // second time.
             if (task_call_stack.back() != task_id) {
                 task_call_stack.push_back(task_id);
             }
-            auto all_children_visited = true;
-            for (const auto& child: pre_pre_tasks) {
+            bool all_children_visited = true;
+            for (size_t child: pre_pre_tasks) {
                 if (std::find(pre_tasks.begin(), pre_tasks.end(), child) == pre_tasks.end()) {
                     all_children_visited = false;
                     break;
@@ -195,7 +199,7 @@ void ReadTasksConfig(Cdt& cdt) {
                 if (std::count(task_call_stack.begin(), task_call_stack.end(), task_id) > 1) {
                     std::stringstream err;
                     err << "task '" << primary_task_name << "' has a circular dependency in it's 'pre_tasks':\n";
-                    for (auto j = 0; j < task_call_stack.size(); j++) {
+                    for (int j = 0; j < task_call_stack.size(); j++) {
                         err << cdt.tasks[task_call_stack[j]].name;
                         if (j + 1 < task_call_stack.size()) {
                             err << " -> ";
@@ -216,7 +220,7 @@ void ReadTasksConfig(Cdt& cdt) {
 bool PrintErrors(const Cdt& cdt) {
     if (cdt.config_errors.empty()) return false;
     cdt.os->Err() << kTcRed;
-    for (const auto& e: cdt.config_errors) {
+    for (const std::string& e: cdt.config_errors) {
         cdt.os->Err() << e << std::endl;
     }
     cdt.os->Err() << kTcReset;
