@@ -14,8 +14,8 @@ void InitHelp(Cdt& cdt) {
 static UserCommand ParseUserCommand(const std::string& str) {
     std::stringstream chars;
     std::stringstream digits;
-    for (auto i = 0; i < str.size(); i++) {
-        auto c = str[i];
+    for (int i = 0; i < str.size(); i++) {
+        char c = str[i];
         if (std::isspace(c)) {
             continue;
         }
@@ -33,7 +33,7 @@ static UserCommand ParseUserCommand(const std::string& str) {
 
 void ReadUserCommandFromStdin(Cdt& cdt) {
     if (!WillWaitForInput(cdt)) return;
-    const auto input = ReadInputFromStdin("(cdt) ", cdt);
+    std::string input = ReadInputFromStdin("(cdt) ", cdt);
     if (input.empty()) {
         cdt.last_usr_cmd.executed = false;
     } else {
@@ -42,7 +42,7 @@ void ReadUserCommandFromStdin(Cdt& cdt) {
 }
 
 void ReadUserCommandFromEnv(Cdt& cdt) {
-    const auto str = cdt.os->GetEnv(kEnvVarLastCommand);
+    std::string str = cdt.os->GetEnv(kEnvVarLastCommand);
     if (!str.empty()) {
         cdt.last_usr_cmd = ParseUserCommand(str);
     }
