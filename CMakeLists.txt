@@ -19,7 +19,7 @@ add_subdirectory(lib/nlohmann-json)
 add_subdirectory(lib/googletest EXCLUDE_FROM_ALL)
 
 add_library(cdt STATIC
-    include/cdt.h
+    src/cdt.h
     src/cdt.cpp
     src/os-api.cpp
     src/common.h
@@ -34,7 +34,7 @@ add_library(cdt STATIC
     src/output.cpp
     src/execution.h
     src/execution.cpp)
-target_include_directories(cdt PUBLIC include PRIVATE src PUBLIC lib/tiny-process-library PUBLIC lib/nlohmann_json PUBLIC lib/cameron314_concurrentqueue)
+target_include_directories(cdt PUBLIC src PUBLIC lib/tiny-process-library PUBLIC lib/nlohmann_json PUBLIC lib/cameron314_concurrentqueue)
 target_link_libraries(cdt tiny-process-library nlohmann_json cameron314_concurrentqueue)
 
 add_executable(${PROJECT_NAME} src/main.cpp)
