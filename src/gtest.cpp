@@ -1,6 +1,10 @@
+#include <cstddef>
 #include <numeric>
 #include <sstream>
+#include <string>
+#include <vector>
 
+#include "cdt.h"
 #include "gtest.h"
 #include "common.h"
 
@@ -21,7 +25,7 @@ void InitGtest(Cdt& cdt) {
 }
 
 static std::string GtestTaskToShellCommand(const Task& task, const std::optional<std::string>& gtest_filter = {}) {
-    auto binary = task.command.substr(kGtestTask.size() + 1);
+    std::string binary = task.command.substr(kGtestTask.size() + 1);
     if (gtest_filter) {
         binary += " " + kGtestFilterArg + "='" + *gtest_filter + "'";
     }
@@ -29,8 +33,8 @@ static std::string GtestTaskToShellCommand(const Task& task, const std::optional
 }
 
 void ScheduleGtestExecutions(Cdt& cdt) {
-    for (const auto exec: cdt.execs_to_run_in_order) {
-        const auto& task = cdt.tasks[cdt.task_ids[exec]];
+    for (Entity exec: cdt.execs_to_run_in_order) {
+        Task& task = cdt.tasks[cdt.task_ids[exec]];
         if (task.command.find(kGtestTask) == 0) {
             if (!Find(exec, cdt.execs)) {
                 Execution e;
@@ -53,23 +57,23 @@ static void CompleteCurrentGtest(GtestExecution& gtest_exec, const std::string& 
 }
 
 void ParseGtestOutput(Cdt& cdt) {
-    static const auto kTestCountIndex = std::string("Running ").size();
-    for (const auto& proc: cdt.processes) {
-        auto& proc_buffer = cdt.text_buffers[proc.first][TextBufferType::kProcess];
-        auto& gtest_buffer = cdt.text_buffers[proc.first][TextBufferType::kGtest];
-        auto& out_buffer = cdt.text_buffers[proc.first][TextBufferType::kOutput];
-        auto& exec_output = cdt.exec_outputs[proc.first];
-        const auto gtest_exec = Find(proc.first, cdt.gtest_execs);
-        const auto stream_output = Find(proc.first, cdt.stream_output);
+    static size_t kTestCountIndex = std::string("Running ").size();
+    for (auto& [entity, _]: cdt.processes) {
+        std::vector<std::string>& proc_buffer = cdt.text_buffers[entity][TextBufferType::kProcess];
+        std::vector<std::string>& gtest_buffer = cdt.text_buffers[entity][TextBufferType::kGtest];
+        std::vector<std::string>& out_buffer = cdt.text_buffers[entity][TextBufferType::kOutput];
+        ExecutionOutput& exec_output = cdt.exec_outputs[entity];
+        GtestExecution* gtest_exec = Find(entity, cdt.gtest_execs);
+        bool stream_output = Find(entity, cdt.stream_output);
         if (!gtest_exec) {
             continue;
         }
         if (gtest_exec->state == GtestExecutionState::kRunning || gtest_exec->state == GtestExecutionState::kParsing) {
-            for (const auto& line: proc_buffer) {
-                auto line_content_index = 0;
-                auto filler_char = '\0';
+            for (std::string& line: proc_buffer) {
+                int line_content_index = 0;
+                char filler_char = '\0';
                 std::stringstream word_stream;
-                for (auto i = 0; i < line.size(); i++) {
+                for (int i = 0; i < line.size(); i++) {
                     if (i == 0) {
                         if (line[i] == '[') {
                             continue;
@@ -89,8 +93,8 @@ void ParseGtestOutput(Cdt& cdt) {
                         word_stream << line[i];
                     }
                 }
-                const auto found_word = word_stream.str();
-                const auto line_content = line.substr(line_content_index);
+                std::string found_word = word_stream.str();
+                std::string line_content = line.substr(line_content_index);
                 bool test_completed = false;
                 /*
                 The order of conditions here is important:
@@ -121,8 +125,8 @@ void ParseGtestOutput(Cdt& cdt) {
                     gtest_exec->tests.push_back(test);
                 } else if (filler_char == '=') {
                     if (gtest_exec->state == GtestExecutionState::kRunning) {
-                        const auto count_end_index = line_content.find(' ', kTestCountIndex);
-                        const auto count_str = line_content.substr(kTestCountIndex, count_end_index - kTestCountIndex);
+                        std::string::size_type count_end_index = line_content.find(' ', kTestCountIndex);
+                        std::string count_str = line_content.substr(kTestCountIndex, count_end_index - kTestCountIndex);
                         gtest_exec->test_count = std::stoi(count_str);
                         gtest_exec->tests.reserve(gtest_exec->test_count);
                         gtest_exec->state = GtestExecutionState::kParsing;
@@ -142,9 +146,9 @@ void ParseGtestOutput(Cdt& cdt) {
 }
 
 static void PrintGtestList(const std::vector<size_t>& test_ids, const std::vector<GtestTest>& tests, Cdt& cdt) {
-    for (auto i = 0; i < test_ids.size(); i++) {
-        const auto id = test_ids[i];
-        const auto& test = tests[id];
+    for (int i = 0; i < test_ids.size(); i++) {
+        size_t id = test_ids[i];
+        const GtestTest& test = tests[id];
         cdt.os->Out() << i + 1 << " \"" << test.name << "\" " << test.duration << std::endl;
     }
 }
@@ -152,7 +156,7 @@ static void PrintGtestList(const std::vector<size_t>& test_ids, const std::vecto
 static void PrintFailedGtestList(const GtestExecution& exec, Cdt& cdt) {
     cdt.os->Out() << kTcRed << "Failed tests:" << kTcReset << std::endl;
     PrintGtestList(exec.failed_test_ids, exec.tests, cdt);
-    const int failed_percent = exec.failed_test_ids.size() / (float)exec.tests.size() * 100;
+    int failed_percent = exec.failed_test_ids.size() / (float)exec.tests.size() * 100;
     cdt.os->Out() << kTcRed << "Tests failed: " << exec.failed_test_ids.size() << " of " << exec.tests.size() << " (" << failed_percent << "%) " << exec.total_duration << kTcReset << std::endl;
 }
 
@@ -167,14 +171,14 @@ static void PrintGtestOutput(ExecutionOutput& out, const std::vector<std::string
 static bool FindGtestByCmdArgInLastEntityWithGtestExec(const UserCommand& cmd, Cdt& cdt, Entity& entity, GtestExecution& exec, GtestTest& test) {
     size_t lookup_start = 0;
     if (cdt.selected_exec) {
-        const auto it = std::find(cdt.exec_history.begin(), cdt.exec_history.end(), *cdt.selected_exec);
+        auto it = std::find(cdt.exec_history.begin(), cdt.exec_history.end(), *cdt.selected_exec);
         if (it != cdt.exec_history.end()) {
             lookup_start = it - cdt.exec_history.begin();
         }
     }
     for (size_t i = lookup_start; i < cdt.exec_history.size(); i++) {
         entity = cdt.exec_history[i];
-        const auto it = cdt.gtest_execs.find(entity);
+        auto it = cdt.gtest_execs.find(entity);
         if (it != cdt.gtest_execs.end()) {
             exec = it->second;
             break;
@@ -212,7 +216,7 @@ void DisplayGtestOutput(Cdt& cdt) {
         return;
     }
     ExecutionOutput& exec_output = cdt.exec_outputs[entity];
-    const std::vector<std::string>& gtest_buffer = cdt.text_buffers[entity][TextBufferType::kGtest];
+    std::vector<std::string>& gtest_buffer = cdt.text_buffers[entity][TextBufferType::kGtest];
     std::vector<std::string>& out_buffer = cdt.text_buffers[entity][TextBufferType::kOutput];
     PrintGtestOutput(exec_output, gtest_buffer, out_buffer, test, gtest_exec.failed_test_ids.empty() ? kTcGreen : kTcRed);
 }
@@ -237,12 +241,12 @@ void RerunGtest(Cdt& cdt) {
         return;
     }
     size_t gtest_task_id = cdt.task_ids[entity];
-    for (const auto& pre_task_id: cdt.pre_tasks[gtest_task_id]) {
-        const auto pre_task_exec = CreateEntity(cdt);
+    for (size_t pre_task_id: cdt.pre_tasks[gtest_task_id]) {
+        Entity pre_task_exec = CreateEntity(cdt);
         cdt.task_ids[pre_task_exec] = pre_task_id;
         cdt.execs_to_run_in_order.push_back(pre_task_exec);
     }
-    const auto exec = CreateEntity(cdt);
+    Entity exec = CreateEntity(cdt);
     cdt.task_ids[exec] = gtest_task_id;
     cdt.execs[exec] = Execution{test.name, GtestTaskToShellCommand(cdt.tasks[gtest_task_id], test.name)};
     cdt.gtest_execs[exec] = GtestExecution{true};
@@ -261,14 +265,14 @@ void ScheduleGtestTaskWithFilter(Cdt& cdt) {
     if (!IsCmdArgInRange(cdt.last_usr_cmd, cdt.tasks)) {
         DisplayListOfTasks(cdt.tasks, cdt);
     } else {
-        const auto filter = ReadInputFromStdin(kGtestFilterArg + "=", cdt);
-        const auto task_id = cdt.last_usr_cmd.arg - 1;
-        for (const auto pre_task_id: cdt.pre_tasks[task_id]) {
-            const auto pre_task_exec = CreateEntity(cdt);
+        std::string filter = ReadInputFromStdin(kGtestFilterArg + "=", cdt);
+        int task_id = cdt.last_usr_cmd.arg - 1;
+        for (size_t pre_task_id: cdt.pre_tasks[task_id]) {
+            Entity pre_task_exec = CreateEntity(cdt);
             cdt.task_ids[pre_task_exec] = pre_task_id;
             cdt.execs_to_run_in_order.push_back(pre_task_exec);
         }
-        const auto exec = CreateEntity(cdt);
+        Entity exec = CreateEntity(cdt);
         cdt.task_ids[exec] = task_id;
         cdt.execs[exec] = Execution{filter, GtestTaskToShellCommand(cdt.tasks[task_id], filter)};
         cdt.stream_output.insert(exec);
@@ -277,11 +281,11 @@ void ScheduleGtestTaskWithFilter(Cdt& cdt) {
 }
 
 void DisplayGtestExecutionResult(Cdt& cdt) {
-    for (const auto& proc: cdt.processes) {
-        const auto task_id = cdt.task_ids[proc.first];
-        auto& exec = cdt.execs[proc.first];
-        auto& exec_output = cdt.exec_outputs[proc.first];
-        const auto gtest_exec = Find(proc.first, cdt.gtest_execs);
+    for (auto& [entity, _]: cdt.processes) {
+        size_t task_id = cdt.task_ids[entity];
+        Execution& exec = cdt.execs[entity];
+        ExecutionOutput& exec_output = cdt.exec_outputs[entity];
+        GtestExecution* gtest_exec = Find(entity, cdt.gtest_execs);
         if (gtest_exec && !gtest_exec->rerun_of_single_test && exec.state != ExecutionState::kRunning && gtest_exec->state != GtestExecutionState::kFinished) {
             cdt.os->Out() << "\33[2K\r"; // Current line has test execution progress displayed. We will start displaying our output on top of it.
             if (gtest_exec->state == GtestExecutionState::kRunning) {
@@ -296,15 +300,15 @@ void DisplayGtestExecutionResult(Cdt& cdt) {
                     gtest_exec->failed_test_ids.push_back(*gtest_exec->current_test);
                     gtest_exec->current_test.reset();
                 }
-            } else if (gtest_exec->failed_test_ids.empty() && Find(proc.first, cdt.stream_output)) {
+            } else if (gtest_exec->failed_test_ids.empty() && Find(entity, cdt.stream_output)) {
                 cdt.os->Out() << kTcGreen << "Successfully executed " << gtest_exec->tests.size() << " tests "  << gtest_exec->total_duration << kTcReset << std::endl;
             }
             if (!gtest_exec->failed_test_ids.empty()) {
                 PrintFailedGtestList(*gtest_exec, cdt);
                 if (gtest_exec->failed_test_ids.size() == 1) {
-                    const auto& test = gtest_exec->tests[gtest_exec->failed_test_ids[0]];
-                    const auto& gtest_buffer = cdt.text_buffers[proc.first][TextBufferType::kGtest];
-                    auto& out_buffer = cdt.text_buffers[proc.first][TextBufferType::kOutput];
+                    GtestTest& test = gtest_exec->tests[gtest_exec->failed_test_ids[0]];
+                    std::vector<std::string>& gtest_buffer = cdt.text_buffers[entity][TextBufferType::kGtest];
+                    std::vector<std::string>& out_buffer = cdt.text_buffers[entity][TextBufferType::kOutput];
                     PrintGtestOutput(exec_output, gtest_buffer, out_buffer, test, kTcRed);
                 }
             }
@@ -314,11 +318,11 @@ void DisplayGtestExecutionResult(Cdt& cdt) {
 }
 
 void RestartRepeatingGtestOnSuccess(Cdt& cdt) {
-    for (const auto& proc: cdt.processes) {
-        const auto gtest_exec = Find(proc.first, cdt.gtest_execs);
-        if (gtest_exec && cdt.execs[proc.first].state == ExecutionState::kComplete && Find(proc.first, cdt.repeat_until_fail)) {
-            cdt.gtest_execs[proc.first] = GtestExecution{gtest_exec->rerun_of_single_test};
-            cdt.text_buffers[proc.first][TextBufferType::kGtest].clear();
+    for (auto& [entity, _]: cdt.processes) {
+        GtestExecution* gtest_exec = Find(entity, cdt.gtest_execs);
+        if (gtest_exec && cdt.execs[entity].state == ExecutionState::kComplete && Find(entity, cdt.repeat_until_fail)) {
+            cdt.gtest_execs[entity] = GtestExecution{gtest_exec->rerun_of_single_test};
+            cdt.text_buffers[entity][TextBufferType::kGtest].clear();
         }
     }
 }
