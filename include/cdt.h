@@ -18,16 +18,16 @@
 #include "process.hpp"
 #include "blockingconcurrentqueue.h"
 
-const auto kTcRed = "\033[31m";
-const auto kTcGreen = "\033[32m";
-const auto kTcBlue = "\033[34m";
-const auto kTcMagenta = "\033[35m";
-const auto kTcReset = "\033[0m";
+const std::string kTcRed = "\033[31m";
+const std::string kTcGreen = "\033[32m";
+const std::string kTcBlue = "\033[34m";
+const std::string kTcMagenta = "\033[35m";
+const std::string kTcReset = "\033[0m";
 
-const auto kOpenInEditorCommandProperty = "open_in_editor_command";
-const auto kExecuteInNewTerminalTabCommandProperty = "execute_in_new_terminal_tab_command";
-const auto kDebugCommandProperty = "debug_command";
-const auto kEnvVarLastCommand = "LAST_COMMAND";
+const std::string kOpenInEditorCommandProperty = "open_in_editor_command";
+const std::string kExecuteInNewTerminalTabCommandProperty = "execute_in_new_terminal_tab_command";
+const std::string kDebugCommandProperty = "debug_command";
+const std::string kEnvVarLastCommand = "LAST_COMMAND";
 const std::string kTemplateArgPlaceholder = "{}";
 const std::string kGtestTask = "__gtest";
 const std::string kGtestFilterArg = "--gtest_filter";
