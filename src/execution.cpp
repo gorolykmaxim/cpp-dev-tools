@@ -1,5 +1,8 @@
 #include <sstream>
+#include <string>
+#include <vector>
 
+#include "cdt.h"
 #include "execution.h"
 #include "common.h"
 
@@ -14,7 +17,7 @@ static void TerminateCurrentExecutionOrExit(int signal) {
         global_cdt->os->Signal(signal, SIG_DFL);
         global_cdt->os->RaiseSignal(signal);
     } else {
-        for (const auto& [e, _]: global_cdt->processes) {
+        for (auto& [e, _]: global_cdt->processes) {
             global_cdt->os->KillProcess(e, global_cdt->processes);
         }
     }
@@ -34,13 +37,13 @@ void ScheduleTask(Cdt& cdt) {
     if (!IsCmdArgInRange(cdt.last_usr_cmd, cdt.tasks)) {
         DisplayListOfTasks(cdt.tasks, cdt);
     } else {
-        const auto id = cdt.last_usr_cmd.arg - 1;
-        for (const auto pre_task_id: cdt.pre_tasks[id]) {
-            const auto pre_task_exec = CreateEntity(cdt);
+        int id = cdt.last_usr_cmd.arg - 1;
+        for (int pre_task_id: cdt.pre_tasks[id]) {
+            Entity pre_task_exec = CreateEntity(cdt);
             cdt.task_ids[pre_task_exec] = pre_task_id;
             cdt.execs_to_run_in_order.push_back(pre_task_exec);
         }
-        const auto task_exec = CreateEntity(cdt);
+        Entity task_exec = CreateEntity(cdt);
         cdt.task_ids[task_exec] = id;
         cdt.stream_output.insert(task_exec);
         if (kTaskRepeat == cdt.last_usr_cmd.cmd) {
@@ -60,7 +63,7 @@ void ExecuteRestartTask(Cdt& cdt) {
     cdt.execs_to_run_in_order.pop_front();
     DestroyEntity(exec, cdt);
     cdt.os->Out() << kTcMagenta << "Restarting program..." << kTcReset << std::endl;
-    const auto cmd_str = cdt.last_usr_cmd.cmd + std::to_string(cdt.last_usr_cmd.arg);
+    std::string cmd_str = cdt.last_usr_cmd.cmd + std::to_string(cdt.last_usr_cmd.arg);
     cdt.os->SetEnv(kEnvVarLastCommand, cmd_str);
     int error = cdt.os->Exec({cdt.cdt_executable, cdt.tasks_config_path.c_str(), nullptr});
     if (error) {
@@ -69,9 +72,9 @@ void ExecuteRestartTask(Cdt& cdt) {
 }
 
 void ScheduleTaskExecutions(Cdt& cdt) {
-    for (const auto exec: cdt.execs_to_run_in_order) {
+    for (Entity exec: cdt.execs_to_run_in_order) {
         if (!Find(exec, cdt.execs)) {
-            const auto& task = cdt.tasks[cdt.task_ids[exec]];
+            Task& task = cdt.tasks[cdt.task_ids[exec]];
             cdt.execs[exec] = Execution{task.name, task.command};
         }
     }
@@ -121,15 +124,15 @@ void ProcessExecutionEvent(Cdt& cdt) {
     if (cdt.processes.empty()) return;
     ExecutionEvent event;
     cdt.exec_event_queue.wait_dequeue(event);
-    auto& exec = cdt.execs[event.exec];
-    auto& buffer = cdt.text_buffers[event.exec][TextBufferType::kProcess];
+    Execution& exec = cdt.execs[event.exec];
+    std::vector<std::string>& buffer = cdt.text_buffers[event.exec][TextBufferType::kProcess];
     if (event.type == ExecutionEventType::kExit) {
         exec.state = cdt.os->GetProcessExitCode(event.exec, cdt.processes) == 0 ? ExecutionState::kComplete : ExecutionState::kFailed;
     } else {
-        auto& line_buffer = event.type == ExecutionEventType::kStdout ? exec.stdout_line_buffer : exec.stderr_line_buffer;
-        auto to_process = line_buffer + event.data;
+        std::string& line_buffer = event.type == ExecutionEventType::kStdout ? exec.stdout_line_buffer : exec.stderr_line_buffer;
+        std::string to_process = line_buffer + event.data;
         std::stringstream tmp_buffer;
-        for (const auto c: to_process) {
+        for (char c: to_process) {
             if (c == '\n') {
                 buffer.push_back(tmp_buffer.str());
                 tmp_buffer = std::stringstream();
@@ -142,13 +145,13 @@ void ProcessExecutionEvent(Cdt& cdt) {
 }
 
 void DisplayExecutionResult(Cdt& cdt) {
-    for (auto& proc: cdt.processes) {
-        const auto& exec = cdt.execs[proc.first];
+    for (auto& [entity, _]: cdt.processes) {
+        Execution& exec = cdt.execs[entity];
         if (exec.state != ExecutionState::kRunning) {
-            const auto code = cdt.os->GetProcessExitCode(proc.first, cdt.processes);
+            int code = cdt.os->GetProcessExitCode(entity, cdt.processes);
             if (exec.state == ExecutionState::kFailed) {
                 cdt.os->Out() << kTcRed << "'" << exec.name << "' failed: return code: " << code << kTcReset << std::endl;
-            } else if (Find(proc.first, cdt.stream_output)) {
+            } else if (Find(entity, cdt.stream_output)) {
                 cdt.os->Out() << kTcMagenta << "'" << exec.name << "' complete: return code: " << code << kTcReset << std::endl;
             }
         }
@@ -157,12 +160,12 @@ void DisplayExecutionResult(Cdt& cdt) {
 
 void RestartRepeatingExecutionOnSuccess(Cdt& cdt) {
     std::vector<Entity> to_destroy;
-    for (const auto& proc: cdt.processes) {
-        const auto& exec = cdt.execs[proc.first];
-        if (exec.state == ExecutionState::kComplete && Find(proc.first, cdt.repeat_until_fail)) {
-            cdt.execs[proc.first] = Execution{exec.name, exec.shell_command};
-            cdt.text_buffers[proc.first][TextBufferType::kOutput].clear();
-            to_destroy.push_back(proc.first);
+    for (auto& [entity, _]: cdt.processes) {
+        Execution& exec = cdt.execs[entity];
+        if (exec.state == ExecutionState::kComplete && Find(entity, cdt.repeat_until_fail)) {
+            cdt.execs[entity] = Execution{exec.name, exec.shell_command};
+            cdt.text_buffers[entity][TextBufferType::kOutput].clear();
+            to_destroy.push_back(entity);
         }
     }
     DestroyComponents(to_destroy, cdt.processes);
@@ -171,19 +174,19 @@ void RestartRepeatingExecutionOnSuccess(Cdt& cdt) {
 void FinishTaskExecution(Cdt& cdt) {
     std::vector<Entity> to_destroy;
     std::vector<Entity> processes_to_remove;
-    for (auto& proc: cdt.processes) {
-        const auto& exec = cdt.execs[proc.first];
+    for (auto& [entity, _]: cdt.processes) {
+        Execution& exec = cdt.execs[entity];
         if (exec.state != ExecutionState::kRunning) {
             cdt.execs_to_run_in_order.pop_front();
-            cdt.exec_history.push_front(proc.first);
+            cdt.exec_history.push_front(entity);
             if (exec.state == ExecutionState::kFailed) {
                 to_destroy.insert(to_destroy.begin(), cdt.execs_to_run_in_order.begin(), cdt.execs_to_run_in_order.end());
                 cdt.execs_to_run_in_order.clear();
             }
-            processes_to_remove.push_back(proc.first);
+            processes_to_remove.push_back(entity);
         }
     }
-    for (const auto e: to_destroy) {
+    for (Entity e: to_destroy) {
         DestroyEntity(e, cdt);
     }
     DestroyComponents(processes_to_remove, cdt.processes);
@@ -215,7 +218,7 @@ void ValidateIfDebuggerAvailable(Cdt& cdt) {
     if (cdt.debug_cmd.str.empty()) mandatory_props_not_specified.push_back(kDebugCommandProperty);
     if (cdt.execute_in_new_terminal_tab_cmd.str.empty()) mandatory_props_not_specified.push_back(kExecuteInNewTerminalTabCommandProperty);
     if (!mandatory_props_not_specified.empty()) {
-        for (const auto& prop: mandatory_props_not_specified) {
+        for (std::string& prop: mandatory_props_not_specified) {
             WarnUserConfigPropNotSpecified(prop, cdt);
         }
         cdt.last_usr_cmd.executed = true;
