@@ -5,6 +5,7 @@
 #include <cstddef>
 #include <functional>
 #include <istream>
+#include <map>
 #include <memory>
 #include <ostream>
 #include <string>
@@ -17,9 +18,22 @@
 #include "process.hpp"
 #include "blockingconcurrentqueue.h"
 
+const auto kTcRed = "\033[31m";
+const auto kTcGreen = "\033[32m";
+const auto kTcBlue = "\033[34m";
+const auto kTcMagenta = "\033[35m";
+const auto kTcReset = "\033[0m";
+
+const auto kOpenInEditorCommandProperty = "open_in_editor_command";
+const auto kExecuteInNewTerminalTabCommandProperty = "execute_in_new_terminal_tab_command";
+const auto kDebugCommandProperty = "debug_command";
+const auto kEnvVarLastCommand = "LAST_COMMAND";
+const std::string kTemplateArgPlaceholder = "{}";
+const std::string kGtestTask = "__gtest";
+const std::string kGtestFilterArg = "--gtest_filter";
+
 struct UserCommandDefinition
 {
-    std::string cmd;
     std::string arg;
     std::string desc;
 };
@@ -148,6 +162,8 @@ struct Cdt {
     std::unordered_set<Entity> stream_output;
     std::unordered_set<Entity> debug;
     moodycamel::BlockingConcurrentQueue<ExecutionEvent> exec_event_queue;
+    std::vector<std::string> kUsrCmdNames;
+    std::vector<UserCommandDefinition> kUsrCmdDefs;
     UserCommand last_usr_cmd;
     std::vector<Task> tasks;
     std::vector<std::vector<size_t>> pre_tasks;

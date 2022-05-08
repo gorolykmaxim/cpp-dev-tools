@@ -555,6 +555,7 @@ TEST_F(CdtTest, StartAndDisplayHelp) {
         "t<ind>\t\tExecute the task with the specified index\n"
         "tr<ind>\t\tKeep executing the task with the specified index until it fails\n"
         "d<ind>\t\tExecute the task with the specified index with a debugger attached\n"
+        "exec<ind>\tChange currently selected execution (gets reset to the most recent one after every new execution)\n"
         "o<ind>\t\tOpen the file link with the specified index in your code editor\n"
         "s\t\tSearch through output of the selected executed task with the specified regular expression\n"
         "g<ind>\t\tDisplay output of the specified google test\n"
@@ -563,7 +564,6 @@ TEST_F(CdtTest, StartAndDisplayHelp) {
         "gtr<ind>\tKeep re-running the google test with the specified index until it fails\n"
         "gd<ind>\t\tRe-run the google test with the specified index with debugger attached\n"
         "gf<ind>\t\tRun google tests of the task with the specified index with a specified --gtest_filter\n"
-        "exec<ind>\tChange currently selected execution (gets reset to the most recent one after every new execution)\n"
         "h\t\tDisplay list of user commands\n";
     EXPECT_CDT_STARTED();
     // Display help on unknown command
