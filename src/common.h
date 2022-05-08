@@ -2,7 +2,20 @@
 #define COMMON_H
 
 #include "cdt.h"
+#include <algorithm>
+#include <deque>
 #include <string>
+#include <vector>
+
+template <typename T>
+void RemoveAll(const std::vector<T>& to_remove, std::deque<T>& from) {
+    for (const T& t: to_remove) {
+        auto it = std::find(from.begin(), from.end(), t);
+        if (it != from.end()) {
+            from.erase(it);
+        }
+    }
+}
 
 template <typename T>
 T* Find(Entity e, std::unordered_map<Entity, T>& components) {

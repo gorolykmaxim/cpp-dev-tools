@@ -1,4 +1,3 @@
-#include <chrono>
 #include <cstddef>
 #include <cstring>
 #include <deque>
@@ -71,23 +70,27 @@ public:
     MOCK_METHOD(void, RaiseSignal, (int), (override));
     MOCK_METHOD(int, Exec, (const std::vector<const char*>&), (override));
     MOCK_METHOD(void, ExecProcess, (const std::string&), (override));
-    void KillProcess(Entity e, std::unordered_map<Entity, std::unique_ptr<TinyProcessLib::Process>>& map) override {
-        ProcessExitInfo& info = proc_exit_info.at(e);
+    void KillProcess(Process& process) override {
+        ProcessExitInfo& info = proc_exit_info.at(&process);
         info.exit_cb();
         info.exit_code = -1;
     }
-    void StartProcess(Entity e, const std::string& cmd, const std::function<void(const char*, size_t)>& stdout_cb, const std::function<void(const char*, size_t)>& stderr_cb, const std::function<void()>& exit_cb, std::unordered_map<Entity, std::unique_ptr<TinyProcessLib::Process>>& map) override {
-        auto it = cmd_to_process_execs.find(cmd);
+    void StartProcess(Process& process,
+                      const std::function<void(const char*, size_t)>& stdout_cb,
+                      const std::function<void(const char*, size_t)>& stderr_cb,
+                      const std::function<void()>& exit_cb) override {
+        auto it = cmd_to_process_execs.find(process.shell_command);
         if (it == cmd_to_process_execs.end()) {
-            throw std::runtime_error("Unexpected command called: " + cmd);
+            throw std::runtime_error("Unexpected command called: " + process.shell_command);
         }
+        process_calls.Call(process.shell_command);
         std::deque<ProcessExec>& execs = it->second;
         ProcessExec exec = execs.front();
         if (execs.size() > 1) {
             execs.pop_front();
         }
-        map[e] = std::unique_ptr<TinyProcessLib::Process>();
-        proc_exit_info[e] = ProcessExitInfo{exec.exit_code, exit_cb};
+        process.handle = std::unique_ptr<TinyProcessLib::Process>();
+        proc_exit_info[&process] = ProcessExitInfo{exec.exit_code, exit_cb};
         for (int i = 0; i < exec.output_lines.size(); i++) {
             std::string& line = exec.output_lines[i];
             if (exec.stderr_lines.count(i) == 0) {
@@ -100,8 +103,8 @@ public:
             exit_cb();
         }
     }
-    int GetProcessExitCode(Entity e, std::unordered_map<Entity, std::unique_ptr<TinyProcessLib::Process>>& map) override {
-        return proc_exit_info.at(e).exit_code;
+    int GetProcessExitCode(Process& process) override {
+        return proc_exit_info.at(&process).exit_code;
     }
     std::chrono::system_clock::time_point TimeNow() override {
         return time_now += std::chrono::seconds(1);
@@ -115,7 +118,8 @@ public:
 
     std::chrono::system_clock::time_point time_now;
     std::unordered_map<std::string, std::deque<ProcessExec>> cmd_to_process_execs;
-    std::unordered_map<Entity, ProcessExitInfo> proc_exit_info;
+    std::unordered_map<Process*, ProcessExitInfo> proc_exit_info;
+    testing::NiceMock<testing::MockFunction<void(const std::string&)>> process_calls;
 };
 
 #define OUT_LINKS_NOT_HIGHLIGHTED()\
@@ -230,7 +234,11 @@ public:
     EXPECT_CMD("o99", expected_header + OUT_LINKS());\
     EXPECT_CMD("o", expected_header + OUT_LINKS())
 
-#define EXPECT_DEBUGGER_CALL(CMD) EXPECT_CALL(mock, ExecProcess("terminal cd " + paths.kTasksConfig.parent_path().string() + " && lldb " + CMD))
+#define DEBUGGER_CALL(CMD) "terminal cd " + paths.kTasksConfig.parent_path().string() + " && lldb " + CMD
+
+#define EXPECT_DEBUGGER_CALL(CMD)\
+    mock.cmd_to_process_execs[DEBUGGER_CALL(CMD)].push_back(ProcessExec{});\
+    EXPECT_CALL(mock.process_calls, Call(DEBUGGER_CALL(CMD)))
 
 MATCHER_P(StrVecEq, expected, "") {
     if (arg.size() != expected.size()) {
@@ -272,6 +280,7 @@ public:
         EXPECT_CALL(mock, GetEnv("LAST_COMMAND")).Times(testing::AnyNumber()).WillRepeatedly(testing::Return(""));
         EXPECT_CALL(mock, GetCurrentPath()).Times(testing::AnyNumber()).WillRepeatedly(testing::Return(paths.kTasksConfig.parent_path()));
         EXPECT_CALL(mock, Signal(testing::Eq(SIGINT), testing::_)).WillRepeatedly(testing::SaveArg<1>(&sigint_handler));
+        EXPECT_CALL(mock.process_calls, Call(testing::_)).Times(testing::AnyNumber());
         // mock tasks config
         std::vector<nlohmann::json> tasks;
         tasks.push_back(CreateTaskAndProcess("hello world!"));
@@ -456,7 +465,7 @@ public:
             if (!break_when_process_events_stop && WillWaitForInput(cdt)) {
                 break;
             }
-            if (break_when_process_events_stop && cdt.exec_event_queue.size_approx() == 0 && cdt.execs_to_run_in_order.size() == 1 && cdt.processes.size() == 1) {
+            if (break_when_process_events_stop && cdt.proc_event_queue.size_approx() == 0 && cdt.execs_to_run.empty() && cdt.running_execs.size() == 1) {
                 break;
             }
         }
@@ -1561,7 +1570,9 @@ TEST_F(CdtTest, StartDebugPrimaryTaskWithPreTasks) {
         "\x1B[34mRunning \"pre pre task 2\"...\x1B[0m\n"
         "\x1B[34mRunning \"pre task 1\"...\x1B[0m\n"
         "\x1B[34mRunning \"pre task 2\"...\x1B[0m\n"
-        "\x1B[35mStarting debugger for \"primary task\"...\x1B[0m\n"
+        "\x1B[35mRunning \"primary task\"\x1B[0m\n"
+        "\x1B[35mDebugger started\x1B[0m\n"
+        "\x1B[35m'primary task' complete: return code: 0\x1B[0m\n"
     );
 }
 
@@ -1572,7 +1583,9 @@ TEST_F(CdtTest, StartDebugGtestPrimaryTaskWithPreTasks) {
         "d10",
         "\x1B[34mRunning \"pre pre task 1\"...\x1B[0m\n"
         "\x1B[34mRunning \"pre pre task 2\"...\x1B[0m\n"
-        "\x1B[35mStarting debugger for \"run tests with pre tasks\"...\x1B[0m\n"
+        "\x1B[35mRunning \"run tests with pre tasks\"\x1B[0m\n"
+        "\x1B[35mDebugger started\x1B[0m\n"
+        "\x1B[35m'run tests with pre tasks' complete: return code: 0\x1B[0m\n"
     );
 }
 
@@ -1627,13 +1640,17 @@ TEST_F(CdtTest, StartExecuteGtestTaskWithPreTasksFailAndRerunFailedTestWithDebug
         "gd1",
         "\x1B[34mRunning \"pre pre task 1\"...\x1B[0m\n"
         "\x1B[34mRunning \"pre pre task 2\"...\x1B[0m\n"
-        "\x1B[35mStarting debugger for \"failed_test_suit_1.test1\"...\x1B[0m\n"
+        "\x1B[35mRunning \"failed_test_suit_1.test1\"\x1B[0m\n"
+        "\x1B[35mDebugger started\x1B[0m\n"
+        "\x1B[35m'failed_test_suit_1.test1' complete: return code: 0\x1B[0m\n"
     );
     EXPECT_CMD(
         "gd2",
         "\x1B[34mRunning \"pre pre task 1\"...\x1B[0m\n"
         "\x1B[34mRunning \"pre pre task 2\"...\x1B[0m\n"
-        "\x1B[35mStarting debugger for \"failed_test_suit_2.test1\"...\x1B[0m\n"
+        "\x1B[35mRunning \"failed_test_suit_2.test1\"\x1B[0m\n"
+        "\x1B[35mDebugger started\x1B[0m\n"
+        "\x1B[35m'failed_test_suit_2.test1' complete: return code: 0\x1B[0m\n"
     );
 }
 
@@ -1669,13 +1686,17 @@ TEST_F(CdtTest, StartExecuteGtestTaskWithPreTasksSucceedAndRerunOneOfTestsWithDe
         "gd1",
         "\x1B[34mRunning \"pre pre task 1\"...\x1B[0m\n"
         "\x1B[34mRunning \"pre pre task 2\"...\x1B[0m\n"
-        "\x1B[35mStarting debugger for \"test_suit_1.test1\"...\x1B[0m\n"
+        "\x1B[35mRunning \"test_suit_1.test1\"\x1B[0m\n"
+        "\x1B[35mDebugger started\x1B[0m\n"
+        "\x1B[35m'test_suit_1.test1' complete: return code: 0\x1B[0m\n"
     );
     EXPECT_CMD(
         "gd2",
         "\x1B[34mRunning \"pre pre task 1\"...\x1B[0m\n"
         "\x1B[34mRunning \"pre pre task 2\"...\x1B[0m\n"
-        "\x1B[35mStarting debugger for \"test_suit_1.test2\"...\x1B[0m\n"
+        "\x1B[35mRunning \"test_suit_1.test2\"\x1B[0m\n"
+        "\x1B[35mDebugger started\x1B[0m\n"
+        "\x1B[35m'test_suit_1.test2' complete: return code: 0\x1B[0m\n"
     );
 }
 
@@ -1932,7 +1953,12 @@ TEST_F(CdtTest, StartExecuteTwoGtestTasksSelectFirstExecutionAndRerunGtestWithDe
     EXPECT_CMD("gd", OUT_FAILED_TESTS());
     EXPECT_CMD("gd0", OUT_FAILED_TESTS());
     EXPECT_CMD("gd99", OUT_FAILED_TESTS());
-    EXPECT_CMD("gd1", "\x1B[35mStarting debugger for \"failed_test_suit_1.test1\"...\x1B[0m\n");
+    EXPECT_CMD(
+        "gd1",
+        "\x1B[35mRunning \"failed_test_suit_1.test1\"\x1B[0m\n"
+        "\x1B[35mDebugger started\x1B[0m\n"
+        "\x1B[35m'failed_test_suit_1.test1' complete: return code: 0\x1B[0m\n"
+    );
 }
 
 TEST_F(CdtTest, StartExecuteTaskTwiceSelectFirstExecutionExecuteAnotherTaskSeeFirstTaskStillSelectedSelectLastExecutionExecuteAnotherTaskAndSeeItBeingSelectedAutomatically) {

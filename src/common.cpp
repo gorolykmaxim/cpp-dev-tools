@@ -13,13 +13,10 @@ Entity CreateEntity(Cdt& cdt) {
 }
 
 void DestroyEntity(Entity e, Cdt& cdt) {
-    cdt.task_ids.erase(e);
     cdt.processes.erase(e);
     cdt.execs.erase(e);
     cdt.exec_outputs.erase(e);
     cdt.gtest_execs.erase(e);
-    cdt.repeat_until_fail.erase(e);
-    cdt.stream_output.erase(e);
     cdt.text_buffers.erase(e);
 }
 

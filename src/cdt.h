@@ -53,14 +53,27 @@ struct Task
 
 typedef uint32_t Entity;
 
-enum class ExecutionEventType {
+enum class DebugStatus {
+    kNotRequired, kRequired, kAttached
+};
+
+struct Process {
+    std::string shell_command;
+    std::string stdout_line_buffer;
+    std::string stderr_line_buffer;
+    std::unique_ptr<TinyProcessLib::Process> handle;
+    bool stream_output = false;
+    DebugStatus debug = DebugStatus::kNotRequired;
+};
+
+enum class ProcessEventType {
     kStdout, kStderr, kExit
 };
 
-struct ExecutionEvent
+struct ProcessEvent
 {
-    Entity exec;
-    ExecutionEventType type;
+    Entity process;
+    ProcessEventType type;
     std::string data;
 };
 
@@ -71,12 +84,11 @@ enum class ExecutionState {
 struct Execution
 {
     std::string name;
-    std::string shell_command;
     ExecutionState state = ExecutionState::kRunning;
-    std::string stdout_line_buffer;
-    std::string stderr_line_buffer;
     std::chrono::system_clock::time_point start_time;
     bool is_pinned = false;
+    bool repeat_until_fail = false;
+    size_t task_id;
 };
 
 struct GtestTest {
@@ -137,31 +149,28 @@ public:
     virtual void Signal(int signal, void(*handler)(int));
     virtual void RaiseSignal(int signal);
     virtual int Exec(const std::vector<const char*>& args);
-    virtual void KillProcess(Entity e, std::unordered_map<Entity, std::unique_ptr<TinyProcessLib::Process>>& processes);
+    virtual void KillProcess(Process& process);
     virtual void ExecProcess(const std::string& shell_cmd);
-    virtual void StartProcess(Entity e, const std::string& shell_cmd,
-                               const std::function<void(const char*, size_t)>& stdout_cb,
-                               const std::function<void(const char*, size_t)>& stderr_cb,
-                               const std::function<void()>& exit_cb,
-                               std::unordered_map<Entity, std::unique_ptr<TinyProcessLib::Process>>& processes);
-    virtual int GetProcessExitCode(Entity e, std::unordered_map<Entity, std::unique_ptr<TinyProcessLib::Process>>& processes);
+    virtual void StartProcess(Process& process,
+                              const std::function<void(const char*, size_t)>& stdout_cb,
+                              const std::function<void(const char*, size_t)>& stderr_cb,
+                              const std::function<void()>& exit_cb);
+    virtual int GetProcessExitCode(Process& process);
     virtual std::chrono::system_clock::time_point TimeNow();
 };
 
 struct Cdt {
-    std::deque<Entity> execs_to_run_in_order; // Execution entities to execute where first entity is the first execution to execute
+    std::deque<Entity> execs_to_schedule;
+    std::deque<Entity> execs_to_run; // Execution entities to execute where first entity is the first execution to execute
+    std::deque<Entity> running_execs;
     std::deque<Entity> exec_history; // History of executed entities where first entity is the most recently executed entity
-    std::unordered_map<Entity, size_t> task_ids;
-    std::unordered_map<Entity, std::unique_ptr<TinyProcessLib::Process>> processes;
+    std::unordered_map<Entity, Process> processes;
     std::unordered_map<Entity, Execution> execs;
     std::unordered_map<Entity, ExecutionOutput> exec_outputs;
     std::unordered_map<Entity, GtestExecution> gtest_execs;
     std::unordered_map<Entity, std::unordered_map<TextBufferType, std::vector<std::string>>> text_buffers;
     std::unordered_map<Entity, TextBufferSearch> text_buffer_searchs;
-    std::unordered_set<Entity> repeat_until_fail;
-    std::unordered_set<Entity> stream_output;
-    std::unordered_set<Entity> debug;
-    moodycamel::BlockingConcurrentQueue<ExecutionEvent> exec_event_queue;
+    moodycamel::BlockingConcurrentQueue<ProcessEvent> proc_event_queue;
     std::vector<std::string> kUsrCmdNames;
     std::vector<UserCommandDefinition> kUsrCmdDefs;
     UserCommand last_usr_cmd;

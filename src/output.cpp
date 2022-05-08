@@ -3,6 +3,7 @@
 #include <string>
 #include <vector>
 
+#include "cdt.h"
 #include "output.h"
 #include "common.h"
 
@@ -15,8 +16,8 @@ void InitOutput(Cdt& cdt) {
 }
 
 void StreamExecutionOutput(Cdt& cdt) {
-    for (auto& [entity, _]: cdt.processes) {
-        if (Find(entity, cdt.stream_output)) {
+    for (Entity entity: cdt.running_execs) {
+        if (cdt.processes[entity].stream_output || cdt.execs[entity].state == ExecutionState::kFailed) {
             MoveTextBuffer(entity, TextBufferType::kProcess, TextBufferType::kOutput, cdt.text_buffers);
         }
     }
@@ -55,14 +56,6 @@ void PrintExecutionOutput(Cdt& cdt) {
             cdt.os->Out() << buffer[i] << std::endl;
         }
         output.lines_processed = buffer.size();
-    }
-}
-
-void StreamExecutionOutputOnFailure(Cdt& cdt) {
-    for (auto& [entity, _]: cdt.processes) {
-        if (cdt.execs[entity].state == ExecutionState::kFailed && !Find(entity, cdt.stream_output)) {
-            MoveTextBuffer(entity, TextBufferType::kProcess, TextBufferType::kOutput, cdt.text_buffers);
-        }
     }
 }
 

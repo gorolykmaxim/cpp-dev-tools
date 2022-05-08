@@ -25,7 +25,7 @@ bool InitCdt(int argc, const char **argv, Cdt &cdt) {
 }
 
 bool WillWaitForInput(Cdt &cdt) {
-    return cdt.execs_to_run_in_order.empty() && cdt.processes.empty();
+    return cdt.execs_to_run.empty() && cdt.running_execs.empty();
 }
 
 void ExecCdtSystems(Cdt &cdt) {
@@ -40,23 +40,27 @@ void ExecCdtSystems(Cdt &cdt) {
     ScheduleGtestTaskWithFilter(cdt);
     ChangeSelectedExecution(cdt);
     DisplayHelp(cdt);
+
     SearchThroughTextBuffer(cdt);
-    ExecuteRestartTask(cdt);
+
+    SchedulePreTasks(cdt);
     ScheduleGtestExecutions(cdt);
-    ScheduleTaskExecutions(cdt);
-    StartNextExecutionWithDebugger(cdt);
+    AttachDebuggerToScheduledExecutions(cdt);
+    ExecuteRestartTask(cdt);
     StartNextExecution(cdt);
-    ProcessExecutionEvent(cdt);
+
+    HandleProcessEvent(cdt);
     ParseGtestOutput(cdt);
     DisplayGtestExecutionResult(cdt);
     StreamExecutionOutput(cdt);
-    StreamExecutionOutputOnFailure(cdt);
     FindAndHighlightFileLinks(cdt);
     PrintExecutionOutput(cdt);
+
     DisplayExecutionResult(cdt);
     RestartRepeatingGtestOnSuccess(cdt);
     RestartRepeatingExecutionOnSuccess(cdt);
     FinishGtestExecution(cdt);
     FinishTaskExecution(cdt);
+
     RemoveOldExecutionsFromHistory(cdt);
 }

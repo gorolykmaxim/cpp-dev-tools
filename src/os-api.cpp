@@ -1,9 +1,11 @@
 #include <iostream>
 #include <fstream>
+#include <memory>
 #include <unistd.h>
 #include <csignal>
 
 #include "cdt.h"
+#include "process.hpp"
 
 std::istream& OsApi::In() {
     return std::cin;
@@ -66,25 +68,23 @@ int OsApi::Exec(const std::vector<const char *> &args) {
     return errno;
 }
 
-void OsApi::KillProcess(Entity e, std::unordered_map<Entity, std::unique_ptr<TinyProcessLib::Process>> &processes) {
-    TinyProcessLib::Process::kill(processes[e]->get_id());
+void OsApi::KillProcess(Process& process) {
+    TinyProcessLib::Process::kill(process.handle->get_id());
 }
 
 void OsApi::ExecProcess(const std::string &shell_cmd) {
     TinyProcessLib::Process(shell_cmd).get_exit_status();
 }
 
-void OsApi::StartProcess(Entity e,
-                           const std::string &shell_cmd,
-                           const std::function<void (const char *, size_t)> &stdout_cb,
-                           const std::function<void (const char *, size_t)> &stderr_cb,
-                           const std::function<void ()> &exit_cb,
-                           std::unordered_map<Entity, std::unique_ptr<TinyProcessLib::Process>> &processes) {
-    processes[e] = std::make_unique<TinyProcessLib::Process>(shell_cmd, "", stdout_cb, stderr_cb, exit_cb);
+void OsApi::StartProcess(Process& process,
+                         const std::function<void (const char *, size_t)> &stdout_cb,
+                         const std::function<void (const char *, size_t)> &stderr_cb,
+                         const std::function<void ()> &exit_cb) {
+    process.handle = std::make_unique<TinyProcessLib::Process>(process.shell_command, "", stdout_cb, stderr_cb, exit_cb);
 }
 
-int OsApi::GetProcessExitCode(Entity e, std::unordered_map<Entity, std::unique_ptr<TinyProcessLib::Process>> &processes) {
-    return processes[e]->get_exit_status();
+int OsApi::GetProcessExitCode(Process& process) {
+    return process.handle->get_exit_status();
 }
 
 std::chrono::system_clock::time_point OsApi::TimeNow() {
