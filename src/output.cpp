@@ -1,5 +1,7 @@
 #include <regex>
 #include <sstream>
+#include <string>
+#include <vector>
 
 #include "output.h"
 #include "common.h"
@@ -13,9 +15,9 @@ void InitOutput(Cdt& cdt) {
 }
 
 void StreamExecutionOutput(Cdt& cdt) {
-    for (const auto& proc: cdt.processes) {
-        if (Find(proc.first, cdt.stream_output)) {
-            MoveTextBuffer(proc.first, TextBufferType::kProcess, TextBufferType::kOutput, cdt.text_buffers);
+    for (auto& [entity, _]: cdt.processes) {
+        if (Find(entity, cdt.stream_output)) {
+            MoveTextBuffer(entity, TextBufferType::kProcess, TextBufferType::kOutput, cdt.text_buffers);
         }
     }
 }
@@ -23,21 +25,21 @@ void StreamExecutionOutput(Cdt& cdt) {
 void FindAndHighlightFileLinks(Cdt& cdt) {
     static const std::regex kFileLinkRegex("(\\/[^:]+):([0-9]+):?([0-9]+)?");
     if (cdt.open_in_editor_cmd.str.empty()) return;
-    for (auto& out: cdt.exec_outputs) {
-        auto& buffer = cdt.text_buffers[out.first][TextBufferType::kOutput];
-        for (auto i = out.second.lines_processed; i < buffer.size(); i++) {
-            auto& line = buffer[i];
+    for (auto& [entity, output]: cdt.exec_outputs) {
+        std::vector<std::string>& buffer = cdt.text_buffers[entity][TextBufferType::kOutput];
+        for (int i = output.lines_processed; i < buffer.size(); i++) {
+            std::string& line = buffer[i];
             std::stringstream highlighted_line;
-            auto last_link_end_pos = 0;
-            for (auto it = std::sregex_iterator(line.begin(), line.end(), kFileLinkRegex); it != std::sregex_iterator(); it++) {
+            int last_link_end_pos = 0;
+            for (std::sregex_iterator it(line.begin(), line.end(), kFileLinkRegex); it != std::sregex_iterator(); it++) {
                 std::stringstream link_stream;
                 link_stream << (*it)[1] << ':' << (*it)[2];
                 if (it->size() > 3 && (*it)[3].matched) {
                     link_stream << ':' << (*it)[3];
                 }
-                const auto link = link_stream.str();
-                out.second.file_links.push_back(link);
-                highlighted_line << line.substr(last_link_end_pos, it->position() - last_link_end_pos) << kTcMagenta << '[' << kOpen << out.second.file_links.size() << "] " << link << kTcReset;
+                std::string link = link_stream.str();
+                output.file_links.push_back(link);
+                highlighted_line << line.substr(last_link_end_pos, it->position() - last_link_end_pos) << kTcMagenta << '[' << kOpen << output.file_links.size() << "] " << link << kTcReset;
                 last_link_end_pos = it->position() + it->length();
             }
             highlighted_line << line.substr(last_link_end_pos, line.size() - last_link_end_pos);
@@ -47,19 +49,19 @@ void FindAndHighlightFileLinks(Cdt& cdt) {
 }
 
 void PrintExecutionOutput(Cdt& cdt) {
-    for (auto& out: cdt.exec_outputs) {
-        auto& buffer = cdt.text_buffers[out.first][TextBufferType::kOutput];
-        for (auto i = out.second.lines_processed; i < buffer.size(); i++) {
+    for (auto& [entity, output]: cdt.exec_outputs) {
+        std::vector<std::string>& buffer = cdt.text_buffers[entity][TextBufferType::kOutput];
+        for (int i = output.lines_processed; i < buffer.size(); i++) {
             cdt.os->Out() << buffer[i] << std::endl;
         }
-        out.second.lines_processed = buffer.size();
+        output.lines_processed = buffer.size();
     }
 }
 
 void StreamExecutionOutputOnFailure(Cdt& cdt) {
-    for (const auto& proc: cdt.processes) {
-        if (cdt.execs[proc.first].state == ExecutionState::kFailed && !Find(proc.first, cdt.stream_output)) {
-            MoveTextBuffer(proc.first, TextBufferType::kProcess, TextBufferType::kOutput, cdt.text_buffers);
+    for (auto& [entity, _]: cdt.processes) {
+        if (cdt.execs[entity].state == ExecutionState::kFailed && !Find(entity, cdt.stream_output)) {
+            MoveTextBuffer(entity, TextBufferType::kProcess, TextBufferType::kOutput, cdt.text_buffers);
         }
     }
 }
@@ -67,7 +69,7 @@ void StreamExecutionOutputOnFailure(Cdt& cdt) {
 void OpenFileLink(Cdt& cdt) {
     if (!AcceptUsrCmd(kOpen, cdt.last_usr_cmd)) return;
     ExecutionOutput* exec_output = nullptr;
-    const std::vector<std::string>* buffer = nullptr;
+    std::vector<std::string>* buffer = nullptr;
     if (!cdt.exec_history.empty()) {
         Entity entity = cdt.selected_exec ? *cdt.selected_exec : cdt.exec_history.front();
         exec_output = &cdt.exec_outputs[entity];
@@ -79,12 +81,12 @@ void OpenFileLink(Cdt& cdt) {
         cdt.os->Out() << kTcGreen << "No file links in the output" << kTcReset << std::endl;
     } else if (exec_output) {
         if (IsCmdArgInRange(cdt.last_usr_cmd, exec_output->file_links)) {
-            const auto& link = exec_output->file_links[cdt.last_usr_cmd.arg - 1];
-            const auto& shell_command = FormatTemplate(cdt.open_in_editor_cmd, link);
+            std::string& link = exec_output->file_links[cdt.last_usr_cmd.arg - 1];
+            std::string shell_command = FormatTemplate(cdt.open_in_editor_cmd, link);
             cdt.os->ExecProcess(shell_command);
         } else {
             cdt.os->Out() << kTcGreen << "Last execution output:" << kTcReset << std::endl;
-            for (const auto& line: *buffer) {
+            for (std::string& line: *buffer) {
                 cdt.os->Out() << line << std::endl;
             }
         }
@@ -104,19 +106,16 @@ void SearchThroughLastExecutionOutput(Cdt& cdt) {
 
 void SearchThroughTextBuffer(Cdt& cdt) {
     std::vector<Entity> to_destroy;
-    for (const auto& it: cdt.text_buffer_searchs) {
-        const auto input = ReadInputFromStdin("Regular expression: ", cdt);
-        const auto& search = it.second;
-        const auto& buffer = cdt.text_buffers[it.first][search.type];
+    for (auto& [entity, search]: cdt.text_buffer_searchs) {
+        std::string input = ReadInputFromStdin("Regular expression: ", cdt);
+        std::vector<std::string>& buffer = cdt.text_buffers[entity][search.type];
         try {
             std::regex regex(input);
             bool results_found = false;
-            for (auto i = search.search_start; i < search.search_end; i++) {
-                const auto& line = buffer[i];
-                const auto start = std::sregex_iterator(line.begin(), line.end(), regex);
-                const auto end = std::sregex_iterator();
+            for (int i = search.search_start; i < search.search_end; i++) {
+                std::string& line = buffer[i];
                 std::unordered_set<size_t> highlight_starts, highlight_ends;
-                for (auto it = start; it != end; it++) {
+                for (std::sregex_iterator it(line.begin(), line.end(), regex); it != std::sregex_iterator(); it++) {
                     results_found = true;
                     highlight_starts.insert(it->position());
                     highlight_ends.insert(it->position() + it->length() - 1);
@@ -125,7 +124,7 @@ void SearchThroughTextBuffer(Cdt& cdt) {
                     continue;
                 }
                 cdt.os->Out() << kTcMagenta << i - search.search_start + 1 << ':' << kTcReset;
-                for (auto j = 0; j < line.size(); j++) {
+                for (int j = 0; j < line.size(); j++) {
                     if (highlight_starts.count(j) > 0) {
                         cdt.os->Out() << kTcGreen;
                     }
@@ -142,7 +141,7 @@ void SearchThroughTextBuffer(Cdt& cdt) {
         } catch (const std::regex_error& e) {
             cdt.os->Out() << kTcRed << "Invalid regular expression '" << input << "': " << e.what() << kTcReset << std::endl;
         }
-        to_destroy.push_back(it.first);
+        to_destroy.push_back(entity);
     }
     DestroyComponents(to_destroy, cdt.text_buffer_searchs);
 }
