@@ -1,5 +1,6 @@
 #include "common.h"
 #include <string>
+#include <vector>
 
 std::string DefineUserCommand(const std::string& name, const UserCommandDefinition& def, Cdt& cdt) {
     cdt.kUsrCmdNames.push_back(name);
@@ -27,8 +28,8 @@ bool Find(Entity e, const std::unordered_set<Entity>& components) {
 }
 
 void MoveTextBuffer(Entity e, TextBufferType from, TextBufferType to, std::unordered_map<Entity, std::unordered_map<TextBufferType, std::vector<std::string>>>& text_buffers) {
-    auto& f = text_buffers[e][from];
-    auto& t = text_buffers[e][to];
+    std::vector<std::string>& f = text_buffers[e][from];
+    std::vector<std::string>& t = text_buffers[e][to];
     t.reserve(t.size() + f.size());
     t.insert(t.end(), f.begin(), f.end());
     f.clear();
@@ -62,7 +63,7 @@ std::string ReadInputFromStdin(const std::string& prefix, Cdt& cdt) {
 
 void DisplayListOfTasks(const std::vector<Task>& tasks, Cdt& cdt) {
     cdt.os->Out() << kTcGreen << "Tasks:" << kTcReset << std::endl;
-    for (auto i = 0; i < tasks.size(); i++) {
+    for (int i = 0; i < tasks.size(); i++) {
         cdt.os->Out() << i + 1 << " \"" << tasks[i].name << "\"" << std::endl;
     }
 }
