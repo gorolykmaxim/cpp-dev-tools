@@ -142,7 +142,7 @@ struct Cdt {
     std::unordered_map<Entity, Execution> execs;
     std::unordered_map<Entity, ExecutionOutput> exec_outputs;
     std::unordered_map<Entity, GtestExecution> gtest_execs;
-    std::unordered_map<TextBufferType, std::unordered_map<Entity, std::vector<std::string>>> text_buffers;
+    std::unordered_map<Entity, std::unordered_map<TextBufferType, std::vector<std::string>>> text_buffers;
     std::unordered_map<Entity, TextBufferSearch> text_buffer_searchs;
     std::unordered_set<Entity> repeat_until_fail;
     std::unordered_set<Entity> stream_output;

@@ -155,9 +155,7 @@ static void DestroyEntity(Entity e, Cdt& cdt) {
     cdt.gtest_execs.erase(e);
     cdt.repeat_until_fail.erase(e);
     cdt.stream_output.erase(e);
-    for (int t = static_cast<int>(TextBufferType::kProcess); t <= static_cast<int>(TextBufferType::kOutput); t++) {
-        cdt.text_buffers[static_cast<TextBufferType>(t)].erase(e);
-    }
+    cdt.text_buffers.erase(e);
 }
 
 template <typename T>
@@ -177,9 +175,9 @@ static void DestroyComponents(const std::vector<Entity>& es, std::unordered_map<
     }
 }
 
-static void MoveTextBuffer(Entity e, TextBufferType from, TextBufferType to, std::unordered_map<TextBufferType, std::unordered_map<Entity, std::vector<std::string>>>& text_buffers) {
-    auto& f = text_buffers[from][e];
-    auto& t = text_buffers[to][e];
+static void MoveTextBuffer(Entity e, TextBufferType from, TextBufferType to, std::unordered_map<Entity, std::unordered_map<TextBufferType, std::vector<std::string>>>& text_buffers) {
+    auto& f = text_buffers[e][from];
+    auto& t = text_buffers[e][to];
     t.reserve(t.size() + f.size());
     t.insert(t.end(), f.begin(), f.end());
     f.clear();
@@ -610,7 +608,7 @@ static void ProcessExecutionEvent(Cdt& cdt) {
     ExecutionEvent event;
     cdt.exec_event_queue.wait_dequeue(event);
     auto& exec = cdt.execs[event.exec];
-    auto& buffer = cdt.text_buffers[TextBufferType::kProcess][event.exec];
+    auto& buffer = cdt.text_buffers[event.exec][TextBufferType::kProcess];
     if (event.type == ExecutionEventType::kExit) {
         exec.state = cdt.os->GetProcessExitCode(event.exec, cdt.processes) == 0 ? ExecutionState::kComplete : ExecutionState::kFailed;
     } else {
@@ -638,9 +636,9 @@ static void CompleteCurrentGtest(GtestExecution& gtest_exec, const std::string& 
 static void ParseGtestOutput(Cdt& cdt) {
     static const auto kTestCountIndex = std::string("Running ").size();
     for (const auto& proc: cdt.processes) {
-        auto& proc_buffer = cdt.text_buffers[TextBufferType::kProcess][proc.first];
-        auto& gtest_buffer = cdt.text_buffers[TextBufferType::kGtest][proc.first];
-        auto& out_buffer = cdt.text_buffers[TextBufferType::kOutput][proc.first];
+        auto& proc_buffer = cdt.text_buffers[proc.first][TextBufferType::kProcess];
+        auto& gtest_buffer = cdt.text_buffers[proc.first][TextBufferType::kGtest];
+        auto& out_buffer = cdt.text_buffers[proc.first][TextBufferType::kOutput];
         auto& exec_output = cdt.exec_outputs[proc.first];
         const auto gtest_exec = Find(proc.first, cdt.gtest_execs);
         const auto stream_output = Find(proc.first, cdt.stream_output);
@@ -795,8 +793,8 @@ static void DisplayGtestOutput(Cdt& cdt) {
         return;
     }
     ExecutionOutput& exec_output = cdt.exec_outputs[entity];
-    const std::vector<std::string>& gtest_buffer = cdt.text_buffers[TextBufferType::kGtest][entity];
-    std::vector<std::string>& out_buffer = cdt.text_buffers[TextBufferType::kOutput][entity];
+    const std::vector<std::string>& gtest_buffer = cdt.text_buffers[entity][TextBufferType::kGtest];
+    std::vector<std::string>& out_buffer = cdt.text_buffers[entity][TextBufferType::kOutput];
     PrintGtestOutput(exec_output, gtest_buffer, out_buffer, test, gtest_exec.failed_test_ids.empty() ? kTcGreen : kTcRed);
 }
 
@@ -886,8 +884,8 @@ static void DisplayGtestExecutionResult(Cdt& cdt) {
                 PrintFailedGtestList(*gtest_exec, cdt);
                 if (gtest_exec->failed_test_ids.size() == 1) {
                     const auto& test = gtest_exec->tests[gtest_exec->failed_test_ids[0]];
-                    const auto& gtest_buffer = cdt.text_buffers[TextBufferType::kGtest][proc.first];
-                    auto& out_buffer = cdt.text_buffers[TextBufferType::kOutput][proc.first];
+                    const auto& gtest_buffer = cdt.text_buffers[proc.first][TextBufferType::kGtest];
+                    auto& out_buffer = cdt.text_buffers[proc.first][TextBufferType::kOutput];
                     PrintGtestOutput(exec_output, gtest_buffer, out_buffer, test, kTcRed);
                 }
             }
@@ -901,7 +899,7 @@ static void RestartRepeatingGtestOnSuccess(Cdt& cdt) {
         const auto gtest_exec = Find(proc.first, cdt.gtest_execs);
         if (gtest_exec && cdt.execs[proc.first].state == ExecutionState::kComplete && Find(proc.first, cdt.repeat_until_fail)) {
             cdt.gtest_execs[proc.first] = GtestExecution{gtest_exec->rerun_of_single_test};
-            cdt.text_buffers[TextBufferType::kGtest][proc.first].clear();
+            cdt.text_buffers[proc.first][TextBufferType::kGtest].clear();
         }
     }
 }
@@ -937,7 +935,7 @@ static void FindAndHighlightFileLinks(Cdt& cdt) {
     static const std::regex kFileLinkRegex("(\\/[^:]+):([0-9]+):?([0-9]+)?");
     if (cdt.open_in_editor_cmd.str.empty()) return;
     for (auto& out: cdt.exec_outputs) {
-        auto& buffer = cdt.text_buffers[TextBufferType::kOutput][out.first];
+        auto& buffer = cdt.text_buffers[out.first][TextBufferType::kOutput];
         for (auto i = out.second.lines_processed; i < buffer.size(); i++) {
             auto& line = buffer[i];
             std::stringstream highlighted_line;
@@ -961,7 +959,7 @@ static void FindAndHighlightFileLinks(Cdt& cdt) {
 
 static void PrintExecutionOutput(Cdt& cdt) {
     for (auto& out: cdt.exec_outputs) {
-        auto& buffer = cdt.text_buffers[TextBufferType::kOutput][out.first];
+        auto& buffer = cdt.text_buffers[out.first][TextBufferType::kOutput];
         for (auto i = out.second.lines_processed; i < buffer.size(); i++) {
             cdt.os->Out() << buffer[i] << std::endl;
         }
@@ -997,7 +995,7 @@ static void RestartRepeatingExecutionOnSuccess(Cdt& cdt) {
         const auto& exec = cdt.execs[proc.first];
         if (exec.state == ExecutionState::kComplete && Find(proc.first, cdt.repeat_until_fail)) {
             cdt.execs[proc.first] = Execution{exec.name, exec.shell_command};
-            cdt.text_buffers[TextBufferType::kOutput][proc.first].clear();
+            cdt.text_buffers[proc.first][TextBufferType::kOutput].clear();
             to_destroy.push_back(proc.first);
         }
     }
@@ -1048,7 +1046,7 @@ static void OpenFileLink(Cdt& cdt) {
     if (!cdt.exec_history.empty()) {
         Entity entity = cdt.selected_exec ? *cdt.selected_exec : cdt.exec_history.front();
         exec_output = &cdt.exec_outputs[entity];
-        buffer = &cdt.text_buffers[TextBufferType::kOutput][entity];
+        buffer = &cdt.text_buffers[entity][TextBufferType::kOutput];
     }
     if (cdt.open_in_editor_cmd.str.empty()) {
         WarnUserConfigPropNotSpecified(kOpenInEditorCommandProperty, cdt);
@@ -1074,7 +1072,7 @@ static void SearchThroughLastExecutionOutput(Cdt& cdt) {
         cdt.os->Out() << kTcGreen << "No task has been executed yet" << kTcReset << std::endl;
     } else {
         Entity entity = cdt.selected_exec ? *cdt.selected_exec : cdt.exec_history.front();
-        size_t buffer_size = cdt.text_buffers[TextBufferType::kOutput][entity].size();
+        size_t buffer_size = cdt.text_buffers[entity][TextBufferType::kOutput].size();
         cdt.text_buffer_searchs[entity] = TextBufferSearch{TextBufferType::kOutput, 0, buffer_size};
     }
 }
@@ -1084,7 +1082,7 @@ static void SearchThroughTextBuffer(Cdt& cdt) {
     for (const auto& it: cdt.text_buffer_searchs) {
         const auto input = ReadInputFromStdin("Regular expression: ", cdt);
         const auto& search = it.second;
-        const auto& buffer = cdt.text_buffers[search.type][it.first];
+        const auto& buffer = cdt.text_buffers[it.first][search.type];
         try {
             std::regex regex(input);
             bool results_found = false;
