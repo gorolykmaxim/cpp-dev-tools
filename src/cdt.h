@@ -139,6 +139,10 @@ struct TextBufferSearch {
     size_t search_end;
 };
 
+struct ToSchedule {};
+
+struct Running {};
+
 class OsApi {
 public:
     virtual std::istream& In();
@@ -165,9 +169,7 @@ public:
 };
 
 struct Cdt {
-    std::deque<entt::entity> execs_to_schedule;
     std::deque<entt::entity> execs_to_run; // Execution entities to execute where first entity is the first execution to execute
-    std::deque<entt::entity> running_execs;
     std::deque<entt::entity> exec_history; // History of executed entities where first entity is the most recently executed entity
     entt::registry registry;
     moodycamel::BlockingConcurrentQueue<ProcessEvent> proc_event_queue;

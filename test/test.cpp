@@ -465,7 +465,7 @@ public:
             if (!break_when_process_events_stop && WillWaitForInput(cdt)) {
                 break;
             }
-            if (break_when_process_events_stop && cdt.proc_event_queue.size_approx() == 0 && cdt.execs_to_run.empty() && cdt.running_execs.size() == 1) {
+            if (break_when_process_events_stop && cdt.proc_event_queue.size_approx() == 0 && cdt.execs_to_run.empty() && cdt.registry.view<Running>().size() == 1) {
                 break;
             }
         }

@@ -54,86 +54,83 @@ static void CompleteCurrentGtest(GtestExecution& gtest_exec, const std::string& 
 
 void ParseGtestOutput(Cdt& cdt) {
     static size_t kTestCountIndex = std::string("Running ").size();
-    for (entt::entity entity: cdt.running_execs) {
-        auto [tb, proc] = cdt.registry.get<TextBuffer, Process>(entity);
+    for (auto [_, tb, proc, gtest_exec]: cdt.registry.view<TextBuffer, Process, GtestExecution, Running>().each()) {
         std::vector<std::string>& proc_buffer = tb.buffers[kBufferProcess];
         std::vector<std::string>& gtest_buffer = tb.buffers[kBufferGtest];
         std::vector<std::string>& out_buffer = tb.buffers[kBufferOutput];
-        GtestExecution* gtest_exec = cdt.registry.try_get<GtestExecution>(entity);
-        if (!gtest_exec) {
+        if (gtest_exec.state != GtestExecutionState::kRunning && gtest_exec.state != GtestExecutionState::kParsing) {
+            proc_buffer.clear();
             continue;
         }
-        if (gtest_exec->state == GtestExecutionState::kRunning || gtest_exec->state == GtestExecutionState::kParsing) {
-            for (std::string& line: proc_buffer) {
-                int line_content_index = 0;
-                char filler_char = '\0';
-                std::stringstream word_stream;
-                for (int i = 0; i < line.size(); i++) {
-                    if (i == 0) {
-                        if (line[i] == '[') {
-                            continue;
-                        } else {
-                            break;
-                        }
-                    }
-                    if (i == 1) {
-                        filler_char = line[i];
+        for (std::string& line: proc_buffer) {
+            int line_content_index = 0;
+            char filler_char = '\0';
+            std::stringstream word_stream;
+            for (int i = 0; i < line.size(); i++) {
+                if (i == 0) {
+                    if (line[i] == '[') {
                         continue;
-                    }
-                    if (line[i] == ']') {
-                        line_content_index = i + 2;
-                        break;
-                    }
-                    if (line[i] != filler_char) {
-                        word_stream << line[i];
-                    }
-                }
-                std::string found_word = word_stream.str();
-                std::string line_content = line.substr(line_content_index);
-                bool test_completed = false;
-                /*
-                The order of conditions here is important:
-                We might be executing google tests, that execute their own google tests as a part of their
-                routine. We must differentiate between the output of tests launched by us and any other output
-                that might look like google test output.
-                As a first priority - we handle the output as a part of output of the current test. When getting
-                "OK" and "FAILED" we also check that those two actually belong to OUR current test.
-                Only in case we are not running a test it is safe to process other cases, since they are guaranteed
-                to belong to our tests and not some other child tests.
-                */
-                if (found_word == "OK" && line_content.find(gtest_exec->tests.back().name) == 0) {
-                    CompleteCurrentGtest(*gtest_exec, line_content, test_completed);
-                } else if (found_word == "FAILED" && line_content.find(gtest_exec->tests.back().name) == 0) {
-                    gtest_exec->failed_test_ids.push_back(*gtest_exec->current_test);
-                    CompleteCurrentGtest(*gtest_exec, line_content, test_completed);
-                } else if (gtest_exec->current_test) {
-                    gtest_exec->tests[*gtest_exec->current_test].buffer_end++;
-                    gtest_buffer.push_back(line);
-                    if (proc.stream_output && gtest_exec->rerun_of_single_test) {
-                        out_buffer.push_back(line);
-                    }
-                } else if (found_word == "RUN") {
-                    gtest_exec->current_test = gtest_exec->tests.size();
-                    GtestTest test{line_content};
-                    test.buffer_start = gtest_buffer.size();
-                    test.buffer_end = test.buffer_start;
-                    gtest_exec->tests.push_back(test);
-                } else if (filler_char == '=') {
-                    if (gtest_exec->state == GtestExecutionState::kRunning) {
-                        std::string::size_type count_end_index = line_content.find(' ', kTestCountIndex);
-                        std::string count_str = line_content.substr(kTestCountIndex, count_end_index - kTestCountIndex);
-                        gtest_exec->test_count = std::stoi(count_str);
-                        gtest_exec->tests.reserve(gtest_exec->test_count);
-                        gtest_exec->state = GtestExecutionState::kParsing;
                     } else {
-                        gtest_exec->total_duration = line_content.substr(line_content.rfind('('));
-                        gtest_exec->state = GtestExecutionState::kParsed;
                         break;
                     }
                 }
-                if (proc.stream_output && !gtest_exec->rerun_of_single_test && test_completed) {
-                    cdt.os->Out() << std::flush << "\rTests completed: " << gtest_exec->tests.size() << " of " << gtest_exec->test_count;
+                if (i == 1) {
+                    filler_char = line[i];
+                    continue;
                 }
+                if (line[i] == ']') {
+                    line_content_index = i + 2;
+                    break;
+                }
+                if (line[i] != filler_char) {
+                    word_stream << line[i];
+                }
+            }
+            std::string found_word = word_stream.str();
+            std::string line_content = line.substr(line_content_index);
+            bool test_completed = false;
+            /*
+            The order of conditions here is important:
+            We might be executing google tests, that execute their own google tests as a part of their
+            routine. We must differentiate between the output of tests launched by us and any other output
+            that might look like google test output.
+            As a first priority - we handle the output as a part of output of the current test. When getting
+            "OK" and "FAILED" we also check that those two actually belong to OUR current test.
+            Only in case we are not running a test it is safe to process other cases, since they are guaranteed
+            to belong to our tests and not some other child tests.
+            */
+            if (found_word == "OK" && line_content.find(gtest_exec.tests.back().name) == 0) {
+                CompleteCurrentGtest(gtest_exec, line_content, test_completed);
+            } else if (found_word == "FAILED" && line_content.find(gtest_exec.tests.back().name) == 0) {
+                gtest_exec.failed_test_ids.push_back(*gtest_exec.current_test);
+                CompleteCurrentGtest(gtest_exec, line_content, test_completed);
+            } else if (gtest_exec.current_test) {
+                gtest_exec.tests[*gtest_exec.current_test].buffer_end++;
+                gtest_buffer.push_back(line);
+                if (proc.stream_output && gtest_exec.rerun_of_single_test) {
+                    out_buffer.push_back(line);
+                }
+            } else if (found_word == "RUN") {
+                gtest_exec.current_test = gtest_exec.tests.size();
+                GtestTest test{line_content};
+                test.buffer_start = gtest_buffer.size();
+                test.buffer_end = test.buffer_start;
+                gtest_exec.tests.push_back(test);
+            } else if (filler_char == '=') {
+                if (gtest_exec.state == GtestExecutionState::kRunning) {
+                    std::string::size_type count_end_index = line_content.find(' ', kTestCountIndex);
+                    std::string count_str = line_content.substr(kTestCountIndex, count_end_index - kTestCountIndex);
+                    gtest_exec.test_count = std::stoi(count_str);
+                    gtest_exec.tests.reserve(gtest_exec.test_count);
+                    gtest_exec.state = GtestExecutionState::kParsing;
+                } else {
+                    gtest_exec.total_duration = line_content.substr(line_content.rfind('('));
+                    gtest_exec.state = GtestExecutionState::kParsed;
+                    break;
+                }
+            }
+            if (proc.stream_output && !gtest_exec.rerun_of_single_test && test_completed) {
+                cdt.os->Out() << std::flush << "\rTests completed: " << gtest_exec.tests.size() << " of " << gtest_exec.test_count;
             }
         }
         proc_buffer.clear();
@@ -249,7 +246,7 @@ void RerunGtest(Cdt& cdt) {
         GtestExecution& new_gtest_exec = cdt.registry.emplace<GtestExecution>(entity);
         new_gtest_exec.rerun_of_single_test = true;
     }
-    cdt.execs_to_schedule.push_back(entity);
+    cdt.registry.emplace<ToSchedule>(entity);
 }
 
 void ScheduleGtestTaskWithFilter(Cdt& cdt) {
@@ -268,68 +265,66 @@ void ScheduleGtestTaskWithFilter(Cdt& cdt) {
         proc.shell_command = GtestTaskCommandToShellCommand(cdt.tasks[task_id].command, filter);
         proc.stream_output = true;
         cdt.registry.emplace<GtestExecution>(entity);
-        cdt.execs_to_schedule.push_back(entity);
+        cdt.registry.emplace<ToSchedule>(entity);
     }
 }
 
 void DisplayGtestExecutionResult(Cdt& cdt) {
-    for (entt::entity entity: cdt.running_execs) {
-        auto [exec, proc, exec_output, tb] = cdt.registry.get<Execution, Process, ExecutionOutput, TextBuffer>(entity);
-        GtestExecution* gtest_exec = cdt.registry.try_get<GtestExecution>(entity);
-        if (gtest_exec && !gtest_exec->rerun_of_single_test && exec.state != ExecutionState::kRunning && gtest_exec->state != GtestExecutionState::kFinished) {
-            cdt.os->Out() << "\33[2K\r"; // Current line has test execution progress displayed. We will start displaying our output on top of it.
-            if (gtest_exec->state == GtestExecutionState::kRunning) {
-                exec.state = ExecutionState::kFailed;
-                cdt.os->Out() << kTcRed << "'" << GtestTaskCommandToShellCommand(cdt.tasks[exec.task_id].command) << "' is not a google test executable" << kTcReset << std::endl;
-            } else if (gtest_exec->state == GtestExecutionState::kParsing) {
-                exec.state = ExecutionState::kFailed;
-                cdt.os->Out() << kTcRed << "Tests have finished prematurely" << kTcReset << std::endl;
-                // Tests might have crashed in the middle of some test. If so - consider test failed.
-                // This is not always true however: tests might have crashed in between two test cases.
-                if (gtest_exec->current_test) {
-                    gtest_exec->failed_test_ids.push_back(*gtest_exec->current_test);
-                    gtest_exec->current_test.reset();
-                }
-            } else if (gtest_exec->failed_test_ids.empty() && proc.stream_output) {
-                cdt.os->Out() << kTcGreen << "Successfully executed " << gtest_exec->tests.size() << " tests "  << gtest_exec->total_duration << kTcReset << std::endl;
-            }
-            if (!gtest_exec->failed_test_ids.empty()) {
-                PrintFailedGtestList(*gtest_exec, cdt);
-                if (gtest_exec->failed_test_ids.size() == 1) {
-                    GtestTest& test = gtest_exec->tests[gtest_exec->failed_test_ids[0]];
-                    std::vector<std::string>& gtest_buffer = tb.buffers[kBufferGtest];
-                    std::vector<std::string>& out_buffer = tb.buffers[kBufferOutput];
-                    PrintGtestOutput(exec_output, gtest_buffer, out_buffer, test, kTcRed);
-                }
-            }
-            gtest_exec->state = GtestExecutionState::kFinished;
+    for (auto [_, exec, proc, exec_output, tb, gtest_exec]: cdt.registry.view<Execution, Process, ExecutionOutput, TextBuffer, GtestExecution, Running>().each()) {
+        if (gtest_exec.rerun_of_single_test || exec.state == ExecutionState::kRunning || gtest_exec.state == GtestExecutionState::kFinished) {
+            continue;
         }
+        cdt.os->Out() << "\33[2K\r"; // Current line has test execution progress displayed. We will start displaying our output on top of it.
+        if (gtest_exec.state == GtestExecutionState::kRunning) {
+            exec.state = ExecutionState::kFailed;
+            cdt.os->Out() << kTcRed << "'" << GtestTaskCommandToShellCommand(cdt.tasks[exec.task_id].command) << "' is not a google test executable" << kTcReset << std::endl;
+        } else if (gtest_exec.state == GtestExecutionState::kParsing) {
+            exec.state = ExecutionState::kFailed;
+            cdt.os->Out() << kTcRed << "Tests have finished prematurely" << kTcReset << std::endl;
+            // Tests might have crashed in the middle of some test. If so - consider test failed.
+            // This is not always true however: tests might have crashed in between two test cases.
+            if (gtest_exec.current_test) {
+                gtest_exec.failed_test_ids.push_back(*gtest_exec.current_test);
+                gtest_exec.current_test.reset();
+            }
+        } else if (gtest_exec.failed_test_ids.empty() && proc.stream_output) {
+            cdt.os->Out() << kTcGreen << "Successfully executed " << gtest_exec.tests.size() << " tests "  << gtest_exec.total_duration << kTcReset << std::endl;
+        }
+        if (!gtest_exec.failed_test_ids.empty()) {
+            PrintFailedGtestList(gtest_exec, cdt);
+            if (gtest_exec.failed_test_ids.size() == 1) {
+                GtestTest& test = gtest_exec.tests[gtest_exec.failed_test_ids[0]];
+                std::vector<std::string>& gtest_buffer = tb.buffers[kBufferGtest];
+                std::vector<std::string>& out_buffer = tb.buffers[kBufferOutput];
+                PrintGtestOutput(exec_output, gtest_buffer, out_buffer, test, kTcRed);
+            }
+        }
+        gtest_exec.state = GtestExecutionState::kFinished;
     }
 }
 
 void RestartRepeatingGtestOnSuccess(Cdt& cdt) {
-    for (entt::entity entity: cdt.running_execs) {
-        Execution& exec = cdt.registry.get<Execution>(entity);
-        GtestExecution* gtest_exec = cdt.registry.try_get<GtestExecution>(entity);
-        if (gtest_exec && exec.state == ExecutionState::kComplete && exec.repeat_until_fail) {
-            cdt.registry.replace<GtestExecution>(entity, gtest_exec->rerun_of_single_test);
+    for (auto [entity, exec, gtest_exec]: cdt.registry.view<Execution, GtestExecution, Running>().each()) {
+        if (exec.state == ExecutionState::kComplete && exec.repeat_until_fail) {
+            cdt.registry.replace<GtestExecution>(entity, gtest_exec.rerun_of_single_test);
         }
     }
 }
 
 void FinishGtestExecution(Cdt& cdt) {
     bool unpin_existing_entities = false;
-    for (entt::entity entity: cdt.running_execs) {
-        GtestExecution* gtest_exec = cdt.registry.try_get<GtestExecution>(entity);
-        if (!gtest_exec || cdt.registry.get<Execution>(entity).state == ExecutionState::kRunning) {
+    std::vector<entt::entity> to_remove;
+    for (auto [entity, exec, gtest_exec]: cdt.registry.view<Execution, GtestExecution, Running>().each()) {
+        if (exec.state == ExecutionState::kRunning) {
             continue;
         }
-        if (gtest_exec->rerun_of_single_test) {
-            cdt.registry.erase<GtestExecution>(entity);
+        if (gtest_exec.rerun_of_single_test) {
+            to_remove.push_back(entity);
         } else {
             unpin_existing_entities = true;
         }
     }
+    cdt.registry.erase<GtestExecution>(to_remove.begin(), to_remove.end());
     if (unpin_existing_entities) {
         for (entt::entity entity: cdt.exec_history) {
             if (cdt.registry.all_of<GtestExecution>(entity)) {

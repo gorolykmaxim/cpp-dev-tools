@@ -16,12 +16,12 @@ static std::string kDebug;
 static std::string kSelectExecution;
 
 static void TerminateCurrentExecutionOrExit(int signal) {
-    if (global_cdt->running_execs.empty()) {
+    if (global_cdt->registry.view<Running>().empty()) {
         global_cdt->os->Signal(signal, SIG_DFL);
         global_cdt->os->RaiseSignal(signal);
     } else {
-        for (entt::entity entity: global_cdt->running_execs) {
-            global_cdt->os->KillProcess(global_cdt->registry.get<Process>(entity));
+        for (auto [_, proc]: global_cdt->registry.view<Process, Running>().each()) {
+            global_cdt->os->KillProcess(proc);
         }
     }
 }
@@ -53,14 +53,14 @@ void ScheduleTask(Cdt& cdt) {
         if (kDebug == cdt.last_usr_cmd.cmd) {
             proc.debug = DebugStatus::kRequired;
         }
-        cdt.execs_to_schedule.push_back(entity);
+        cdt.registry.emplace<ToSchedule>(entity);
     }
 }
 
 void SchedulePreTasks(Cdt& cdt) {
-    for (entt::entity entity: cdt.execs_to_schedule) {
-        size_t task_id = cdt.registry.get<Execution>(entity).task_id;
-        for (size_t pre_task_id: cdt.pre_tasks[task_id]) {
+    std::vector<entt::entity> scheduled;
+    for (auto [entity, exec]: cdt.registry.view<Execution, ToSchedule>().each()) {
+        for (size_t pre_task_id: cdt.pre_tasks[exec.task_id]) {
             Task& pre_task = cdt.tasks[pre_task_id];
             entt::entity entity_pre_task = cdt.registry.create();
             Execution& exec = cdt.registry.emplace<Execution>(entity_pre_task);
@@ -70,13 +70,14 @@ void SchedulePreTasks(Cdt& cdt) {
             proc.shell_command = pre_task.command;
             cdt.execs_to_run.push_back(entity_pre_task);
         }
+        scheduled.push_back(entity);
         cdt.execs_to_run.push_back(entity);
     }
-    cdt.execs_to_schedule.clear();
+    cdt.registry.erase<ToSchedule>(scheduled.begin(), scheduled.end());
 }
 
 void ExecuteRestartTask(Cdt& cdt) {
-    if (cdt.execs_to_run.empty() || !cdt.running_execs.empty()) return;
+    if (cdt.execs_to_run.empty() || !cdt.registry.view<Running>().empty()) return;
     entt::entity entity = cdt.execs_to_run.front();
     Process& proc = cdt.registry.get<Process>(entity);
     if (proc.shell_command != "__restart") {
@@ -113,7 +114,7 @@ static std::function<void()> HandleExit(moodycamel::BlockingConcurrentQueue<Proc
 }
 
 void StartNextExecution(Cdt& cdt) {
-    if (cdt.execs_to_run.empty() || !cdt.running_execs.empty()) return;
+    if (cdt.execs_to_run.empty() || !cdt.registry.view<Running>().empty()) return;
     entt::entity entity = cdt.execs_to_run.front();
     auto [exec, proc] = cdt.registry.get<Execution, Process>(entity);
     exec.start_time = cdt.os->TimeNow();
@@ -125,8 +126,8 @@ void StartNextExecution(Cdt& cdt) {
     );
     cdt.registry.emplace<ExecutionOutput>(entity);
     cdt.registry.emplace<TextBuffer>(entity);
+    cdt.registry.emplace<Running>(entity);
     cdt.execs_to_run.pop_front();
-    cdt.running_execs.push_back(entity);
     if (proc.stream_output) {
         cdt.os->Out() << kTcMagenta << "Running \"" << exec.name << "\"" << kTcReset << std::endl;
     } else {
@@ -135,7 +136,7 @@ void StartNextExecution(Cdt& cdt) {
 }
 
 void HandleProcessEvent(Cdt& cdt) {
-    if (cdt.running_execs.empty()) return;
+    if (cdt.registry.view<Running>().empty()) return;
     ProcessEvent event;
     cdt.proc_event_queue.wait_dequeue(event);
     auto [proc, exec, tb] = cdt.registry.get<Process, Execution, TextBuffer>(event.process);
@@ -159,51 +160,51 @@ void HandleProcessEvent(Cdt& cdt) {
 }
 
 void DisplayExecutionResult(Cdt& cdt) {
-    for (entt::entity entity: cdt.running_execs) {
-        auto [exec, proc] = cdt.registry.get<Execution, Process>(entity);
-        if (exec.state != ExecutionState::kRunning) {
-            int code = cdt.os->GetProcessExitCode(proc);
-            if (exec.state == ExecutionState::kFailed) {
-                cdt.os->Out() << kTcRed << "'" << exec.name << "' failed: return code: " << code << kTcReset << std::endl;
-            } else if (proc.stream_output) {
-                if (proc.debug == DebugStatus::kAttached) {
-                    cdt.os->Out() << kTcMagenta << "Debugger started" << kTcReset << std::endl;
-                }
-                cdt.os->Out() << kTcMagenta << "'" << exec.name << "' complete: return code: " << code << kTcReset << std::endl;
+    for (auto [_, exec, proc]: cdt.registry.view<Execution, Process, Running>().each()) {
+        if (exec.state == ExecutionState::kRunning) {
+            continue;
+        }
+        int code = cdt.os->GetProcessExitCode(proc);
+        if (exec.state == ExecutionState::kFailed) {
+            cdt.os->Out() << kTcRed << "'" << exec.name << "' failed: return code: " << code << kTcReset << std::endl;
+        } else if (proc.stream_output) {
+            if (proc.debug == DebugStatus::kAttached) {
+                cdt.os->Out() << kTcMagenta << "Debugger started" << kTcReset << std::endl;
             }
+            cdt.os->Out() << kTcMagenta << "'" << exec.name << "' complete: return code: " << code << kTcReset << std::endl;
         }
     }
 }
 
 void RestartRepeatingExecutionOnSuccess(Cdt& cdt) {
-    std::vector<entt::entity> to_remove;
-    for (entt::entity entity: cdt.running_execs) {
-        auto [exec, proc] = cdt.registry.get<Execution, Process>(entity);
-        if (exec.state == ExecutionState::kComplete && exec.repeat_until_fail) {
-            exec.state = ExecutionState::kRunning;
-            proc.handle = nullptr;
-            cdt.registry.erase<TextBuffer, ExecutionOutput>(entity);
-            cdt.execs_to_run.push_back(entity);
-            to_remove.push_back(entity);
+    std::vector<entt::entity> to_restart;
+    for (auto [entity, exec, proc]: cdt.registry.view<Execution, Process, Running>().each()) {
+        if (exec.state != ExecutionState::kComplete || !exec.repeat_until_fail) {
+            return;
         }
+        exec.state = ExecutionState::kRunning;
+        proc.handle = nullptr;
+        cdt.registry.erase<TextBuffer, ExecutionOutput>(entity);
+        cdt.execs_to_run.push_back(entity);
+        to_restart.push_back(entity);
     }
-    RemoveAll(to_remove, cdt.running_execs);
+    cdt.registry.erase<Running>(to_restart.begin(), to_restart.end());
 }
 
 void FinishTaskExecution(Cdt& cdt) {
-    std::vector<entt::entity> to_remove;
-    for (entt::entity entity: cdt.running_execs) {
-        Execution& exec = cdt.registry.get<Execution>(entity);
-        if (exec.state != ExecutionState::kRunning) {
-            to_remove.push_back(entity);
-            cdt.exec_history.push_front(entity);
-            if (exec.state == ExecutionState::kFailed) {
-                cdt.registry.destroy(cdt.execs_to_run.begin(), cdt.execs_to_run.end());
-                cdt.execs_to_run.clear();
-            }
+    std::vector<entt::entity> to_finish;
+    for (auto [entity, exec]: cdt.registry.view<Execution, Running>().each()) {
+        if (exec.state == ExecutionState::kRunning) {
+            continue;
+        }
+        to_finish.push_back(entity);
+        cdt.exec_history.push_front(entity);
+        if (exec.state == ExecutionState::kFailed) {
+            cdt.registry.destroy(cdt.execs_to_run.begin(), cdt.execs_to_run.end());
+            cdt.execs_to_run.clear();
         }
     }
-    RemoveAll(to_remove, cdt.running_execs);
+    cdt.registry.erase<Running>(to_finish.begin(), to_finish.end());
 }
 
 void RemoveOldExecutionsFromHistory(Cdt& cdt) {
