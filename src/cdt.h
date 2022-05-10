@@ -124,8 +124,14 @@ struct TemplateString
     size_t arg_pos;
 };
 
-enum class TextBufferType {
-    kProcess, kGtest, kOutput
+enum TextBufferType {
+    kBufferProcess = 0,
+    kBufferGtest,
+    kBufferOutput
+};
+
+struct TextBuffer {
+    std::vector<std::vector<std::string>> buffers = std::vector<std::vector<std::string>>(kBufferOutput + 1);
 };
 
 struct TextBufferSearch {
@@ -168,7 +174,7 @@ struct Cdt {
     std::unordered_map<Entity, Execution> execs;
     std::unordered_map<Entity, ExecutionOutput> exec_outputs;
     std::unordered_map<Entity, GtestExecution> gtest_execs;
-    std::unordered_map<Entity, std::unordered_map<TextBufferType, std::vector<std::string>>> text_buffers;
+    std::unordered_map<Entity, TextBuffer> text_buffers;
     std::unordered_map<Entity, TextBufferSearch> text_buffer_searchs;
     moodycamel::BlockingConcurrentQueue<ProcessEvent> proc_event_queue;
     std::vector<std::string> kUsrCmdNames;

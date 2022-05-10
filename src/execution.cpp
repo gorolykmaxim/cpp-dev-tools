@@ -143,7 +143,7 @@ void HandleProcessEvent(Cdt& cdt) {
         Execution& exec = cdt.execs[event.process];
         exec.state = cdt.os->GetProcessExitCode(proc) == 0 ? ExecutionState::kComplete : ExecutionState::kFailed;
     } else {
-        std::vector<std::string>& buffer = cdt.text_buffers[event.process][TextBufferType::kProcess];
+        std::vector<std::string>& buffer = cdt.text_buffers[event.process].buffers[kBufferProcess];
         std::string& line_buffer = event.type == ProcessEventType::kStdout ? proc.stdout_line_buffer : proc.stderr_line_buffer;
         std::string to_process = line_buffer + event.data;
         std::stringstream tmp_buffer;
@@ -184,7 +184,7 @@ void RestartRepeatingExecutionOnSuccess(Cdt& cdt) {
         if (exec.state == ExecutionState::kComplete && exec.repeat_until_fail) {
             exec.state = ExecutionState::kRunning;
             cdt.processes[entity].handle = nullptr;
-            cdt.text_buffers[entity][TextBufferType::kOutput].clear();
+            cdt.text_buffers[entity].buffers[kBufferOutput].clear();
             cdt.execs_to_run.push_back(entity);
             to_remove.push_back(entity);
         }

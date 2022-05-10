@@ -39,7 +39,7 @@ std::string DefineUserCommand(const std::string& name, const UserCommandDefiniti
 Entity CreateEntity(Cdt& cdt);
 void DestroyEntity(Entity e, Cdt& cdt);
 bool Find(Entity e, const std::unordered_set<Entity>& components);
-void MoveTextBuffer(Entity e, TextBufferType from, TextBufferType to, std::unordered_map<Entity, std::unordered_map<TextBufferType, std::vector<std::string>>>& text_buffers);
+void MoveTextBuffer(Entity e, TextBufferType from, TextBufferType to, std::unordered_map<Entity, TextBuffer>& text_buffers);
 void WarnUserConfigPropNotSpecified(const std::string& property, Cdt& cdt);
 std::string FormatTemplate(const TemplateString& templ, const std::string& str);
 bool AcceptUsrCmd(const std::string& def, UserCommand& cmd);

@@ -1,4 +1,5 @@
 #include "common.h"
+#include "cdt.h"
 #include <string>
 #include <vector>
 
@@ -24,9 +25,9 @@ bool Find(Entity e, const std::unordered_set<Entity>& components) {
     return components.count(e) > 0;
 }
 
-void MoveTextBuffer(Entity e, TextBufferType from, TextBufferType to, std::unordered_map<Entity, std::unordered_map<TextBufferType, std::vector<std::string>>>& text_buffers) {
-    std::vector<std::string>& f = text_buffers[e][from];
-    std::vector<std::string>& t = text_buffers[e][to];
+void MoveTextBuffer(Entity e, TextBufferType from, TextBufferType to, std::unordered_map<Entity, TextBuffer>& text_buffers) {
+    std::vector<std::string>& f = text_buffers[e].buffers[from];
+    std::vector<std::string>& t = text_buffers[e].buffers[to];
     t.reserve(t.size() + f.size());
     t.insert(t.end(), f.begin(), f.end());
     f.clear();

@@ -56,9 +56,9 @@ static void CompleteCurrentGtest(GtestExecution& gtest_exec, const std::string& 
 void ParseGtestOutput(Cdt& cdt) {
     static size_t kTestCountIndex = std::string("Running ").size();
     for (Entity entity: cdt.running_execs) {
-        std::vector<std::string>& proc_buffer = cdt.text_buffers[entity][TextBufferType::kProcess];
-        std::vector<std::string>& gtest_buffer = cdt.text_buffers[entity][TextBufferType::kGtest];
-        std::vector<std::string>& out_buffer = cdt.text_buffers[entity][TextBufferType::kOutput];
+        std::vector<std::string>& proc_buffer = cdt.text_buffers[entity].buffers[kBufferProcess];
+        std::vector<std::string>& gtest_buffer = cdt.text_buffers[entity].buffers[kBufferGtest];
+        std::vector<std::string>& out_buffer = cdt.text_buffers[entity].buffers[kBufferOutput];
         Process& proc = cdt.processes[entity];
         GtestExecution* gtest_exec = Find(entity, cdt.gtest_execs);
         if (!gtest_exec) {
@@ -212,8 +212,8 @@ void DisplayGtestOutput(Cdt& cdt) {
         return;
     }
     ExecutionOutput& exec_output = cdt.exec_outputs[entity];
-    std::vector<std::string>& gtest_buffer = cdt.text_buffers[entity][TextBufferType::kGtest];
-    std::vector<std::string>& out_buffer = cdt.text_buffers[entity][TextBufferType::kOutput];
+    std::vector<std::string>& gtest_buffer = cdt.text_buffers[entity].buffers[kBufferGtest];
+    std::vector<std::string>& out_buffer = cdt.text_buffers[entity].buffers[kBufferOutput];
     PrintGtestOutput(exec_output, gtest_buffer, out_buffer, test, gtest_exec.failed_test_ids.empty() ? kTcGreen : kTcRed);
 }
 
@@ -225,7 +225,7 @@ void SearchThroughGtestOutput(Cdt& cdt) {
     if (!FindGtestByCmdArgInLastEntityWithGtestExec(cdt.last_usr_cmd, cdt, entity, gtest_exec, test)) {
         return;
     }
-    cdt.text_buffer_searchs[entity] = TextBufferSearch{TextBufferType::kGtest, test.buffer_start, test.buffer_end};
+    cdt.text_buffer_searchs[entity] = TextBufferSearch{kBufferGtest, test.buffer_start, test.buffer_end};
 }
 
 void RerunGtest(Cdt& cdt) {
@@ -301,8 +301,8 @@ void DisplayGtestExecutionResult(Cdt& cdt) {
                 PrintFailedGtestList(*gtest_exec, cdt);
                 if (gtest_exec->failed_test_ids.size() == 1) {
                     GtestTest& test = gtest_exec->tests[gtest_exec->failed_test_ids[0]];
-                    std::vector<std::string>& gtest_buffer = cdt.text_buffers[entity][TextBufferType::kGtest];
-                    std::vector<std::string>& out_buffer = cdt.text_buffers[entity][TextBufferType::kOutput];
+                    std::vector<std::string>& gtest_buffer = cdt.text_buffers[entity].buffers[kBufferGtest];
+                    std::vector<std::string>& out_buffer = cdt.text_buffers[entity].buffers[kBufferOutput];
                     PrintGtestOutput(exec_output, gtest_buffer, out_buffer, test, kTcRed);
                 }
             }
@@ -317,7 +317,7 @@ void RestartRepeatingGtestOnSuccess(Cdt& cdt) {
         GtestExecution* gtest_exec = Find(entity, cdt.gtest_execs);
         if (gtest_exec && exec.state == ExecutionState::kComplete && exec.repeat_until_fail) {
             cdt.gtest_execs[entity] = GtestExecution{gtest_exec->rerun_of_single_test};
-            cdt.text_buffers[entity][TextBufferType::kGtest].clear();
+            cdt.text_buffers[entity].buffers[kBufferGtest].clear();
         }
     }
 }
