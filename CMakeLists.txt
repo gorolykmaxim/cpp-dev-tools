@@ -16,6 +16,7 @@ endif()
 add_subdirectory(lib/tiny-process-library)
 add_subdirectory(lib/cameron314_concurrentqueue)
 add_subdirectory(lib/nlohmann-json)
+add_subdirectory(lib/skypjack_entt)
 add_subdirectory(lib/googletest EXCLUDE_FROM_ALL)
 
 add_library(cdt STATIC
@@ -34,8 +35,13 @@ add_library(cdt STATIC
     src/output.cpp
     src/execution.h
     src/execution.cpp)
-target_include_directories(cdt PUBLIC src PUBLIC lib/tiny-process-library PUBLIC lib/nlohmann_json PUBLIC lib/cameron314_concurrentqueue)
-target_link_libraries(cdt tiny-process-library nlohmann_json cameron314_concurrentqueue)
+target_include_directories(cdt
+    PUBLIC src
+    PUBLIC lib/tiny-process-library
+    PUBLIC lib/nlohmann_json
+    PUBLIC lib/cameron314_concurrentqueue
+    PUBLIC lib/skypjack_entt)
+target_link_libraries(cdt tiny-process-library nlohmann_json cameron314_concurrentqueue skypjack_entt)
 
 add_executable(${PROJECT_NAME} src/main.cpp)
 target_link_libraries(${PROJECT_NAME} cdt)
