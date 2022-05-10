@@ -33,15 +33,14 @@ static std::string GtestTaskCommandToShellCommand(const std::string& task_cmd, c
 }
 
 void ScheduleGtestExecutions(Cdt& cdt) {
-    for (Entity entity: cdt.execs_to_run) {
-        Process& proc = cdt.processes[entity];
-        if (Find(entity, cdt.gtest_execs) || proc.shell_command.find(kGtestTask) != 0) {
+    for (entt::entity entity: cdt.execs_to_run) {
+        auto [proc, exec] = cdt.registry.get<Process, Execution>(entity);
+        if (cdt.registry.all_of<GtestExecution>(entity) || proc.shell_command.find(kGtestTask) != 0) {
             continue;
         }
         if (proc.debug == DebugStatus::kNotRequired) {
-            cdt.gtest_execs[entity] = GtestExecution{};
+            cdt.registry.emplace<GtestExecution>(entity);
         }
-        Execution& exec = cdt.execs[entity];
         exec.is_pinned = true;
         proc.shell_command = GtestTaskCommandToShellCommand(proc.shell_command);
     }
@@ -55,12 +54,12 @@ static void CompleteCurrentGtest(GtestExecution& gtest_exec, const std::string& 
 
 void ParseGtestOutput(Cdt& cdt) {
     static size_t kTestCountIndex = std::string("Running ").size();
-    for (Entity entity: cdt.running_execs) {
-        std::vector<std::string>& proc_buffer = cdt.text_buffers[entity].buffers[kBufferProcess];
-        std::vector<std::string>& gtest_buffer = cdt.text_buffers[entity].buffers[kBufferGtest];
-        std::vector<std::string>& out_buffer = cdt.text_buffers[entity].buffers[kBufferOutput];
-        Process& proc = cdt.processes[entity];
-        GtestExecution* gtest_exec = Find(entity, cdt.gtest_execs);
+    for (entt::entity entity: cdt.running_execs) {
+        auto [tb, proc] = cdt.registry.get<TextBuffer, Process>(entity);
+        std::vector<std::string>& proc_buffer = tb.buffers[kBufferProcess];
+        std::vector<std::string>& gtest_buffer = tb.buffers[kBufferGtest];
+        std::vector<std::string>& out_buffer = tb.buffers[kBufferOutput];
+        GtestExecution* gtest_exec = cdt.registry.try_get<GtestExecution>(entity);
         if (!gtest_exec) {
             continue;
         }
@@ -164,7 +163,7 @@ static void PrintGtestOutput(ExecutionOutput& out, const std::vector<std::string
     out_buffer.insert(out_buffer.end(), gtest_buffer.begin() + test.buffer_start, gtest_buffer.begin() + test.buffer_end);
 }
 
-static bool FindGtestByCmdArgInLastEntityWithGtestExec(const UserCommand& cmd, Cdt& cdt, Entity& entity, GtestExecution& exec, GtestTest& test) {
+static bool FindGtestByCmdArgInLastEntityWithGtestExec(const UserCommand& cmd, Cdt& cdt, entt::entity& entity, GtestExecution& exec, GtestTest& test) {
     size_t lookup_start = 0;
     if (cdt.selected_exec) {
         auto it = std::find(cdt.exec_history.begin(), cdt.exec_history.end(), *cdt.selected_exec);
@@ -174,9 +173,8 @@ static bool FindGtestByCmdArgInLastEntityWithGtestExec(const UserCommand& cmd, C
     }
     for (size_t i = lookup_start; i < cdt.exec_history.size(); i++) {
         entity = cdt.exec_history[i];
-        auto it = cdt.gtest_execs.find(entity);
-        if (it != cdt.gtest_execs.end()) {
-            exec = it->second;
+        if (cdt.registry.all_of<GtestExecution>(entity)) {
+            exec = cdt.registry.get<GtestExecution>(entity);
             break;
         }
     }
@@ -205,50 +203,50 @@ static bool FindGtestByCmdArgInLastEntityWithGtestExec(const UserCommand& cmd, C
 
 void DisplayGtestOutput(Cdt& cdt) {
     if (!AcceptUsrCmd(kGtest, cdt.last_usr_cmd)) return;
-    Entity entity;
+    entt::entity entity;
     GtestExecution gtest_exec;
     GtestTest test;
     if (!FindGtestByCmdArgInLastEntityWithGtestExec(cdt.last_usr_cmd, cdt, entity, gtest_exec, test)) {
         return;
     }
-    ExecutionOutput& exec_output = cdt.exec_outputs[entity];
-    std::vector<std::string>& gtest_buffer = cdt.text_buffers[entity].buffers[kBufferGtest];
-    std::vector<std::string>& out_buffer = cdt.text_buffers[entity].buffers[kBufferOutput];
+    auto [exec_output, tb] = cdt.registry.get<ExecutionOutput, TextBuffer>(entity);
+    std::vector<std::string>& gtest_buffer = tb.buffers[kBufferGtest];
+    std::vector<std::string>& out_buffer = tb.buffers[kBufferOutput];
     PrintGtestOutput(exec_output, gtest_buffer, out_buffer, test, gtest_exec.failed_test_ids.empty() ? kTcGreen : kTcRed);
 }
 
 void SearchThroughGtestOutput(Cdt& cdt) {
     if (!AcceptUsrCmd(kGtestSearch, cdt.last_usr_cmd)) return;
-    Entity entity;
+    entt::entity entity;
     GtestExecution gtest_exec;
     GtestTest test;
     if (!FindGtestByCmdArgInLastEntityWithGtestExec(cdt.last_usr_cmd, cdt, entity, gtest_exec, test)) {
         return;
     }
-    cdt.text_buffer_searchs[entity] = TextBufferSearch{kBufferGtest, test.buffer_start, test.buffer_end};
+    cdt.registry.emplace<TextBufferSearch>(entity, kBufferGtest, test.buffer_start, test.buffer_end);
 }
 
 void RerunGtest(Cdt& cdt) {
     if (!AcceptUsrCmd(kGtestRerun, cdt.last_usr_cmd) && !AcceptUsrCmd(kGtestRerunRepeat, cdt.last_usr_cmd) && !AcceptUsrCmd(kGtestDebug, cdt.last_usr_cmd)) return;
-    Entity entity;
+    entt::entity entity;
     GtestExecution gtest_exec;
     GtestTest test;
     if (!FindGtestByCmdArgInLastEntityWithGtestExec(cdt.last_usr_cmd, cdt, entity, gtest_exec, test)) {
         return;
     }
-    size_t task_id = cdt.execs[entity].task_id;
-    entity = CreateEntity(cdt);
-    Execution& exec = cdt.execs[entity];
+    size_t task_id = cdt.registry.get<Execution>(entity).task_id;
+    entity = cdt.registry.create();
+    Execution& exec = cdt.registry.emplace<Execution>(entity);
     exec.name = test.name;
     exec.task_id = task_id;
     exec.repeat_until_fail = kGtestRerunRepeat == cdt.last_usr_cmd.cmd;
-    Process& proc = cdt.processes[entity];
+    Process& proc = cdt.registry.emplace<Process>(entity);
     proc.shell_command = GtestTaskCommandToShellCommand(cdt.tasks[task_id].command, test.name);
     proc.stream_output = true;
     if (kGtestDebug == cdt.last_usr_cmd.cmd) {
         proc.debug = DebugStatus::kRequired;
     } else {
-        GtestExecution& new_gtest_exec = cdt.gtest_execs[entity];
+        GtestExecution& new_gtest_exec = cdt.registry.emplace<GtestExecution>(entity);
         new_gtest_exec.rerun_of_single_test = true;
     }
     cdt.execs_to_schedule.push_back(entity);
@@ -261,25 +259,23 @@ void ScheduleGtestTaskWithFilter(Cdt& cdt) {
     } else {
         std::string filter = ReadInputFromStdin(kGtestFilterArg + "=", cdt);
         int task_id = cdt.last_usr_cmd.arg - 1;
-        Entity entity = CreateEntity(cdt);
-        Execution& exec = cdt.execs[entity];
+        entt::entity entity = cdt.registry.create();
+        Execution& exec = cdt.registry.emplace<Execution>(entity);
         exec.name = filter;
         exec.is_pinned = true;
         exec.task_id = task_id;
-        Process& proc = cdt.processes[entity];
+        Process& proc = cdt.registry.emplace<Process>(entity);
         proc.shell_command = GtestTaskCommandToShellCommand(cdt.tasks[task_id].command, filter);
         proc.stream_output = true;
-        cdt.gtest_execs[entity] = GtestExecution{};
+        cdt.registry.emplace<GtestExecution>(entity);
         cdt.execs_to_schedule.push_back(entity);
     }
 }
 
 void DisplayGtestExecutionResult(Cdt& cdt) {
-    for (Entity entity: cdt.running_execs) {
-        Execution& exec = cdt.execs[entity];
-        Process& proc = cdt.processes[entity];
-        ExecutionOutput& exec_output = cdt.exec_outputs[entity];
-        GtestExecution* gtest_exec = Find(entity, cdt.gtest_execs);
+    for (entt::entity entity: cdt.running_execs) {
+        auto [exec, proc, exec_output, tb] = cdt.registry.get<Execution, Process, ExecutionOutput, TextBuffer>(entity);
+        GtestExecution* gtest_exec = cdt.registry.try_get<GtestExecution>(entity);
         if (gtest_exec && !gtest_exec->rerun_of_single_test && exec.state != ExecutionState::kRunning && gtest_exec->state != GtestExecutionState::kFinished) {
             cdt.os->Out() << "\33[2K\r"; // Current line has test execution progress displayed. We will start displaying our output on top of it.
             if (gtest_exec->state == GtestExecutionState::kRunning) {
@@ -301,8 +297,8 @@ void DisplayGtestExecutionResult(Cdt& cdt) {
                 PrintFailedGtestList(*gtest_exec, cdt);
                 if (gtest_exec->failed_test_ids.size() == 1) {
                     GtestTest& test = gtest_exec->tests[gtest_exec->failed_test_ids[0]];
-                    std::vector<std::string>& gtest_buffer = cdt.text_buffers[entity].buffers[kBufferGtest];
-                    std::vector<std::string>& out_buffer = cdt.text_buffers[entity].buffers[kBufferOutput];
+                    std::vector<std::string>& gtest_buffer = tb.buffers[kBufferGtest];
+                    std::vector<std::string>& out_buffer = tb.buffers[kBufferOutput];
                     PrintGtestOutput(exec_output, gtest_buffer, out_buffer, test, kTcRed);
                 }
             }
@@ -312,33 +308,32 @@ void DisplayGtestExecutionResult(Cdt& cdt) {
 }
 
 void RestartRepeatingGtestOnSuccess(Cdt& cdt) {
-    for (Entity entity: cdt.running_execs) {
-        Execution& exec = cdt.execs[entity];
-        GtestExecution* gtest_exec = Find(entity, cdt.gtest_execs);
+    for (entt::entity entity: cdt.running_execs) {
+        Execution& exec = cdt.registry.get<Execution>(entity);
+        GtestExecution* gtest_exec = cdt.registry.try_get<GtestExecution>(entity);
         if (gtest_exec && exec.state == ExecutionState::kComplete && exec.repeat_until_fail) {
-            cdt.gtest_execs[entity] = GtestExecution{gtest_exec->rerun_of_single_test};
-            cdt.text_buffers[entity].buffers[kBufferGtest].clear();
+            cdt.registry.replace<GtestExecution>(entity, gtest_exec->rerun_of_single_test);
         }
     }
 }
 
 void FinishGtestExecution(Cdt& cdt) {
     bool unpin_existing_entities = false;
-    for (Entity entity: cdt.running_execs) {
-        GtestExecution* gtest_exec = Find(entity, cdt.gtest_execs);
-        if (!gtest_exec || cdt.execs[entity].state == ExecutionState::kRunning) {
+    for (entt::entity entity: cdt.running_execs) {
+        GtestExecution* gtest_exec = cdt.registry.try_get<GtestExecution>(entity);
+        if (!gtest_exec || cdt.registry.get<Execution>(entity).state == ExecutionState::kRunning) {
             continue;
         }
         if (gtest_exec->rerun_of_single_test) {
-            cdt.gtest_execs.erase(entity);
+            cdt.registry.erase<GtestExecution>(entity);
         } else {
             unpin_existing_entities = true;
         }
     }
     if (unpin_existing_entities) {
-        for (Entity entity: cdt.exec_history) {
-            if (Find(entity, cdt.gtest_execs)) {
-                cdt.execs[entity].is_pinned = false;
+        for (entt::entity entity: cdt.exec_history) {
+            if (cdt.registry.all_of<GtestExecution>(entity)) {
+                cdt.registry.get<Execution>(entity).is_pinned = false;
             }
         }
     }

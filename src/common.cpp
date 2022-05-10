@@ -9,25 +9,9 @@ std::string DefineUserCommand(const std::string& name, const UserCommandDefiniti
     return name;
 }
 
-Entity CreateEntity(Cdt& cdt) {
-    return cdt.entity_seed++;
-}
-
-void DestroyEntity(Entity e, Cdt& cdt) {
-    cdt.processes.erase(e);
-    cdt.execs.erase(e);
-    cdt.exec_outputs.erase(e);
-    cdt.gtest_execs.erase(e);
-    cdt.text_buffers.erase(e);
-}
-
-bool Find(Entity e, const std::unordered_set<Entity>& components) {
-    return components.count(e) > 0;
-}
-
-void MoveTextBuffer(Entity e, TextBufferType from, TextBufferType to, std::unordered_map<Entity, TextBuffer>& text_buffers) {
-    std::vector<std::string>& f = text_buffers[e].buffers[from];
-    std::vector<std::string>& t = text_buffers[e].buffers[to];
+void MoveTextBuffer(TextBufferType from, TextBufferType to, TextBuffer& buffer) {
+    std::vector<std::string>& f = buffer.buffers[from];
+    std::vector<std::string>& t = buffer.buffers[to];
     t.reserve(t.size() + f.size());
     t.insert(t.end(), f.begin(), f.end());
     f.clear();

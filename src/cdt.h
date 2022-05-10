@@ -17,6 +17,7 @@
 #include <filesystem>
 #include "process.hpp"
 #include "blockingconcurrentqueue.h"
+#include "entt.hpp"
 
 const std::string kTcRed = "\033[31m";
 const std::string kTcGreen = "\033[32m";
@@ -51,8 +52,6 @@ struct Task
     std::string command;
 };
 
-typedef uint32_t Entity;
-
 enum class DebugStatus {
     kNotRequired, kRequired, kAttached
 };
@@ -72,7 +71,7 @@ enum class ProcessEventType {
 
 struct ProcessEvent
 {
-    Entity process;
+    entt::entity process;
     ProcessEventType type;
     std::string data;
 };
@@ -166,16 +165,11 @@ public:
 };
 
 struct Cdt {
-    std::deque<Entity> execs_to_schedule;
-    std::deque<Entity> execs_to_run; // Execution entities to execute where first entity is the first execution to execute
-    std::deque<Entity> running_execs;
-    std::deque<Entity> exec_history; // History of executed entities where first entity is the most recently executed entity
-    std::unordered_map<Entity, Process> processes;
-    std::unordered_map<Entity, Execution> execs;
-    std::unordered_map<Entity, ExecutionOutput> exec_outputs;
-    std::unordered_map<Entity, GtestExecution> gtest_execs;
-    std::unordered_map<Entity, TextBuffer> text_buffers;
-    std::unordered_map<Entity, TextBufferSearch> text_buffer_searchs;
+    std::deque<entt::entity> execs_to_schedule;
+    std::deque<entt::entity> execs_to_run; // Execution entities to execute where first entity is the first execution to execute
+    std::deque<entt::entity> running_execs;
+    std::deque<entt::entity> exec_history; // History of executed entities where first entity is the most recently executed entity
+    entt::registry registry;
     moodycamel::BlockingConcurrentQueue<ProcessEvent> proc_event_queue;
     std::vector<std::string> kUsrCmdNames;
     std::vector<UserCommandDefinition> kUsrCmdDefs;
@@ -189,8 +183,7 @@ struct Cdt {
     std::filesystem::path user_config_path;
     std::filesystem::path tasks_config_path;
     std::vector<std::string> config_errors;
-    Entity entity_seed = 1;
-    std::optional<Entity> selected_exec;
+    std::optional<entt::entity> selected_exec;
     OsApi* os;
 };
 
