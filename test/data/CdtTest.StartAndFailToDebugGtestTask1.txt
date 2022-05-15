@@ -1,5 +1,0 @@
-[32m(cdt) [0m[34mRunning "pre pre task 1"...[0m
-[34mRunning "pre pre task 2"...[0m
-[35mRunning "run tests with pre tasks"[0m
-failed to launch debugger
-[31m'run tests with pre tasks' failed: return code: 1[0m

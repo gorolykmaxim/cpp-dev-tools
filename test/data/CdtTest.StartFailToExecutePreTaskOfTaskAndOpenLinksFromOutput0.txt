@@ -1,12 +1,6 @@
-Type [32mh[0m to see list of all the user commands.
-[32mTasks:[0m
-1 "hello world!"
-2 "primary task"
-3 "pre task 1"
-4 "pre task 2"
-5 "pre pre task 1"
-6 "pre pre task 2"
-7 "restart"
-8 "run tests"
-9 "task with gtest pre task"
-10 "run tests with pre tasks"
+[32m(cdt) [0m[34mRunning "pre pre task 1"...[0m
+[35m[o1] /a/b/c:10[0m
+some random data
+[35m[o2] /d/e/f:15:32[0m something
+line [35m[o3] /a/b/c:11[0m and [35m[o4] /b/c:32:1[0m
+[31m'pre pre task 1' failed: return code: 1[0m

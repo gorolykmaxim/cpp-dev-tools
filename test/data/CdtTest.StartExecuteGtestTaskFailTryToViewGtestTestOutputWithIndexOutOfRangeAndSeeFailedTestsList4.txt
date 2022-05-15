@@ -1,4 +1,0 @@
-[32m(cdt) [0m[31mFailed tests:[0m
-1 "failed_test_suit_1.test1" (0 ms)
-2 "failed_test_suit_2.test1" (0 ms)
-[31mTests failed: 2 of 3 (66%) (0 ms total)[0m

@@ -1,3 +1,0 @@
-[32m(cdt) [0m[34mRunning "pre pre task 1"...[0m
-pre pre task 1
-[31m'pre pre task 1' failed: return code: 1[0m

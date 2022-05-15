@@ -1,7 +1,0 @@
-[32m(cdt) [0m[34mRunning "pre pre task 1"...[0m
-[34mRunning "pre pre task 2"...[0m
-[34mRunning "pre task 1"...[0m
-[34mRunning "pre task 2"...[0m
-[35mRunning "primary task"[0m
-[35mDebugger started[0m
-[35m'primary task' complete: return code: 0[0m

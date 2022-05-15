@@ -1,9 +1,0 @@
-[32m(cdt) [0m[35mRunning "run tests"[0m
-Tests completed: 1 of 2[2K[31mTests have finished prematurely[0m
-[31mFailed tests:[0m
-1 "exit_tests.exit_in_the_middle" 
-[31mTests failed: 1 of 2 (50%) [0m
-[31m"exit_tests.exit_in_the_middle" output:[0m
-unknown file: Failure
-C++ exception with description "" thrown in the test body.
-[31m'run tests' failed: return code: -1[0m

@@ -1,5 +1,4 @@
-Type [32mh[0m to see list of all the user commands.
-[32mTasks:[0m
+[32m(cdt) [0m[32mTasks:[0m
 1 "hello world!"
 2 "primary task"
 3 "pre task 1"

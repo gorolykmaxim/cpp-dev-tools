@@ -1,6 +1,0 @@
-[32m(cdt) [0m[34mRunning "pre pre task 1"...[0m
-[34mRunning "pre pre task 2"...[0m
-[35mRunning "failed_test_suit_2.test1"[0m
-unknown file: Failure
-C++ exception with description "" thrown in the test body.
-[31m'failed_test_suit_2.test1' failed: return code: 1[0m

@@ -1,1 +1,3 @@
-[32m(cdt) [0m[35mSelected execution "hello world!"[0m
+[32m(cdt) [0m[35mRunning "hello world!"[0m
+hello world!
+[35m'hello world!' complete: return code: 0[0m

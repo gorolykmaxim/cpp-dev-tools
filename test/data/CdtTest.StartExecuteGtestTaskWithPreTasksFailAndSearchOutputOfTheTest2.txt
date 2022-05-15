@@ -1,2 +1,2 @@
-[32m(cdt) [0m[32mRegular expression: [0m[35m5:[0munknown file: [32mFailure[0m
-[35m6:[0m[32mC++[0m exception [32mwith description[0m "" thrown in the test body.
+[32m(cdt) [0m[32mRegular expression: [0m[35m2:[0munknown file: [32mFailure[0m
+[35m3:[0m[32mC++[0m exception [32mwith description[0m "" thrown in the test body.

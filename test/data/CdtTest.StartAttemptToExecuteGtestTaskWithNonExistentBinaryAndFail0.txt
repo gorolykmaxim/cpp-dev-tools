@@ -1,12 +1,3 @@
-Type [32mh[0m to see list of all the user commands.
-[32mTasks:[0m
-1 "hello world!"
-2 "primary task"
-3 "pre task 1"
-4 "pre task 2"
-5 "pre pre task 1"
-6 "pre pre task 2"
-7 "restart"
-8 "run tests"
-9 "task with gtest pre task"
-10 "run tests with pre tasks"
+[32m(cdt) [0m[35mRunning "run tests"[0m
+[2K[31m'tests' is not a google test executable[0m
+[31m'run tests' failed: return code: 127[0m

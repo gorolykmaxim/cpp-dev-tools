@@ -1,1 +1,0 @@
-[32m(cdt) [0m[31m'open_in_editor_command' is not specified in "/users/my-user/.cpp-dev-tools.json"[0m

@@ -1,5 +1,5 @@
 [32m(cdt) [0m[34mRunning "pre pre task 1"...[0m
 [34mRunning "pre pre task 2"...[0m
-[35mRunning "failed_test_suit_1.test1"[0m
+[35mRunning "failed_test_suit_2.test1"[0m
 [35mDebugger started[0m
-[35m'failed_test_suit_1.test1' complete: return code: 0[0m
+[35m'failed_test_suit_2.test1' complete: return code: 0[0m

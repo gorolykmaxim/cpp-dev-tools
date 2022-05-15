@@ -1,12 +1,6 @@
-Type [32mh[0m to see list of all the user commands.
-[32mTasks:[0m
-1 "hello world!"
-2 "primary task"
-3 "pre task 1"
-4 "pre task 2"
-5 "pre pre task 1"
-6 "pre pre task 2"
-7 "restart"
-8 "run tests"
-9 "task with gtest pre task"
-10 "run tests with pre tasks"
+[32m(cdt) [0m[34mRunning "run tests"...[0m
+[2K[31mFailed tests:[0m
+1 "failed_test_suit_1.test1" (0 ms)
+2 "failed_test_suit_2.test1" (0 ms)
+[31mTests failed: 2 of 3 (66%) (0 ms total)[0m
+[31m'run tests' failed: return code: 1[0m

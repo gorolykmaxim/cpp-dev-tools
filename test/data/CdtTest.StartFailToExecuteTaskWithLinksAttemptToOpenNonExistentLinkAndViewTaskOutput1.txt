@@ -1,6 +1,5 @@
-[32m(cdt) [0m[35mRunning "hello world!"[0m
+[32m(cdt) [0m[32mLast execution output:[0m
 [35m[o1] /a/b/c:10[0m
 some random data
 [35m[o2] /d/e/f:15:32[0m something
 line [35m[o3] /a/b/c:11[0m and [35m[o4] /b/c:32:1[0m
-[31m'hello world!' failed: return code: 1[0m

@@ -136,30 +136,30 @@ public:
     "unknown file: Failure\n"\
     "C++ exception with description \"\" thrown in the test body.\n"
 
-#define EXPECT_OUT_EQ_SNAPSHOT()\
+#define EXPECT_OUT_EQ_SNAPSHOT(NAME)\
     if (std::getenv("SNAPSHOT") != nullptr)\
-        mock.OsApi::WriteFile(SnapshotPath(), out.str());\
+        mock.OsApi::WriteFile(SnapshotPath(NAME), out.str());\
     else\
-        EXPECT_EQ(ReadSnapshot(), out.str());\
+        EXPECT_EQ(ReadSnapshot(NAME), out.str());\
     out.str("")
 
 #define EXPECT_CDT_STARTED()\
     EXPECT_TRUE(InitTestCdt());\
-    EXPECT_OUT_EQ_SNAPSHOT()
+    EXPECT_OUT_EQ_SNAPSHOT("InitTestCdt")
 
 #define EXPECT_CDT_ABORTED()\
     EXPECT_FALSE(InitTestCdt());\
-    EXPECT_OUT_EQ_SNAPSHOT()
+    EXPECT_OUT_EQ_SNAPSHOT("")
 
 #define EXPECT_CMD(CMD)\
     RunCmd(CMD);\
-    EXPECT_OUT_EQ_SNAPSHOT()
+    EXPECT_OUT_EQ_SNAPSHOT("")
 
 #define EXPECT_INTERRUPTED_CMD(CMD)\
     RunCmd(CMD, true);\
     sigint_handler(SIGINT);\
     ExecCdtSystems(cdt);\
-    EXPECT_OUT_EQ_SNAPSHOT()
+    EXPECT_OUT_EQ_SNAPSHOT("")
 
 #define EXPECT_OUTPUT_LINKS_TO_OPEN()\
     testing::InSequence seq;\
@@ -438,20 +438,22 @@ public:
             }
         }
     }
-    std::filesystem::path SnapshotPath() {
+    std::filesystem::path SnapshotPath(std::string name) {
         testing::UnitTest* test = testing::UnitTest::GetInstance();
-        const testing::TestInfo* info = test->current_test_info();
-        std::string suite_name = info->test_suite_name();
-        std::string test_name = info->name();
-        std::string data_ind = std::to_string(expected_data_index++);
-        std::string test_key = suite_name + '.' + test_name + data_ind;
         std::filesystem::path snapshot_path(TEST_DATA_DIR);
-        snapshot_path /= test_key + ".txt";
+        if (name.empty()) {
+            const testing::TestInfo* info = test->current_test_info();
+            std::string suite_name = info->test_suite_name();
+            std::string test_name = info->name();
+            std::string data_ind = std::to_string(expected_data_index++);
+            name = suite_name + '.' + test_name + data_ind;
+        }
+        snapshot_path /= name + ".txt";
         return snapshot_path;
     }
-    std::string ReadSnapshot() {
+    std::string ReadSnapshot(const std::string& name) {
         std::string snapshot;
-        mock.OsApi::ReadFile(SnapshotPath(), snapshot);
+        mock.OsApi::ReadFile(SnapshotPath(name), snapshot);
         return snapshot;
     }
 };

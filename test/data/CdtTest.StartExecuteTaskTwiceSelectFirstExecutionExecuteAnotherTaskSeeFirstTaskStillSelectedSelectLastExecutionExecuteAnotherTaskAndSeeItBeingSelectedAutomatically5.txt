@@ -1,3 +1,4 @@
-[32m(cdt) [0m[35mRunning "hello world!"[0m
-hello world!
-[35m'hello world!' complete: return code: 0[0m
+[32m(cdt) [0m[32mExecution history:[0m
+-> 3 03:00:01 "hello world!"
+   2 03:00:02 "hello world!"
+   1 03:00:03 "hello world!"

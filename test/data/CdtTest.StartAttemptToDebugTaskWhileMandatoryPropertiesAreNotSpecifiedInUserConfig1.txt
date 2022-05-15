@@ -1,2 +1,0 @@
-[32m(cdt) [0m[31m'debug_command' is not specified in "/users/my-user/.cpp-dev-tools.json"[0m
-[31m'execute_in_new_terminal_tab_command' is not specified in "/users/my-user/.cpp-dev-tools.json"[0m

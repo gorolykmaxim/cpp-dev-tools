@@ -1,12 +1,14 @@
-Type [32mh[0m to see list of all the user commands.
-[32mTasks:[0m
-1 "hello world!"
-2 "primary task"
-3 "pre task 1"
-4 "pre task 2"
-5 "pre pre task 1"
-6 "pre pre task 2"
-7 "restart"
-8 "run tests"
-9 "task with gtest pre task"
-10 "run tests with pre tasks"
+[32m(cdt) [0m[32mUser commands:[0m
+t<ind>		Execute the task with the specified index
+tr<ind>		Keep executing the task with the specified index until it fails
+d<ind>		Execute the task with the specified index with a debugger attached
+exec<ind>	Change currently selected execution (gets reset to the most recent one after every new execution)
+o<ind>		Open the file link with the specified index in your code editor
+s		Search through output of the selected executed task with the specified regular expression
+g<ind>		Display output of the specified google test
+gs<ind>		Search through output of the specified google test with the specified regular expression
+gt<ind>		Re-run the google test with the specified index
+gtr<ind>	Keep re-running the google test with the specified index until it fails
+gd<ind>		Re-run the google test with the specified index with debugger attached
+gf<ind>		Run google tests of the task with the specified index with a specified --gtest_filter
+h		Display list of user commands
