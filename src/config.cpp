@@ -58,7 +58,7 @@ bool ReadArgv(int argc, const char** argv, Cdt& cdt) {
         cdt.config_errors.emplace_back("usage: cpp-dev-tools tasks.json");
         return false;
     }
-    cdt.tasks_config_path = std::filesystem::absolute(argv[1]);
+    cdt.tasks_config_path = cdt.os->AbsolutePath(argv[1]);
     std::filesystem::path config_dir_path = cdt.tasks_config_path.parent_path();
     cdt.os->SetCurrentPath(config_dir_path);
     return true;

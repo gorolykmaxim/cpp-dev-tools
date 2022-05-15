@@ -152,6 +152,7 @@ public:
     virtual void SetEnv(const std::string& name, const std::string& value);
     virtual void SetCurrentPath(const std::filesystem::path& path);
     virtual std::filesystem::path GetCurrentPath();
+    virtual std::filesystem::path AbsolutePath(const std::filesystem::path& path);
     virtual bool ReadFile(const std::filesystem::path& path, std::string& data);
     virtual void WriteFile(const std::filesystem::path& path, const std::string& data);
     virtual bool FileExists(const std::filesystem::path& path);

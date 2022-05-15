@@ -1,0 +1,5 @@
+[31m/users/my-user/.cpp-dev-tools.json is invalid:
+'open_in_editor_command': must be a string in format, examples of which you can find in the config
+'debug_command': must be a string in format, examples of which you can find in the config
+'execute_in_new_terminal_tab_command': must be a string in format, examples of which you can find in the config
+[0m

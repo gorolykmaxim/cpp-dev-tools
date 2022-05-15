@@ -17,6 +17,11 @@
             "name": "run tests",
             "command": "__gtest ./build/cpp-dev-tools-test",
             "pre_tasks": ["build tests"]
+        },
+        {
+            "name": "save test data",
+            "command": "SNAPSHOT=1 ./build/cpp-dev-tools-test",
+            "pre_tasks": ["build tests"]
         }
     ]
 }

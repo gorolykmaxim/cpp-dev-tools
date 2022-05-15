@@ -1,0 +1,12 @@
+[31m/users/my-user/project/tasks.json is invalid:
+task #1: 'name': must be a string
+task #2: 'command': must be a string
+task #2: 'pre_tasks': must be an array of other task names
+task #3: references task 'non-existent-task' that does not exist
+task 'cycle-1' has a circular dependency in it's 'pre_tasks':
+cycle-1 -> cycle-2 -> cycle-3 -> cycle-1
+task 'cycle-2' has a circular dependency in it's 'pre_tasks':
+cycle-2 -> cycle-3 -> cycle-1 -> cycle-2
+task 'cycle-3' has a circular dependency in it's 'pre_tasks':
+cycle-3 -> cycle-1 -> cycle-2 -> cycle-3
+[0m

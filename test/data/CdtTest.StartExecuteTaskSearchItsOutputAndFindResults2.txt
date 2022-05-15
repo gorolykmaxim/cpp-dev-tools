@@ -1,0 +1,2 @@
+[32m(cdt) [0m[32mRegular expression: [0m[35m2:[0m[32msome[0m random [32mdata[0m
+[35m3:[0m[35m[o2] /d/e/f:15:32[0m [32msome[0mthing

@@ -1,0 +1,4 @@
+[32m(cdt) [0m[34mRunning "pre pre task 1"...[0m
+[34mRunning "pre pre task 2"...[0m
+[35mRunning "exit_tests.exit_in_the_middle"[0m
+[31m'exit_tests.exit_in_the_middle' failed: return code: -1[0m

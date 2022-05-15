@@ -1,0 +1,3 @@
+[32m(cdt) [0m[35mRunning "hello world!"[0m
+hello world!
+[31m'hello world!' failed: return code: -1[0m

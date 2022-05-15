@@ -1,0 +1,7 @@
+[32m(cdt) [0m[35mRunning "run tests"[0m
+Tests completed: 1 of 2[2K[31mTests have finished prematurely[0m
+[31mFailed tests:[0m
+1 "failed_test_suit_1.test1" (0 ms)
+2 "long_tests.test1" 
+[31mTests failed: 2 of 2 (100%) [0m
+[31m'run tests' failed: return code: -1[0m

@@ -1,3 +1,4 @@
+#include <filesystem>
 #include <iostream>
 #include <fstream>
 #include <memory>
@@ -34,6 +35,10 @@ void OsApi::SetCurrentPath(const std::filesystem::path &path) {
 
 std::filesystem::path OsApi::GetCurrentPath() {
     return std::filesystem::current_path();
+}
+
+std::filesystem::path OsApi::AbsolutePath(const std::filesystem::path &path) {
+    return std::filesystem::absolute(path);
 }
 
 bool OsApi::ReadFile(const std::filesystem::path &path, std::string &data) {

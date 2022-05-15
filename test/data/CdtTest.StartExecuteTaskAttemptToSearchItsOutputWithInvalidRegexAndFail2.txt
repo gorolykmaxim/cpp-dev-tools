@@ -1,0 +1,1 @@
+[32m(cdt) [0m[32mRegular expression: [0m[31mInvalid regular expression '[': The expression contained mismatched [ and ].[0m

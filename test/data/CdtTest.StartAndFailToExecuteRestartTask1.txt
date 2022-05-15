@@ -1,0 +1,2 @@
+[32m(cdt) [0m[35mRestarting program...[0m
+[31mFailed to restart: Exec format error[0m

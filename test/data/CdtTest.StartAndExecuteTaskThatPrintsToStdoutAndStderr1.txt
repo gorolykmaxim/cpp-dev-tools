@@ -1,0 +1,4 @@
+[32m(cdt) [0m[35mRunning "hello world!"[0m
+stdout
+stderr
+[35m'hello world!' complete: return code: 0[0m

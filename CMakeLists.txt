@@ -50,3 +50,5 @@ install(TARGETS ${PROJECT_NAME} DESTINATION bin)
 set(TEST_TARGET ${PROJECT_NAME}-test)
 add_executable(${TEST_TARGET} EXCLUDE_FROM_ALL test/test.cpp)
 target_link_libraries(${TEST_TARGET} cdt gtest gmock gtest_main)
+target_compile_definitions(${TEST_TARGET} PRIVATE
+    "TEST_DATA_DIR=\"${CMAKE_CURRENT_SOURCE_DIR}/test/data\"")
