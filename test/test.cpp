@@ -209,7 +209,8 @@ public:
                 failed_single_gtest_exec,
                 aborted_gtest_exec,
                 successful_rerun_gtest_exec,
-                failed_rerun_gtest_exec;
+                failed_rerun_gtest_exec,
+                failed_debug_exec;
     int expected_data_index;
     std::stringstream in, out;
     std::function<void(int)> sigint_handler;
@@ -395,6 +396,9 @@ public:
             "[  FAILED  ] failed_test_suit_1.test1\n\n",
             " 1 FAILED TEST\n",
         };
+        failed_debug_exec.exit_code = 1;
+        failed_debug_exec.output_lines = {"failed to launch debugger\n"};
+        failed_debug_exec.stderr_lines.insert(0);
         mock.cmd_to_process_execs[execs.kTests].push_back(successful_gtest_exec);
         mock.cmd_to_process_execs[execs.kTests + " --gtest_filter='test_suit_1.test1'"].push_back(successful_single_gtest_exec);
     }
@@ -1116,8 +1120,22 @@ TEST_F(CdtTest, StartDebugPrimaryTaskWithPreTasks) {
     EXPECT_CMD("d2");
 }
 
+TEST_F(CdtTest, StartAndFailToDebugTask) {
+    std::string debugger_call = DEBUGGER_CALL("echo primary task");
+    mock.cmd_to_process_execs[debugger_call].push_back(failed_debug_exec);
+    EXPECT_CDT_STARTED();
+    EXPECT_CMD("d2");
+}
+
 TEST_F(CdtTest, StartDebugGtestPrimaryTaskWithPreTasks) {
     EXPECT_DEBUGGER_CALL("tests");
+    EXPECT_CDT_STARTED();
+    EXPECT_CMD("d10");
+}
+
+TEST_F(CdtTest, StartAndFailToDebugGtestTask) {
+    std::string debugger_call = DEBUGGER_CALL("tests");
+    mock.cmd_to_process_execs[debugger_call].push_back(failed_debug_exec);
     EXPECT_CDT_STARTED();
     EXPECT_CMD("d10");
 }
