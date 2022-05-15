@@ -138,9 +138,9 @@ public:
 
 #define EXPECT_OUT_EQ_SNAPSHOT()\
     if (std::getenv("SNAPSHOT") != nullptr)\
-        SaveSnapshot(out.str());\
+        mock.OsApi::WriteFile(SnapshotPath(), out.str());\
     else\
-        EXPECT_EQ(GetSnapshot(), out.str());\
+        EXPECT_EQ(ReadSnapshot(), out.str());\
     out.str("")
 
 #define EXPECT_CDT_STARTED()\
@@ -434,7 +434,7 @@ public:
             }
         }
     }
-    std::filesystem::path CurrentSnapshotFile() {
+    std::filesystem::path SnapshotPath() {
         testing::UnitTest* test = testing::UnitTest::GetInstance();
         const testing::TestInfo* info = test->current_test_info();
         std::string suite_name = info->test_suite_name();
@@ -445,18 +445,10 @@ public:
         snapshot_path /= test_key + ".txt";
         return snapshot_path;
     }
-    void SaveSnapshot(const std::string& expected) {
-        std::ofstream file(CurrentSnapshotFile());
-        file << expected;
-    }
-    std::string GetSnapshot() {
-        std::ifstream file(CurrentSnapshotFile());
-        if (!file) {
-            return "";
-        }
-        file >> std::noskipws;
-        return std::string(std::istream_iterator<char>(file),
-                           std::istream_iterator<char>());
+    std::string ReadSnapshot() {
+        std::string snapshot;
+        mock.OsApi::ReadFile(SnapshotPath(), snapshot);
+        return snapshot;
     }
 };
 
