@@ -263,7 +263,6 @@ public:
         // mock user config
         nlohmann::json user_config_data;
         user_config_data["open_in_editor_command"] = execs.kEditor + " {}";
-        user_config_data["execute_in_new_terminal_tab_command"] = execs.kNewTerminalTab + " {}";
         user_config_data["debug_command"] = execs.kNewTerminalTab +
                                             " cd {current_dir} && " +
                                             execs.kDebugger + " {shell_cmd}";
@@ -472,7 +471,6 @@ TEST_F(CdtTest, FailToStartDueToUserConfigNotBeingJson) {
 TEST_F(CdtTest, FailToStartDueToUserConfigHavingPropertiesInIncorrectFormat) {
     nlohmann::json user_config_data;
     user_config_data["open_in_editor_command"] = "my-editor";
-    user_config_data["execute_in_new_terminal_tab_command"] = "my-terminal";
     user_config_data["debug_command"] = "my-debugger";
     mock.MockReadFile(paths.kUserConfig, user_config_data.dump());
     EXPECT_CDT_ABORTED();
