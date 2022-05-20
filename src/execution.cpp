@@ -224,18 +224,15 @@ void RemoveOldExecutionsFromHistory(Cdt& cdt) {
 }
 
 void ValidateIfDebuggerAvailable(Cdt& cdt) {
-    bool is_real_cmd = std::find(cdt.kUsrCmdNames.begin(), cdt.kUsrCmdNames.end(), cdt.last_usr_cmd.cmd) != cdt.kUsrCmdNames.end();
+    auto it = std::find(cdt.kUsrCmdNames.begin(), cdt.kUsrCmdNames.end(),
+                        cdt.last_usr_cmd.cmd);
+    bool is_real_cmd = it != cdt.kUsrCmdNames.end();
     bool is_debug_cmd = cdt.last_usr_cmd.cmd.find('d') != std::string::npos;
     if (cdt.last_usr_cmd.executed || !is_real_cmd || !is_debug_cmd) {
         return;
     }
-    std::vector<std::string> mandatory_props_not_specified;
-    if (cdt.debug_cmd.str.empty()) mandatory_props_not_specified.push_back(kDebugCommandProperty);
-    if (cdt.execute_in_new_terminal_tab_cmd.str.empty()) mandatory_props_not_specified.push_back(kExecuteInNewTerminalTabCommandProperty);
-    if (!mandatory_props_not_specified.empty()) {
-        for (std::string& prop: mandatory_props_not_specified) {
-            WarnUserConfigPropNotSpecified(prop, cdt);
-        }
+    if (cdt.debug_cmd.empty()) {
+        WarnUserConfigPropNotSpecified(kDebugCommandProperty, cdt);
         cdt.last_usr_cmd.executed = true;
     }
 }
@@ -246,9 +243,10 @@ void AttachDebuggerToScheduledExecutions(Cdt& cdt) {
         if (proc.debug != DebugStatus::kRequired) {
             continue;
         }
-        std::string debug_cmd = FormatTemplate(cdt.debug_cmd, proc.shell_command);
-        std::string cmds_to_exec = "cd " + cdt.os->GetCurrentPath().string() + " && " + debug_cmd;
-        proc.shell_command = FormatTemplate(cdt.execute_in_new_terminal_tab_cmd, cmds_to_exec);
+        proc.shell_command = FormatTemplate(cdt.debug_cmd, "{shell_cmd}",
+                                            proc.shell_command);
+        proc.shell_command = FormatTemplate(proc.shell_command, "{current_dir}",
+                                            cdt.os->GetCurrentPath().string());
         proc.debug = DebugStatus::kAttached;
     }
 }

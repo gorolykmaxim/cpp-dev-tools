@@ -264,7 +264,9 @@ public:
         nlohmann::json user_config_data;
         user_config_data["open_in_editor_command"] = execs.kEditor + " {}";
         user_config_data["execute_in_new_terminal_tab_command"] = execs.kNewTerminalTab + " {}";
-        user_config_data["debug_command"] = execs.kDebugger + " {}";
+        user_config_data["debug_command"] = execs.kNewTerminalTab +
+                                            " cd {current_dir} && " +
+                                            execs.kDebugger + " {shell_cmd}";
         mock.MockReadFile(paths.kUserConfig, user_config_data.dump());
         EXPECT_CALL(mock, FileExists(paths.kUserConfig)).WillRepeatedly(testing::Return(true));
         // mock default test execution
@@ -993,14 +995,8 @@ TEST_F(CdtTest, StartAndCreateExampleUserConfig) {
         "  //\"open_in_editor_command\": \"subl {}\"\n"
         "  // Open file links from the output in VSCode:\n"
         "  //\"open_in_editor_command\": \"code {}\"\n"
-        "  // Execute in a new terminal tab on MacOS:\n"
-        "  // \"execute_in_new_terminal_tab_command\": \"osascript -e 'tell application \\\"Terminal\\\" to do script \\\"{}\\\"'\"\n"
-        "  // Execute in a new terminal tab on Windows:\n"
-        "  // \"execute_in_new_terminal_tab_command\": \"/c/Program\\ Files/Git/git-bash -c '{}'\"\n"
-        "  // Debug tasks via lldb:\n"
-        "  //\"debug_command\": \"lldb -- {}\"\n"
-        "  // Debug tasks via gdb:\n"
-        "  //\"debug_command\": \"gdb --args {}\"\n"
+        "  // Debug tasks on MacOS:\n"
+        "  //\"debug_command\": \"osascript -e 'tell application \\\"Terminal\\\" to do script \\\"cd {current_dir} && lldb -- {shell_cmd}\\\"'\"\n"
         "}\n";
     EXPECT_CALL(mock, FileExists(paths.kUserConfig)).WillRepeatedly(testing::Return(false));
     EXPECT_CALL(mock, WriteFile(paths.kUserConfig, default_user_config_content));

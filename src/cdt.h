@@ -26,10 +26,8 @@ const std::string kTcMagenta = "\033[35m";
 const std::string kTcReset = "\033[0m";
 
 const std::string kOpenInEditorCommandProperty = "open_in_editor_command";
-const std::string kExecuteInNewTerminalTabCommandProperty = "execute_in_new_terminal_tab_command";
 const std::string kDebugCommandProperty = "debug_command";
 const std::string kEnvVarLastCommand = "LAST_COMMAND";
-const std::string kTemplateArgPlaceholder = "{}";
 const std::string kGtestTask = "__gtest";
 const std::string kGtestFilterArg = "--gtest_filter";
 
@@ -117,12 +115,6 @@ struct ExecutionOutput
     std::vector<std::string> file_links;
 };
 
-struct TemplateString
-{
-    std::string str;
-    size_t arg_pos;
-};
-
 enum TextBufferType {
     kBufferProcess = 0,
     kBufferGtest,
@@ -179,9 +171,8 @@ struct Cdt {
     UserCommand last_usr_cmd;
     std::vector<Task> tasks;
     std::vector<std::vector<size_t>> pre_tasks;
-    TemplateString open_in_editor_cmd;
-    TemplateString debug_cmd;
-    TemplateString execute_in_new_terminal_tab_cmd;
+    std::string open_in_editor_cmd;
+    std::string debug_cmd;
     const char* cdt_executable;
     std::filesystem::path user_config_path;
     std::filesystem::path tasks_config_path;

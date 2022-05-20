@@ -25,7 +25,7 @@ void StreamExecutionOutput(Cdt& cdt) {
 
 void FindAndHighlightFileLinks(Cdt& cdt) {
     static const std::regex kFileLinkRegex("(\\/[^:]+):([0-9]+):?([0-9]+)?");
-    if (cdt.open_in_editor_cmd.str.empty()) return;
+    if (cdt.open_in_editor_cmd.empty()) return;
     for (auto [_, output, text_buffers]: cdt.registry.view<ExecutionOutput, TextBuffer>().each()) {
         std::vector<std::string>& buffer = text_buffers.buffers[kBufferOutput];
         for (int i = output.lines_processed; i < buffer.size(); i++) {
@@ -64,21 +64,27 @@ void OpenFileLink(Cdt& cdt) {
     ExecutionOutput* exec_output = nullptr;
     std::vector<std::string>* buffer = nullptr;
     if (!cdt.exec_history.empty()) {
-        entt::entity entity = cdt.selected_exec ? *cdt.selected_exec : cdt.exec_history.front();
+        entt::entity entity = cdt.selected_exec ?
+                              *cdt.selected_exec :
+                              cdt.exec_history.front();
         exec_output = cdt.registry.try_get<ExecutionOutput>(entity);
         buffer = &cdt.registry.get<TextBuffer>(entity).buffers[kBufferOutput];
     }
-    if (cdt.open_in_editor_cmd.str.empty()) {
+    if (cdt.open_in_editor_cmd.empty()) {
         WarnUserConfigPropNotSpecified(kOpenInEditorCommandProperty, cdt);
     } else if (!exec_output || exec_output->file_links.empty()) {
-        cdt.os->Out() << kTcGreen << "No file links in the output" << kTcReset << std::endl;
+        cdt.os->Out() << kTcGreen << "No file links in the output" << kTcReset
+                      << std::endl;
     } else if (exec_output) {
         if (IsCmdArgInRange(cdt.last_usr_cmd, exec_output->file_links)) {
-            std::string& link = exec_output->file_links[cdt.last_usr_cmd.arg - 1];
-            std::string shell_command = FormatTemplate(cdt.open_in_editor_cmd, link);
+            int link_index = cdt.last_usr_cmd.arg - 1;
+            std::string& link = exec_output->file_links[link_index];
+            std::string shell_command = FormatTemplate(cdt.open_in_editor_cmd,
+                                                       "{}", link);
             cdt.os->ExecProcess(shell_command);
         } else {
-            cdt.os->Out() << kTcGreen << "Last execution output:" << kTcReset << std::endl;
+            cdt.os->Out() << kTcGreen << "Last execution output:" << kTcReset
+                          << std::endl;
             for (std::string& line: *buffer) {
                 cdt.os->Out() << line << std::endl;
             }

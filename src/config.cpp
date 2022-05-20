@@ -4,6 +4,7 @@
 #include <string>
 #include <vector>
 
+#include "cdt.h"
 #include "config.h"
 #include "json.hpp"
 
@@ -91,49 +92,46 @@ static void AppendConfigErrors(const std::filesystem::path& config_path, const s
 }
 
 void InitExampleUserConfig(Cdt& cdt) {
-    cdt.user_config_path = std::filesystem::path(cdt.os->GetEnv("HOME")) / ".cpp-dev-tools.json";
+    std::filesystem::path home(cdt.os->GetEnv("HOME"));
+    cdt.user_config_path = home / ".cpp-dev-tools.json";
     if (!cdt.os->FileExists(cdt.user_config_path)) {
         std::stringstream example;
-        example << "{" << std::endl;
-        example << "  // Open file links from the output in Sublime Text:" << std::endl;
-        example << "  //\"" << kOpenInEditorCommandProperty << "\": \"subl {}\"" << std::endl;
-        example << "  // Open file links from the output in VSCode:" << std::endl;
-        example << "  //\"" << kOpenInEditorCommandProperty << "\": \"code {}\"" << std::endl;
-        example << "  // Execute in a new terminal tab on MacOS:" << std::endl;
-        example << "  // \"" << kExecuteInNewTerminalTabCommandProperty << "\": \"osascript -e 'tell application \\\"Terminal\\\" to do script \\\"{}\\\"'\"" << std::endl;
-        example << "  // Execute in a new terminal tab on Windows:" << std::endl;
-        example << "  // \"" << kExecuteInNewTerminalTabCommandProperty << "\": \"/c/Program\\ Files/Git/git-bash -c '{}'\"" << std::endl;
-        example << "  // Debug tasks via lldb:" << std::endl;
-        example << "  //\"" << kDebugCommandProperty << "\": \"lldb -- {}\"" << std::endl;
-        example << "  // Debug tasks via gdb:" << std::endl;
-        example << "  //\"" << kDebugCommandProperty << "\": \"gdb --args {}\"" << std::endl;
-        example << "}" << std::endl;
+        example << "{\n";
+        example << "  // Open file links from the output in Sublime Text:\n";
+        example << "  //\"" << kOpenInEditorCommandProperty
+                << "\": \"subl {}\"\n";
+        example << "  // Open file links from the output in VSCode:\n";
+        example << "  //\"" << kOpenInEditorCommandProperty
+                << "\": \"code {}\"\n";
+        example << "  // Debug tasks on MacOS:\n";
+        example << "  //\"" << kDebugCommandProperty
+                << "\": \"osascript -e 'tell application \\\"Terminal\\\" to do script \\\"cd {current_dir} && lldb -- {shell_cmd}\\\"'\"\n";
+        example << "}\n";
         cdt.os->WriteFile(cdt.user_config_path, example.str());
     }
 }
 
-static std::function<bool()> ParseTemplateString(TemplateString& temp_str) {
-    return [&temp_str] () {
-        std::string::size_type pos = temp_str.str.find(kTemplateArgPlaceholder);
-        if (pos == std::string::npos) {
-            return false;
-        } else {
-            temp_str.arg_pos = pos;
-            return true;
-        }
+static std::function<bool()> ValidateTemplateString(
+        const std::string& temp_str, const std::string& arg_name) {
+    return [&] () {
+        return temp_str.find(arg_name) != std::string::npos;
     };
 }
 
 void ReadUserConfig(Cdt& cdt) {
     static const std::string kErrSuffix = "must be a string in format, examples of which you can find in the config";
     nlohmann::json config_json;
-    if (!ParseJsonFile(cdt.user_config_path, false, config_json, cdt.config_errors, cdt)) {
+    if (!ParseJsonFile(cdt.user_config_path, false, config_json,
+                       cdt.config_errors, cdt)) {
         return;
     }
     std::vector<std::string> config_errors;
-    ReadProperty(config_json, kOpenInEditorCommandProperty, cdt.open_in_editor_cmd.str, true, "", kErrSuffix, config_errors, ParseTemplateString(cdt.open_in_editor_cmd));
-    ReadProperty(config_json, kDebugCommandProperty, cdt.debug_cmd.str, true, "", kErrSuffix, config_errors, ParseTemplateString(cdt.debug_cmd));
-    ReadProperty(config_json, kExecuteInNewTerminalTabCommandProperty, cdt.execute_in_new_terminal_tab_cmd.str, true, "", kErrSuffix, config_errors, ParseTemplateString(cdt.execute_in_new_terminal_tab_cmd));
+    ReadProperty(config_json, kOpenInEditorCommandProperty,
+                 cdt.open_in_editor_cmd, true, "", kErrSuffix, config_errors,
+                 ValidateTemplateString(cdt.open_in_editor_cmd, "{}"));
+    ReadProperty(config_json, kDebugCommandProperty, cdt.debug_cmd, true, "",
+                 kErrSuffix, config_errors,
+                 ValidateTemplateString(cdt.debug_cmd, "{shell_cmd}"));
     AppendConfigErrors(cdt.user_config_path, config_errors, cdt.config_errors);
 }
 

@@ -15,7 +15,8 @@ bool IsCmdArgInRange(const UserCommand& cmd, const T& range) {
 std::string DefineUserCommand(const std::string& name, const UserCommandDefinition& def, Cdt& cdt);
 void MoveTextBuffer(TextBufferType from, TextBufferType to, TextBuffer& buffer);
 void WarnUserConfigPropNotSpecified(const std::string& property, Cdt& cdt);
-std::string FormatTemplate(const TemplateString& templ, const std::string& str);
+std::string FormatTemplate(std::string str, const std::string& substr,
+                           const std::string& replacement);
 bool AcceptUsrCmd(const std::string& def, UserCommand& cmd);
 std::string ReadInputFromStdin(const std::string& prefix, Cdt& cdt);
 void DisplayListOfTasks(const std::vector<Task>& tasks, Cdt& cdt);
