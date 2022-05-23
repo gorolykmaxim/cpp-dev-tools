@@ -108,7 +108,7 @@ void SearchThroughLastExecutionOutput(Cdt& cdt) {
   }
 }
 
-void SearchThroughConsoleOutput(Cdt& cdt) {
+void SearchThroughOutput(Cdt& cdt) {
   std::vector<entt::entity> to_delete;
   auto view = cdt.registry.view<OutputSearch, Output>();
   for (auto [entity, search, output]: view.each()) {

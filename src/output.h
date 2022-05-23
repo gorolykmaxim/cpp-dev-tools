@@ -9,6 +9,6 @@ void FindAndHighlightFileLinks(Cdt& cdt);
 void PrintExecutionOutput(Cdt& cdt);
 void OpenFileLink(Cdt& cdt);
 void SearchThroughLastExecutionOutput(Cdt& cdt);
-void SearchThroughConsoleOutput(Cdt& cdt);
+void SearchThroughOutput(Cdt& cdt);
 
 #endif

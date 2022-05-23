@@ -54,7 +54,7 @@ void ExecCdtSystems(Cdt &cdt) {
   FindAndHighlightFileLinks(cdt);
   PrintExecutionOutput(cdt);
 
-  SearchThroughConsoleOutput(cdt);
+  SearchThroughOutput(cdt);
 
   DisplayExecutionResult(cdt);
   RestartRepeatingGtestOnSuccess(cdt);
