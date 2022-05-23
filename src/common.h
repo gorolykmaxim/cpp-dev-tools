@@ -13,7 +13,6 @@ bool IsCmdArgInRange(const UserCommand& cmd, const T& range) {
 }
 
 std::string DefineUserCommand(const std::string& name, const UserCommandDefinition& def, Cdt& cdt);
-void MoveTextBuffer(TextBufferType from, TextBufferType to, TextBuffer& buffer);
 void WarnUserConfigPropNotSpecified(const std::string& property, Cdt& cdt);
 std::string FormatTemplate(std::string str, const std::string& substr,
                            const std::string& replacement);

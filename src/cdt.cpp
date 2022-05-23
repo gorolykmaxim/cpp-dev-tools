@@ -29,38 +29,38 @@ bool WillWaitForInput(Cdt &cdt) {
 }
 
 void ExecCdtSystems(Cdt &cdt) {
-    ReadUserCommandFromStdin(cdt);
-    ValidateIfDebuggerAvailable(cdt);
-    ScheduleTask(cdt);
-    OpenFileLink(cdt);
-    SearchThroughLastExecutionOutput(cdt);
-    DisplayGtestOutput(cdt);
-    SearchThroughGtestOutput(cdt);
-    RerunGtest(cdt);
-    ScheduleGtestTaskWithFilter(cdt);
-    ChangeSelectedExecution(cdt);
-    DisplayHelp(cdt);
+  ReadUserCommandFromStdin(cdt);
+  ValidateIfDebuggerAvailable(cdt);
+  ScheduleTask(cdt);
+  OpenFileLink(cdt);
+  SearchThroughLastExecutionOutput(cdt);
+  DisplayGtestOutput(cdt);
+  SearchThroughGtestOutput(cdt);
+  RerunGtest(cdt);
+  ScheduleGtestTaskWithFilter(cdt);
+  ChangeSelectedExecution(cdt);
+  DisplayHelp(cdt);
 
-    SearchThroughTextBuffer(cdt);
+  SchedulePreTasks(cdt);
+  ScheduleGtestExecutions(cdt);
+  AttachDebuggerToScheduledExecutions(cdt);
+  ExecuteRestartTask(cdt);
+  StartNextExecution(cdt);
 
-    SchedulePreTasks(cdt);
-    ScheduleGtestExecutions(cdt);
-    AttachDebuggerToScheduledExecutions(cdt);
-    ExecuteRestartTask(cdt);
-    StartNextExecution(cdt);
+  HandleProcessEvent(cdt);
+  ParseGtestOutput(cdt);
+  DisplayGtestExecutionResult(cdt);
+  StreamExecutionOutput(cdt);
+  FindAndHighlightFileLinks(cdt);
+  PrintExecutionOutput(cdt);
 
-    HandleProcessEvent(cdt);
-    ParseGtestOutput(cdt);
-    DisplayGtestExecutionResult(cdt);
-    StreamExecutionOutput(cdt);
-    FindAndHighlightFileLinks(cdt);
-    PrintExecutionOutput(cdt);
+  SearchThroughConsoleOutput(cdt);
 
-    DisplayExecutionResult(cdt);
-    RestartRepeatingGtestOnSuccess(cdt);
-    RestartRepeatingExecutionOnSuccess(cdt);
-    FinishGtestExecution(cdt);
-    FinishTaskExecution(cdt);
+  DisplayExecutionResult(cdt);
+  RestartRepeatingGtestOnSuccess(cdt);
+  RestartRepeatingExecutionOnSuccess(cdt);
+  FinishGtestExecution(cdt);
+  FinishTaskExecution(cdt);
 
-    RemoveOldExecutionsFromHistory(cdt);
+  RemoveOldExecutionsFromHistory(cdt);
 }

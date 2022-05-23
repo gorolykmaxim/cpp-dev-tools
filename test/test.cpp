@@ -1192,10 +1192,9 @@ TEST_F(CdtTest, StartExecuteGtestTaskExecuteNonGtestTaskAndDisplayOutputOfOneOfT
     EXPECT_CMD("g1");
 }
 
-TEST_F(CdtTest, StartExecuteGtestTaskRerunOneOfItsTestsAndSearchOutputOfTheRerunTest) {
+TEST_F(CdtTest, StartExecuteGtestTaskSearchItsRawOutput) {
     EXPECT_CDT_STARTED();
     EXPECT_CMD("t8");
-    EXPECT_CMD("gt1");
     EXPECT_CMD("s\n(some|data)");
 }
 

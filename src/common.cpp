@@ -9,14 +9,6 @@ std::string DefineUserCommand(const std::string& name, const UserCommandDefiniti
     return name;
 }
 
-void MoveTextBuffer(TextBufferType from, TextBufferType to, TextBuffer& buffer) {
-    std::vector<std::string>& f = buffer.buffers[from];
-    std::vector<std::string>& t = buffer.buffers[to];
-    t.reserve(t.size() + f.size());
-    t.insert(t.end(), f.begin(), f.end());
-    f.clear();
-}
-
 void WarnUserConfigPropNotSpecified(const std::string& property, Cdt& cdt) {
     cdt.os->Out() << kTcRed << '\'' << property << "' is not specified in " << cdt.user_config_path << kTcReset << std::endl;
 }

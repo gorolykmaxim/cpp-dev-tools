@@ -50,17 +50,14 @@ struct Task
     std::string command;
 };
 
-enum class DebugStatus {
-    kNotRequired, kRequired, kAttached
+enum class ProcessState {
+  kRunning, kComplete, kFailed
 };
 
 struct Process {
-    std::string shell_command;
-    std::string stdout_line_buffer;
-    std::string stderr_line_buffer;
-    std::unique_ptr<TinyProcessLib::Process> handle;
-    bool stream_output = false;
-    DebugStatus debug = DebugStatus::kNotRequired;
+  std::string shell_command;
+  std::unique_ptr<TinyProcessLib::Process> handle;
+  ProcessState state = ProcessState::kRunning;
 };
 
 enum class ProcessEventType {
@@ -74,25 +71,48 @@ struct ProcessEvent
     std::string data;
 };
 
-enum class ExecutionState {
-    kRunning, kComplete, kFailed
+enum class OutputMode {
+  kSilent, kStream, kFailure
 };
 
-struct Execution
-{
-    std::string name;
-    ExecutionState state = ExecutionState::kRunning;
-    std::chrono::system_clock::time_point start_time;
-    bool is_pinned = false;
-    bool repeat_until_fail = false;
-    size_t task_id;
+struct Output {
+  OutputMode mode = OutputMode::kFailure;
+  std::string stdout_line_buffer;
+  std::string stderr_line_buffer;
+  std::vector<std::string> lines;
+};
+
+struct OutputSearch {
+  int search_start;
+  int search_end;
+};
+
+struct ConsoleOutput {
+  std::vector<std::string> lines;
+  std::vector<std::string> file_links;
+  int lines_processed = 0;
+  int lines_displayed = 0;
+};
+
+enum class DebugStatus {
+    kNotRequired, kRequired, kAttached
+};
+
+struct Execution {
+  std::string name;
+  std::string shell_command;
+  std::chrono::system_clock::time_point start_time;
+  bool is_pinned = false;
+  bool repeat_until_fail = false;
+  int task_id;
+  DebugStatus debug = DebugStatus::kNotRequired;
 };
 
 struct GtestTest {
-    std::string name;
-    std::string duration;
-    size_t buffer_start;
-    size_t buffer_end;
+  std::string name;
+  std::string duration;
+  int buffer_start;
+  int buffer_end;
 };
 
 enum class GtestExecutionState {
@@ -100,35 +120,15 @@ enum class GtestExecutionState {
 };
 
 struct GtestExecution {
-    bool rerun_of_single_test = false;
-    std::vector<GtestTest> tests;
-    std::vector<size_t> failed_test_ids;
-    size_t test_count = 0;
-    std::optional<size_t> current_test;
-    std::string total_duration;
-    GtestExecutionState state = GtestExecutionState::kRunning;
-};
-
-struct ExecutionOutput
-{
-    size_t lines_processed = 0;
-    std::vector<std::string> file_links;
-};
-
-enum TextBufferType {
-    kBufferProcess = 0,
-    kBufferGtest,
-    kBufferOutput
-};
-
-struct TextBuffer {
-    std::vector<std::vector<std::string>> buffers = std::vector<std::vector<std::string>>(kBufferOutput + 1);
-};
-
-struct TextBufferSearch {
-    TextBufferType type;
-    size_t search_start;
-    size_t search_end;
+  bool display_progress = false;
+  bool rerun_of_single_test = false;
+  std::vector<GtestTest> tests;
+  std::vector<int> failed_test_ids;
+  int test_count = 0;
+  int lines_parsed = 0;
+  std::optional<int> current_test;
+  std::string total_duration;
+  GtestExecutionState state = GtestExecutionState::kRunning;
 };
 
 struct ToSchedule {};
@@ -162,23 +162,28 @@ public:
 };
 
 struct Cdt {
-    std::deque<entt::entity> execs_to_run; // Execution entities to execute where first entity is the first execution to execute
-    std::deque<entt::entity> exec_history; // History of executed entities where first entity is the most recently executed entity
-    entt::registry registry;
-    moodycamel::BlockingConcurrentQueue<ProcessEvent> proc_event_queue;
-    std::vector<std::string> kUsrCmdNames;
-    std::vector<UserCommandDefinition> kUsrCmdDefs;
-    UserCommand last_usr_cmd;
-    std::vector<Task> tasks;
-    std::vector<std::vector<size_t>> pre_tasks;
-    std::string open_in_editor_cmd;
-    std::string debug_cmd;
-    const char* cdt_executable;
-    std::filesystem::path user_config_path;
-    std::filesystem::path tasks_config_path;
-    std::vector<std::string> config_errors;
-    std::optional<entt::entity> selected_exec;
-    OsApi* os;
+  // Execution entities to execute where first entity
+  // is the first execution to execute
+  std::deque<entt::entity> execs_to_run;
+  // History of executed entities where first entity
+  // is the most recently executed entity
+  std::deque<entt::entity> exec_history;
+  entt::registry registry;
+  moodycamel::BlockingConcurrentQueue<ProcessEvent> proc_event_queue;
+  ConsoleOutput output;
+  std::vector<std::string> kUsrCmdNames;
+  std::vector<UserCommandDefinition> kUsrCmdDefs;
+  UserCommand last_usr_cmd;
+  std::vector<Task> tasks;
+  std::vector<std::vector<size_t>> pre_tasks;
+  std::string open_in_editor_cmd;
+  std::string debug_cmd;
+  const char* cdt_executable;
+  std::filesystem::path user_config_path;
+  std::filesystem::path tasks_config_path;
+  std::vector<std::string> config_errors;
+  std::optional<entt::entity> selected_exec;
+  OsApi* os;
 };
 
 bool InitCdt(int argc, const char** argv, Cdt& cdt);
