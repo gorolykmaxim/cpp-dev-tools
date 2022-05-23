@@ -137,7 +137,7 @@ public:
     "C++ exception with description \"\" thrown in the test body.\n"
 
 #define EXPECT_OUT_EQ_SNAPSHOT(NAME)\
-    if (std::getenv("SNAPSHOT") != nullptr)\
+    if (ShouldCreateSnapshot())\
         mock.OsApi::WriteFile(SnapshotPath(NAME), out.str());\
     else\
         EXPECT_EQ(ReadSnapshot(NAME), out.str());\
@@ -217,6 +217,17 @@ public:
     testing::NiceMock<OsApiMock> mock;
     Cdt cdt;
 
+  static bool ShouldCreateSnapshot() {
+    return std::getenv("SNAPSHOT") != nullptr;
+  }
+  static void SetUpTestSuite() {
+    if (ShouldCreateSnapshot()) {
+      std::filesystem::directory_iterator iter(TEST_DATA_DIR);
+      for (const std::filesystem::directory_entry& entry: iter) {
+        std::filesystem::remove_all(entry.path());
+      }
+    }
+  }
     void SetUp() override {
         expected_data_index = 0;
         cdt.os = &mock;
