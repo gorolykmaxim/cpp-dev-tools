@@ -1371,3 +1371,13 @@ TEST_F(CdtTest, StartExecuteTaskWithPreTasksSelectPreTaskThenResetSelectionAndOp
   EXPECT_CMD("exec1");
   EXPECT_OUTPUT_LINKS_TO_OPEN();
 }
+
+TEST_F(CdtTest, StartExecuteGtestTaskWithPreTasksSelectOneOfPretasksWithLinksInOutputResetExecutionSelectionBackToTheLatestGtestTaskValidateThatThereAreNoLinksInItsOutput) {
+  ProcessExec& exec = mock.cmd_to_process_execs["echo pre pre task 1"].front();
+  exec.output_lines = {OUT_LINKS_NOT_HIGHLIGHTED()};
+  EXPECT_CDT_STARTED();
+  EXPECT_CMD("t10");
+  EXPECT_CMD("exec3");
+  EXPECT_CMD("exec1");
+  EXPECT_CMD("o1");
+}

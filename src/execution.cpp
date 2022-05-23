@@ -312,9 +312,9 @@ void ChangeSelectedExecution(Cdt& cdt) {
     entt::entity entity = cdt.selected_exec ?
                           *cdt.selected_exec :
                           cdt.exec_history.front();
+    cdt.output = ConsoleOutput{};
     if (!cdt.registry.all_of<GtestExecution>(entity)) {
       Output& output = cdt.registry.get<Output>(entity);
-      cdt.output = ConsoleOutput{};
       cdt.output.lines_displayed = output.lines.size();
       cdt.output.lines = output.lines;
     }
