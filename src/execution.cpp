@@ -305,15 +305,18 @@ void ChangeSelectedExecution(Cdt& cdt) {
                     << kTcReset << std::endl;
     } else {
       cdt.selected_exec = cdt.exec_history[index];
-      if (!cdt.registry.all_of<GtestExecution>(*cdt.selected_exec)) {
-        Output& output = cdt.registry.get<Output>(*cdt.selected_exec);
-        cdt.output = ConsoleOutput{};
-        cdt.output.lines_displayed = output.lines.size();
-        cdt.output.lines = output.lines;
-      }
       Execution& exec = cdt.registry.get<Execution>(*cdt.selected_exec);
       cdt.os->Out() << kTcMagenta << "Selected execution \"" << exec.name
                     << '"' << kTcReset << std::endl;
+    }
+    entt::entity entity = cdt.selected_exec ?
+                          *cdt.selected_exec :
+                          cdt.exec_history.front();
+    if (!cdt.registry.all_of<GtestExecution>(entity)) {
+      Output& output = cdt.registry.get<Output>(entity);
+      cdt.output = ConsoleOutput{};
+      cdt.output.lines_displayed = output.lines.size();
+      cdt.output.lines = output.lines;
     }
   }
 }
