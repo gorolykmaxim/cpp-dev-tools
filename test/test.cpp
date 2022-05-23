@@ -1334,3 +1334,19 @@ TEST_F(CdtTest, StartExecuteGtestTaskTwiceExecuteNormalTask110TimesWhileSelectin
     }
     EXPECT_CMD("exec");
 }
+
+TEST_F(CdtTest, StartExecuteTaskWithPreTasksSelectPreTaskAndSearchItsOutput) {
+  EXPECT_CDT_STARTED();
+  EXPECT_CMD("t3");
+  EXPECT_CMD("exec3");
+  EXPECT_CMD("s\npre pre task");
+}
+
+TEST_F(CdtTest, StartExecuteTaskWithPreTasksSelectPreTaskAndOpenLinkFromItsOutput) {
+  ProcessExec& exec = mock.cmd_to_process_execs["echo pre pre task 1"].front();
+  exec.output_lines = {OUT_LINKS_NOT_HIGHLIGHTED()};
+  EXPECT_CDT_STARTED();
+  EXPECT_CMD("t3");
+  EXPECT_CMD("exec3");
+  EXPECT_OUTPUT_LINKS_TO_OPEN();
+}
