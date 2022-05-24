@@ -74,7 +74,7 @@ int OsApi::Exec(const std::vector<const char *> &args) {
 }
 
 void OsApi::KillProcess(Process& process) {
-  if (process.handle) {
+  if (process.state == ProcessState::kRunning) {
     TinyProcessLib::Process::kill(process.handle->get_id());
   }
 }

@@ -33,6 +33,8 @@ add_library(cdt STATIC
     src/user-command.cpp
     src/output.h
     src/output.cpp
+    src/process.h
+    src/process.cpp
     src/execution.h
     src/execution.cpp)
 target_include_directories(cdt

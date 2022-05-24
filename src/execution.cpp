@@ -102,25 +102,6 @@ void ExecuteRestartTask(Cdt& cdt) {
   }
 }
 
-static std::function<void(const char*,size_t)> WriteTo(moodycamel::BlockingConcurrentQueue<ProcessEvent>& queue, entt::entity process, ProcessEventType event_type) {
-    return [&queue, process, event_type] (const char* data, size_t size) {
-        ProcessEvent event;
-        event.process = process;
-        event.type = event_type;
-        event.data = std::string(data, size);
-        queue.enqueue(event);
-    };
-}
-
-static std::function<void()> HandleExit(moodycamel::BlockingConcurrentQueue<ProcessEvent>& queue, entt::entity process) {
-    return [&queue, process] () {
-        ProcessEvent event;
-        event.process = process;
-        event.type = ProcessEventType::kExit;
-        queue.enqueue(event);
-    };
-}
-
 void StartNextExecution(Cdt& cdt) {
   if (cdt.execs_to_run.empty() || !cdt.registry.view<Process>().empty()) {
     return;
@@ -130,11 +111,6 @@ void StartNextExecution(Cdt& cdt) {
   exec.start_time = cdt.os->TimeNow();
   Process& proc = cdt.registry.emplace<Process>(entity);
   proc.shell_command = exec.shell_command;
-  cdt.os->StartProcess(
-      proc,
-      WriteTo(cdt.proc_event_queue, entity, ProcessEventType::kStdout),
-      WriteTo(cdt.proc_event_queue, entity, ProcessEventType::kStderr),
-      HandleExit(cdt.proc_event_queue, entity));
   cdt.output = ConsoleOutput{};
   cdt.execs_to_run.pop_front();
   if (cdt.execs_to_run.empty()) {
@@ -143,33 +119,6 @@ void StartNextExecution(Cdt& cdt) {
   } else {
     cdt.os->Out() << kTcBlue << "Running \"" << exec.name << "\"..."
                   << kTcReset << std::endl;
-  }
-}
-
-void HandleProcessEvent(Cdt& cdt) {
-  if (cdt.registry.view<Process>().empty()) return;
-  ProcessEvent event;
-  cdt.proc_event_queue.wait_dequeue(event);
-  auto [proc, output] = cdt.registry.get<Process, Output>(event.process);
-  if (event.type == ProcessEventType::kExit) {
-    proc.state = cdt.os->GetProcessExitCode(proc) == 0 ?
-                 ProcessState::kComplete :
-                 ProcessState::kFailed;
-  } else {
-    std::string& line_buffer = event.type == ProcessEventType::kStdout ?
-                               output.stdout_line_buffer :
-                               output.stderr_line_buffer;
-    std::string to_process = line_buffer + event.data;
-    std::stringstream tmp_buffer;
-    for (char c: to_process) {
-      if (c == '\n') {
-        output.lines.push_back(tmp_buffer.str());
-        tmp_buffer = std::stringstream();
-      } else {
-        tmp_buffer << c;
-      }
-    }
-    line_buffer = tmp_buffer.str();
   }
 }
 
@@ -210,19 +159,16 @@ void RestartRepeatingExecutionOnSuccess(Cdt& cdt) {
 }
 
 void FinishTaskExecution(Cdt& cdt) {
-  std::vector<entt::entity> to_finish;
   for (auto [entity, proc]: cdt.registry.view<Process>().each()) {
     if (proc.state == ProcessState::kRunning) {
       continue;
     }
-    to_finish.push_back(entity);
     cdt.exec_history.push_front(entity);
     if (proc.state == ProcessState::kFailed) {
       cdt.registry.destroy(cdt.execs_to_run.begin(), cdt.execs_to_run.end());
       cdt.execs_to_run.clear();
     }
   }
-  cdt.registry.erase<Process>(to_finish.begin(), to_finish.end());
 }
 
 void RemoveOldExecutionsFromHistory(Cdt& cdt) {

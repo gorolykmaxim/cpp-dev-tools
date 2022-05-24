@@ -8,7 +8,6 @@ void ScheduleTask(Cdt& cdt);
 void SchedulePreTasks(Cdt& cdt);
 void ExecuteRestartTask(Cdt& cdt);
 void StartNextExecution(Cdt& cdt);
-void HandleProcessEvent(Cdt& cdt);
 void DisplayExecutionResult(Cdt& cdt);
 void RestartRepeatingExecutionOnSuccess(Cdt& cdt);
 void FinishTaskExecution(Cdt& cdt);

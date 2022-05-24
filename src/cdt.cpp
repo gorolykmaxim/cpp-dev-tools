@@ -1,5 +1,6 @@
 #include "cdt.h"
 #include "execution.h"
+#include "process.h"
 #include "output.h"
 #include "common.h"
 #include "config.h"
@@ -46,6 +47,7 @@ void ExecCdtSystems(Cdt &cdt) {
   AttachDebuggerToScheduledExecutions(cdt);
   ExecuteRestartTask(cdt);
   StartNextExecution(cdt);
+  StartProcesses(cdt);
 
   HandleProcessEvent(cdt);
   ParseGtestOutput(cdt);
@@ -61,6 +63,7 @@ void ExecCdtSystems(Cdt &cdt) {
   RestartRepeatingExecutionOnSuccess(cdt);
   FinishGtestExecution(cdt);
   FinishTaskExecution(cdt);
+  FinishProcessExecution(cdt);
 
   RemoveOldExecutionsFromHistory(cdt);
 }
