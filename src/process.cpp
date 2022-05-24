@@ -1,6 +1,24 @@
 #include "process.h"
 #include <sstream>
 
+static Cdt* global_cdt;
+
+static void TerminateCurrentProcessOrExit(int signal) {
+    if (global_cdt->registry.view<Process>().empty()) {
+        global_cdt->os->Signal(signal, SIG_DFL);
+        global_cdt->os->RaiseSignal(signal);
+    } else {
+        for (auto [_, proc]: global_cdt->registry.view<Process>().each()) {
+            global_cdt->os->KillProcess(proc);
+        }
+    }
+}
+
+void InitProcess(Cdt& cdt) {
+  cdt.os->Signal(SIGINT, TerminateCurrentProcessOrExit);
+  global_cdt = &cdt;
+}
+
 static std::function<void(const char*,size_t)> WriteTo(
     moodycamel::BlockingConcurrentQueue<ProcessEvent>& queue,
     entt::entity process, ProcessEventType event_type) {

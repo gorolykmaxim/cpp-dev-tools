@@ -9,6 +9,7 @@
 
 bool InitCdt(int argc, const char **argv, Cdt &cdt) {
     cdt.cdt_executable = argv[0];
+    InitProcess(cdt);
     InitExecution(cdt);
     InitOutput(cdt);
     InitGtest(cdt);

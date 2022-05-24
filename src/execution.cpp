@@ -9,30 +9,41 @@
 #include "execution.h"
 #include "common.h"
 
-static Cdt* global_cdt;
 static std::string kTask;
 static std::string kTaskRepeat;
 static std::string kDebug;
 static std::string kSelectExecution;
 
-static void TerminateCurrentExecutionOrExit(int signal) {
-    if (global_cdt->registry.view<Process>().empty()) {
-        global_cdt->os->Signal(signal, SIG_DFL);
-        global_cdt->os->RaiseSignal(signal);
-    } else {
-        for (auto [_, proc]: global_cdt->registry.view<Process>().each()) {
-            global_cdt->os->KillProcess(proc);
-        }
-    }
-}
-
 void InitExecution(Cdt& cdt) {
-    kTask = DefineUserCommand("t", {"ind", "Execute the task with the specified index"}, cdt);
-    kTaskRepeat = DefineUserCommand("tr", {"ind", "Keep executing the task with the specified index until it fails"}, cdt);
-    kDebug = DefineUserCommand("d", {"ind", "Execute the task with the specified index with a debugger attached"}, cdt);
-    kSelectExecution = DefineUserCommand("exec", {"ind", "Change currently selected execution (gets reset to the most recent one after every new execution)"}, cdt);
-    cdt.os->Signal(SIGINT, TerminateCurrentExecutionOrExit);
-    global_cdt = &cdt;
+    kTask = DefineUserCommand(
+      "t",
+      {
+        "ind",
+        "Execute the task with the specified index"
+      },
+      cdt);
+    kTaskRepeat = DefineUserCommand(
+      "tr",
+      {
+        "ind",
+        "Keep executing the task with the specified index until it fails"
+      },
+      cdt);
+    kDebug = DefineUserCommand(
+      "d",
+      {
+        "ind",
+        "Execute the task with the specified index with a debugger attached"
+      },
+      cdt);
+    kSelectExecution = DefineUserCommand(
+      "exec",
+      {
+        "ind",
+        "Change currently selected execution (gets reset to the most recent one"
+        " after every new execution)"
+      },
+      cdt);
 }
 
 void ScheduleTask(Cdt& cdt) {
