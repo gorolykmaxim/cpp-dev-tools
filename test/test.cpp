@@ -438,17 +438,21 @@ public:
         mock.cmd_to_process_execs[cmd].push_back(exec);
         return CreateTask(name, cmd, std::move(pre_tasks));
     }
-    void RunCmd(const std::string& cmd, bool break_when_process_events_stop = false) {
-        in << cmd << std::endl;
-        while (true) {
-            ExecCdtSystems(cdt);
-            if (!break_when_process_events_stop && WillWaitForInput(cdt)) {
-                break;
-            }
-            if (break_when_process_events_stop && cdt.proc_event_queue.size_approx() == 0 && cdt.execs_to_run.empty() && cdt.registry.view<Running>().size() == 1) {
-                break;
-            }
+    void RunCmd(const std::string& cmd,
+                bool break_when_process_events_stop = false) {
+      in << cmd << std::endl;
+      while (true) {
+        ExecCdtSystems(cdt);
+        if (!break_when_process_events_stop && WillWaitForInput(cdt)) {
+          break;
         }
+        if (break_when_process_events_stop &&
+            cdt.proc_event_queue.size_approx() == 0 &&
+            cdt.execs_to_run.empty() &&
+            cdt.registry.view<Process>().size() == 1) {
+          break;
+        }
+      }
     }
     std::filesystem::path SnapshotPath(std::string name) {
         testing::UnitTest* test = testing::UnitTest::GetInstance();

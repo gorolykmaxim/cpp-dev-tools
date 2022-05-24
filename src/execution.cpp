@@ -16,11 +16,11 @@ static std::string kDebug;
 static std::string kSelectExecution;
 
 static void TerminateCurrentExecutionOrExit(int signal) {
-    if (global_cdt->registry.view<Running>().empty()) {
+    if (global_cdt->registry.view<Process>().empty()) {
         global_cdt->os->Signal(signal, SIG_DFL);
         global_cdt->os->RaiseSignal(signal);
     } else {
-        for (auto [_, proc]: global_cdt->registry.view<Process, Running>().each()) {
+        for (auto [_, proc]: global_cdt->registry.view<Process>().each()) {
             global_cdt->os->KillProcess(proc);
         }
     }
@@ -80,7 +80,7 @@ void SchedulePreTasks(Cdt& cdt) {
 }
 
 void ExecuteRestartTask(Cdt& cdt) {
-  if (cdt.execs_to_run.empty() || !cdt.registry.view<Running>().empty()) {
+  if (cdt.execs_to_run.empty() || !cdt.registry.view<Process>().empty()) {
     return;
   }
   entt::entity entity = cdt.execs_to_run.front();
@@ -122,7 +122,7 @@ static std::function<void()> HandleExit(moodycamel::BlockingConcurrentQueue<Proc
 }
 
 void StartNextExecution(Cdt& cdt) {
-  if (cdt.execs_to_run.empty() || !cdt.registry.view<Running>().empty()) {
+  if (cdt.execs_to_run.empty() || !cdt.registry.view<Process>().empty()) {
     return;
   }
   entt::entity entity = cdt.execs_to_run.front();
@@ -135,7 +135,6 @@ void StartNextExecution(Cdt& cdt) {
       WriteTo(cdt.proc_event_queue, entity, ProcessEventType::kStdout),
       WriteTo(cdt.proc_event_queue, entity, ProcessEventType::kStderr),
       HandleExit(cdt.proc_event_queue, entity));
-  cdt.registry.emplace<Running>(entity);
   cdt.output = ConsoleOutput{};
   cdt.execs_to_run.pop_front();
   if (cdt.execs_to_run.empty()) {
@@ -148,7 +147,7 @@ void StartNextExecution(Cdt& cdt) {
 }
 
 void HandleProcessEvent(Cdt& cdt) {
-  if (cdt.registry.view<Running>().empty()) return;
+  if (cdt.registry.view<Process>().empty()) return;
   ProcessEvent event;
   cdt.proc_event_queue.wait_dequeue(event);
   auto [proc, output] = cdt.registry.get<Process, Output>(event.process);
@@ -175,7 +174,7 @@ void HandleProcessEvent(Cdt& cdt) {
 }
 
 void DisplayExecutionResult(Cdt& cdt) {
-  auto view = cdt.registry.view<Running, Execution, Process, Output>();
+  auto view = cdt.registry.view<Execution, Process, Output>();
   for (auto [_, exec, proc, output]: view.each()) {
     if (proc.state == ProcessState::kRunning) {
       continue;
@@ -198,7 +197,7 @@ void DisplayExecutionResult(Cdt& cdt) {
 
 void RestartRepeatingExecutionOnSuccess(Cdt& cdt) {
   std::vector<entt::entity> to_restart;
-  auto view = cdt.registry.view<Execution, Process, Output, Running>();
+  auto view = cdt.registry.view<Execution, Process, Output>();
   for (auto [entity, exec, proc, output]: view.each()) {
     if (proc.state != ProcessState::kComplete || !exec.repeat_until_fail) {
       return;
@@ -207,12 +206,12 @@ void RestartRepeatingExecutionOnSuccess(Cdt& cdt) {
     output = Output{output.mode};
     to_restart.push_back(entity);
   }
-  cdt.registry.erase<Process, Running>(to_restart.begin(), to_restart.end());
+  cdt.registry.erase<Process>(to_restart.begin(), to_restart.end());
 }
 
 void FinishTaskExecution(Cdt& cdt) {
   std::vector<entt::entity> to_finish;
-  for (auto [entity, proc]: cdt.registry.view<Process, Running>().each()) {
+  for (auto [entity, proc]: cdt.registry.view<Process>().each()) {
     if (proc.state == ProcessState::kRunning) {
       continue;
     }
@@ -223,7 +222,7 @@ void FinishTaskExecution(Cdt& cdt) {
       cdt.execs_to_run.clear();
     }
   }
-  cdt.registry.erase<Running, Process>(to_finish.begin(), to_finish.end());
+  cdt.registry.erase<Process>(to_finish.begin(), to_finish.end());
 }
 
 void RemoveOldExecutionsFromHistory(Cdt& cdt) {

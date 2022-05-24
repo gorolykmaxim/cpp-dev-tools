@@ -58,7 +58,7 @@ static void CompleteCurrentGtest(GtestExecution& gtest_exec, const std::string& 
 
 void ParseGtestOutput(Cdt& cdt) {
   static size_t kTestCountIndex = std::string("Running ").size();
-  auto view = cdt.registry.view<Running, Output, GtestExecution>();
+  auto view = cdt.registry.view<Output, GtestExecution>();
   for (auto [_, output, gtest_exec]: view.each()) {
     if (gtest_exec.state != GtestExecutionState::kRunning &&
         gtest_exec.state != GtestExecutionState::kParsing) {
@@ -302,8 +302,7 @@ void ScheduleGtestTaskWithFilter(Cdt& cdt) {
 }
 
 void DisplayGtestExecutionResult(Cdt& cdt) {
-  auto view = cdt.registry.view<Execution, Process, Output, GtestExecution,
-                                Running>();
+  auto view = cdt.registry.view<Execution, Process, Output, GtestExecution>();
   for (auto [_, exec, proc, output, gtest_exec]: view.each()) {
     if (gtest_exec.rerun_of_single_test ||
         proc.state == ProcessState::kRunning ||
@@ -350,7 +349,7 @@ void DisplayGtestExecutionResult(Cdt& cdt) {
 }
 
 void RestartRepeatingGtestOnSuccess(Cdt& cdt) {
-  auto view = cdt.registry.view<Execution, GtestExecution, Process, Running>();
+  auto view = cdt.registry.view<Execution, GtestExecution, Process>();
   for (auto [entity, exec, gtest_exec, proc]: view.each()) {
     if (proc.state == ProcessState::kComplete && exec.repeat_until_fail) {
       GtestExecution new_gtest_exec;
@@ -364,7 +363,7 @@ void RestartRepeatingGtestOnSuccess(Cdt& cdt) {
 void FinishGtestExecution(Cdt& cdt) {
   bool unpin_existing_entities = false;
   std::vector<entt::entity> to_remove;
-  auto view = cdt.registry.view<Process, GtestExecution, Running>();
+  auto view = cdt.registry.view<Process, GtestExecution>();
   for (auto [entity, proc, gtest_exec]: view.each()) {
     if (proc.state == ProcessState::kRunning) {
       continue;

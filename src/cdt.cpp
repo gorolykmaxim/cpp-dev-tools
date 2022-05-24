@@ -25,7 +25,7 @@ bool InitCdt(int argc, const char **argv, Cdt &cdt) {
 }
 
 bool WillWaitForInput(Cdt &cdt) {
-    return cdt.execs_to_run.empty() && cdt.registry.view<Running>().empty();
+    return cdt.execs_to_run.empty() && cdt.registry.view<Process>().empty();
 }
 
 void ExecCdtSystems(Cdt &cdt) {

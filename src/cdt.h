@@ -133,8 +133,6 @@ struct GtestExecution {
 
 struct ToSchedule {};
 
-struct Running {};
-
 class OsApi {
 public:
     virtual std::istream& In();
