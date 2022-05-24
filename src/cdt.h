@@ -81,6 +81,7 @@ struct Output {
   std::string stdout_line_buffer;
   std::string stderr_line_buffer;
   std::vector<std::string> lines;
+  int lines_streamed = 0;
 };
 
 struct OutputSearch {
@@ -151,7 +152,6 @@ public:
     virtual void RaiseSignal(int signal);
     virtual int Exec(const std::vector<const char*>& args);
     virtual void KillProcess(Process& process);
-    virtual void ExecProcess(const std::string& shell_cmd);
     virtual void StartProcess(Process& process,
                               const std::function<void(const char*, size_t)>& stdout_cb,
                               const std::function<void(const char*, size_t)>& stderr_cb,

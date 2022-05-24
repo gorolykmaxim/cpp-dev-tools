@@ -21,10 +21,12 @@ void StreamExecutionOutput(Cdt& cdt) {
     if (output.mode == OutputMode::kStream ||
         proc.state == ProcessState::kFailed &&
         output.mode == OutputMode::kFailure) {
-      cdt.output.lines.reserve(output.lines.size());
+      int new_lines_count = output.lines.size() - output.lines_streamed;
+      cdt.output.lines.reserve(cdt.output.lines.size() + new_lines_count);
       cdt.output.lines.insert(cdt.output.lines.end(),
-                              output.lines.begin() + cdt.output.lines.size(),
+                              output.lines.begin() + output.lines_streamed,
                               output.lines.end());
+      output.lines_streamed += new_lines_count;
     }
   }
 }
@@ -82,7 +84,9 @@ void OpenFileLink(Cdt& cdt) {
       std::string& link = cdt.output.file_links[link_index];
       std::string shell_command = FormatTemplate(cdt.open_in_editor_cmd, "{}",
                                                  link);
-      cdt.os->ExecProcess(shell_command);
+      entt::entity entity = cdt.registry.create();
+      cdt.registry.emplace<Process>(entity, true, shell_command);
+      cdt.registry.emplace<Output>(entity);
     } else {
       cdt.os->Out() << kTcGreen << "Last execution output:" << kTcReset
                     << std::endl;

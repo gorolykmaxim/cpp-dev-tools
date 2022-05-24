@@ -73,7 +73,6 @@ public:
     MOCK_METHOD(void, Signal, (int, void(*)(int)), (override));
     MOCK_METHOD(void, RaiseSignal, (int), (override));
     MOCK_METHOD(int, Exec, (const std::vector<const char*>&), (override));
-    MOCK_METHOD(void, ExecProcess, (const std::string&), (override));
     void KillProcess(Process& process) override {
         ProcessExitInfo& info = proc_exit_info.at(&process);
         info.exit_cb();
@@ -161,28 +160,28 @@ public:
     ExecCdtSystems(cdt);\
     EXPECT_OUT_EQ_SNAPSHOT("")
 
+#define EXPECT_PROC(CMD)\
+    mock.cmd_to_process_execs[CMD].push_back(ProcessExec{});\
+    EXPECT_CALL(mock.process_calls, Call(CMD))
+
 #define EXPECT_OUTPUT_LINKS_TO_OPEN()\
     testing::InSequence seq;\
-    EXPECT_CALL(mock, ExecProcess(execs.kEditor + " /a/b/c:10"));\
-    EXPECT_CALL(mock, ExecProcess(execs.kEditor + " /d/e/f:15:32"));\
-    EXPECT_CALL(mock, ExecProcess(execs.kEditor + " /a/b/c:11"));\
-    EXPECT_CALL(mock, ExecProcess(execs.kEditor + " /b/c:32:1"));\
+    EXPECT_PROC(execs.kEditor + " /a/b/c:10");\
+    EXPECT_PROC(execs.kEditor + " /d/e/f:15:32");\
+    EXPECT_PROC(execs.kEditor + " /a/b/c:11");\
+    EXPECT_PROC(execs.kEditor + " /b/c:32:1");\
     RunCmd("o1");\
     RunCmd("o2");\
     RunCmd("o3");\
     RunCmd("o4")
 
 #define EXPECT_LAST_EXEC_OUTPUT_DISPLAYED_ON_LINK_INDEX_OUT_OF_BOUNDS()\
-    EXPECT_CALL(mock, ExecProcess(testing::_)).Times(0);\
+    EXPECT_CALL(mock.process_calls, Call(testing::_)).Times(0);\
     EXPECT_CMD("o0");\
     EXPECT_CMD("o99");\
     EXPECT_CMD("o")
 
-#define DEBUGGER_CALL(CMD) "terminal cd " + paths.kTasksConfig.parent_path().string() + " && lldb " + CMD
-
-#define EXPECT_DEBUGGER_CALL(CMD)\
-    mock.cmd_to_process_execs[DEBUGGER_CALL(CMD)].push_back(ProcessExec{});\
-    EXPECT_CALL(mock.process_calls, Call(DEBUGGER_CALL(CMD)))
+#define WITH_DEBUG(CMD) "terminal cd " + paths.kTasksConfig.parent_path().string() + " && lldb " + CMD
 
 MATCHER_P(StrVecEq, expected, "") {
     if (arg.size() != expected.size()) {
@@ -639,6 +638,19 @@ TEST_F(CdtTest, StartAndFailToExecuteRestartTask) {
     EXPECT_CALL(mock, Exec(StrVecEq(expected_argv))).WillRepeatedly(testing::Return(ENOEXEC));
     EXPECT_CDT_STARTED();
     EXPECT_CMD("t7");
+}
+
+TEST_F(CdtTest, StartExecuteTaskAndFailToOpenLinksFromOutput) {
+  mock.cmd_to_process_execs[execs.kHelloWorld].front().output_lines = {
+    OUT_LINKS_NOT_HIGHLIGHTED()
+  };
+  ProcessExec exec;
+  exec.exit_code = 1;
+  exec.output_lines = {"failed to open file\n"};
+  mock.cmd_to_process_execs[execs.kEditor + " /a/b/c:10"].push_back(exec);
+  EXPECT_CDT_STARTED();
+  EXPECT_CMD("t1");
+  EXPECT_CMD("o1");
 }
 
 TEST_F(CdtTest, StartExecuteTaskAndOpenLinksFromOutput) {
@@ -1126,26 +1138,26 @@ TEST_F(CdtTest, StartAttemptDebugTaskThatDoesNotExistAndViewListOfAllTasks) {
 }
 
 TEST_F(CdtTest, StartDebugPrimaryTaskWithPreTasks) {
-    EXPECT_DEBUGGER_CALL("echo primary task");
+    EXPECT_PROC(WITH_DEBUG("echo primary task"));
     EXPECT_CDT_STARTED();
     EXPECT_CMD("d2");
 }
 
 TEST_F(CdtTest, StartAndFailToDebugTask) {
-    std::string debugger_call = DEBUGGER_CALL("echo primary task");
+    std::string debugger_call = WITH_DEBUG("echo primary task");
     mock.cmd_to_process_execs[debugger_call].push_back(failed_debug_exec);
     EXPECT_CDT_STARTED();
     EXPECT_CMD("d2");
 }
 
 TEST_F(CdtTest, StartDebugGtestPrimaryTaskWithPreTasks) {
-    EXPECT_DEBUGGER_CALL("tests");
+    EXPECT_PROC(WITH_DEBUG("tests"));
     EXPECT_CDT_STARTED();
     EXPECT_CMD("d10");
 }
 
 TEST_F(CdtTest, StartAndFailToDebugGtestTask) {
-    std::string debugger_call = DEBUGGER_CALL("tests");
+    std::string debugger_call = WITH_DEBUG("tests");
     mock.cmd_to_process_execs[debugger_call].push_back(failed_debug_exec);
     EXPECT_CDT_STARTED();
     EXPECT_CMD("d10");
@@ -1173,8 +1185,8 @@ TEST_F(CdtTest, StartExecuteGtestTaskWithPreTasksFailAttemptToRerunTestThatDoesN
 
 TEST_F(CdtTest, StartExecuteGtestTaskWithPreTasksFailAndRerunFailedTestWithDebugger) {
     testing::InSequence seq;
-    EXPECT_DEBUGGER_CALL("tests --gtest_filter='failed_test_suit_1.test1'");
-    EXPECT_DEBUGGER_CALL("tests --gtest_filter='failed_test_suit_2.test1'");
+    EXPECT_PROC(WITH_DEBUG("tests --gtest_filter='failed_test_suit_1.test1'"));
+    EXPECT_PROC(WITH_DEBUG("tests --gtest_filter='failed_test_suit_2.test1'"));
     mock.cmd_to_process_execs[execs.kTests].front() = failed_gtest_exec;
     EXPECT_CDT_STARTED();
     EXPECT_CMD("t10");
@@ -1192,8 +1204,8 @@ TEST_F(CdtTest, StartExecuteGtestTaskWithPreTasksSucceedAttemptToRerunTestThatDo
 
 TEST_F(CdtTest, StartExecuteGtestTaskWithPreTasksSucceedAndRerunOneOfTestsWithDebugger) {
     testing::InSequence seq;
-    EXPECT_DEBUGGER_CALL("tests --gtest_filter='test_suit_1.test1'");
-    EXPECT_DEBUGGER_CALL("tests --gtest_filter='test_suit_1.test2'");
+    EXPECT_PROC(WITH_DEBUG("tests --gtest_filter='test_suit_1.test1'"));
+    EXPECT_PROC(WITH_DEBUG("tests --gtest_filter='test_suit_1.test2'"));
     EXPECT_CDT_STARTED();
     EXPECT_CMD("t10");
     EXPECT_CMD("gd1");
@@ -1310,7 +1322,7 @@ TEST_F(CdtTest, StartExecuteTwoGtestTasksSelectFirstExecutionAndRerunGtestUntilI
 }
 
 TEST_F(CdtTest, StartExecuteTwoGtestTasksSelectFirstExecutionAndRerunGtestWithDebugger) {
-    EXPECT_DEBUGGER_CALL("tests --gtest_filter='failed_test_suit_1.test1'");
+    EXPECT_PROC(WITH_DEBUG("tests --gtest_filter='failed_test_suit_1.test1'"));
     mock.cmd_to_process_execs[execs.kTests].front() = failed_gtest_exec;
     mock.cmd_to_process_execs[execs.kTests].push_back(successful_gtest_exec);
     EXPECT_CDT_STARTED();
@@ -1384,4 +1396,14 @@ TEST_F(CdtTest, StartExecuteGtestTaskWithPreTasksSelectOneOfPretasksWithLinksInO
   EXPECT_CMD("exec3");
   EXPECT_CMD("exec1");
   EXPECT_CMD("o1");
+}
+
+TEST_F(CdtTest, StartExecuteTaskOpenLinksFromOuputValidateExecutionHistoryHasOnlyOneExecution) {
+  mock.cmd_to_process_execs[execs.kHelloWorld].front().output_lines = {
+    OUT_LINKS_NOT_HIGHLIGHTED()
+  };
+  EXPECT_CDT_STARTED();
+  EXPECT_CMD("t1");
+  EXPECT_OUTPUT_LINKS_TO_OPEN();
+  EXPECT_CMD("exec");
 }

@@ -79,10 +79,6 @@ void OsApi::KillProcess(Process& process) {
   }
 }
 
-void OsApi::ExecProcess(const std::string &shell_cmd) {
-    TinyProcessLib::Process(shell_cmd).get_exit_status();
-}
-
 void OsApi::StartProcess(Process& process,
                          const std::function<void (const char *, size_t)> &stdout_cb,
                          const std::function<void (const char *, size_t)> &stderr_cb,

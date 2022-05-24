@@ -159,7 +159,7 @@ void RestartRepeatingExecutionOnSuccess(Cdt& cdt) {
 }
 
 void FinishTaskExecution(Cdt& cdt) {
-  for (auto [entity, proc]: cdt.registry.view<Process>().each()) {
+  for (auto [entity, proc, _]: cdt.registry.view<Process, Execution>().each()) {
     if (proc.state == ProcessState::kRunning) {
       continue;
     }
