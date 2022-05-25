@@ -1,0 +1,342 @@
+#include "test-lib.h"
+#include "cdt.h"
+#include <atomic>
+#include <chrono>
+#include <gtest/gtest.h>
+#include <mutex>
+
+void OsApiMock::KillProcess(Process& process) {
+  ProcessExitInfo& info = proc_exit_info.at(&process);
+  info.exit_cb();
+  info.exit_code = -1;
+}
+
+void OsApiMock::StartProcess(
+    Process &process,
+    const std::function<void (const char *, size_t)> &stdout_cb,
+    const std::function<void (const char *, size_t)> &stderr_cb,
+    const std::function<void ()> &exit_cb) {
+  auto it = cmd_to_process_execs.find(process.shell_command);
+  if (it == cmd_to_process_execs.end()) {
+    throw std::runtime_error("Unexpected command called: " +
+                             process.shell_command);
+  }
+  process_calls.Call(process.shell_command);
+  std::deque<ProcessExec>& execs = it->second;
+  ProcessExec exec = execs.front();
+  if (execs.size() > 1) {
+    execs.pop_front();
+  }
+  process.handle = std::unique_ptr<TinyProcessLib::Process>();
+  proc_exit_info[&process] = ProcessExitInfo{exec.exit_code, exit_cb};
+  for (int i = 0; i < exec.output_lines.size(); i++) {
+    std::string& line = exec.output_lines[i];
+    if (exec.stderr_lines.count(i) == 0) {
+      stdout_cb(line.data(), line.size());
+    } else {
+      stderr_cb(line.data(), line.size());
+    }
+  }
+  if (!exec.is_long) {
+    exit_cb();
+  }
+}
+
+int OsApiMock::GetProcessExitCode(Process &process) {
+  return proc_exit_info.at(&process).exit_code;
+}
+
+std::chrono::system_clock::time_point OsApiMock::TimeNow() {
+  return time_now += std::chrono::seconds(1);
+}
+
+void OsApiMock::MockReadFile(const std::filesystem::path& p,
+                             const std::string& d) {
+  EXPECT_CALL(*this, ReadFile(testing::Eq(p), testing::_))
+      .WillRepeatedly(testing::DoAll(testing::SetArgReferee<1>(d),
+                                     testing::Return(true)));
+}
+
+void OsApiMock::MockReadFile(const std::filesystem::path& p) {
+  EXPECT_CALL(*this, ReadFile(testing::Eq(p), testing::_))
+      .WillRepeatedly(testing::Return(false));
+}
+
+bool CdtTest::ShouldCreateSnapshot() {
+  return std::getenv("SNAPSHOT") != nullptr;
+}
+
+void CdtTest::SetUpTestSuite() {
+  static bool prev_snapshots_removed = false;
+  if (ShouldCreateSnapshot() && !prev_snapshots_removed) {
+    std::filesystem::directory_iterator iter(TEST_DATA_DIR);
+    for (const std::filesystem::directory_entry& entry: iter) {
+      std::filesystem::remove_all(entry.path());
+    }
+    prev_snapshots_removed = true;
+  }
+}
+
+void CdtTest::SetUp() {
+  expected_data_index = 0;
+  cdt.os = &mock;
+  EXPECT_CALL(mock, In())
+      .Times(testing::AnyNumber())
+      .WillRepeatedly(testing::ReturnRef(in));
+  EXPECT_CALL(mock, Out())
+      .Times(testing::AnyNumber())
+      .WillRepeatedly(testing::ReturnRef(out));
+  EXPECT_CALL(mock, Err())
+      .Times(testing::AnyNumber())
+      .WillRepeatedly(testing::ReturnRef(out));
+  EXPECT_CALL(mock, GetEnv("HOME"))
+      .Times(testing::AnyNumber())
+      .WillRepeatedly(testing::Return(paths.kHome));
+  EXPECT_CALL(mock, GetEnv("LAST_COMMAND"))
+      .Times(testing::AnyNumber())
+      .WillRepeatedly(testing::Return(""));
+  EXPECT_CALL(mock, GetCurrentPath())
+      .Times(testing::AnyNumber())
+      .WillRepeatedly(testing::Return(paths.kTasksConfig.parent_path()));
+  EXPECT_CALL(mock, AbsolutePath(paths.kTasksConfig.filename()))
+      .Times(testing::AnyNumber())
+      .WillRepeatedly(testing::Return(paths.kTasksConfig));
+  EXPECT_CALL(mock, Signal(testing::Eq(SIGINT), testing::_))
+      .WillRepeatedly(testing::SaveArg<1>(&sigint_handler));
+  EXPECT_CALL(mock.process_calls, Call(testing::_))
+      .Times(testing::AnyNumber());
+  // mock tasks config
+  std::vector<nlohmann::json> tasks;
+  tasks.push_back(CreateTaskAndProcess("hello world!"));
+  tasks.push_back(CreateTaskAndProcess("primary task",
+                                       {"pre task 1", "pre task 2"}));
+  tasks.push_back(CreateTaskAndProcess("pre task 1",
+                                       {"pre pre task 1", "pre pre task 2"}));
+  tasks.push_back(CreateTaskAndProcess("pre task 2"));
+  tasks.push_back(CreateTaskAndProcess("pre pre task 1"));
+  tasks.push_back(CreateTaskAndProcess("pre pre task 2"));
+  tasks.push_back(CreateTask("restart", "__restart"));
+  tasks.push_back(CreateTask("run tests", "__gtest " + execs.kTests));
+  tasks.push_back(CreateTaskAndProcess("task with gtest pre task",
+                                       {"run tests"}));
+  tasks.push_back(CreateTask("run tests with pre tasks",
+                             "__gtest " + execs.kTests,
+                             {"pre pre task 1", "pre pre task 2"}));
+  nlohmann::json tasks_config_data;
+  tasks_config_data["cdt_tasks"] = tasks;
+  mock.MockReadFile(paths.kTasksConfig, tasks_config_data.dump());
+  // mock user config
+  nlohmann::json user_config_data;
+  user_config_data["open_in_editor_command"] = execs.kEditor + " {}";
+  user_config_data["debug_command"] = execs.kNewTerminalTab +
+                                      " cd {current_dir} && " +
+                                      execs.kDebugger + " {shell_cmd}";
+  mock.MockReadFile(paths.kUserConfig, user_config_data.dump());
+  EXPECT_CALL(mock, FileExists(paths.kUserConfig))
+      .WillRepeatedly(testing::Return(true));
+  // mock default test execution
+  out_links = OUT_LINKS_NOT_HIGHLIGHTED();
+  out_test_error = "unknown file: Failure\n"
+      "C++ exception with description \"\" thrown in the test body.\n";
+  successful_gtest_exec.output_lines = {
+    "Running main() from /lib/gtest_main.cc\n",
+    "[==========] Running 3 tests from 2 test suites.\n",
+    "[----------] Global test environment set-up.\n",
+    "[----------] 2 tests from test_suit_1\n",
+    "[ RUN      ] test_suit_1.test1\n",
+    out_links,
+    "[       OK ] test_suit_1.test1 (0 ms)\n",
+    "[ RUN      ] test_suit_1.test2\n",
+    "[       OK ] test_suit_1.test2 (0 ms)\n",
+    "[----------] 2 tests from test_suit_1 (0 ms total)\n\n",
+    "[----------] 1 test from test_suit_2\n",
+    "[ RUN      ] test_suit_2.test1\n",
+    "[       OK ] test_suit_2.test1 (0 ms)\n",
+    "[----------] 1 test from test_suit_2 (0 ms total)\n\n",
+    "[----------] Global test environment tear-down\n",
+    "[==========] 3 tests from 2 test suites ran. (0 ms total)\n",
+    "[  PASSED  ] 3 tests.\n"
+  };
+  aborted_gtest_exec.exit_code = 1;
+  aborted_gtest_exec.output_lines = {
+    "Running main() from /lib/gtest_main.cc\n",
+    "[==========] Running 2 tests from 2 test suites.\n",
+    "[----------] Global test environment set-up.\n",
+    "[----------] 1 test from normal_tests\n",
+    "[ RUN      ] normal_tests.hello_world\n",
+    "[       OK ] normal_tests.hello_world (0 ms)\n",
+    "[----------] 1 test from normal_tests (0 ms total)\n\n",
+    "[----------] 1 test from exit_tests\n",
+    "[ RUN      ] exit_tests.exit_in_the_middle\n",
+    out_test_error
+  };
+  failed_gtest_exec.exit_code = 1;
+  failed_gtest_exec.output_lines = {
+    "Running main() from /lib/gtest_main.cc\n",
+    "[==========] Running 3 tests from 2 test suites.\n",
+    "[----------] Global test environment set-up.\n",
+    "[----------] 2 tests from failed_test_suit_1\n",
+    "[ RUN      ] failed_test_suit_1.test1\n",
+    out_links,
+    out_test_error,
+    "[  FAILED  ] failed_test_suit_1.test1 (0 ms)\n",
+    "[ RUN      ] failed_test_suit_1.test2\n",
+    "[       OK ] failed_test_suit_1.test2 (0 ms)\n",
+    "[----------] 2 tests from failed_test_suit_1 (0 ms total)\n\n",
+    "[----------] 1 test from failed_test_suit_2\n",
+    "[ RUN      ] failed_test_suit_2.test1\n\n",
+    out_test_error,
+    "[  FAILED  ] failed_test_suit_2.test1 (0 ms)\n",
+    "[----------] 1 test from failed_test_suit_2 (0 ms total)\n\n",
+    "[----------] Global test environment tear-down\n",
+    "[==========] 3 tests from 2 test suites ran. (0 ms total)\n",
+    "[  PASSED  ] 1 test.\n",
+    "[  FAILED  ] 2 tests, listed below:\n",
+    "[  FAILED  ] failed_test_suit_1.test1\n",
+    "[  FAILED  ] failed_test_suit_2.test1\n\n",
+    "2 FAILED TESTS\n"
+  };
+  successful_single_gtest_exec.output_lines = {
+    "Running main() from /lib/gtest_main.cc\n",
+    "Note: Google Test filter = test_suit_1.test1\n",
+    "[==========] Running 1 test from 1 test suite.\n",
+    "[----------] Global test environment set-up.\n",
+    "[----------] 1 test from test_suit_1\n",
+    "[ RUN      ] test_suit_1.test1\n",
+    out_links,
+    "[       OK ] test_suit_1.test1 (0 ms)\n",
+    "[----------] 1 test from test_suit_1 (0 ms total)\n\n",
+    "[----------] Global test environment tear-down\n",
+    "[==========] 1 test from 1 test suite ran. (0 ms total)\n",
+    "[  PASSED  ] 1 test.\n"
+  };
+  failed_single_gtest_exec.exit_code = 1;
+  failed_single_gtest_exec.output_lines = {
+    "Running main() from /lib/gtest_main.cc\n",
+    "[==========] Running 2 tests from 1 test suite.\n",
+    "[----------] Global test environment set-up.\n",
+    "[----------] 2 tests from failed_test_suit_1\n",
+    "[ RUN      ] failed_test_suit_1.test1\n",
+    out_links,
+    out_test_error,
+    "[  FAILED  ] failed_test_suit_1.test1 (0 ms)\n",
+    "[ RUN      ] failed_test_suit_1.test2\n",
+    "[       OK ] failed_test_suit_1.test2 (0 ms)\n",
+    "[----------] 2 tests from failed_test_suit_1 (0 ms total)\n\n",
+    "[----------] Global test environment tear-down\n",
+    "[==========] 2 tests from 1 test suite ran. (0 ms total)\n",
+    "[  PASSED  ] 1 test.\n",
+    "[  FAILED  ] 1 test, listed below:\n",
+    "[  FAILED  ] failed_test_suit_1.test1\n\n",
+    " 1 FAILED TEST\n"
+  };
+  successful_rerun_gtest_exec.output_lines = {
+    "Running main() from /lib/gtest_main.cc\n",
+    "Note: Google Test filter = failed_test_suit_1.test1\n",
+    "[==========] Running 1 test from 1 test suite.\n",
+    "[----------] Global test environment set-up.\n",
+    "[----------] 1 test from failed_test_suit_1\n",
+    "[ RUN      ] failed_test_suit_1.test1\n",
+    out_links,
+    "[       OK ] failed_test_suit_1.test1 (0 ms)\n",
+    "[----------] 1 test from failed_test_suit_1 (0 ms total)\n\n",
+    "[----------] Global test environment tear-down\n",
+    "[==========] 1 test from 1 test suite ran. (0 ms total)\n",
+    "[  PASSED  ] 1 test.\n",
+  };
+  failed_rerun_gtest_exec.exit_code = 1;
+  failed_rerun_gtest_exec.output_lines = {
+    "Running main() from /lib/gtest_main.cc\n",
+    "Note: Google Test filter = failed_test_suit_1.test1\n",
+    "[==========] Running 1 test from 1 test suite.\n",
+    "[----------] Global test environment set-up.\n",
+    "[----------] 1 test from failed_test_suit_1\n",
+    "[ RUN      ] failed_test_suit_1.test1\n",
+    out_links,
+    out_test_error,
+    "[  FAILED  ] failed_test_suit_1.test1 (0 ms)\n",
+    "[----------] 1 test from failed_test_suit_1 (0 ms total)\n\n",
+    "[----------] Global test environment tear-down\n",
+    "[==========] 1 test from 1 test suite ran. (0 ms total)\n",
+    "[  PASSED  ] 0 tests.\n",
+    "[  FAILED  ] 1 test, listed below:\n",
+    "[  FAILED  ] failed_test_suit_1.test1\n\n",
+    " 1 FAILED TEST\n",
+  };
+  failed_debug_exec.exit_code = 1;
+  failed_debug_exec.output_lines = {"failed to launch debugger\n"};
+  failed_debug_exec.stderr_lines.insert(0);
+  mock.cmd_to_process_execs[execs.kTests].push_back(successful_gtest_exec);
+  std::string one_test = execs.kTests + " --gtest_filter='test_suit_1.test1'";
+  mock.cmd_to_process_execs[one_test].push_back(successful_single_gtest_exec);
+}
+
+bool CdtTest::InitTestCdt() {
+  std::vector<const char*> argv = {
+    execs.kCdt.c_str(),
+    paths.kTasksConfig.filename().c_str()
+  };
+  return InitCdt(argv.size(), argv.data(), cdt);
+}
+
+nlohmann::json CdtTest::CreateTask(const nlohmann::json& name,
+                                   const nlohmann::json& command,
+                                   const nlohmann::json& pre_tasks) {
+  nlohmann::json json;
+  if (!name.is_null()) {
+    json["name"] = name;
+  }
+  if (!command.is_null()) {
+    json["command"] = command;
+  }
+  if (!pre_tasks.is_null()) {
+    json["pre_tasks"] = pre_tasks;
+  }
+  return json;
+}
+
+nlohmann::json CdtTest::CreateTaskAndProcess(
+    const std::string& name, std::vector<std::string> pre_tasks) {
+  std::string cmd = "echo " + name;
+  ProcessExec exec;
+  exec.output_lines = {name + '\n'};
+  mock.cmd_to_process_execs[cmd].push_back(exec);
+  return CreateTask(name, cmd, std::move(pre_tasks));
+}
+
+void CdtTest::RunCmd(const std::string& cmd,
+                     bool break_when_process_events_stop) {
+  in << cmd << std::endl;
+  while (true) {
+    ExecCdtSystems(cdt);
+    if (!break_when_process_events_stop && WillWaitForInput(cdt)) {
+      break;
+    }
+    if (break_when_process_events_stop &&
+        cdt.proc_event_queue.size_approx() == 0 &&
+        cdt.execs_to_run.empty() &&
+        cdt.registry.view<Process>().size() == 1) {
+      break;
+    }
+  }
+}
+
+std::filesystem::path CdtTest::SnapshotPath(std::string name) {
+  testing::UnitTest* test = testing::UnitTest::GetInstance();
+  std::filesystem::path snapshot_path(TEST_DATA_DIR);
+  if (name.empty()) {
+    const testing::TestInfo* info = test->current_test_info();
+    std::string suite_name = info->test_suite_name();
+    std::string test_name = info->name();
+    std::string data_ind = std::to_string(expected_data_index++);
+    name = suite_name + '.' + test_name + data_ind;
+  }
+  snapshot_path /= name + ".txt";
+  return snapshot_path;
+}
+
+std::string CdtTest::ReadSnapshot(const std::string& name) {
+  std::string snapshot;
+  mock.OsApi::ReadFile(SnapshotPath(name), snapshot);
+  return snapshot;
+}

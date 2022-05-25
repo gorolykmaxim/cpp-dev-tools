@@ -50,7 +50,25 @@ target_link_libraries(${PROJECT_NAME} cdt)
 install(TARGETS ${PROJECT_NAME} DESTINATION bin)
 
 set(TEST_TARGET ${PROJECT_NAME}-test)
-add_executable(${TEST_TARGET} EXCLUDE_FROM_ALL test/test.cpp)
+add_executable(${TEST_TARGET} EXCLUDE_FROM_ALL
+  test/test-lib.h
+  test/test-lib.cpp
+  test/misc-test.cpp
+  test/launch-test.cpp
+  test/o-test.cpp
+  test/t-test.cpp
+  test/t-gtest-test.cpp
+  test/tr-test.cpp
+  test/g-test.cpp
+  test/gt-test.cpp
+  test/gtr-test.cpp
+  test/gf-test.cpp
+  test/s-test.cpp
+  test/gs-test.cpp
+  test/d-test.cpp
+  test/gd-test.cpp
+  test/exec-test.cpp)
+target_include_directories(${TEST_TARGET} PUBLIC test)
 target_link_libraries(${TEST_TARGET} cdt gtest gmock gtest_main)
 target_compile_definitions(${TEST_TARGET} PRIVATE
     "TEST_DATA_DIR=\"${CMAKE_CURRENT_SOURCE_DIR}/test/data\"")
