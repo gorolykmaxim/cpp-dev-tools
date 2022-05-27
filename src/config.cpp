@@ -1,3 +1,4 @@
+#include <algorithm>
 #include <cstddef>
 #include <filesystem>
 #include <sstream>
@@ -35,26 +36,6 @@ static bool ReadProperty(const nlohmann::json& json, const std::string& name, T&
     } catch (std::exception& e) {
         errors.emplace_back(err_msg);
         return false;
-    }
-}
-
-static void PreTaskNamesToIndexes(const std::vector<std::string>& pre_task_names, const std::vector<nlohmann::json>& tasks_json,
-                                  std::vector<size_t>& pre_tasks, const std::string& err_prefix, std::vector<std::string>& errors) {
-    for (const std::string& pre_task_name: pre_task_names) {
-        int pre_task_id = -1;
-        for (int i = 0; i < tasks_json.size(); i++) {
-            const nlohmann::json& another_task = tasks_json[i];
-            const auto& another_task_name = another_task.find("name");
-            if (another_task_name != another_task.end() && *another_task_name == pre_task_name) {
-                pre_task_id = i;
-                break;
-            }
-        }
-        if (pre_task_id >= 0) {
-            pre_tasks.push_back(pre_task_id);
-        } else {
-            errors.emplace_back(err_prefix + "references task '" + pre_task_name + "' that does not exist");
-        }
     }
 }
 
@@ -188,6 +169,12 @@ void ReadTasksConfig(Cdt& cdt) {
                             *cdt.selected_config_profile +
                             "' is not defined in 'cdt_profiles'");
   }
+  std::unordered_map<std::string, std::string> profile_variables;
+  // Apply profile variables to tasks only if there are no errors.
+  // If there are - selected_profile might be malformed.
+  if (config_errors.empty() && selected_profile != -1) {
+    profile_variables = profiles[selected_profile];
+  }
   // Read tasks
   std::vector<nlohmann::json> tasks_json;
   if (!ReadProperty(config_json, "cdt_tasks", tasks_json, false, "",
@@ -196,8 +183,8 @@ void ReadTasksConfig(Cdt& cdt) {
     return;
   }
   // Initialize tasks with their direct "pre_tasks" dependencies
-  std::vector<std::vector<size_t>> direct_pre_tasks(tasks_json.size());
-  cdt.pre_tasks = std::vector<std::vector<size_t>>(tasks_json.size());
+  std::vector<std::vector<std::string>> direct_pre_task_names(
+      tasks_json.size());
   for (int i = 0; i < tasks_json.size(); i++) {
     Task new_task;
     nlohmann::json& task_json = tasks_json[i];
@@ -206,13 +193,33 @@ void ReadTasksConfig(Cdt& cdt) {
                  "must be a string", config_errors);
     ReadProperty(task_json, "command", new_task.command, false, err_prefix,
                  "must be a string", config_errors);
-    std::vector<std::string> pre_task_names;
-    if (ReadProperty(task_json, "pre_tasks", pre_task_names, true, err_prefix,
-                     "must be an array of other task names", config_errors)) {
-      PreTaskNamesToIndexes(pre_task_names, tasks_json, direct_pre_tasks[i],
-                            err_prefix, config_errors);
+    ReadProperty(task_json, "pre_tasks", direct_pre_task_names[i], true,
+                 err_prefix, "must be an array of other task names",
+                 config_errors);
+    // Apply profile variables to the task
+    new_task.name = FormatTemplate(new_task.name, profile_variables);
+    new_task.command = FormatTemplate(new_task.command, profile_variables);
+    for (std::string& pre_task: direct_pre_task_names[i]) {
+      pre_task = FormatTemplate(pre_task, profile_variables);
     }
     cdt.tasks.push_back(new_task);
+  }
+  std::vector<std::vector<size_t>> direct_pre_tasks(tasks_json.size());
+  cdt.pre_tasks = std::vector<std::vector<size_t>>(tasks_json.size());
+  for (int i = 0; i < direct_pre_task_names.size(); i++) {
+    std::string err_prefix = "task #" + std::to_string(i + 1) + ": ";
+    std::vector<std::string>& names = direct_pre_task_names[i];
+    std::vector<size_t>& ids = direct_pre_tasks[i];
+    for (std::string& name: names) {
+      auto it = std::find_if(cdt.tasks.begin(), cdt.tasks.end(),
+                             [&name] (Task& t) {return t.name == name;});
+      if (it != cdt.tasks.end()) {
+        ids.push_back(it - cdt.tasks.begin());
+      } else {
+        config_errors.push_back(err_prefix + "references task '" + name +
+                                "' that does not exist");
+      }
+    }
   }
   // Transform the "pre_tasks" dependency graph of each task into a flat vector
   // of effective pre_tasks.
@@ -272,16 +279,6 @@ void ReadTasksConfig(Cdt& cdt) {
           to_visit.push(*it);
         }
       }
-    }
-  }
-  // Apply profile variables to tasks only if there are no errors.
-  // If there are - selected_profile might be malformed.
-  if (selected_profile != -1 && config_errors.empty()) {
-    std::unordered_map<std::string, std::string> vars;
-    vars = profiles[selected_profile];
-    for (Task& t: cdt.tasks) {
-      t.name = FormatTemplate(t.name, vars);
-      t.command = FormatTemplate(t.command, vars);
     }
   }
   AppendConfigErrors(cdt.tasks_config_path, config_errors, cdt.config_errors);

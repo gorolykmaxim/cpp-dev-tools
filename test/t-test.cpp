@@ -1,7 +1,18 @@
+#include "json.hpp"
 #include "test-lib.h"
 #include <gtest/gtest.h>
+#include <vector>
 
-class TTest: public CdtTest {};
+class TTest: public CdtTest {
+public:
+  void AppendTaskWithVariablePreTaskName() {
+    nlohmann::json& tasks = tasks_config_with_profiles_data["cdt_tasks"];
+    tasks.push_back(CreateTaskAndProcess("build on macos"));
+    tasks.push_back(CreateTaskAndProcess("build on windows"));
+    tasks.push_back(CreateTaskAndProcess("run variable binary",
+                                         {"build on {platform}"}));
+  }
+};
 
 TEST_F(TTest, StartAndDisplayListOfTasksOnTaskCommand) {
   EXPECT_CDT_STARTED();
@@ -66,4 +77,16 @@ TEST_F(TTest, StartAndExecuteTaskWithProfile1PreTask) {
 TEST_F(TTest, StartAndExecuteTaskWithProfile2PreTask) {
   EXPECT_CDT_STARTED_WITH_PROFILE(profile2);
   EXPECT_CMD("t12");
+}
+
+TEST_F(TTest, StartAndExecuteTaskWithPreTaskNameOfWhichIsDefinedInProfile1) {
+  AppendTaskWithVariablePreTaskName();
+  EXPECT_CDT_STARTED_WITH_PROFILE(profile1);
+  EXPECT_CMD("t15");
+}
+
+TEST_F(TTest, StartAndExecuteTaskWithPreTaskNameOfWhichIsDefinedInProfile2) {
+  AppendTaskWithVariablePreTaskName();
+  EXPECT_CDT_STARTED_WITH_PROFILE(profile2);
+  EXPECT_CMD("t15");
 }
