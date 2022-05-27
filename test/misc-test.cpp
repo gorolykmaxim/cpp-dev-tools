@@ -1,4 +1,5 @@
 #include "test-lib.h"
+#include <gtest/gtest.h>
 
 class MiscTest: public CdtTest {};
 
@@ -64,5 +65,17 @@ TEST_F(MiscTest, StartAndFailToExecuteRestartTask) {
   EXPECT_CALL(mock, Exec(StrVecEq(expected_argv)))
       .WillRepeatedly(testing::Return(ENOEXEC));
   EXPECT_CDT_STARTED();
+  EXPECT_CMD("t7");
+}
+
+TEST_F(MiscTest, StartAndExecuteRestartTaskWithProfileSelected) {
+  EXPECT_CDT_STARTED_WITH_PROFILE(profile1);
+  testing::InSequence seq;
+  EXPECT_CALL(mock, SetEnv("LAST_COMMAND", "t7"));
+  std::vector<const char*> expected_argv = {
+    execs.kCdt.c_str(), paths.kTasksConfig.c_str(), profile1.c_str(), nullptr
+  };
+  EXPECT_CALL(mock, Exec(StrVecEq(expected_argv)))
+      .WillRepeatedly(testing::Return(0));
   EXPECT_CMD("t7");
 }

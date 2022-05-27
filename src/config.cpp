@@ -2,9 +2,13 @@
 #include <filesystem>
 #include <sstream>
 #include <string>
+#include <optional>
+#include <unordered_map>
+#include <unordered_set>
 #include <vector>
 
 #include "cdt.h"
+#include "common.h"
 #include "config.h"
 #include "json.hpp"
 
@@ -60,6 +64,9 @@ bool ReadArgv(int argc, const char** argv, Cdt& cdt) {
         return false;
     }
     cdt.tasks_config_path = cdt.os->AbsolutePath(argv[1]);
+    if (argc > 2) {
+      cdt.selected_config_profile = argv[2];
+    }
     std::filesystem::path config_dir_path = cdt.tasks_config_path.parent_path();
     cdt.os->SetCurrentPath(config_dir_path);
     return true;
@@ -136,83 +143,148 @@ void ReadUserConfig(Cdt& cdt) {
 }
 
 void ReadTasksConfig(Cdt& cdt) {
-    nlohmann::json config_json;
-    std::vector<std::string> config_errors;
-    if (!ParseJsonFile(cdt.tasks_config_path, true, config_json, cdt.config_errors, cdt)) {
-        return;
+  nlohmann::json config_json;
+  std::vector<std::string> config_errors;
+  if (!ParseJsonFile(cdt.tasks_config_path, true, config_json,
+                     cdt.config_errors, cdt)) {
+    return;
+  }
+  // Read profiles and find the selected one
+  std::vector<nlohmann::json> profiles;
+  int selected_profile = -1;
+  if (ReadProperty(config_json, "cdt_profiles", profiles, true, "",
+                   "must be an array of profile objects", config_errors)) {
+    std::unordered_set<std::string> mandatory_variables = {"name"};
+    // All profiles should have the same set of variables, otherwise switching
+    // from one profile to another might break something because some variable
+    // is not set.
+    for (nlohmann::json& profile: profiles) {
+      for (auto it = profile.begin(); it != profile.end(); it++) {
+        mandatory_variables.insert(it.key());
+      }
     }
-    std::vector<nlohmann::json> tasks_json;
-    if (!ReadProperty(config_json, "cdt_tasks", tasks_json, false, "", "must be an array of task objects", config_errors)) {
-        AppendConfigErrors(cdt.tasks_config_path, config_errors, cdt.config_errors);
-        return;
-    }
-    std::vector<std::vector<size_t>> direct_pre_tasks(tasks_json.size());
-    cdt.pre_tasks = std::vector<std::vector<size_t>>(tasks_json.size());
-    // Initialize tasks with their direct "pre_tasks" dependencies
-    for (int i = 0; i < tasks_json.size(); i++) {
-        Task new_task;
-        nlohmann::json& task_json = tasks_json[i];
-        std::string err_prefix = "task #" + std::to_string(i + 1) + ": ";
-        ReadProperty(task_json, "name", new_task.name, false, err_prefix, "must be a string", config_errors);
-        ReadProperty(task_json, "command", new_task.command, false, err_prefix, "must be a string", config_errors);
-        std::vector<std::string> pre_task_names;
-        if (ReadProperty(task_json, "pre_tasks", pre_task_names, true, err_prefix, "must be an array of other task names", config_errors)) {
-            PreTaskNamesToIndexes(pre_task_names, tasks_json, direct_pre_tasks[i], err_prefix, config_errors);
+    for (int i = 0; i < profiles.size(); i++) {
+      std::string err_prefix = "profile #" + std::to_string(i + 1) + ": ";
+      nlohmann::json& profile = profiles[i];
+      std::optional<std::string> name;
+      for (const std::string& var_name: mandatory_variables) {
+        std::string var_value;
+        ReadProperty(profile, var_name, var_value, false, err_prefix,
+                     "must be a string", config_errors);
+        if (var_name == "name") {
+          name = var_value;
         }
-        cdt.tasks.push_back(new_task);
+      }
+      if (!cdt.selected_config_profile) {
+        cdt.selected_config_profile = name;
+      }
+      if (cdt.selected_config_profile == name) {
+        selected_profile = i;
+      }
     }
-    // Transform the "pre_tasks" dependency graph of each task into a flat vector of effective pre_tasks.
-    for (int i = 0; i < cdt.tasks.size(); i++) {
-        std::string& primary_task_name = cdt.tasks[i].name;
-        std::vector<size_t>& pre_tasks = cdt.pre_tasks[i];
-        std::stack<size_t> to_visit;
-        std::vector<size_t> task_call_stack;
-        to_visit.push(i);
-        task_call_stack.push_back(i);
-        while (!to_visit.empty()) {
-            size_t task_id = to_visit.top();
-            std::vector<size_t>& pre_pre_tasks = direct_pre_tasks[task_id];
-            // We are visiting each task with non-empty "pre_tasks" twice, so when we get to a task the second time - the
-            // task should already be on top of the task_call_stack. If that's the case - don't push the task to stack
-            // second time.
-            if (task_call_stack.back() != task_id) {
-                task_call_stack.push_back(task_id);
-            }
-            bool all_children_visited = true;
-            for (size_t child: pre_pre_tasks) {
-                if (std::find(pre_tasks.begin(), pre_tasks.end(), child) == pre_tasks.end()) {
-                    all_children_visited = false;
-                    break;
-                }
-            }
-            if (all_children_visited) {
-                to_visit.pop();
-                task_call_stack.pop_back();
-                // Primary task is also in to_visit. Don't add it to pre_tasks.
-                if (!to_visit.empty()) {
-                    pre_tasks.push_back(task_id);
-                }
-            } else {
-                // Check for circular dependencies
-                if (std::count(task_call_stack.begin(), task_call_stack.end(), task_id) > 1) {
-                    std::stringstream err;
-                    err << "task '" << primary_task_name << "' has a circular dependency in it's 'pre_tasks':\n";
-                    for (int j = 0; j < task_call_stack.size(); j++) {
-                        err << cdt.tasks[task_call_stack[j]].name;
-                        if (j + 1 < task_call_stack.size()) {
-                            err << " -> ";
-                        }
-                    }
-                    config_errors.emplace_back(err.str());
-                    break;
-                }
-                for (auto it = pre_pre_tasks.rbegin(); it != pre_pre_tasks.rend(); it++) {
-                    to_visit.push(*it);
-                }
-            }
-        }
-    }
+  }
+  if (cdt.selected_config_profile && selected_profile == -1) {
+    config_errors.push_back("profile with name '" +
+                            *cdt.selected_config_profile +
+                            "' is not defined in 'cdt_profiles'");
+  }
+  // Read tasks
+  std::vector<nlohmann::json> tasks_json;
+  if (!ReadProperty(config_json, "cdt_tasks", tasks_json, false, "",
+                    "must be an array of task objects", config_errors)) {
     AppendConfigErrors(cdt.tasks_config_path, config_errors, cdt.config_errors);
+    return;
+  }
+  // Initialize tasks with their direct "pre_tasks" dependencies
+  std::vector<std::vector<size_t>> direct_pre_tasks(tasks_json.size());
+  cdt.pre_tasks = std::vector<std::vector<size_t>>(tasks_json.size());
+  for (int i = 0; i < tasks_json.size(); i++) {
+    Task new_task;
+    nlohmann::json& task_json = tasks_json[i];
+    std::string err_prefix = "task #" + std::to_string(i + 1) + ": ";
+    ReadProperty(task_json, "name", new_task.name, false, err_prefix,
+                 "must be a string", config_errors);
+    ReadProperty(task_json, "command", new_task.command, false, err_prefix,
+                 "must be a string", config_errors);
+    std::vector<std::string> pre_task_names;
+    if (ReadProperty(task_json, "pre_tasks", pre_task_names, true, err_prefix,
+                     "must be an array of other task names", config_errors)) {
+      PreTaskNamesToIndexes(pre_task_names, tasks_json, direct_pre_tasks[i],
+                            err_prefix, config_errors);
+    }
+    cdt.tasks.push_back(new_task);
+  }
+  // Transform the "pre_tasks" dependency graph of each task into a flat vector
+  // of effective pre_tasks.
+  for (int i = 0; i < cdt.tasks.size(); i++) {
+    std::string& primary_task_name = cdt.tasks[i].name;
+    std::vector<size_t>& pre_tasks = cdt.pre_tasks[i];
+    std::stack<size_t> to_visit;
+    std::vector<size_t> task_call_stack;
+    to_visit.push(i);
+    task_call_stack.push_back(i);
+    while (!to_visit.empty()) {
+      size_t task_id = to_visit.top();
+      std::vector<size_t>& pre_pre_tasks = direct_pre_tasks[task_id];
+      // We are visiting each task with non-empty "pre_tasks" twice,
+      // so when we get to a task the second time - the task should already be
+      // on top of the task_call_stack.
+      // If that's the case - don't push the task to stack second time.
+      if (task_call_stack.back() != task_id) {
+        task_call_stack.push_back(task_id);
+      }
+      bool all_children_visited = true;
+      for (size_t child: pre_pre_tasks) {
+        auto it = std::find(pre_tasks.begin(), pre_tasks.end(), child);
+        if (it == pre_tasks.end()) {
+          all_children_visited = false;
+          break;
+        }
+      }
+      if (all_children_visited) {
+        to_visit.pop();
+        task_call_stack.pop_back();
+        // Primary task is also in to_visit. Don't add it to pre_tasks.
+        if (!to_visit.empty()) {
+          pre_tasks.push_back(task_id);
+        }
+      } else {
+        // Check for circular dependencies
+        int task_in_call_stack_count = std::count(task_call_stack.begin(),
+                                                  task_call_stack.end(),
+                                                  task_id);
+        if (task_in_call_stack_count > 1) {
+          std::stringstream err;
+          err << "task '" << primary_task_name
+              << "' has a circular dependency in it's 'pre_tasks':\n";
+          for (int j = 0; j < task_call_stack.size(); j++) {
+            err << cdt.tasks[task_call_stack[j]].name;
+            if (j + 1 < task_call_stack.size()) {
+              err << " -> ";
+            }
+          }
+          config_errors.emplace_back(err.str());
+          break;
+        }
+        for (auto it = pre_pre_tasks.rbegin();
+             it != pre_pre_tasks.rend();
+             it++) {
+          to_visit.push(*it);
+        }
+      }
+    }
+  }
+  // Apply profile variables to tasks only if there are no errors.
+  // If there are - selected_profile might be malformed.
+  if (selected_profile != -1 && config_errors.empty()) {
+    std::unordered_map<std::string, std::string> vars;
+    vars = profiles[selected_profile];
+    for (Task& t: cdt.tasks) {
+      t.name = FormatTemplate(t.name, vars);
+      t.command = FormatTemplate(t.command, vars);
+    }
+  }
+  AppendConfigErrors(cdt.tasks_config_path, config_errors, cdt.config_errors);
 }
 
 bool PrintErrors(const Cdt& cdt) {
@@ -223,4 +295,11 @@ bool PrintErrors(const Cdt& cdt) {
     }
     cdt.os->Err() << kTcReset;
     return true;
+}
+
+void DisplayUsedConfigProfile(const Cdt &cdt) {
+  if (cdt.selected_config_profile) {
+    cdt.os->Out() << "Using profile " << kTcGreen
+                  << *cdt.selected_config_profile << kTcReset << std::endl;
+  }
 }

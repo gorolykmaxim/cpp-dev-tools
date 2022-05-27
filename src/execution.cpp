@@ -3,6 +3,7 @@
 #include <ostream>
 #include <sstream>
 #include <string>
+#include <unordered_map>
 #include <vector>
 
 #include "cdt.h"
@@ -105,9 +106,14 @@ void ExecuteRestartTask(Cdt& cdt) {
   std::string arg_str = std::to_string(cdt.last_usr_cmd.arg);
   std::string cmd_str = cdt.last_usr_cmd.cmd + arg_str;
   cdt.os->SetEnv(kEnvVarLastCommand, cmd_str);
-  int error = cdt.os->Exec({cdt.cdt_executable, cdt.tasks_config_path.c_str(),
-                            nullptr});
-  if (error) {
+  std::vector<const char*> argv;
+  argv.push_back(cdt.cdt_executable);
+  argv.push_back(cdt.tasks_config_path.c_str());
+  if (cdt.selected_config_profile) {
+    argv.push_back(cdt.selected_config_profile->c_str());
+  }
+  argv.push_back(nullptr);
+  if (int error = cdt.os->Exec(argv)) {
     cdt.os->Out() << kTcRed << "Failed to restart: " << std::strerror(error)
                   << kTcReset << std::endl;
   }
@@ -218,10 +224,10 @@ void AttachDebuggerToScheduledExecutions(Cdt& cdt) {
     if (exec.debug != DebugStatus::kRequired) {
       continue;
     }
-    exec.shell_command = FormatTemplate(cdt.debug_cmd, "{shell_cmd}",
-                                        exec.shell_command);
-    exec.shell_command = FormatTemplate(exec.shell_command, "{current_dir}",
-                                        cdt.os->GetCurrentPath().string());
+    std::unordered_map<std::string, std::string> vars;
+    vars["shell_cmd"] = exec.shell_command;
+    vars["current_dir"] = cdt.os->GetCurrentPath().string();
+    exec.shell_command = FormatTemplate(cdt.debug_cmd, vars);
     exec.debug = DebugStatus::kAttached;
   }
 }

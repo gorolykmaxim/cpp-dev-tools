@@ -180,6 +180,7 @@ struct Cdt {
   const char* cdt_executable;
   std::filesystem::path user_config_path;
   std::filesystem::path tasks_config_path;
+  std::optional<std::string> selected_config_profile;
   std::vector<std::string> config_errors;
   std::optional<entt::entity> selected_exec;
   OsApi* os;

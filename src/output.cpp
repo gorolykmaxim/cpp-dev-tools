@@ -2,6 +2,7 @@
 #include <regex>
 #include <sstream>
 #include <string>
+#include <unordered_map>
 #include <vector>
 
 #include "cdt.h"
@@ -82,8 +83,8 @@ void OpenFileLink(Cdt& cdt) {
     if (IsCmdArgInRange(cdt.last_usr_cmd, cdt.output.file_links)) {
       int link_index = cdt.last_usr_cmd.arg - 1;
       std::string& link = cdt.output.file_links[link_index];
-      std::string shell_command = FormatTemplate(cdt.open_in_editor_cmd, "{}",
-                                                 link);
+      std::unordered_map<std::string, std::string> vars = {{"", link}};
+      std::string shell_command = FormatTemplate(cdt.open_in_editor_cmd, vars);
       entt::entity entity = cdt.registry.create();
       cdt.registry.emplace<Process>(entity, true, shell_command);
       cdt.registry.emplace<Output>(entity);

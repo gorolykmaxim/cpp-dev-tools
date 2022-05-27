@@ -5,6 +5,7 @@
 #include <algorithm>
 #include <deque>
 #include <string>
+#include <unordered_map>
 #include <vector>
 
 template<typename T>
@@ -14,8 +15,8 @@ bool IsCmdArgInRange(const UserCommand& cmd, const T& range) {
 
 std::string DefineUserCommand(const std::string& name, const UserCommandDefinition& def, Cdt& cdt);
 void WarnUserConfigPropNotSpecified(const std::string& property, Cdt& cdt);
-std::string FormatTemplate(std::string str, const std::string& substr,
-                           const std::string& replacement);
+std::string FormatTemplate(
+    std::string str, const std::unordered_map<std::string, std::string>& vars);
 bool AcceptUsrCmd(const std::string& def, UserCommand& cmd);
 std::string ReadInputFromStdin(const std::string& prefix, Cdt& cdt);
 void DisplayListOfTasks(const std::vector<Task>& tasks, Cdt& cdt);

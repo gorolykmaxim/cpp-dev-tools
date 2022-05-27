@@ -8,5 +8,6 @@ bool ReadArgv(int argc, const char** argv, Cdt& cdt);
 void ReadUserConfig(Cdt& cdt);
 void ReadTasksConfig(Cdt& cdt);
 bool PrintErrors(const Cdt& cdt);
+void DisplayUsedConfigProfile(const Cdt& cdt);
 
 #endif

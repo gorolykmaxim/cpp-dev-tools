@@ -21,6 +21,7 @@ bool InitCdt(int argc, const char **argv, Cdt &cdt) {
     ReadTasksConfig(cdt);
     if (PrintErrors(cdt)) return false;
     ReadUserCommandFromEnv(cdt);
+    DisplayUsedConfigProfile(cdt);
     PromptUserToAskForHelp(cdt);
     DisplayListOfTasks(cdt.tasks, cdt);
     return true;

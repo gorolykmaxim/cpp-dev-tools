@@ -1,0 +1,3 @@
+[31m/users/my-user/project/tasks.json is invalid:
+'cdt_profiles': must be an array of profile objects
+[0m

@@ -1,4 +1,9 @@
+#include "json.hpp"
 #include "test-lib.h"
+#include <gtest/gtest.h>
+#include <optional>
+#include <string>
+#include <vector>
 
 class LaunchTest : public CdtTest {};
 
@@ -88,4 +93,50 @@ TEST_F(LaunchTest, StartAndNotOverrideExistingUserConfig) {
   EXPECT_CALL(mock, WriteFile(testing::Eq(paths.kUserConfig), testing::_))
       .Times(0);
   EXPECT_CDT_STARTED();
+}
+
+TEST_F(LaunchTest, FailToStartDueToProfilesNotBeingArrayOfObjects) {
+  tasks_config_data["cdt_profiles"] = "string";
+  mock.MockReadFile(paths.kTasksConfig, tasks_config_data.dump());
+  EXPECT_CDT_ABORTED();
+}
+
+TEST_F(LaunchTest, FailedToStartDueToProfilesHavingErrors) {
+  std::vector<nlohmann::json> profiles;
+  // profile without a name and other variables
+  profiles.push_back({});
+  // profile with invalid variables
+  profiles.push_back({
+    {"name", "wrong profile"},
+    {"a", 1},
+    {"b", false},
+    {"c", "string"},
+    {"d", std::vector<nlohmann::json>()},
+    {"e", {{"a", 1}, {"b", false}}},
+  });
+  // correct profile
+  profiles.push_back({
+    {"name", "correct profile"},
+    {"a", "a"},
+    {"b", "b"},
+    {"c", "c"},
+    {"d", "d"},
+    {"e", "e"},
+  });
+  tasks_config_data["cdt_profiles"] = profiles;
+  mock.MockReadFile(paths.kTasksConfig, tasks_config_data.dump());
+  EXPECT_CDT_ABORTED();
+}
+
+
+TEST_F(LaunchTest, FailedToStartDueToNonExistentProfileBeingSelected) {
+  EXPECT_CDT_ABORTED_WITH_PROFILE("unknown profile");
+}
+
+TEST_F(LaunchTest, StartWithFirstProfileAutoselected) {
+  EXPECT_CDT_STARTED_WITH_PROFILE(std::optional<std::string>());
+}
+
+TEST_F(LaunchTest, StartWithSpecifiedProfileSelected) {
+  EXPECT_CDT_STARTED_WITH_PROFILE(profile2);
 }

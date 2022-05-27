@@ -4,6 +4,7 @@
 #include <filesystem>
 #include <gmock/gmock-nice-strict.h>
 #include <gmock/gmock-spec-builders.h>
+#include <optional>
 #include <vector>
 #include <string>
 #include <unordered_set>
@@ -100,8 +101,20 @@ public:
   EXPECT_TRUE(InitTestCdt());\
   EXPECT_OUT_EQ_SNAPSHOT("InitTestCdt")
 
+#define EXPECT_CDT_STARTED_WITH_PROFILE(PROFILE)\
+  mock.MockReadFile(paths.kTasksConfig,\
+                    tasks_config_with_profiles_data.dump());\
+  EXPECT_TRUE(InitTestCdt(PROFILE));\
+  EXPECT_OUT_EQ_SNAPSHOT("")
+
 #define EXPECT_CDT_ABORTED()\
   EXPECT_FALSE(InitTestCdt());\
+  EXPECT_OUT_EQ_SNAPSHOT("")
+
+#define EXPECT_CDT_ABORTED_WITH_PROFILE(PROFILE)\
+  mock.MockReadFile(paths.kTasksConfig,\
+                    tasks_config_with_profiles_data.dump());\
+  EXPECT_FALSE(InitTestCdt(PROFILE));\
   EXPECT_OUT_EQ_SNAPSHOT("")
 
 #define EXPECT_CMD(CMD)\
@@ -157,6 +170,8 @@ public:
   Paths paths;
   Executables execs;
   std::string out_links, out_test_error;
+  nlohmann::json tasks_config_data, tasks_config_with_profiles_data;
+  std::string profile1, profile2;
   ProcessExec successful_gtest_exec,
               failed_gtest_exec,
               successful_single_gtest_exec,
@@ -174,12 +189,15 @@ public:
   static void SetUpTestSuite();
   static bool ShouldCreateSnapshot();
   void SetUp() override;
-  bool InitTestCdt();
+  bool InitTestCdt(const std::optional<std::string>& profile_name = {});
   nlohmann::json CreateTask(const nlohmann::json& name = nullptr,
                             const nlohmann::json& command = nullptr,
                             const nlohmann::json& pre_tasks = nullptr);
   nlohmann::json CreateTaskAndProcess(const std::string& name,
                                       std::vector<std::string> pre_tasks = {});
+  nlohmann::json CreateProfileTaskAndProcess(
+      const std::string& name, const std::vector<std::string>& profile_versions,
+      std::vector<std::string> pre_tasks = {});
   void RunCmd(const std::string& cmd,
               bool break_when_process_events_stop = false);
   std::filesystem::path SnapshotPath(std::string name);

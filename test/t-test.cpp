@@ -1,4 +1,5 @@
 #include "test-lib.h"
+#include <gtest/gtest.h>
 
 class TTest: public CdtTest {};
 
@@ -45,4 +46,24 @@ TEST_F(TTest, StartAndFailOneOfPreTasks) {
   exec.stderr_lines = {0};
   EXPECT_CDT_STARTED();
   EXPECT_CMD("t2");
+}
+
+TEST_F(TTest, StartAndExecuteTaskWithProfile1) {
+  EXPECT_CDT_STARTED_WITH_PROFILE(profile1);
+  EXPECT_CMD("t11");
+}
+
+TEST_F(TTest, StartAndExecuteTaskWithProfile2) {
+  EXPECT_CDT_STARTED_WITH_PROFILE(profile2);
+  EXPECT_CMD("t11");
+}
+
+TEST_F(TTest, StartAndExecuteTaskWithProfile1PreTask) {
+  EXPECT_CDT_STARTED_WITH_PROFILE(profile1);
+  EXPECT_CMD("t12");
+}
+
+TEST_F(TTest, StartAndExecuteTaskWithProfile2PreTask) {
+  EXPECT_CDT_STARTED_WITH_PROFILE(profile2);
+  EXPECT_CMD("t12");
 }

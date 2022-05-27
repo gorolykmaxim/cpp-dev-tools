@@ -1,9 +1,13 @@
 #include "test-lib.h"
 #include "cdt.h"
+#include "json.hpp"
 #include <atomic>
 #include <chrono>
 #include <gtest/gtest.h>
 #include <mutex>
+#include <optional>
+#include <string>
+#include <vector>
 
 void OsApiMock::KillProcess(Process& process) {
   ProcessExitInfo& info = proc_exit_info.at(&process);
@@ -122,9 +126,30 @@ void CdtTest::SetUp() {
   tasks.push_back(CreateTask("run tests with pre tasks",
                              "__gtest " + execs.kTests,
                              {"pre pre task 1", "pre pre task 2"}));
-  nlohmann::json tasks_config_data;
+  tasks.push_back(CreateProfileTaskAndProcess(
+      "build for {platform} with profile {name}",
+      {"build for macos with profile profile 1",
+       "build for windows with profile profile 2"}));
+  tasks.push_back(CreateProfileTaskAndProcess(
+      "run on {platform}", {"run on macos", "run on windows"},
+      {"build for {platform} with profile {name}"}));
   tasks_config_data["cdt_tasks"] = tasks;
   mock.MockReadFile(paths.kTasksConfig, tasks_config_data.dump());
+  // mock tasks config version with profiles in it
+  profile1 = "profile 1";
+  profile2 = "profile 2";
+  tasks_config_with_profiles_data = tasks_config_data;
+  std::vector<nlohmann::json> profiles = {
+    {
+      {"name", profile1},
+      {"platform", "macos"},
+    },
+    {
+      {"name", profile2},
+      {"platform", "windows"},
+    },
+  };
+  tasks_config_with_profiles_data["cdt_profiles"] = profiles;
   // mock user config
   nlohmann::json user_config_data;
   user_config_data["open_in_editor_command"] = execs.kEditor + " {}";
@@ -271,11 +296,14 @@ void CdtTest::SetUp() {
   mock.cmd_to_process_execs[one_test].push_back(successful_single_gtest_exec);
 }
 
-bool CdtTest::InitTestCdt() {
+bool CdtTest::InitTestCdt(const std::optional<std::string>& profile_name) {
   std::vector<const char*> argv = {
     execs.kCdt.c_str(),
     paths.kTasksConfig.filename().c_str()
   };
+  if (profile_name) {
+    argv.push_back(profile_name->c_str());
+  }
   return InitCdt(argv.size(), argv.data(), cdt);
 }
 
@@ -302,6 +330,17 @@ nlohmann::json CdtTest::CreateTaskAndProcess(
   exec.output_lines = {name + '\n'};
   mock.cmd_to_process_execs[cmd].push_back(exec);
   return CreateTask(name, cmd, std::move(pre_tasks));
+}
+
+nlohmann::json CdtTest::CreateProfileTaskAndProcess(
+    const std::string &name, const std::vector<std::string>& profile_versions,
+    std::vector<std::string> pre_tasks) {
+  for (const std::string& v: profile_versions) {
+    ProcessExec exec;
+    exec.output_lines = {v + '\n'};
+    mock.cmd_to_process_execs["echo " + v].push_back(exec);
+  }
+  return CreateTask(name, "echo " + name, std::move(pre_tasks));
 }
 
 void CdtTest::RunCmd(const std::string& cmd,

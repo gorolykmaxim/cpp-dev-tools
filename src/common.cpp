@@ -13,13 +13,24 @@ void WarnUserConfigPropNotSpecified(const std::string& property, Cdt& cdt) {
     cdt.os->Out() << kTcRed << '\'' << property << "' is not specified in " << cdt.user_config_path << kTcReset << std::endl;
 }
 
-std::string FormatTemplate(std::string str, const std::string& substr,
-                           const std::string& replacement) {
-    std::string::size_type p = str.find(substr);
-    if (p != std::string::npos) {
-        str.replace(p, substr.size(), replacement);
+std::string FormatTemplate(
+    std::string str, const std::unordered_map<std::string, std::string>& vars) {
+  int var_start = -1;
+  for (int i = 0; i < str.size(); i++) {
+    char c = str[i];
+    if (c == '{') {
+      var_start = i;
+    } else if (c == '}' && var_start >= 0) {
+      std::string var_name = str.substr(var_start + 1, i - var_start - 1);
+      auto it = vars.find(var_name);
+      if (it != vars.end()) {
+        str.replace(var_start, i - var_start + 1, it->second);
+        i = var_start - 1 + it->second.size();
+      }
+      var_start = -1;
     }
-    return str;
+  }
+  return str;
 }
 
 bool AcceptUsrCmd(const std::string& def, UserCommand& cmd) {

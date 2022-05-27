@@ -10,3 +10,5 @@ Type [32mh[0m to see list of all the user commands.
 8 "run tests"
 9 "task with gtest pre task"
 10 "run tests with pre tasks"
+11 "build for {platform} with profile {name}"
+12 "run on {platform}"
