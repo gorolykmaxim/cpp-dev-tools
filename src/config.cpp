@@ -92,8 +92,18 @@ void InitExampleUserConfig(Cdt& cdt) {
         example << "  //\"" << kOpenInEditorCommandProperty
                 << "\": \"code {}\"\n";
         example << "  // Debug tasks on MacOS:\n";
-        example << "  //\"" << kDebugCommandProperty
-                << "\": \"osascript -e 'tell application \\\"Terminal\\\" to do script \\\"cd {current_dir} && lldb -- {shell_cmd}\\\"'\"\n";
+        std::string activate_terminal = "tell application \\\"Terminal\\\" "
+                                        "to activate";
+        std::string open_new_tab = "tell application \\\"System Events\\\" "
+                                   "to tell process \\\"Terminal\\\" "
+                                   "to keystroke \\\"t\\\" using command down";
+        std::string exec_in_tab = "tell application \\\"Terminal\\\" "
+                                  "to do script \\\"cd {current_dir} && "
+                                  "lldb -- {shell_cmd}\\\" "
+                                  "in selected tab of the front window";
+        example << "  //\"" << kDebugCommandProperty << "\": \"osascript "
+                << "-e '" << activate_terminal << "' -e '" << open_new_tab
+                << "' -e '" << exec_in_tab << "'\"\n";
         example << "}\n";
         cdt.os->WriteFile(cdt.user_config_path, example.str());
     }

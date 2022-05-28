@@ -80,8 +80,13 @@ TEST_F(LaunchTest, StartAndCreateExampleUserConfig) {
       "  // Open file links from the output in VSCode:\n"
       "  //\"open_in_editor_command\": \"code {}\"\n"
       "  // Debug tasks on MacOS:\n"
-      "  //\"debug_command\": \"osascript -e 'tell application \\\"Terminal\\\""
-      " to do script \\\"cd {current_dir} && lldb -- {shell_cmd}\\\"'\"\n"
+      "  //\"debug_command\": \"osascript"
+      " -e 'tell application \\\"Terminal\\\" to activate'"
+      " -e 'tell application \\\"System Events\\\" to tell process"
+      " \\\"Terminal\\\" to keystroke \\\"t\\\" using command down'"
+      " -e 'tell application \\\"Terminal\\\" to do script"
+      " \\\"cd {current_dir} && lldb -- {shell_cmd}\\\""
+      " in selected tab of the front window'\"\n"
       "}\n";
   EXPECT_CALL(mock, FileExists(paths.kUserConfig))
       .WillRepeatedly(testing::Return(false));
