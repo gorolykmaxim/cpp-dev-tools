@@ -40,17 +40,17 @@ static bool ReadProperty(const nlohmann::json& json, const std::string& name, T&
 }
 
 bool ReadArgv(int argc, const char** argv, Cdt& cdt) {
-    if (argc < 2) {
-        cdt.config_errors.emplace_back("usage: cpp-dev-tools tasks.json");
-        return false;
-    }
-    cdt.tasks_config_path = cdt.os->AbsolutePath(argv[1]);
-    if (argc > 2) {
-      cdt.selected_config_profile = argv[2];
-    }
-    std::filesystem::path config_dir_path = cdt.tasks_config_path.parent_path();
-    cdt.os->SetCurrentPath(config_dir_path);
-    return true;
+  if (argc < 2) {
+    cdt.config_errors.emplace_back("usage: cpp-dev-tools tasks.json [profile]");
+    return false;
+  }
+  cdt.tasks_config_path = cdt.os->AbsolutePath(argv[1]);
+  if (argc > 2) {
+   cdt.selected_config_profile = argv[2];
+  }
+  std::filesystem::path config_dir_path = cdt.tasks_config_path.parent_path();
+  cdt.os->SetCurrentPath(config_dir_path);
+  return true;
 }
 
 static bool ParseJsonFile(const std::filesystem::path& config_path, bool should_exist, nlohmann::json& config_json,

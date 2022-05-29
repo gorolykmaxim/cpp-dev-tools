@@ -27,7 +27,7 @@ TEST_F(LaunchTest, FailToStartDueToUserConfigHavingPropertiesInIncorrectFormat) 
 TEST_F(LaunchTest, FailToStartDueToTasksConfigNotSpecified) {
   std::vector<const char*> argv = {execs.kCdt.c_str()};
   EXPECT_FALSE(InitCdt(argv.size(), argv.data(), cdt));
-  EXPECT_EQ("\x1B[31musage: cpp-dev-tools tasks.json\n\x1B[0m", out.str());
+  EXPECT_EQ("\x1B[31musage: cpp-dev-tools tasks.json [profile]\n\x1B[0m", out.str());
 }
 
 TEST_F(LaunchTest, FailToStartDueToTasksConfigNotExisting) {
