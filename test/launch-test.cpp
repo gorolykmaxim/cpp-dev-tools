@@ -62,6 +62,8 @@ TEST_F(LaunchTest, FailToStartDueToTasksConfigHavingErrors) {
     CreateTask("cycle-1", "command", std::vector<std::string>{"cycle-2"}),
     CreateTask("cycle-2", "command", std::vector<std::string>{"cycle-3"}),
     CreateTask("cycle-3", "command", std::vector<std::string>{"cycle-1"}),
+    CreateTask("duplicate name", "command"),
+    CreateTask("duplicate name", "command"),
   };
   mock.MockReadFile(paths.kTasksConfig, tasks_config_data.dump());
   EXPECT_CDT_ABORTED();

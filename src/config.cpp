@@ -231,6 +231,18 @@ void ReadTasksConfig(Cdt& cdt) {
       }
     }
   }
+  // Validate that all task names are unique. Otherwise we will have problems
+  // figuring out which of the tasks is the right pre task.
+  for (int i = 0; i < cdt.tasks.size(); i++) {
+    std::string& name = cdt.tasks[i].name;
+    for (int j = 0; j < cdt.tasks.size(); j++) {
+      if (i != j && name == cdt.tasks[j].name) {
+        config_errors.push_back("task #" + std::to_string(i + 1) + ": name '" +
+                                cdt.tasks[i].name + "' is already used by " +
+                                "task #" + std::to_string(j + 1));
+      }
+    }
+  }
   // Transform the "pre_tasks" dependency graph of each task into a flat vector
   // of effective pre_tasks.
   for (int i = 0; i < cdt.tasks.size(); i++) {
