@@ -33,16 +33,11 @@ add_library(cdt STATIC
     src/user-command.cpp
     src/output.h
     src/output.cpp
-    src/process.h
-    src/process.cpp
+    src/processes.h
+    src/processes.cpp
     src/execution.h
     src/execution.cpp)
-target_include_directories(cdt
-    PUBLIC src
-    PUBLIC lib/tiny-process-library
-    PUBLIC lib/nlohmann_json
-    PUBLIC lib/cameron314_concurrentqueue
-    PUBLIC lib/skypjack_entt)
+target_include_directories(cdt PUBLIC src PUBLIC lib)
 target_link_libraries(cdt tiny-process-library nlohmann_json cameron314_concurrentqueue skypjack_entt)
 
 add_executable(${PROJECT_NAME} src/main.cpp)
