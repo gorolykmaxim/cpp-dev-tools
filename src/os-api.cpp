@@ -70,11 +70,21 @@ void OsApi::KillProcess(Process& process) {
   }
 }
 
-void OsApi::StartProcess(Process& process,
-                         const std::function<void (const char *, size_t)> &stdout_cb,
-                         const std::function<void (const char *, size_t)> &stderr_cb,
-                         const std::function<void ()> &exit_cb) {
-    process.handle = std::make_unique<TinyProcessLib::Process>(process.shell_command, "", stdout_cb, stderr_cb, exit_cb);
+void OsApi::StartProcess(
+    Process& process,
+    const std::function<void (const char *, size_t)> &stdout_cb,
+    const std::function<void (const char *, size_t)> &stderr_cb,
+    const std::function<void ()> &exit_cb) {
+  static const std::string err_prefix = "Failed to exec: ";
+  static const std::string err_suffix = "\n";
+  process.handle = std::make_unique<TinyProcessLib::Process>(
+      process.shell_command, "", stdout_cb, stderr_cb, exit_cb);
+  if (process.handle->get_id() <= 0) {
+    stderr_cb(err_prefix.c_str(), err_prefix.size());
+    stderr_cb(process.shell_command.c_str(), process.shell_command.size());
+    stderr_cb(err_suffix.c_str(), err_suffix.size());
+    exit_cb();
+  }
 }
 
 int OsApi::GetProcessExitCode(Process& process) {
