@@ -34,10 +34,7 @@ TEST_F(MiscTest, StartExecuteTaskAndAbortIt) {
 
 TEST_F(MiscTest, StartAndExit) {
   EXPECT_CDT_STARTED();
-  testing::InSequence seq;
-  EXPECT_CALL(mock, Signal(SIGINT, SIG_DFL));
-  EXPECT_CALL(mock, RaiseSignal(SIGINT));
-  sigint_handler(SIGINT);
+  EXPECT_FALSE(ctrl_c_handler());
 }
 
 TEST_F(MiscTest, StartExecuteSingleTaskAndRepeateTheLastCommandOnEnter) {

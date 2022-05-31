@@ -60,8 +60,7 @@ public:
   MOCK_METHOD(void, WriteFile,
               (const std::filesystem::path&, const std::string&), (override));
   MOCK_METHOD(bool, FileExists, (const std::filesystem::path&), (override));
-  MOCK_METHOD(void, Signal, (int, void(*)(int)), (override));
-  MOCK_METHOD(void, RaiseSignal, (int), (override));
+  MOCK_METHOD(void, SetCtrlCHandler, (std::function<bool()>), (override));
   MOCK_METHOD(int, Exec, (const std::vector<const char*>&), (override));
   void KillProcess(Process& process) override;
   void StartProcess(Process& process,
@@ -123,7 +122,7 @@ public:
 
 #define EXPECT_INTERRUPTED_CMD(CMD)\
   RunCmd(CMD, true);\
-  sigint_handler(SIGINT);\
+  EXPECT_TRUE(ctrl_c_handler());\
   ExecCdtSystems(cdt);\
   EXPECT_OUT_EQ_SNAPSHOT("")
 
@@ -182,7 +181,7 @@ public:
               failed_debug_exec;
   int expected_data_index;
   std::stringstream in, out;
-  std::function<void(int)> sigint_handler;
+  std::function<bool()> ctrl_c_handler;
   testing::NiceMock<OsApiMock> mock;
   Cdt cdt;
 

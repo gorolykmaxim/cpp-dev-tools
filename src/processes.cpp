@@ -1,22 +1,18 @@
 #include "processes.h"
 #include <sstream>
 
-static Cdt* global_cdt;
-
-static void TerminateCurrentProcessOrExit(int signal) {
-    if (global_cdt->registry.view<Process>().empty()) {
-        global_cdt->os->Signal(signal, SIG_DFL);
-        global_cdt->os->RaiseSignal(signal);
-    } else {
-        for (auto [_, proc]: global_cdt->registry.view<Process>().each()) {
-            global_cdt->os->KillProcess(proc);
-        }
-    }
+static bool StopRunningProcessesOrExit(Cdt& cdt) {
+  if (cdt.registry.view<Process>().empty()) {
+    return false;
+  }
+  for (auto [_, proc]: cdt.registry.view<Process>().each()) {
+    cdt.os->KillProcess(proc);
+  }
+  return true;
 }
 
 void InitProcess(Cdt& cdt) {
-  cdt.os->Signal(SIGINT, TerminateCurrentProcessOrExit);
-  global_cdt = &cdt;
+  cdt.os->SetCtrlCHandler([&cdt] () {return StopRunningProcessesOrExit(cdt);});
 }
 
 static std::function<void(const char*,size_t)> WriteTo(

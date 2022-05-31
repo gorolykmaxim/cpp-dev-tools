@@ -1,4 +1,5 @@
 #include <filesystem>
+#include <functional>
 #include <iostream>
 #include <fstream>
 #include <memory>
@@ -7,6 +8,8 @@
 
 #include "cdt.h"
 #include "process.hpp"
+
+static std::function<bool()> ctrl_c_handler;
 
 std::istream& OsApi::In() {
     return std::cin;
@@ -60,12 +63,16 @@ bool OsApi::FileExists(const std::filesystem::path &path) {
     return std::filesystem::exists(path);
 }
 
-void OsApi::Signal(int signal, void (*handler)(int)) {
-    std::signal(signal, handler);
+static void HandleSignal(int signal) {
+  if (!ctrl_c_handler()) {
+    std::signal(signal, SIG_DFL);
+    raise(signal);
+  }
 }
 
-void OsApi::RaiseSignal(int signal) {
-    std::raise(signal);
+void OsApi::SetCtrlCHandler(std::function<bool ()> handler) {
+  ctrl_c_handler = std::move(handler);
+  std::signal(SIGINT, HandleSignal);
 }
 
 int OsApi::Exec(const std::vector<const char *> &args) {

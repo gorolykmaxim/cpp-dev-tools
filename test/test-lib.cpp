@@ -3,6 +3,8 @@
 #include "json.hpp"
 #include <atomic>
 #include <chrono>
+#include <gmock/gmock-actions.h>
+#include <gmock/gmock-spec-builders.h>
 #include <gtest/gtest.h>
 #include <mutex>
 #include <optional>
@@ -105,8 +107,8 @@ void CdtTest::SetUp() {
   EXPECT_CALL(mock, AbsolutePath(paths.kTasksConfig.filename()))
       .Times(testing::AnyNumber())
       .WillRepeatedly(testing::Return(paths.kTasksConfig));
-  EXPECT_CALL(mock, Signal(testing::Eq(SIGINT), testing::_))
-      .WillRepeatedly(testing::SaveArg<1>(&sigint_handler));
+  EXPECT_CALL(mock, SetCtrlCHandler(testing::_))
+      .WillRepeatedly(testing::SaveArg<0>(&ctrl_c_handler));
   EXPECT_CALL(mock.process_calls, Call(testing::_))
       .Times(testing::AnyNumber());
   // mock tasks config

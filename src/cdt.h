@@ -148,8 +148,7 @@ public:
     virtual bool ReadFile(const std::filesystem::path& path, std::string& data);
     virtual void WriteFile(const std::filesystem::path& path, const std::string& data);
     virtual bool FileExists(const std::filesystem::path& path);
-    virtual void Signal(int signal, void(*handler)(int));
-    virtual void RaiseSignal(int signal);
+    virtual void SetCtrlCHandler(std::function<bool()> handler);
     virtual int Exec(const std::vector<const char*>& args);
     virtual void KillProcess(Process& process);
     virtual void StartProcess(Process& process,
