@@ -33,7 +33,7 @@ void StreamExecutionOutput(Cdt& cdt) {
 }
 
 std::string FindNextSubmatch(const std::smatch& match,
-                                int& current_submatch) {
+                             int& current_submatch) {
   for (; current_submatch < match.size(); current_submatch++) {
     if (match[current_submatch].matched) {
       return match[current_submatch++].str();
