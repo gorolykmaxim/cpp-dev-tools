@@ -46,8 +46,8 @@ void FindAndHighlightFileLinks(Cdt& cdt) {
   static const std::regex kFileLinkRegex(
       "(\\/[^:]+):([0-9]+):?([0-9]+)?"
 #ifdef _WIN32
-      "|([a-zA-Z]\\:\\\\[^:]+)\\(([0-9]+),?([0-9]+)?\\)"
-      "|([a-zA-Z]\\:\\\\[^:]+):([0-9]+):([0-9]+)?"
+      "|([A-Z]\\:\\\\[^:]+)\\(([0-9]+),?([0-9]+)?\\)"
+      "|([A-Z]\\:\\\\[^:]+):([0-9]+):([0-9]+)?"
 #endif
   );
   if (cdt.open_in_editor_cmd.empty()) {
