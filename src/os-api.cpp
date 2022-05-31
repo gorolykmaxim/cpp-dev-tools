@@ -2,6 +2,11 @@
 #include <iostream>
 #include <fstream>
 #include <memory>
+#ifndef _WIN32
+#include <unistd.h>
+#else
+#include <windows.h>
+#endif
 
 #include "cdt.h"
 #include "process.hpp"
