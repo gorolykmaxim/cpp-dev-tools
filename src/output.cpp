@@ -32,8 +32,24 @@ void StreamExecutionOutput(Cdt& cdt) {
   }
 }
 
+std::string FindNextSubmatch(const std::smatch& match,
+                                int& current_submatch) {
+  for (; current_submatch < match.size(); current_submatch++) {
+    if (match[current_submatch].matched) {
+      return match[current_submatch++].str();
+    }
+  }
+  return "";
+}
+
 void FindAndHighlightFileLinks(Cdt& cdt) {
-  static const std::regex kFileLinkRegex("(\\/[^:]+):([0-9]+):?([0-9]+)?");
+  static const std::regex kFileLinkRegex(
+      "(\\/[^:]+):([0-9]+):?([0-9]+)?"
+#ifdef _WIN32
+      "|([a-zA-Z]\\:\\\\[^:]+)\\(([0-9]+),?([0-9]+)?\\)"
+      "|([a-zA-Z]\\:\\\\[^:]+):([0-9]+):([0-9]+)?"
+#endif
+  );
   if (cdt.open_in_editor_cmd.empty()) {
     return;
   }
@@ -45,9 +61,12 @@ void FindAndHighlightFileLinks(Cdt& cdt) {
          it != std::sregex_iterator();
          it++) {
       std::stringstream link_stream;
-      link_stream << (*it)[1] << ':' << (*it)[2];
-      if (it->size() > 3 && (*it)[3].matched) {
-        link_stream << ':' << (*it)[3];
+      int current_submatch = 1;
+      link_stream << FindNextSubmatch(*it, current_submatch) << ':'
+                  << FindNextSubmatch(*it, current_submatch);
+      std::string column_num = FindNextSubmatch(*it, current_submatch);
+      if (!column_num.empty()) {
+        link_stream << ':' << column_num;
       }
       std::string link = link_stream.str();
       cdt.output.file_links.push_back(link);
