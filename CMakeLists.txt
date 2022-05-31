@@ -37,6 +37,11 @@ add_library(cdt STATIC
     src/processes.cpp
     src/execution.h
     src/execution.cpp)
+if(WIN32)
+  target_sources(cdt PRIVATE src/os-api-win.cpp)
+else()
+  target_sources(cdt PRIVATE src/os-api-unix.cpp)
+endif()
 target_include_directories(cdt PUBLIC src PUBLIC lib)
 target_link_libraries(cdt tiny-process-library nlohmann_json cameron314_concurrentqueue skypjack_entt)
 

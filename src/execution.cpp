@@ -108,7 +108,8 @@ void ExecuteRestartTask(Cdt& cdt) {
   cdt.os->SetEnv(kEnvVarLastCommand, cmd_str);
   std::vector<const char*> argv;
   argv.push_back(cdt.cdt_executable);
-  argv.push_back(cdt.tasks_config_path.c_str());
+  std::string tasks_config_path_str = cdt.tasks_config_path.string();
+  argv.push_back(tasks_config_path_str.c_str());
   if (cdt.selected_config_profile) {
     argv.push_back(cdt.selected_config_profile->c_str());
   }

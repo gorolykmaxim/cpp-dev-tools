@@ -1,15 +1,10 @@
 #include <filesystem>
-#include <functional>
 #include <iostream>
 #include <fstream>
 #include <memory>
-#include <unistd.h>
-#include <csignal>
 
 #include "cdt.h"
 #include "process.hpp"
-
-static std::function<bool()> ctrl_c_handler;
 
 std::istream& OsApi::In() {
     return std::cin;
@@ -26,10 +21,6 @@ std::ostream& OsApi::Err() {
 std::string OsApi::GetEnv(const std::string &name) {
     const char* value = getenv(name.c_str());
     return value ? value : "";
-}
-
-void OsApi::SetEnv(const std::string &name, const std::string &value) {
-    setenv(name.c_str(), value.c_str(), true);
 }
 
 void OsApi::SetCurrentPath(const std::filesystem::path &path) {
@@ -61,18 +52,6 @@ void OsApi::WriteFile(const std::filesystem::path &path, const std::string &data
 
 bool OsApi::FileExists(const std::filesystem::path &path) {
     return std::filesystem::exists(path);
-}
-
-static void HandleSignal(int signal) {
-  if (!ctrl_c_handler()) {
-    std::signal(signal, SIG_DFL);
-    raise(signal);
-  }
-}
-
-void OsApi::SetCtrlCHandler(std::function<bool ()> handler) {
-  ctrl_c_handler = std::move(handler);
-  std::signal(SIGINT, HandleSignal);
 }
 
 int OsApi::Exec(const std::vector<const char *> &args) {

@@ -118,7 +118,7 @@ void ParseGtestOutput(Cdt& cdt) {
           cdt.output.lines.push_back(line);
         }
       } else if (found_word == "RUN") {
-        gtest_exec.current_test = gtest_exec.tests.size();
+        gtest_exec.current_test = static_cast<int>(gtest_exec.tests.size());
         GtestTest test{line_content};
         test.buffer_start = l + 1;
         test.buffer_end = test.buffer_start;
