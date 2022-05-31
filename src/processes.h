@@ -1,5 +1,5 @@
-#ifndef PROCESS_H
-#define PROCESS_H
+#ifndef PROCESSES_H
+#define PROCESSES_H
 
 #include "cdt.h"
 
