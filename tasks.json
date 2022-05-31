@@ -1,8 +1,12 @@
 {
     "cdt_profiles": [
       {
-        "name": "MacOS",
+        "name": "mac",
         "testBinaryPath": "./build/cpp-dev-tools-test"
+      },
+      {
+        "name": "win",
+        "testBinaryPath": "./build/Debug/cpp-dev-tools-test.exe"
       }
     ],
     "cdt_tasks": [
