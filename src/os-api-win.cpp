@@ -34,7 +34,7 @@ void OsApi::StartProcess(
     const std::function<void (const char *, size_t)> &stdout_cb,
     const std::function<void (const char *, size_t)> &stderr_cb,
     const std::function<void ()> &exit_cb) {
-  std::function<void()> exit_and_remove_active_pid = [&exit_cb, &process] () {
+  std::function<void()> exit_and_remove_active_pid = [exit_cb, &process] () {
     exit_cb();
     std::lock_guard<std::mutex> lock(active_process_ids_mtx);
     auto it = std::find(active_process_ids.begin(), active_process_ids.end(),
