@@ -11,12 +11,6 @@
 #include <string>
 #include <vector>
 
-void OsApiMock::KillProcess(Process& process) {
-  ProcessExitInfo& info = proc_exit_info.at(&process);
-  info.exit_cb();
-  info.exit_code = -1;
-}
-
 void OsApiMock::StartProcess(
     Process &process,
     const std::function<void (const char *, size_t)> &stdout_cb,
@@ -34,7 +28,10 @@ void OsApiMock::StartProcess(
     execs.pop_front();
   }
   process.handle = std::unique_ptr<TinyProcessLib::Process>();
-  proc_exit_info[&process] = ProcessExitInfo{exec.exit_code, exit_cb};
+  ProcessExitInfo& info = proc_exit_info[&process];
+  info.exit_code = exec.exit_code;
+  info.exit_cb = exit_cb;
+  info.is_long = exec.is_long;
   for (int i = 0; i < exec.output_lines.size(); i++) {
     std::string& line = exec.output_lines[i];
     if (exec.stderr_lines.count(i) == 0) {
@@ -54,6 +51,16 @@ int OsApiMock::GetProcessExitCode(Process &process) {
 
 std::chrono::system_clock::time_point OsApiMock::TimeNow() {
   return time_now += std::chrono::seconds(1);
+}
+
+void OsApiMock::PressCtrlC() {
+  for (auto& [_, exit_info]: proc_exit_info) {
+    if (!exit_info.is_long || exit_info.exit_code == -1) {
+      continue;
+    }
+    exit_info.exit_cb();
+    exit_info.exit_code = -1;
+  }
 }
 
 void OsApiMock::MockReadFile(const std::filesystem::path& p,
@@ -107,8 +114,6 @@ void CdtTest::SetUp() {
   EXPECT_CALL(mock, AbsolutePath(paths.kTasksConfig.filename()))
       .Times(testing::AnyNumber())
       .WillRepeatedly(testing::Return(paths.kTasksConfig));
-  EXPECT_CALL(mock, SetCtrlCHandler(testing::_))
-      .WillRepeatedly(testing::SaveArg<0>(&ctrl_c_handler));
   EXPECT_CALL(mock.process_calls, Call(testing::_))
       .Times(testing::AnyNumber());
   // mock tasks config

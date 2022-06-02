@@ -137,26 +137,33 @@ struct ToSchedule {};
 
 class OsApi {
 public:
-    virtual std::istream& In();
-    virtual std::ostream& Out();
-    virtual std::ostream& Err();
-    virtual std::string GetEnv(const std::string& name);
-    virtual void SetEnv(const std::string& name, const std::string& value);
-    virtual void SetCurrentPath(const std::filesystem::path& path);
-    virtual std::filesystem::path GetCurrentPath();
-    virtual std::filesystem::path AbsolutePath(const std::filesystem::path& path);
-    virtual bool ReadFile(const std::filesystem::path& path, std::string& data);
-    virtual void WriteFile(const std::filesystem::path& path, const std::string& data);
-    virtual bool FileExists(const std::filesystem::path& path);
-    virtual void SetCtrlCHandler(std::function<bool()> handler);
-    virtual int Exec(const std::vector<const char*>& args);
-    virtual void KillProcess(Process& process);
-    virtual void StartProcess(Process& process,
-                              const std::function<void(const char*, size_t)>& stdout_cb,
-                              const std::function<void(const char*, size_t)>& stderr_cb,
-                              const std::function<void()>& exit_cb);
-    virtual int GetProcessExitCode(Process& process);
-    virtual std::chrono::system_clock::time_point TimeNow();
+  virtual std::istream& In();
+  virtual std::ostream& Out();
+  virtual std::ostream& Err();
+  virtual std::string GetEnv(const std::string& name);
+  virtual void SetEnv(const std::string& name, const std::string& value);
+  virtual void SetCurrentPath(const std::filesystem::path& path);
+  virtual std::filesystem::path GetCurrentPath();
+  virtual std::filesystem::path AbsolutePath(const std::filesystem::path& path);
+  virtual bool ReadFile(const std::filesystem::path& path, std::string& data);
+  virtual void WriteFile(const std::filesystem::path& path,
+                         const std::string& data);
+  virtual bool FileExists(const std::filesystem::path& path);
+  virtual int Exec(const std::vector<const char*>& args);
+  virtual void StartProcess(
+      Process& process,
+      const std::function<void(const char*, size_t)>& stdout_cb,
+      const std::function<void(const char*, size_t)>& stderr_cb,
+      const std::function<void()>& exit_cb);
+  virtual void SetUpCtrlCHandler(entt::registry& registry);
+  virtual int GetProcessExitCode(Process& process);
+  virtual std::chrono::system_clock::time_point TimeNow();
+protected:
+  void StartProcessProtected(
+      Process& process,
+      const std::function<void(const char*, size_t)>& stdout_cb,
+      const std::function<void(const char*, size_t)>& stderr_cb,
+      const std::function<void()>& exit_cb);
 };
 
 struct Cdt {

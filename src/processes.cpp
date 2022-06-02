@@ -1,18 +1,8 @@
 #include "processes.h"
 #include <sstream>
 
-static bool StopRunningProcessesOrExit(Cdt& cdt) {
-  if (cdt.registry.view<Process>().empty()) {
-    return false;
-  }
-  for (auto [_, proc]: cdt.registry.view<Process>().each()) {
-    cdt.os->KillProcess(proc);
-  }
-  return true;
-}
-
 void InitProcess(Cdt& cdt) {
-  cdt.os->SetCtrlCHandler([&cdt] () {return StopRunningProcessesOrExit(cdt);});
+  cdt.os->SetUpCtrlCHandler(cdt.registry);
 }
 
 static std::function<void(const char*,size_t)> WriteTo(

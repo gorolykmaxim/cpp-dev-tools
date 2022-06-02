@@ -1,4 +1,6 @@
 #include "test-lib.h"
+#include <gmock/gmock-matchers.h>
+#include <gmock/gmock-spec-builders.h>
 #include <gtest/gtest.h>
 
 class MiscTest: public CdtTest {};
@@ -32,9 +34,9 @@ TEST_F(MiscTest, StartExecuteTaskAndAbortIt) {
   EXPECT_INTERRUPTED_CMD("t1");
 }
 
-TEST_F(MiscTest, StartAndExit) {
+TEST_F(MiscTest, StartAndRegisterCtrlCHandler) {
+  EXPECT_CALL(mock, SetUpCtrlCHandler(testing::Ref(cdt.registry)));
   EXPECT_CDT_STARTED();
-  EXPECT_FALSE(ctrl_c_handler());
 }
 
 TEST_F(MiscTest, StartExecuteSingleTaskAndRepeateTheLastCommandOnEnter) {

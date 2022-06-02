@@ -2,12 +2,14 @@
 #define TEST_LIB_H
 
 #include <filesystem>
+#include <gmock/gmock-function-mocker.h>
 #include <gmock/gmock-nice-strict.h>
 #include <gmock/gmock-spec-builders.h>
 #include <optional>
 #include <vector>
 #include <string>
 #include <unordered_set>
+#include <entt.hpp>
 
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
@@ -39,6 +41,7 @@ struct ProcessExec {
 
 struct ProcessExitInfo {
   int exit_code;
+  bool is_long = false;
   std::function<void()> exit_cb;
 };
 
@@ -60,15 +63,15 @@ public:
   MOCK_METHOD(void, WriteFile,
               (const std::filesystem::path&, const std::string&), (override));
   MOCK_METHOD(bool, FileExists, (const std::filesystem::path&), (override));
-  MOCK_METHOD(void, SetCtrlCHandler, (std::function<bool()>), (override));
   MOCK_METHOD(int, Exec, (const std::vector<const char*>&), (override));
-  void KillProcess(Process& process) override;
+  MOCK_METHOD(void, SetUpCtrlCHandler, (entt::registry&), (override));
   void StartProcess(Process& process,
                     const std::function<void(const char*, size_t)>& stdout_cb,
                     const std::function<void(const char*, size_t)>& stderr_cb,
                     const std::function<void()>& exit_cb) override;
   int GetProcessExitCode(Process& process) override;
   std::chrono::system_clock::time_point TimeNow() override;
+  void PressCtrlC();
   void MockReadFile(const std::filesystem::path& p, const std::string& d);
   void MockReadFile(const std::filesystem::path& p);
 
@@ -122,7 +125,7 @@ public:
 
 #define EXPECT_INTERRUPTED_CMD(CMD)\
   RunCmd(CMD, true);\
-  EXPECT_TRUE(ctrl_c_handler());\
+  mock.PressCtrlC();\
   ExecCdtSystems(cdt);\
   EXPECT_OUT_EQ_SNAPSHOT("")
 
@@ -181,7 +184,6 @@ public:
               failed_debug_exec;
   int expected_data_index;
   std::stringstream in, out;
-  std::function<bool()> ctrl_c_handler;
   testing::NiceMock<OsApiMock> mock;
   Cdt cdt;
 
