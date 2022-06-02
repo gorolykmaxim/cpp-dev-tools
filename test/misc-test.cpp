@@ -34,11 +34,6 @@ TEST_F(MiscTest, StartExecuteTaskAndAbortIt) {
   EXPECT_INTERRUPTED_CMD("t1");
 }
 
-TEST_F(MiscTest, StartAndRegisterCtrlCHandler) {
-  EXPECT_CALL(mock, SetUpCtrlCHandler(testing::Ref(cdt.registry)));
-  EXPECT_CDT_STARTED();
-}
-
 TEST_F(MiscTest, StartExecuteSingleTaskAndRepeateTheLastCommandOnEnter) {
   EXPECT_CDT_STARTED();
   EXPECT_CMD("t1");

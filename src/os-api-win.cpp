@@ -25,7 +25,7 @@ BOOL WINAPI HandleCtrlC(DWORD signal) {
   return active_process_ids.empty() ? FALSE : TRUE;
 }
 
-void OsApi::SetUpCtrlCHandler(entt::registry &registry) {
+void OsApi::Init() {
   SetConsoleCtrlHandler(HandleCtrlC, TRUE);
 }
 
@@ -34,17 +34,16 @@ void OsApi::StartProcess(
     const std::function<void (const char *, size_t)> &stdout_cb,
     const std::function<void (const char *, size_t)> &stderr_cb,
     const std::function<void ()> &exit_cb) {
-  std::function<void()> exit_and_remove_active_pid = [exit_cb, &process] () {
-    exit_cb();
-    std::lock_guard<std::mutex> lock(active_process_ids_mtx);
-    auto it = std::find(active_process_ids.begin(), active_process_ids.end(),
-                        process.handle->get_id());
-    if (it != active_process_ids.end()) {
-      active_process_ids.erase(it);
-    }
-  };
-  StartProcessProtected(process, stdout_cb, stderr_cb,
-                        exit_and_remove_active_pid);
+  StartProcessProtected(process, stdout_cb, stderr_cb, exit_cb);
   std::lock_guard<std::mutex> lock(active_process_ids_mtx);
   active_process_ids.push_back(process.handle->get_id());
+}
+
+void OsApi::FinishProcess(Process& process) {
+  std::lock_guard<std::mutex> lock(active_process_ids_mtx);
+  auto it = std::find(active_process_ids.begin(), active_process_ids.end(),
+                      process.handle->get_id());
+  if (it != active_process_ids.end()) {
+    active_process_ids.erase(it);
+  }
 }

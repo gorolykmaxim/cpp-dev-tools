@@ -137,6 +137,7 @@ struct ToSchedule {};
 
 class OsApi {
 public:
+  virtual void Init();
   virtual std::istream& In();
   virtual std::ostream& Out();
   virtual std::ostream& Err();
@@ -155,7 +156,7 @@ public:
       const std::function<void(const char*, size_t)>& stdout_cb,
       const std::function<void(const char*, size_t)>& stderr_cb,
       const std::function<void()>& exit_cb);
-  virtual void SetUpCtrlCHandler(entt::registry& registry);
+  virtual void FinishProcess(Process& process);
   virtual int GetProcessExitCode(Process& process);
   virtual std::chrono::system_clock::time_point TimeNow();
 protected:

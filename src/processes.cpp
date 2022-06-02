@@ -1,10 +1,6 @@
 #include "processes.h"
 #include <sstream>
 
-void InitProcess(Cdt& cdt) {
-  cdt.os->SetUpCtrlCHandler(cdt.registry);
-}
-
 static std::function<void(const char*,size_t)> WriteTo(
     moodycamel::BlockingConcurrentQueue<ProcessEvent>& queue,
     entt::entity process, ProcessEventType event_type) {
@@ -81,6 +77,7 @@ void FinishProcessExecution(Cdt& cdt) {
     } else {
       to_erase.push_back(entity);
     }
+    cdt.os->FinishProcess(proc);
   }
   cdt.registry.erase<Process>(to_erase.begin(), to_erase.end());
   cdt.registry.destroy(to_destroy.begin(), to_destroy.end());

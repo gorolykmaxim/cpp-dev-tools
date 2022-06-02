@@ -47,6 +47,7 @@ struct ProcessExitInfo {
 
 class OsApiMock: public OsApi {
 public:
+  MOCK_METHOD(void, Init, (), (override));
   MOCK_METHOD(std::istream&, In, (), (override));
   MOCK_METHOD(std::ostream&, Out, (), (override));
   MOCK_METHOD(std::ostream&, Err, (), (override));
@@ -64,7 +65,6 @@ public:
               (const std::filesystem::path&, const std::string&), (override));
   MOCK_METHOD(bool, FileExists, (const std::filesystem::path&), (override));
   MOCK_METHOD(int, Exec, (const std::vector<const char*>&), (override));
-  MOCK_METHOD(void, SetUpCtrlCHandler, (entt::registry&), (override));
   void StartProcess(Process& process,
                     const std::function<void(const char*, size_t)>& stdout_cb,
                     const std::function<void(const char*, size_t)>& stderr_cb,
@@ -100,12 +100,14 @@ public:
   out.str("")
 
 #define EXPECT_CDT_STARTED()\
+  EXPECT_CALL(mock, Init());\
   EXPECT_TRUE(InitTestCdt());\
   EXPECT_OUT_EQ_SNAPSHOT("InitTestCdt")
 
 #define EXPECT_CDT_STARTED_WITH_PROFILE(PROFILE)\
   mock.MockReadFile(paths.kTasksConfig,\
                     tasks_config_with_profiles_data.dump());\
+  EXPECT_CALL(mock, Init());\
   EXPECT_TRUE(InitTestCdt(PROFILE));\
   EXPECT_OUT_EQ_SNAPSHOT("")
 
