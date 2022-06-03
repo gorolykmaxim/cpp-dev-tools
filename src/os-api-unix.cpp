@@ -36,7 +36,8 @@ void OsApi::StartProcess(
 }
 
 void OsApi::FinishProcess(Process& process) {
-  auto it = std::find();
+  auto it = std::find(active_process_ids.begin(), active_process_ids.end(),
+                      process.handle->get_id());
   if (it != active_process_ids.end()) {
     active_process_ids.erase(it);
   }

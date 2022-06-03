@@ -69,15 +69,17 @@ public:
                     const std::function<void(const char*, size_t)>& stdout_cb,
                     const std::function<void(const char*, size_t)>& stderr_cb,
                     const std::function<void()>& exit_cb) override;
+  void FinishProcess(Process& process) override;
   int GetProcessExitCode(Process& process) override;
   std::chrono::system_clock::time_point TimeNow() override;
   void PressCtrlC();
   void MockReadFile(const std::filesystem::path& p, const std::string& d);
   void MockReadFile(const std::filesystem::path& p);
+  std::string DisplayNotFinishedProcesses();
 
   std::chrono::system_clock::time_point time_now;
   std::unordered_map<std::string, std::deque<ProcessExec>> cmd_to_process_execs;
-  std::unordered_map<Process*, ProcessExitInfo> proc_exit_info;
+  std::unordered_map<std::string, ProcessExitInfo> proc_exit_info;
   using ExecProcess = void(const std::string&);
   testing::NiceMock<testing::MockFunction<ExecProcess>> process_calls;
 };
@@ -123,12 +125,16 @@ public:
 
 #define EXPECT_CMD(CMD)\
   RunCmd(CMD);\
+  EXPECT_TRUE(mock.proc_exit_info.empty())\
+      << mock.DisplayNotFinishedProcesses();\
   EXPECT_OUT_EQ_SNAPSHOT("")
 
 #define EXPECT_INTERRUPTED_CMD(CMD)\
   RunCmd(CMD, true);\
   mock.PressCtrlC();\
   ExecCdtSystems(cdt);\
+  EXPECT_TRUE(mock.proc_exit_info.empty())\
+      << mock.DisplayNotFinishedProcesses();\
   EXPECT_OUT_EQ_SNAPSHOT("")
 
 #define EXPECT_PROC(CMD)\

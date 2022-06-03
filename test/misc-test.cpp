@@ -41,6 +41,7 @@ TEST_F(MiscTest, StartExecuteSingleTaskAndRepeateTheLastCommandOnEnter) {
 }
 
 TEST_F(MiscTest, StartAndExecuteRestartTask) {
+  EXPECT_CDT_STARTED();
   testing::InSequence seq;
   EXPECT_CALL(mock, SetEnv("LAST_COMMAND", "t7"));
   std::vector<const char*> expected_argv = {
@@ -48,7 +49,6 @@ TEST_F(MiscTest, StartAndExecuteRestartTask) {
   };
   EXPECT_CALL(mock, Exec(StrVecEq(expected_argv)))
       .WillRepeatedly(testing::Return(0));
-  EXPECT_CDT_STARTED();
   EXPECT_CMD("t7");
 }
 

@@ -23,12 +23,12 @@ TEST_F(GdTest, StartExecuteGtestTaskWithPreTasksFailAttemptToRerunTestThatDoesNo
 }
 
 TEST_F(GdTest, StartExecuteGtestTaskWithPreTasksFailAndRerunFailedTestWithDebugger) {
-  testing::InSequence seq;
-  EXPECT_PROC(WITH_DEBUG("tests --gtest_filter='failed_test_suit_1.test1'"));
-  EXPECT_PROC(WITH_DEBUG("tests --gtest_filter='failed_test_suit_2.test1'"));
   mock.cmd_to_process_execs[execs.kTests].front() = failed_gtest_exec;
   EXPECT_CDT_STARTED();
   EXPECT_CMD("t10");
+  testing::InSequence seq;
+  EXPECT_PROC(WITH_DEBUG("tests --gtest_filter='failed_test_suit_1.test1'"));
+  EXPECT_PROC(WITH_DEBUG("tests --gtest_filter='failed_test_suit_2.test1'"));
   EXPECT_CMD("gd1");
   EXPECT_CMD("gd2");
 }
@@ -42,11 +42,11 @@ TEST_F(GdTest, StartExecuteGtestTaskWithPreTasksSucceedAttemptToRerunTestThatDoe
 }
 
 TEST_F(GdTest, StartExecuteGtestTaskWithPreTasksSucceedAndRerunOneOfTestsWithDebugger) {
+  EXPECT_CDT_STARTED();
+  EXPECT_CMD("t10");
   testing::InSequence seq;
   EXPECT_PROC(WITH_DEBUG("tests --gtest_filter='test_suit_1.test1'"));
   EXPECT_PROC(WITH_DEBUG("tests --gtest_filter='test_suit_1.test2'"));
-  EXPECT_CDT_STARTED();
-  EXPECT_CMD("t10");
   EXPECT_CMD("gd1");
   EXPECT_CMD("gd2");
 }

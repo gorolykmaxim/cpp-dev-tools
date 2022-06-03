@@ -8,6 +8,7 @@
 #include <gtest/gtest.h>
 #include <mutex>
 #include <optional>
+#include <sstream>
 #include <string>
 #include <vector>
 
@@ -28,7 +29,7 @@ void OsApiMock::StartProcess(
     execs.pop_front();
   }
   process.handle = std::unique_ptr<TinyProcessLib::Process>();
-  ProcessExitInfo& info = proc_exit_info[&process];
+  ProcessExitInfo& info = proc_exit_info[process.shell_command];
   info.exit_code = exec.exit_code;
   info.exit_cb = exit_cb;
   info.is_long = exec.is_long;
@@ -45,8 +46,21 @@ void OsApiMock::StartProcess(
   }
 }
 
+void OsApiMock::FinishProcess(Process &process) {
+  proc_exit_info.erase(process.shell_command);
+}
+
+std::string OsApiMock::DisplayNotFinishedProcesses() {
+  std::stringstream s;
+  s << "Proceses not finished with FinishProcess():\n";
+  for (auto& [cmd, _]: proc_exit_info) {
+    s << cmd << '\n';
+  }
+  return s.str();
+}
+
 int OsApiMock::GetProcessExitCode(Process &process) {
-  return proc_exit_info.at(&process).exit_code;
+  return proc_exit_info.at(process.shell_command).exit_code;
 }
 
 std::chrono::system_clock::time_point OsApiMock::TimeNow() {
