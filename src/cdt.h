@@ -57,6 +57,7 @@ enum class ProcessState {
 struct Process {
   bool destroy_entity_on_finish = false;
   std::string shell_command;
+  TinyProcessLib::Process::id_type id;
   std::unique_ptr<TinyProcessLib::Process> handle;
   ProcessState state = ProcessState::kScheduled;
 };

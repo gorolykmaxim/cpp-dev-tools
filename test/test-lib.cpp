@@ -29,10 +29,13 @@ void OsApiMock::StartProcess(
     execs.pop_front();
   }
   process.handle = std::unique_ptr<TinyProcessLib::Process>();
-  ProcessExitInfo& info = proc_exit_info[process.shell_command];
+  process.id = pid_seed++;
+  unfinished_procs.insert(process.id);
+  ProcessInfo& info = proc_info[process.id];
   info.exit_code = exec.exit_code;
   info.exit_cb = exit_cb;
   info.is_long = exec.is_long;
+  info.shell_command = process.shell_command;
   for (int i = 0; i < exec.output_lines.size(); i++) {
     std::string& line = exec.output_lines[i];
     if (exec.stderr_lines.count(i) == 0) {
@@ -47,20 +50,20 @@ void OsApiMock::StartProcess(
 }
 
 void OsApiMock::FinishProcess(Process &process) {
-  proc_exit_info.erase(process.shell_command);
+  unfinished_procs.erase(process.id);
 }
 
 std::string OsApiMock::DisplayNotFinishedProcesses() {
   std::stringstream s;
   s << "Proceses not finished with FinishProcess():\n";
-  for (auto& [cmd, _]: proc_exit_info) {
-    s << cmd << '\n';
+  for (PidType pid: unfinished_procs) {
+    s << proc_info[pid].shell_command << '\n';
   }
   return s.str();
 }
 
 int OsApiMock::GetProcessExitCode(Process &process) {
-  return proc_exit_info.at(process.shell_command).exit_code;
+  return proc_info.at(process.id).exit_code;
 }
 
 std::chrono::system_clock::time_point OsApiMock::TimeNow() {
@@ -68,7 +71,7 @@ std::chrono::system_clock::time_point OsApiMock::TimeNow() {
 }
 
 void OsApiMock::PressCtrlC() {
-  for (auto& [_, exit_info]: proc_exit_info) {
+  for (auto& [_, exit_info]: proc_info) {
     if (!exit_info.is_long || exit_info.exit_code == -1) {
       continue;
     }

@@ -73,7 +73,8 @@ void OsApi::StartProcessProtected(
   static const std::string err_suffix = "\n";
   process.handle = std::make_unique<TinyProcessLib::Process>(
       process.shell_command, "", stdout_cb, stderr_cb, exit_cb);
-  if (process.handle->get_id() <= 0) {
+  process.id = process.handle->get_id();
+  if (process.id <= 0) {
     stderr_cb(err_prefix.c_str(), err_prefix.size());
     stderr_cb(process.shell_command.c_str(), process.shell_command.size());
     stderr_cb(err_suffix.c_str(), err_suffix.size());

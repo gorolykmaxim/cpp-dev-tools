@@ -16,6 +16,7 @@
 #include <json.hpp>
 
 #include "cdt.h"
+#include "process.hpp"
 
 struct Paths {
   const std::filesystem::path kHome = std::filesystem::path("/users/my-user");
@@ -39,10 +40,11 @@ struct ProcessExec {
   int exit_code = 0;
 };
 
-struct ProcessExitInfo {
+struct ProcessInfo {
   int exit_code;
   bool is_long = false;
   std::function<void()> exit_cb;
+  std::string shell_command;
 };
 
 class OsApiMock: public OsApi {
@@ -77,9 +79,12 @@ public:
   void MockReadFile(const std::filesystem::path& p);
   std::string DisplayNotFinishedProcesses();
 
+  using PidType = TinyProcessLib::Process::id_type;
   std::chrono::system_clock::time_point time_now;
+  PidType pid_seed = 1;
   std::unordered_map<std::string, std::deque<ProcessExec>> cmd_to_process_execs;
-  std::unordered_map<std::string, ProcessExitInfo> proc_exit_info;
+  std::unordered_map<PidType, ProcessInfo> proc_info;
+  std::unordered_set<PidType> unfinished_procs;
   using ExecProcess = void(const std::string&);
   testing::NiceMock<testing::MockFunction<ExecProcess>> process_calls;
 };
@@ -125,7 +130,7 @@ public:
 
 #define EXPECT_CMD(CMD)\
   RunCmd(CMD);\
-  EXPECT_TRUE(mock.proc_exit_info.empty())\
+  EXPECT_TRUE(mock.unfinished_procs.empty())\
       << mock.DisplayNotFinishedProcesses();\
   EXPECT_OUT_EQ_SNAPSHOT("")
 
@@ -133,7 +138,7 @@ public:
   RunCmd(CMD, true);\
   mock.PressCtrlC();\
   ExecCdtSystems(cdt);\
-  EXPECT_TRUE(mock.proc_exit_info.empty())\
+  EXPECT_TRUE(mock.unfinished_procs.empty())\
       << mock.DisplayNotFinishedProcesses();\
   EXPECT_OUT_EQ_SNAPSHOT("")
 
