@@ -29,13 +29,16 @@ void OsApiMock::StartProcess(
     execs.pop_front();
   }
   process.handle = std::unique_ptr<TinyProcessLib::Process>();
-  process.id = pid_seed++;
+  process.id = exec.fail_to_exec ? 0 : pid_seed++;
   unfinished_procs.insert(process.id);
   ProcessInfo& info = proc_info[process.id];
   info.exit_code = exec.exit_code;
   info.exit_cb = exit_cb;
   info.is_long = exec.is_long;
   info.shell_command = process.shell_command;
+  if (exec.fail_to_exec) {
+    return;
+  }
   for (int i = 0; i < exec.output_lines.size(); i++) {
     std::string& line = exec.output_lines[i];
     if (exec.stderr_lines.count(i) == 0) {

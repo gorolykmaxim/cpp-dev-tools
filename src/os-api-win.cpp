@@ -34,7 +34,9 @@ void OsApi::StartProcess(
     const std::function<void (const char *, size_t)> &stdout_cb,
     const std::function<void (const char *, size_t)> &stderr_cb,
     const std::function<void ()> &exit_cb) {
-  StartProcessProtected(process, stdout_cb, stderr_cb, exit_cb);
+  process.handle = std::make_unique<TinyProcessLib::Process>(
+      process.shell_command, "", stdout_cb, stderr_cb, exit_cb);
+  process.id = process.handle->get_id();
   std::lock_guard<std::mutex> lock(active_process_ids_mtx);
   active_process_ids.push_back(process.handle->get_id());
 }

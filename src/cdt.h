@@ -160,12 +160,6 @@ public:
   virtual void FinishProcess(Process& process);
   virtual int GetProcessExitCode(Process& process);
   virtual std::chrono::system_clock::time_point TimeNow();
-protected:
-  void StartProcessProtected(
-      Process& process,
-      const std::function<void(const char*, size_t)>& stdout_cb,
-      const std::function<void(const char*, size_t)>& stderr_cb,
-      const std::function<void()>& exit_cb);
 };
 
 struct Cdt {

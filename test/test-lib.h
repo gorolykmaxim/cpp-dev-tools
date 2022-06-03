@@ -37,6 +37,7 @@ struct ProcessExec {
   std::vector<std::string> output_lines;
   std::unordered_set<int> stderr_lines;
   bool is_long = false;
+  bool fail_to_exec = false;
   int exit_code = 0;
 };
 

@@ -90,3 +90,9 @@ TEST_F(TTest, StartAndExecuteTaskWithPreTaskNameOfWhichIsDefinedInProfile2) {
   EXPECT_CDT_STARTED_WITH_PROFILE(profile2);
   EXPECT_CMD("t15");
 }
+
+TEST_F(TTest, StartAndFailToExecuteTaskDueToFailureToLaunchProcess) {
+  mock.cmd_to_process_execs[execs.kHelloWorld].front().fail_to_exec = true;
+  EXPECT_CDT_STARTED();
+  EXPECT_CMD("t1");
+}

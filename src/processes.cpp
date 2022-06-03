@@ -1,4 +1,6 @@
 #include "processes.h"
+#include <functional>
+#include <ostream>
 #include <sstream>
 
 static std::function<void(const char*,size_t)> WriteTo(
@@ -29,11 +31,16 @@ void StartProcesses(Cdt& cdt) {
     if (proc.state != ProcessState::kScheduled) {
       continue;
     }
+    std::function<void()> exit_cb = HandleExit(cdt.proc_event_queue, entity);
     cdt.os->StartProcess(
         proc,
         WriteTo(cdt.proc_event_queue, entity, ProcessEventType::kStdout),
         WriteTo(cdt.proc_event_queue, entity, ProcessEventType::kStderr),
-        HandleExit(cdt.proc_event_queue, entity));
+        exit_cb);
+    if (proc.id <= 0) {
+      cdt.os->Out() << "Failed to exec: " << proc.shell_command << std::endl;
+      exit_cb();
+    }
     proc.state = ProcessState::kRunning;
   }
 }
