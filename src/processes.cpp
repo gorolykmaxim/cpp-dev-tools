@@ -47,6 +47,7 @@ void HandleProcessEvent(Cdt& cdt) {
     proc.state = cdt.os->GetProcessExitCode(proc) == 0 ?
                  ProcessState::kComplete :
                  ProcessState::kFailed;
+    cdt.os->FinishProcess(proc);
   } else {
     std::string& line_buffer = event.type == ProcessEventType::kStdout ?
                                output.stdout_line_buffer :
@@ -77,7 +78,6 @@ void FinishProcessExecution(Cdt& cdt) {
     } else {
       to_erase.push_back(entity);
     }
-    cdt.os->FinishProcess(proc);
   }
   cdt.registry.erase<Process>(to_erase.begin(), to_erase.end());
   cdt.registry.destroy(to_destroy.begin(), to_destroy.end());
