@@ -26,7 +26,7 @@ TEST_F(GfTest, StartAndExecuteGtestTaskWithGtestFilter) {
     "[==========] 2 tests from 1 test suite ran. (0 ms total)\n",
     "[  PASSED  ] 2 tests.\n",
   };
-  mock.cmd_to_process_execs[execs.kTests + " --gtest_filter='test_suit_1.*'"]
+  mock.cmd_to_process_execs[execs.kTests + WITH_GT_FILTER("test_suit_1.*")]
       .push_back(filtered_tests);
   EXPECT_CDT_STARTED();
   EXPECT_CMD("gf8\ntest_suit_1.*");

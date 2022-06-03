@@ -76,7 +76,7 @@ TEST_F(ExecTest, StartExecuteTwoGtestTasksSelectFirstExecutionAndRerunGtest) {
 }
 
 TEST_F(ExecTest, StartExecuteTwoGtestTasksSelectFirstExecutionAndRerunGtestUntilItFails) {
-  std::string e = execs.kTests + " --gtest_filter='failed_test_suit_1.test1'";
+  std::string e = execs.kTests + WITH_GT_FILTER("failed_test_suit_1.test1");
   mock.cmd_to_process_execs[e].push_back(successful_rerun_gtest_exec);
   mock.cmd_to_process_execs[e].push_back(successful_rerun_gtest_exec);
   mock.cmd_to_process_execs[e].push_back(failed_rerun_gtest_exec);
@@ -93,7 +93,7 @@ TEST_F(ExecTest, StartExecuteTwoGtestTasksSelectFirstExecutionAndRerunGtestUntil
 }
 
 TEST_F(ExecTest, StartExecuteTwoGtestTasksSelectFirstExecutionAndRerunGtestWithDebugger) {
-  EXPECT_PROC(WITH_DEBUG("tests --gtest_filter='failed_test_suit_1.test1'"));
+  EXPECT_PROC(WITH_DEBUG("tests" WITH_GT_FILTER("failed_test_suit_1.test1")));
   mock.cmd_to_process_execs[execs.kTests].front() = failed_gtest_exec;
   mock.cmd_to_process_execs[execs.kTests].push_back(successful_gtest_exec);
   EXPECT_CDT_STARTED();

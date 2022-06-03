@@ -27,7 +27,7 @@ void InitGtest(Cdt& cdt) {
 static std::string GtestTaskCommandToShellCommand(const std::string& task_cmd, const std::optional<std::string>& gtest_filter = {}) {
     std::string binary = task_cmd.substr(kGtestTask.size() + 1);
     if (gtest_filter) {
-        binary += " " + kGtestFilterArg + "='" + *gtest_filter + "'";
+        binary += " " + kGtestFilterArg + "=\"" + *gtest_filter + '"';
     }
     return binary;
 }

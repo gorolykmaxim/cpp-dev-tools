@@ -40,9 +40,9 @@ TEST_F(GtTest, StartExecuteGtTestTaskWithPreTasksFailAndRerunFailedTest) {
   };
   mock.cmd_to_process_execs[execs.kTests].front() = failed_gtest_exec;
   std::string one_test_exec;
-  one_test_exec = execs.kTests + " --gtest_filter='failed_test_suit_1.test1'";
+  one_test_exec = execs.kTests + WITH_GT_FILTER("failed_test_suit_1.test1");
   mock.cmd_to_process_execs[one_test_exec].push_back(first_test_rerun);
-  one_test_exec = execs.kTests + " --gtest_filter='failed_test_suit_2.test1'";
+  one_test_exec = execs.kTests + WITH_GT_FILTER("failed_test_suit_2.test1");
   mock.cmd_to_process_execs[one_test_exec].push_back(second_test_rerun);
   EXPECT_CDT_STARTED();
   EXPECT_CMD("t10");
@@ -73,7 +73,7 @@ TEST_F(GtTest, StartExecuteGtTestTaskWithPreTasksSucceedAndRerunOneOfTest) {
     "[==========] 1 test from 1 test suite ran. (0 ms total)\n",
     "[  PASSED  ] 1 test.\n",
   };
-  std::string exec = execs.kTests + " --gtest_filter='test_suit_1.test2'";
+  std::string exec = execs.kTests + WITH_GT_FILTER("test_suit_1.test2");
   mock.cmd_to_process_execs[exec].push_back(second_test_rerun);
   EXPECT_CDT_STARTED();
   EXPECT_CMD("t10");

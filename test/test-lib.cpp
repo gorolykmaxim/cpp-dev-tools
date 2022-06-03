@@ -319,7 +319,7 @@ void CdtTest::SetUp() {
   failed_debug_exec.output_lines = {"failed to launch debugger\n"};
   failed_debug_exec.stderr_lines.insert(0);
   mock.cmd_to_process_execs[execs.kTests].push_back(successful_gtest_exec);
-  std::string one_test = execs.kTests + " --gtest_filter='test_suit_1.test1'";
+  std::string one_test = execs.kTests + WITH_GT_FILTER("test_suit_1.test1");
   mock.cmd_to_process_execs[one_test].push_back(successful_single_gtest_exec);
 }
 

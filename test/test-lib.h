@@ -167,6 +167,8 @@ public:
 #define WITH_DEBUG(CMD)\
   "terminal cd " + paths.kTasksConfig.parent_path().string() + " && lldb " + CMD
 
+#define WITH_GT_FILTER(VALUE) " --gtest_filter=\"" VALUE "\""
+
 MATCHER_P(StrVecEq, expected, "") {
   if (arg.size() != expected.size()) {
     return false;

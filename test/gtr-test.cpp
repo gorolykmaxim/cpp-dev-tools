@@ -4,7 +4,7 @@
 class GtrTest: public CdtTest {};
 
 TEST_F(GtrTest, StartRepeatedlyExecuteGtestTaskWithPreTasksUntilItFailsAndRepeatedlyRerunFailedTestUntilItFails) {
-  std::string exec = execs.kTests + " --gtest_filter='failed_test_suit_1.test1'";
+  std::string exec = execs.kTests + WITH_GT_FILTER("failed_test_suit_1.test1");
   mock.cmd_to_process_execs[exec].push_back(successful_rerun_gtest_exec);
   mock.cmd_to_process_execs[exec].push_back(successful_rerun_gtest_exec);
   mock.cmd_to_process_execs[exec].push_back(failed_rerun_gtest_exec);
@@ -39,8 +39,8 @@ TEST_F(GtrTest, StartExecuteLongGtestTaskWithPreTasksAbortItRepeatedlyRerunFaile
   };
   aborted_gtest_exec.is_long = true;
   mock.cmd_to_process_execs[execs.kTests].front() = aborted_gtest_exec;
-  std::string exec = execs.kTests + " --gtest_filter='exit_tests."
-                     "exit_in_the_middle'";
+  std::string exec = execs.kTests + WITH_GT_FILTER("exit_tests."
+                     "exit_in_the_middle");
   mock.cmd_to_process_execs[exec].push_back(rerun);
   EXPECT_CDT_STARTED();
   EXPECT_INTERRUPTED_CMD("t10");

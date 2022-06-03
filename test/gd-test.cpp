@@ -27,8 +27,8 @@ TEST_F(GdTest, StartExecuteGtestTaskWithPreTasksFailAndRerunFailedTestWithDebugg
   EXPECT_CDT_STARTED();
   EXPECT_CMD("t10");
   testing::InSequence seq;
-  EXPECT_PROC(WITH_DEBUG("tests --gtest_filter='failed_test_suit_1.test1'"));
-  EXPECT_PROC(WITH_DEBUG("tests --gtest_filter='failed_test_suit_2.test1'"));
+  EXPECT_PROC(WITH_DEBUG("tests" WITH_GT_FILTER("failed_test_suit_1.test1")));
+  EXPECT_PROC(WITH_DEBUG("tests" WITH_GT_FILTER("failed_test_suit_2.test1")));
   EXPECT_CMD("gd1");
   EXPECT_CMD("gd2");
 }
@@ -45,8 +45,8 @@ TEST_F(GdTest, StartExecuteGtestTaskWithPreTasksSucceedAndRerunOneOfTestsWithDeb
   EXPECT_CDT_STARTED();
   EXPECT_CMD("t10");
   testing::InSequence seq;
-  EXPECT_PROC(WITH_DEBUG("tests --gtest_filter='test_suit_1.test1'"));
-  EXPECT_PROC(WITH_DEBUG("tests --gtest_filter='test_suit_1.test2'"));
+  EXPECT_PROC(WITH_DEBUG("tests" WITH_GT_FILTER("test_suit_1.test1")));
+  EXPECT_PROC(WITH_DEBUG("tests" WITH_GT_FILTER("test_suit_1.test2")));
   EXPECT_CMD("gd1");
   EXPECT_CMD("gd2");
 }
