@@ -3,6 +3,7 @@
 
 #include <filesystem>
 #include <gmock/gmock-function-mocker.h>
+#include <gmock/gmock-matchers.h>
 #include <gmock/gmock-nice-strict.h>
 #include <gmock/gmock-spec-builders.h>
 #include <optional>
@@ -179,6 +180,18 @@ MATCHER_P(StrVecEq, expected, "") {
     if (e != a && strcmp(e, a) != 0) {
       return false;
     }
+  }
+  return true;
+}
+
+MATCHER_P(HasSubstrsInOrder, substrs, "") {
+  std::string::size_type pos = 0;
+  for (const std::string& substr: substrs) {
+    std::string::size_type i = arg.find(substr, pos);
+    if (i == std::string::npos) {
+      return false;
+    }
+    pos = i + substr.size();
   }
   return true;
 }

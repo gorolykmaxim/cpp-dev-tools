@@ -1,3 +1,0 @@
-[31m/users/my-user/project/tasks.json is invalid:
-profile with name 'unknown profile' is not defined in 'cdt_profiles'
-[0m

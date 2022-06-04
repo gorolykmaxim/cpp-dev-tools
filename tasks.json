@@ -27,11 +27,6 @@
             "name": "run tests",
             "command": "__gtest {testBinaryPath}",
             "pre_tasks": ["build tests"]
-        },
-        {
-            "name": "save test data",
-            "command": "SNAPSHOT=1 {testBinaryPath}",
-            "pre_tasks": ["build tests"]
         }
     ]
 }

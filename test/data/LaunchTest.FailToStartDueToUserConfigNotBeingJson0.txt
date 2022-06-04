@@ -1,2 +1,0 @@
-[31mFailed to parse /users/my-user/.cpp-dev-tools.json: [json.exception.parse_error.101] parse error at line 1, column 2: syntax error while parsing value - invalid literal; last read: 'no'
-[0m

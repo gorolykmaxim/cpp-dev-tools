@@ -1,3 +1,0 @@
-[31m/users/my-user/project/tasks.json is invalid:
-'cdt_tasks': must be an array of task objects
-[0m
