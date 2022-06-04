@@ -124,7 +124,7 @@ void CdtTest::SetUp() {
       .WillRepeatedly(testing::ReturnRef(out));
   EXPECT_CALL(mock, GetEnv("HOME"))
       .Times(testing::AnyNumber())
-      .WillRepeatedly(testing::Return(paths.kHome));
+      .WillRepeatedly(testing::Return(paths.kHome.string()));
   EXPECT_CALL(mock, GetEnv("LAST_COMMAND"))
       .Times(testing::AnyNumber())
       .WillRepeatedly(testing::Return(""));
@@ -324,9 +324,10 @@ void CdtTest::SetUp() {
 }
 
 bool CdtTest::InitTestCdt(const std::optional<std::string>& profile_name) {
+  std::string tasks_config_filename = paths.kTasksConfig.filename().string();
   std::vector<const char*> argv = {
     execs.kCdt.c_str(),
-    paths.kTasksConfig.filename().c_str()
+    tasks_config_filename.c_str()
   };
   if (profile_name) {
     argv.push_back(profile_name->c_str());

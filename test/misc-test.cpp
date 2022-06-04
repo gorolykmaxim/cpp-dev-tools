@@ -44,8 +44,9 @@ TEST_F(MiscTest, StartAndExecuteRestartTask) {
   EXPECT_CDT_STARTED();
   testing::InSequence seq;
   EXPECT_CALL(mock, SetEnv("LAST_COMMAND", "t7"));
+  std::string tasks_config_path_str = paths.kTasksConfig.string();
   std::vector<const char*> expected_argv = {
-    execs.kCdt.c_str(), paths.kTasksConfig.c_str(), nullptr
+    execs.kCdt.c_str(), tasks_config_path_str.c_str(), nullptr
   };
   EXPECT_CALL(mock, Exec(StrVecEq(expected_argv)))
       .WillRepeatedly(testing::Return(0));
@@ -53,8 +54,9 @@ TEST_F(MiscTest, StartAndExecuteRestartTask) {
 }
 
 TEST_F(MiscTest, StartAndFailToExecuteRestartTask) {
+  std::string tasks_config_path_str = paths.kTasksConfig.string();
   std::vector<const char*> expected_argv = {
-    execs.kCdt.c_str(), paths.kTasksConfig.c_str(), nullptr
+    execs.kCdt.c_str(), tasks_config_path_str.c_str(), nullptr
   };
   EXPECT_CALL(mock, Exec(StrVecEq(expected_argv)))
       .WillRepeatedly(testing::Return(ENOEXEC));
@@ -66,8 +68,9 @@ TEST_F(MiscTest, StartAndExecuteRestartTaskWithProfileSelected) {
   EXPECT_CDT_STARTED_WITH_PROFILE(profile1);
   testing::InSequence seq;
   EXPECT_CALL(mock, SetEnv("LAST_COMMAND", "t7"));
+  std::string tasks_config_path_str = paths.kTasksConfig.string();
   std::vector<const char*> expected_argv = {
-    execs.kCdt.c_str(), paths.kTasksConfig.c_str(), profile1.c_str(), nullptr
+    execs.kCdt.c_str(), tasks_config_path_str.c_str(), profile1.c_str(), nullptr
   };
   EXPECT_CALL(mock, Exec(StrVecEq(expected_argv)))
       .WillRepeatedly(testing::Return(0));
