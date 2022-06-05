@@ -20,9 +20,10 @@
 #include "process.hpp"
 
 struct Paths {
-  const std::filesystem::path kHome = std::filesystem::path("/users/my-user");
-  const std::filesystem::path kUserConfig = kHome / ".cpp-dev-tools.json";
-  const std::filesystem::path kTasksConfig = kHome / "project" / "tasks.json";
+  using path = std::filesystem::path;
+  const path kHome = path("/users") / "my-user";
+  const path kUserConfig = kHome / ".cpp-dev-tools.json";
+  const path kTasksConfig = kHome / "project" / "tasks.json";
 };
 
 struct Executables {
