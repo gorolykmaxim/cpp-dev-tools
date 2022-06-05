@@ -46,6 +46,7 @@ struct ProcessExec {
 struct ProcessInfo {
   int exit_code;
   bool is_long = false;
+  bool is_finished = false;
   std::function<void()> exit_cb;
   std::string shell_command;
 };
@@ -75,6 +76,9 @@ public:
                     const std::function<void(const char*, size_t)>& stderr_cb,
                     const std::function<void()>& exit_cb) override;
   void FinishProcess(Process& process) override;
+  int TimesProcessStarted(const std::string& shell_command);
+  int TimesProcessFinished(const std::string& shell_command);
+  int TimesProcess(const std::string& shell_command, bool started);
   int GetProcessExitCode(Process& process) override;
   std::chrono::system_clock::time_point TimeNow() override;
   void PressCtrlC();
@@ -171,9 +175,26 @@ public:
 
 #define WITH_GT_FILTER(VALUE) " --gtest_filter=\"" VALUE "\""
 
-#define ASSERT_CDT_STARTED(PROFILE) ASSERT_TRUE(InitTestCdt(PROFILE))
+#define ASSERT_CDT_STARTED(PROFILE)\
+  ASSERT_TRUE(InitTestCdt(PROFILE)) << out.str()
 
-#define EXPECT_OUT(...) EXPECT_THAT(out.str(), testing::AllOf(__VA_ARGS__))
+#define EXPECT_OUT(...)\
+  EXPECT_THAT(out.str(), testing::AllOf(__VA_ARGS__));\
+  out.str("")
+
+#define EXPECT_CMDOUT(CMD, ...)\
+  RunCmd(CMD);\
+  EXPECT_OUT(__VA_ARGS__)
+
+#define EXPECT_INTERRUPTED_CMDOUT(CMD, ...)\
+  RunCmd(CMD, true);\
+  mock.PressCtrlC();\
+  ExecCdtSystems(cdt);\
+  EXPECT_OUT(__VA_ARGS__)
+
+#define EXPECT_PROCESS(CMD, TIMES)\
+  EXPECT_EQ(TIMES, mock.TimesProcessStarted(CMD));\
+  EXPECT_EQ(TIMES, mock.TimesProcessFinished(CMD))
 
 MATCHER_P(StrVecEq, expected, "") {
   if (arg.size() != expected.size()) {
@@ -183,6 +204,15 @@ MATCHER_P(StrVecEq, expected, "") {
     const char* e = expected[i];
     const char* a = arg[i];
     if (e != a && strcmp(e, a) != 0) {
+      return false;
+    }
+  }
+  return true;
+}
+
+MATCHER_P(HasSubstrs, substrs, "") {
+  for (const std::string& substr: substrs) {
+    if (arg.find(substr) == std::string::npos) {
       return false;
     }
   }

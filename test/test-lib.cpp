@@ -54,6 +54,25 @@ void OsApiMock::StartProcess(
 
 void OsApiMock::FinishProcess(Process &process) {
   unfinished_procs.erase(process.id);
+  proc_info[process.id].is_finished = true;
+}
+
+int OsApiMock::TimesProcess(const std::string &shell_command, bool started) {
+  int res = 0;
+  for (auto& [_, info]: proc_info) {
+    if (info.shell_command == shell_command && (started || info.is_finished)) {
+      res++;
+    }
+  }
+  return res;
+}
+
+int OsApiMock::TimesProcessStarted(const std::string &shell_command) {
+  return TimesProcess(shell_command, true);
+}
+
+int OsApiMock::TimesProcessFinished(const std::string &shell_command) {
+  return TimesProcess(shell_command, false);
 }
 
 std::string OsApiMock::DisplayNotFinishedProcesses() {
