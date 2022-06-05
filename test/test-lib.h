@@ -170,6 +170,10 @@ public:
 
 #define WITH_GT_FILTER(VALUE) " --gtest_filter=\"" VALUE "\""
 
+#define ASSERT_CDT_STARTED(PROFILE) ASSERT_TRUE(InitTestCdt(PROFILE))
+
+#define EXPECT_OUT(...) EXPECT_THAT(out.str(), testing::AllOf(__VA_ARGS__))
+
 MATCHER_P(StrVecEq, expected, "") {
   if (arg.size() != expected.size()) {
     return false;
