@@ -208,8 +208,7 @@ TEST_F(LaunchTest, StartWithFirstProfileAutoselected) {
 }
 
 TEST_F(LaunchTest, StartWithSpecifiedProfileSelected) {
-  mock.MockReadFile(paths.kTasksConfig, tasks_config_with_profiles_data.dump());
-  ASSERT_CDT_STARTED(profile2);
+  ASSERT_CDT_STARTED_WITH_PROFILE(profile2);
   EXPECT_OUT(HasSubstr("Using profile \033[32mprofile 2\033[0m"),
              HasSubstr("build for windows with profile profile 2"),
              HasSubstr("run on windows"));

@@ -182,7 +182,12 @@ public:
 
 #define WITH_GT_FILTER(VALUE) " --gtest_filter=\"" VALUE "\""
 
-#define ASSERT_CDT_STARTED(PROFILE)\
+#define ASSERT_CDT_STARTED()\
+  ASSERT_TRUE(InitTestCdt()) << out.str()
+
+#define ASSERT_CDT_STARTED_WITH_PROFILE(PROFILE)\
+  mock.MockReadFile(paths.kTasksConfig,\
+                    tasks_config_with_profiles_data.dump());\
   ASSERT_TRUE(InitTestCdt(PROFILE)) << out.str()
 
 #define EXPECT_OUT(...)\
