@@ -25,14 +25,14 @@ TEST_F(MiscTest, StartExecuteTaskAndAbortIt) {
   ASSERT_CDT_STARTED();
   EXPECT_INTERRUPTED_CMDOUT("t1", HasSubstr("failed: return code: -1"));
   EXPECT_TRUE(WillWaitForInput(cdt));
-  EXPECT_PROCESS(execs.kHelloWorld, 1);
+  EXPECT_PROCS(execs.kHelloWorld);
 }
 
 TEST_F(MiscTest, StartExecuteSingleTaskAndRepeateTheLastCommandOnEnter) {
   ASSERT_CDT_STARTED();
   RunCmd("t1");
   RunCmd("");
-  EXPECT_PROCESS(execs.kHelloWorld, 2);
+  EXPECT_PROCS(execs.kHelloWorld, execs.kHelloWorld);
 }
 
 TEST_F(MiscTest, StartAndExecuteRestartTask) {

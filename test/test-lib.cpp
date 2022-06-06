@@ -10,6 +10,7 @@
 #include <optional>
 #include <sstream>
 #include <string>
+#include <unordered_set>
 #include <vector>
 
 void OsApiMock::StartProcess(
@@ -57,22 +58,51 @@ void OsApiMock::FinishProcess(Process &process) {
   proc_info[process.id].is_finished = true;
 }
 
-int OsApiMock::TimesProcess(const std::string &shell_command, bool started) {
-  int res = 0;
+std::string OsApiMock::AssertListOfProcsRanInOrder(
+    const std::vector<std::string>& shell_cmds) {
+  if (shell_cmds.empty()) {
+    return "";
+  }
+  int current_cmd = 0;
+  std::unordered_set<int> not_finished_cmds;
   for (auto& [_, info]: proc_info) {
-    if (info.shell_command == shell_command && (started || info.is_finished)) {
-      res++;
+    if (shell_cmds[current_cmd] != info.shell_command) {
+      continue;
+    }
+    if (!info.is_finished) {
+      not_finished_cmds.insert(current_cmd);
+    }
+    if (++current_cmd >= shell_cmds.size()) {
+      break;
     }
   }
-  return res;
-}
-
-int OsApiMock::TimesProcessStarted(const std::string &shell_command) {
-  return TimesProcess(shell_command, true);
-}
-
-int OsApiMock::TimesProcessFinished(const std::string &shell_command) {
-  return TimesProcess(shell_command, false);
+  std::stringstream msg;
+  if (current_cmd < shell_cmds.size()) {
+    msg << "Expected sequence of process executions not found:\n";
+    for (const std::string& cmd: shell_cmds) {
+      msg << cmd << '\n';
+    }
+    msg << "\nAll actual procsses executed:\n";
+    for (auto& [_, info]: proc_info) {
+      msg << info.shell_command;
+      if (!info.is_finished) {
+        msg << " (not finished)";
+      }
+      msg << '\n';
+    }
+  } else if (!not_finished_cmds.empty()) {
+    std::stringstream msg;
+    msg << "Not all of the specified processes have been finished:\n";
+    for (int i = 0; i < shell_cmds.size(); i++) {
+      msg << shell_cmds[i];
+      if (not_finished_cmds.count(i) > 0) {
+        msg << " (not finished)";
+      }
+      msg << '\n';
+    }
+    msg << '\n';
+  }
+  return msg.str();
 }
 
 std::string OsApiMock::DisplayNotFinishedProcesses() {

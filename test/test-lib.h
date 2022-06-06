@@ -10,6 +10,7 @@
 #include <vector>
 #include <string>
 #include <unordered_set>
+#include <map>
 #include <entt.hpp>
 
 #include <gmock/gmock.h>
@@ -79,6 +80,12 @@ public:
   int TimesProcessStarted(const std::string& shell_command);
   int TimesProcessFinished(const std::string& shell_command);
   int TimesProcess(const std::string& shell_command, bool started);
+  template<typename... Args>
+  std::string AssertProcsRanInOrder(Args... args) {
+    return AssertListOfProcsRanInOrder({args...});
+  }
+  std::string AssertListOfProcsRanInOrder(
+      const std::vector<std::string>& shell_cmds);
   int GetProcessExitCode(Process& process) override;
   std::chrono::system_clock::time_point TimeNow() override;
   void PressCtrlC();
@@ -90,7 +97,7 @@ public:
   std::chrono::system_clock::time_point time_now;
   PidType pid_seed = 1;
   std::unordered_map<std::string, std::deque<ProcessExec>> cmd_to_process_execs;
-  std::unordered_map<PidType, ProcessInfo> proc_info;
+  std::map<PidType, ProcessInfo> proc_info;
   std::unordered_set<PidType> unfinished_procs;
   using ExecProcess = void(const std::string&);
   testing::NiceMock<testing::MockFunction<ExecProcess>> process_calls;
@@ -192,9 +199,10 @@ public:
   ExecCdtSystems(cdt);\
   EXPECT_OUT(__VA_ARGS__)
 
-#define EXPECT_PROCESS(CMD, TIMES)\
-  EXPECT_EQ(TIMES, mock.TimesProcessStarted(CMD));\
-  EXPECT_EQ(TIMES, mock.TimesProcessFinished(CMD))
+#define EXPECT_PROCS(...)\
+  if (std::string e = mock.AssertProcsRanInOrder(__VA_ARGS__); !e.empty()) {\
+    ADD_FAILURE() << e;\
+  }
 
 MATCHER_P(StrVecEq, expected, "") {
   if (arg.size() != expected.size()) {
