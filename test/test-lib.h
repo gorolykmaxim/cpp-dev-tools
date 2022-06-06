@@ -218,6 +218,10 @@ MATCHER_P(StrVecEq, expected, "") {
   return true;
 }
 
+MATCHER_P(HasPath, path, "") {
+  return arg.find(path.string()) != std::string::npos;
+}
+
 MATCHER_P(HasSubstrs, substrs, "") {
   for (const std::string& substr: substrs) {
     if (arg.find(substr) == std::string::npos) {
