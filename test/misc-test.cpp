@@ -1,3 +1,4 @@
+#include "cdt.h"
 #include "test-lib.h"
 #include <gmock/gmock-matchers.h>
 #include <gmock/gmock-spec-builders.h>
@@ -38,7 +39,7 @@ TEST_F(MiscTest, StartExecuteSingleTaskAndRepeateTheLastCommandOnEnter) {
 TEST_F(MiscTest, StartAndExecuteRestartTask) {
   ASSERT_CDT_STARTED();
   InSequence seq;
-  EXPECT_CALL(mock, SetEnv("LAST_COMMAND", "t7"));
+  EXPECT_CALL(mock, SetEnv(kEnvVarLastCommand, "t7"));
   std::string tasks_config_path_str = paths.kTasksConfig.string();
   std::vector<const char*> expected_argv = {
     execs.kCdt.c_str(), tasks_config_path_str.c_str(), nullptr
@@ -66,7 +67,7 @@ TEST_F(MiscTest, StartAndExecuteRestartTaskWithProfileSelected) {
   mock.MockReadFile(paths.kTasksConfig, tasks_config_with_profiles_data.dump());
   ASSERT_CDT_STARTED(profile1);
   InSequence seq;
-  EXPECT_CALL(mock, SetEnv("LAST_COMMAND", "t7"));
+  EXPECT_CALL(mock, SetEnv(kEnvVarLastCommand, "t7"));
   std::string tasks_config_path_str = paths.kTasksConfig.string();
   std::vector<const char*> expected_argv = {
     execs.kCdt.c_str(), tasks_config_path_str.c_str(), profile1.c_str(), nullptr
