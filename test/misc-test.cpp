@@ -64,8 +64,7 @@ TEST_F(MiscTest, StartAndFailToExecuteRestartTask) {
 }
 
 TEST_F(MiscTest, StartAndExecuteRestartTaskWithProfileSelected) {
-  mock.MockReadFile(paths.kTasksConfig, tasks_config_with_profiles_data.dump());
-  ASSERT_CDT_STARTED(profile1);
+  ASSERT_CDT_STARTED_WITH_PROFILE(profile1);
   InSequence seq;
   EXPECT_CALL(mock, SetEnv(kEnvVarLastCommand, "t7"));
   std::string tasks_config_path_str = paths.kTasksConfig.string();
