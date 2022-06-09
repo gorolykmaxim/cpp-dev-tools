@@ -1,7 +1,0 @@
-[32m(cdt) [0m[34mRunning "pre pre task 1"...[0m
-[34mRunning "pre pre task 2"...[0m
-[34mRunning "pre task 1"...[0m
-[34mRunning "pre task 2"...[0m
-[35mRunning "primary task"[0m
-failed to launch debugger
-[31m'primary task' failed: return code: 1[0m
