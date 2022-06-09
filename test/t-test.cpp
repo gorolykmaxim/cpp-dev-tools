@@ -128,4 +128,5 @@ TEST_F(TTest, StartAndFailToExecuteTaskDueToFailureToLaunchProcess) {
   mock.cmd_to_process_execs[execs.kHelloWorld].front().fail_to_exec = true;
   ASSERT_CDT_STARTED();
   EXPECT_CMDOUT("t1", HasSubstr("Failed to exec: " + execs.kHelloWorld));
+  EXPECT_PROCS(execs.kHelloWorld);
 }
