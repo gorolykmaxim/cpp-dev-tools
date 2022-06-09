@@ -81,33 +81,33 @@ static void AppendConfigErrors(const std::filesystem::path& config_path, const s
 }
 
 void InitExampleUserConfig(Cdt& cdt) {
-    std::filesystem::path home(cdt.os->GetEnv("HOME"));
-    cdt.user_config_path = home / ".cpp-dev-tools.json";
-    if (!cdt.os->FileExists(cdt.user_config_path)) {
-        std::stringstream example;
-        example << "{\n";
-        example << "  // Open file links from the output in Sublime Text:\n";
-        example << "  //\"" << kOpenInEditorCommandProperty
-                << "\": \"subl {}\"\n";
-        example << "  // Open file links from the output in VSCode:\n";
-        example << "  //\"" << kOpenInEditorCommandProperty
-                << "\": \"code {}\"\n";
-        example << "  // Debug tasks on MacOS:\n";
-        std::string activate_terminal = "tell application \\\"Terminal\\\" "
-                                        "to activate";
-        std::string open_new_tab = "tell application \\\"System Events\\\" "
-                                   "to tell process \\\"Terminal\\\" "
-                                   "to keystroke \\\"t\\\" using command down";
-        std::string exec_in_tab = "tell application \\\"Terminal\\\" "
-                                  "to do script \\\"cd {current_dir} && "
-                                  "lldb -- {shell_cmd}\\\" "
-                                  "in selected tab of the front window";
-        example << "  //\"" << kDebugCommandProperty << "\": \"osascript "
-                << "-e '" << activate_terminal << "' -e '" << open_new_tab
-                << "' -e '" << exec_in_tab << "'\"\n";
-        example << "}\n";
-        cdt.os->WriteFile(cdt.user_config_path, example.str());
-    }
+  std::filesystem::path home(cdt.os->GetEnv("HOME"));
+  cdt.user_config_path = home / ".cpp-dev-tools.json";
+  if (!cdt.os->FileExists(cdt.user_config_path)) {
+    std::stringstream example;
+    example << "{\n";
+    example << "  // Open file links from the output in Sublime Text:\n";
+    example << "  //\"" << kOpenInEditorCommandProperty << "\": \"subl {}\"\n";
+    example << "  // Open file links from the output in VSCode:\n";
+    example << "  //\"" << kOpenInEditorCommandProperty << "\": \"code {}\"\n";
+    example << "  // Debug tasks on MacOS:\n";
+    std::string mac_osascript =
+        "on run argv\\n"
+        "tell application \\\"Terminal\\\" to activate\\n"
+        "tell application \\\"System Events\\\""
+        " to tell process \\\"Terminal\\\""
+        " to keystroke \\\"t\\\" using command down\\n"
+        "tell application \\\"Terminal\\\""
+        " to do script(\\\"cd \\\" & item 1 of argv & \\\" &&"
+        " lldb -- \\\" & item 2 of argv) in selected tab of the front window\\n"
+        "end run";
+    std::string osascript_file = "/tmp/cdt-dbg.scpt";
+    example << "  //\"" << kDebugCommandProperty << "\": \"echo '"
+            << mac_osascript << "' > " << osascript_file << " && osascript "
+            << osascript_file << " '{current_dir}' '{shell_cmd}'\"\n";
+    example << "}\n";
+    cdt.os->WriteFile(cdt.user_config_path, example.str());
+  }
 }
 
 static std::function<bool()> ValidateTemplateString(
