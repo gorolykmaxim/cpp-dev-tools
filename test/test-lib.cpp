@@ -91,7 +91,6 @@ std::string OsApiMock::AssertListOfProcsRanInOrder(
       msg << '\n';
     }
   } else if (!not_finished_cmds.empty()) {
-    std::stringstream msg;
     msg << "Not all of the specified processes have been finished:\n";
     for (int i = 0; i < shell_cmds.size(); i++) {
       msg << shell_cmds[i];
