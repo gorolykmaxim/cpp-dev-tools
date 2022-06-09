@@ -1,3 +1,0 @@
-[32m(cdt) [0m[35mRunning "build for windows with profile profile 2"[0m
-build for windows with profile profile 2
-[35m'build for windows with profile profile 2' complete: return code: 0[0m

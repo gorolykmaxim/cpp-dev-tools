@@ -14,15 +14,8 @@ class LaunchTest : public CdtTest {};
 TEST_F(LaunchTest, StartAndViewTasks) {
   EXPECT_CALL(mock, Init());
   EXPECT_TRUE(InitTestCdt());
-  std::vector<std::string> expected_tasks;
-  nlohmann::json& tasks = tasks_config_data["cdt_tasks"];
-  for (int i = 0; i < tasks.size(); i++) {
-    std::string index = std::to_string(i + 1);
-    std::string name = tasks[i]["name"].get<std::string>();
-    expected_tasks.push_back(index + " \"" + name + '"');
-  }
   std::string help_prompt = "\033[32mh\033[0m";
-  EXPECT_OUT(HasSubstr(help_prompt), HasSubstrsInOrder(expected_tasks));
+  EXPECT_OUT(HasSubstr(help_prompt), HasSubstrsInOrder(list_of_tasks_in_ui));
 }
 
 TEST_F(LaunchTest, FailToStartDueToUserConfigNotBeingJson) {

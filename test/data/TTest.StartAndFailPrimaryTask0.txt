@@ -1,4 +1,0 @@
-[32m(cdt) [0m[35mRunning "hello world!"[0m
-starting...
-error!!!
-[31m'hello world!' failed: return code: 1[0m

@@ -1,3 +1,0 @@
-[32m(cdt) [0m[35mRunning "build for macos with profile profile 1"[0m
-build for macos with profile profile 1
-[35m'build for macos with profile profile 1' complete: return code: 0[0m

@@ -30,12 +30,12 @@ TEST_F(GtrTest, StartExecuteLongGtestTaskWithPreTasksAbortItRepeatedlyRerunFaile
   rerun.exit_code = 1;
   rerun.is_long = true;
   rerun.output_lines = {
-    "Running main() from /lib/gtest_main.cc\n",
-    "Note: Google Test filter = exit_tests.exit_in_the_middle\n",
-    "[==========] Running 1 test from 1 test suite.\n",
-    "[----------] Global test environment set-up.\n",
-    "[----------] 1 test from exit_tests\n",
-    "[ RUN      ] exit_tests.exit_in_the_middle\n",
+    "Running main() from /lib/gtest_main.cc",
+    "Note: Google Test filter = exit_tests.exit_in_the_middle",
+    "[==========] Running 1 test from 1 test suite.",
+    "[----------] Global test environment set-up.",
+    "[----------] 1 test from exit_tests",
+    "[ RUN      ] exit_tests.exit_in_the_middle",
   };
   aborted_gtest_exec.is_long = true;
   mock.cmd_to_process_execs[execs.kTests].front() = aborted_gtest_exec;

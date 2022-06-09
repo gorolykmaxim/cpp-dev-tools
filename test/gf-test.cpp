@@ -17,7 +17,7 @@ TEST_F(GfTest, StartAndExecuteGtestTaskWithGtestFilter) {
     "[----------] Global test environment set-up.\n",
     "[----------] 2 tests from test_suit_1\n",
     "[ RUN      ] test_suit_1.test1\n",
-    out_links,
+    OUT_LINKS_NOT_HIGHLIGHTED(),
     "[       OK ] test_suit_1.test1 (0 ms)\n",
     "[ RUN      ] test_suit_1.test2\n",
     "[       OK ] test_suit_1.test2 (0 ms)\n",

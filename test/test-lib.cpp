@@ -41,7 +41,10 @@ void OsApiMock::StartProcess(
     return;
   }
   for (int i = 0; i < exec.output_lines.size(); i++) {
-    std::string& line = exec.output_lines[i];
+    std::string line = exec.output_lines[i];
+    if (exec.append_eol) {
+      line += kEol;
+    }
     if (exec.stderr_lines.count(i) == 0) {
       stdout_cb(line.data(), line.size());
     } else {
@@ -102,6 +105,29 @@ std::string OsApiMock::AssertListOfProcsRanInOrder(
     msg << '\n';
   }
   return msg.str();
+}
+
+std::string OsApiMock::AssertListOfProcsDidNotRan(
+    const std::unordered_set<std::string>& shell_cmds) {
+  if (shell_cmds.empty()) {
+    return "";
+  }
+  std::vector<std::string> unexpected_shell_cmds;
+  for (auto& [_, info]: proc_info) {
+    if (shell_cmds.count(info.shell_command) > 0) {
+      unexpected_shell_cmds.push_back(info.shell_command);
+    }
+  }
+  if (unexpected_shell_cmds.empty()) {
+    return "";
+  }
+  std::stringstream s;
+  s << "Unexpected processes executed:\n";
+  for (std::string& cmd: unexpected_shell_cmds) {
+    s << cmd << '\n';
+  }
+  s << '\n';
+  return s.str();
 }
 
 std::string OsApiMock::DisplayNotFinishedProcesses() {
@@ -210,6 +236,11 @@ void CdtTest::SetUp() {
       {"build for {platform} with profile {name}"}));
   tasks_config_data["cdt_tasks"] = tasks;
   mock.MockReadFile(paths.kTasksConfig, tasks_config_data.dump());
+  for (int i = 0; i < tasks.size(); i++) {
+    std::string index = std::to_string(i + 1);
+    std::string name = tasks[i]["name"].get<std::string>();
+    list_of_tasks_in_ui.push_back(index + " \"" + name + '"');
+  }
   // mock tasks config version with profiles in it
   profile1 = "profile 1";
   profile2 = "profile 2";
@@ -235,136 +266,146 @@ void CdtTest::SetUp() {
   EXPECT_CALL(mock, FileExists(paths.kUserConfig))
       .WillRepeatedly(testing::Return(true));
   // mock default test execution
-  out_links = OUT_LINKS_NOT_HIGHLIGHTED();
-  out_test_error = "unknown file: Failure\n"
-      "C++ exception with description \"\" thrown in the test body.\n";
   successful_gtest_exec.output_lines = {
-    "Running main() from /lib/gtest_main.cc\n",
-    "[==========] Running 3 tests from 2 test suites.\n",
-    "[----------] Global test environment set-up.\n",
-    "[----------] 2 tests from test_suit_1\n",
-    "[ RUN      ] test_suit_1.test1\n",
-    out_links,
-    "[       OK ] test_suit_1.test1 (0 ms)\n",
-    "[ RUN      ] test_suit_1.test2\n",
-    "[       OK ] test_suit_1.test2 (0 ms)\n",
-    "[----------] 2 tests from test_suit_1 (0 ms total)\n\n",
-    "[----------] 1 test from test_suit_2\n",
-    "[ RUN      ] test_suit_2.test1\n",
-    "[       OK ] test_suit_2.test1 (0 ms)\n",
-    "[----------] 1 test from test_suit_2 (0 ms total)\n\n",
-    "[----------] Global test environment tear-down\n",
-    "[==========] 3 tests from 2 test suites ran. (0 ms total)\n",
-    "[  PASSED  ] 3 tests.\n"
+    "Running main() from /lib/gtest_main.cc",
+    "[==========] Running 3 tests from 2 test suites.",
+    "[----------] Global test environment set-up.",
+    "[----------] 2 tests from test_suit_1",
+    "[ RUN      ] test_suit_1.test1",
+    OUT_LINKS_NOT_HIGHLIGHTED(),
+    "[       OK ] test_suit_1.test1 (0 ms)",
+    "[ RUN      ] test_suit_1.test2",
+    "[       OK ] test_suit_1.test2 (0 ms)",
+    "[----------] 2 tests from test_suit_1 (0 ms total)",
+    "",
+    "[----------] 1 test from test_suit_2",
+    "[ RUN      ] test_suit_2.test1",
+    "[       OK ] test_suit_2.test1 (0 ms)",
+    "[----------] 1 test from test_suit_2 (0 ms total)",
+    "",
+    "[----------] Global test environment tear-down",
+    "[==========] 3 tests from 2 test suites ran. (0 ms total)",
+    "[  PASSED  ] 3 tests.",
   };
   aborted_gtest_exec.exit_code = 1;
   aborted_gtest_exec.output_lines = {
-    "Running main() from /lib/gtest_main.cc\n",
-    "[==========] Running 2 tests from 2 test suites.\n",
-    "[----------] Global test environment set-up.\n",
-    "[----------] 1 test from normal_tests\n",
-    "[ RUN      ] normal_tests.hello_world\n",
-    "[       OK ] normal_tests.hello_world (0 ms)\n",
-    "[----------] 1 test from normal_tests (0 ms total)\n\n",
-    "[----------] 1 test from exit_tests\n",
-    "[ RUN      ] exit_tests.exit_in_the_middle\n",
-    out_test_error
+    "Running main() from /lib/gtest_main.cc",
+    "[==========] Running 2 tests from 2 test suites.",
+    "[----------] Global test environment set-up.",
+    "[----------] 1 test from normal_tests",
+    "[ RUN      ] normal_tests.hello_world",
+    "[       OK ] normal_tests.hello_world (0 ms)",
+    "[----------] 1 test from normal_tests (0 ms total)",
+    "",
+    "[----------] 1 test from exit_tests",
+    "[ RUN      ] exit_tests.exit_in_the_middle",
+    OUT_TEST_ERROR(),
   };
   failed_gtest_exec.exit_code = 1;
   failed_gtest_exec.output_lines = {
-    "Running main() from /lib/gtest_main.cc\n",
-    "[==========] Running 3 tests from 2 test suites.\n",
-    "[----------] Global test environment set-up.\n",
-    "[----------] 2 tests from failed_test_suit_1\n",
-    "[ RUN      ] failed_test_suit_1.test1\n",
-    out_links,
-    out_test_error,
-    "[  FAILED  ] failed_test_suit_1.test1 (0 ms)\n",
-    "[ RUN      ] failed_test_suit_1.test2\n",
-    "[       OK ] failed_test_suit_1.test2 (0 ms)\n",
-    "[----------] 2 tests from failed_test_suit_1 (0 ms total)\n\n",
-    "[----------] 1 test from failed_test_suit_2\n",
-    "[ RUN      ] failed_test_suit_2.test1\n\n",
-    out_test_error,
-    "[  FAILED  ] failed_test_suit_2.test1 (0 ms)\n",
-    "[----------] 1 test from failed_test_suit_2 (0 ms total)\n\n",
-    "[----------] Global test environment tear-down\n",
-    "[==========] 3 tests from 2 test suites ran. (0 ms total)\n",
-    "[  PASSED  ] 1 test.\n",
-    "[  FAILED  ] 2 tests, listed below:\n",
-    "[  FAILED  ] failed_test_suit_1.test1\n",
-    "[  FAILED  ] failed_test_suit_2.test1\n\n",
-    "2 FAILED TESTS\n"
+    "Running main() from /lib/gtest_main.cc",
+    "[==========] Running 3 tests from 2 test suites.",
+    "[----------] Global test environment set-up.",
+    "[----------] 2 tests from failed_test_suit_1",
+    "[ RUN      ] failed_test_suit_1.test1",
+    OUT_LINKS_NOT_HIGHLIGHTED(),
+    OUT_TEST_ERROR(),
+    "[  FAILED  ] failed_test_suit_1.test1 (0 ms)",
+    "[ RUN      ] failed_test_suit_1.test2",
+    "[       OK ] failed_test_suit_1.test2 (0 ms)",
+    "[----------] 2 tests from failed_test_suit_1 (0 ms total)",
+    "",
+    "[----------] 1 test from failed_test_suit_2",
+    "[ RUN      ] failed_test_suit_2.test1",
+    "",
+    OUT_TEST_ERROR(),
+    "[  FAILED  ] failed_test_suit_2.test1 (0 ms)",
+    "[----------] 1 test from failed_test_suit_2 (0 ms total)",
+    "",
+    "[----------] Global test environment tear-down",
+    "[==========] 3 tests from 2 test suites ran. (0 ms total)",
+    "[  PASSED  ] 1 test.",
+    "[  FAILED  ] 2 tests, listed below:",
+    "[  FAILED  ] failed_test_suit_1.test1",
+    "[  FAILED  ] failed_test_suit_2.test1",
+    "",
+    "2 FAILED TESTS",
   };
   successful_single_gtest_exec.output_lines = {
-    "Running main() from /lib/gtest_main.cc\n",
-    "Note: Google Test filter = test_suit_1.test1\n",
-    "[==========] Running 1 test from 1 test suite.\n",
-    "[----------] Global test environment set-up.\n",
-    "[----------] 1 test from test_suit_1\n",
-    "[ RUN      ] test_suit_1.test1\n",
-    out_links,
-    "[       OK ] test_suit_1.test1 (0 ms)\n",
-    "[----------] 1 test from test_suit_1 (0 ms total)\n\n",
-    "[----------] Global test environment tear-down\n",
-    "[==========] 1 test from 1 test suite ran. (0 ms total)\n",
-    "[  PASSED  ] 1 test.\n"
+    "Running main() from /lib/gtest_main.cc",
+    "Note: Google Test filter = test_suit_1.test1",
+    "[==========] Running 1 test from 1 test suite.",
+    "[----------] Global test environment set-up.",
+    "[----------] 1 test from test_suit_1",
+    "[ RUN      ] test_suit_1.test1",
+    OUT_LINKS_NOT_HIGHLIGHTED(),
+    "[       OK ] test_suit_1.test1 (0 ms)",
+    "[----------] 1 test from test_suit_1 (0 ms total)",
+    "",
+    "[----------] Global test environment tear-down",
+    "[==========] 1 test from 1 test suite ran. (0 ms total)",
+    "[  PASSED  ] 1 test.",
   };
   failed_single_gtest_exec.exit_code = 1;
   failed_single_gtest_exec.output_lines = {
-    "Running main() from /lib/gtest_main.cc\n",
-    "[==========] Running 2 tests from 1 test suite.\n",
-    "[----------] Global test environment set-up.\n",
-    "[----------] 2 tests from failed_test_suit_1\n",
-    "[ RUN      ] failed_test_suit_1.test1\n",
-    out_links,
-    out_test_error,
-    "[  FAILED  ] failed_test_suit_1.test1 (0 ms)\n",
-    "[ RUN      ] failed_test_suit_1.test2\n",
-    "[       OK ] failed_test_suit_1.test2 (0 ms)\n",
-    "[----------] 2 tests from failed_test_suit_1 (0 ms total)\n\n",
-    "[----------] Global test environment tear-down\n",
-    "[==========] 2 tests from 1 test suite ran. (0 ms total)\n",
-    "[  PASSED  ] 1 test.\n",
-    "[  FAILED  ] 1 test, listed below:\n",
-    "[  FAILED  ] failed_test_suit_1.test1\n\n",
-    " 1 FAILED TEST\n"
+    "Running main() from /lib/gtest_main.cc",
+    "[==========] Running 2 tests from 1 test suite.",
+    "[----------] Global test environment set-up.",
+    "[----------] 2 tests from failed_test_suit_1",
+    "[ RUN      ] failed_test_suit_1.test1",
+    OUT_LINKS_NOT_HIGHLIGHTED(),
+    OUT_TEST_ERROR(),
+    "[  FAILED  ] failed_test_suit_1.test1 (0 ms)",
+    "[ RUN      ] failed_test_suit_1.test2",
+    "[       OK ] failed_test_suit_1.test2 (0 ms)",
+    "[----------] 2 tests from failed_test_suit_1 (0 ms total)",
+    "",
+    "[----------] Global test environment tear-down",
+    "[==========] 2 tests from 1 test suite ran. (0 ms total)",
+    "[  PASSED  ] 1 test.",
+    "[  FAILED  ] 1 test, listed below:",
+    "[  FAILED  ] failed_test_suit_1.test1",
+    "",
+    " 1 FAILED TEST",
   };
   successful_rerun_gtest_exec.output_lines = {
-    "Running main() from /lib/gtest_main.cc\n",
-    "Note: Google Test filter = failed_test_suit_1.test1\n",
-    "[==========] Running 1 test from 1 test suite.\n",
-    "[----------] Global test environment set-up.\n",
-    "[----------] 1 test from failed_test_suit_1\n",
-    "[ RUN      ] failed_test_suit_1.test1\n",
-    out_links,
-    "[       OK ] failed_test_suit_1.test1 (0 ms)\n",
-    "[----------] 1 test from failed_test_suit_1 (0 ms total)\n\n",
-    "[----------] Global test environment tear-down\n",
-    "[==========] 1 test from 1 test suite ran. (0 ms total)\n",
-    "[  PASSED  ] 1 test.\n",
+    "Running main() from /lib/gtest_main.cc",
+    "Note: Google Test filter = failed_test_suit_1.test1",
+    "[==========] Running 1 test from 1 test suite.",
+    "[----------] Global test environment set-up.",
+    "[----------] 1 test from failed_test_suit_1",
+    "[ RUN      ] failed_test_suit_1.test1",
+    OUT_LINKS_NOT_HIGHLIGHTED(),
+    "[       OK ] failed_test_suit_1.test1 (0 ms)",
+    "[----------] 1 test from failed_test_suit_1 (0 ms total)",
+    "",
+    "[----------] Global test environment tear-down",
+    "[==========] 1 test from 1 test suite ran. (0 ms total)",
+    "[  PASSED  ] 1 test.",
   };
   failed_rerun_gtest_exec.exit_code = 1;
   failed_rerun_gtest_exec.output_lines = {
-    "Running main() from /lib/gtest_main.cc\n",
-    "Note: Google Test filter = failed_test_suit_1.test1\n",
-    "[==========] Running 1 test from 1 test suite.\n",
-    "[----------] Global test environment set-up.\n",
-    "[----------] 1 test from failed_test_suit_1\n",
-    "[ RUN      ] failed_test_suit_1.test1\n",
-    out_links,
-    out_test_error,
-    "[  FAILED  ] failed_test_suit_1.test1 (0 ms)\n",
-    "[----------] 1 test from failed_test_suit_1 (0 ms total)\n\n",
-    "[----------] Global test environment tear-down\n",
-    "[==========] 1 test from 1 test suite ran. (0 ms total)\n",
-    "[  PASSED  ] 0 tests.\n",
-    "[  FAILED  ] 1 test, listed below:\n",
-    "[  FAILED  ] failed_test_suit_1.test1\n\n",
-    " 1 FAILED TEST\n",
+    "Running main() from /lib/gtest_main.cc",
+    "Note: Google Test filter = failed_test_suit_1.test1",
+    "[==========] Running 1 test from 1 test suite.",
+    "[----------] Global test environment set-up.",
+    "[----------] 1 test from failed_test_suit_1",
+    "[ RUN      ] failed_test_suit_1.test1",
+    OUT_LINKS_NOT_HIGHLIGHTED(),
+    OUT_TEST_ERROR(),
+    "[  FAILED  ] failed_test_suit_1.test1 (0 ms)",
+    "[----------] 1 test from failed_test_suit_1 (0 ms total)",
+    "",
+    "[----------] Global test environment tear-down",
+    "[==========] 1 test from 1 test suite ran. (0 ms total)",
+    "[  PASSED  ] 0 tests.",
+    "[  FAILED  ] 1 test, listed below:",
+    "[  FAILED  ] failed_test_suit_1.test1",
+    "",
+    " 1 FAILED TEST",
   };
   failed_debug_exec.exit_code = 1;
-  failed_debug_exec.output_lines = {"failed to launch debugger\n"};
+  failed_debug_exec.output_lines = {"failed to launch debugger"};
   failed_debug_exec.stderr_lines.insert(0);
   mock.cmd_to_process_execs[execs.kTests].push_back(successful_gtest_exec);
   std::string one_test = execs.kTests + WITH_GT_FILTER("test_suit_1.test1");
@@ -403,7 +444,7 @@ nlohmann::json CdtTest::CreateTaskAndProcess(
     const std::string& name, std::vector<std::string> pre_tasks) {
   std::string cmd = "echo " + name;
   ProcessExec exec;
-  exec.output_lines = {name + '\n'};
+  exec.output_lines = {name};
   mock.cmd_to_process_execs[cmd].push_back(exec);
   return CreateTask(name, cmd, std::move(pre_tasks));
 }
@@ -413,7 +454,7 @@ nlohmann::json CdtTest::CreateProfileTaskAndProcess(
     std::vector<std::string> pre_tasks) {
   for (const std::string& v: profile_versions) {
     ProcessExec exec;
-    exec.output_lines = {v + '\n'};
+    exec.output_lines = {v};
     mock.cmd_to_process_execs["echo " + v].push_back(exec);
   }
   return CreateTask(name, "echo " + name, std::move(pre_tasks));

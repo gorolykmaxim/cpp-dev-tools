@@ -41,6 +41,7 @@ struct ProcessExec {
   std::unordered_set<int> stderr_lines;
   bool is_long = false;
   bool fail_to_exec = false;
+  bool append_eol = true;
   int exit_code = 0;
 };
 
@@ -77,15 +78,18 @@ public:
                     const std::function<void(const char*, size_t)>& stderr_cb,
                     const std::function<void()>& exit_cb) override;
   void FinishProcess(Process& process) override;
-  int TimesProcessStarted(const std::string& shell_command);
-  int TimesProcessFinished(const std::string& shell_command);
-  int TimesProcess(const std::string& shell_command, bool started);
   template<typename... Args>
   std::string AssertProcsRanInOrder(Args... args) {
     return AssertListOfProcsRanInOrder({args...});
   }
+  template<typename... Args>
+  std::string AssertProcsDidNotRan(Args... args) {
+    return AssertListOfProcsDidNotRan({args...});
+  }
   std::string AssertListOfProcsRanInOrder(
       const std::vector<std::string>& shell_cmds);
+  std::string AssertListOfProcsDidNotRan(
+      const std::unordered_set<std::string>& shell_cmds);
   int GetProcessExitCode(Process& process) override;
   std::chrono::system_clock::time_point TimeNow() override;
   void PressCtrlC();
@@ -104,14 +108,14 @@ public:
 };
 
 #define OUT_LINKS_NOT_HIGHLIGHTED()\
-  "/a/b/c:10\n"\
-  "some random data\n"\
-  "/d/e/f:15:32 something\n"\
-  "line /a/b/c:11 and /b/c:32:1\n"
+  "/a/b/c:10",\
+  "some random data",\
+  "/d/e/f:15:32 something",\
+  "line /a/b/c:11 and /b/c:32:1"
 
 #define OUT_TEST_ERROR()\
-  "unknown file: Failure\n"\
-  "C++ exception with description \"\" thrown in the test body.\n"
+  "unknown file: Failure",\
+  "C++ exception with description \"\" thrown in the test body."
 
 #define EXPECT_OUT_EQ_SNAPSHOT(NAME)\
   if (ShouldCreateSnapshot())\
@@ -209,6 +213,11 @@ public:
     ADD_FAILURE() << e;\
   }
 
+#define EXPECT_NOT_PROCS(...)\
+  if (std::string e = mock.AssertProcsDidNotRan(__VA_ARGS__); !e.empty()) {\
+    ADD_FAILURE() << e;\
+  }
+
 MATCHER_P(StrVecEq, expected, "") {
   if (arg.size() != expected.size()) {
     return false;
@@ -252,8 +261,8 @@ class CdtTest: public testing::Test {
 public:
   Paths paths;
   Executables execs;
-  std::string out_links, out_test_error;
   nlohmann::json tasks_config_data, tasks_config_with_profiles_data;
+  std::vector<std::string> list_of_tasks_in_ui;
   std::string profile1, profile2;
   ProcessExec successful_gtest_exec,
               failed_gtest_exec,

@@ -8,7 +8,7 @@ TEST_F(OTest, StartExecuteTaskAndFailToOpenLinksFromOutput) {
   };
   ProcessExec exec;
   exec.exit_code = 1;
-  exec.output_lines = {"failed to open file\n"};
+  exec.output_lines = {"failed to open file"};
   mock.cmd_to_process_execs[execs.kEditor + " /a/b/c:10"].push_back(exec);
   EXPECT_CDT_STARTED();
   EXPECT_CMD("t1");
@@ -70,7 +70,6 @@ TEST_F(OTest, StartFailToExecutePreTaskOfTaskAttemptToOpenNonExistentLinkAndView
 }
 
 TEST_F(OTest, StartAttemptToOpenNonExistentLinkAndViewTaskOutput) {
-  std::string expected_output = "\x1B[32mNo file links in the output\x1B[0m\n";
   EXPECT_CDT_STARTED();
   EXPECT_CMD("o1");
   EXPECT_CMD("o");

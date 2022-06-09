@@ -1,4 +1,0 @@
-[32m(cdt) [0m[34mRunning "build on windows"...[0m
-[35mRunning "run variable binary"[0m
-run variable binary
-[35m'run variable binary' complete: return code: 0[0m
