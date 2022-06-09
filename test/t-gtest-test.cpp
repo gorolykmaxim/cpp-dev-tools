@@ -4,10 +4,10 @@ class TGtestTest: public CdtTest {};
 
 TEST_F(TGtestTest, StartAndExecuteGtestTaskWithNoTests) {
   mock.cmd_to_process_execs[execs.kTests].front().output_lines = {
-    "Running main() from /lib/gtest_main.cc\n",
-    "[==========] Running 0 tests from 0 test suites.\n",
-    "[==========] 0 tests from 0 test suites ran. (0 ms total)\n",
-    "[  PASSED  ] 0 tests.\n",
+    "Running main() from /lib/gtest_main.cc",
+    "[==========] Running 0 tests from 0 test suites.",
+    "[==========] 0 tests from 0 test suites ran. (0 ms total)",
+    "[  PASSED  ] 0 tests.",
   };
   EXPECT_CDT_STARTED();
   EXPECT_CMD("t8");
@@ -16,7 +16,7 @@ TEST_F(TGtestTest, StartAndExecuteGtestTaskWithNoTests) {
 TEST_F(TGtestTest, StartAttemptToExecuteGtestTaskWithNonExistentBinaryAndFail) {
   ProcessExec& exec = mock.cmd_to_process_execs[execs.kTests].front();
   exec.exit_code = 127;
-  exec.output_lines = {execs.kTests + " does not exist\n"};
+  exec.output_lines = {execs.kTests + " does not exist"};
   exec.stderr_lines = {0};
   EXPECT_CDT_STARTED();
   EXPECT_CMD("t8");
@@ -90,17 +90,18 @@ TEST_F(TGtestTest, StartExecuteGtestTaskWithFailedTestsAndLongTestAndAbortIt) {
   exec.exit_code = 1;
   exec.is_long = true;
   exec.output_lines = {
-    "Running main() from /lib/gtest_main.cc\n",
-    "[==========] Running 2 tests from 2 test suites.\n",
-    "[----------] Global test environment set-up.\n",
-    "[----------] 1 test from failed_test_suit_1\n",
-    "[ RUN      ] failed_test_suit_1.test1\n",
+    "Running main() from /lib/gtest_main.cc",
+    "[==========] Running 2 tests from 2 test suites.",
+    "[----------] Global test environment set-up.",
+    "[----------] 1 test from failed_test_suit_1",
+    "[ RUN      ] failed_test_suit_1.test1",
     OUT_LINKS_NOT_HIGHLIGHTED(),
     OUT_TEST_ERROR(),
-    "[  FAILED  ] failed_test_suit_1.test1 (0 ms)\n",
-    "[----------] 1 test from failed_test_suit_1 (0 ms total)\n\n",
-    "[----------] 1 test from long_tests\n",
-    "[ RUN      ] long_tests.test1\n"
+    "[  FAILED  ] failed_test_suit_1.test1 (0 ms)",
+    "[----------] 1 test from failed_test_suit_1 (0 ms total)",
+    "",
+    "[----------] 1 test from long_tests",
+    "[ RUN      ] long_tests.test1"
   };
   EXPECT_CDT_STARTED();
   EXPECT_INTERRUPTED_CMD("t8");
