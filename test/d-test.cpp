@@ -28,8 +28,8 @@ TEST_F(DTest, StartDebugPrimaryTaskWithPreTasks) {
       "pre pre task 1", "pre pre task 2", "pre task 1", "pre task 2",
       "primary task", "Debugger started",
       "'primary task' complete: return code: 0"}));
-  EXPECT_PROCS("echo pre pre task 1", "echo pre pre task 2", "echo pre task 1",
-               "echo pre task 2", debugger_call);
+  EXPECT_PROCS_EXACT("echo pre pre task 1", "echo pre pre task 2",
+                     "echo pre task 1", "echo pre task 2", debugger_call);
 }
 
 TEST_F(DTest, StartAndFailToDebugTask) {
@@ -45,7 +45,8 @@ TEST_F(DTest, StartDebugGtestPrimaryTaskWithPreTasks) {
   mock.cmd_to_process_execs[debugger_call].push_back(ProcessExec{});
   ASSERT_CDT_STARTED();
   EXPECT_CMDOUT("d10", HasSubstr("Debugger started"));
-  EXPECT_PROCS(debugger_call);
+  EXPECT_PROCS_EXACT("echo pre pre task 1", "echo pre pre task 2",
+                     debugger_call);
 }
 
 TEST_F(DTest, StartAndFailToDebugGtestTask) {

@@ -33,7 +33,7 @@ TEST_F(TTest, StartAndExecuteSingleTask) {
     "Running \"hello world!\"", "hello world!",
     "'hello world!' complete: return code: 0"
   }));
-  EXPECT_PROCS(execs.kHelloWorld);
+  EXPECT_PROCS_EXACT(execs.kHelloWorld);
 }
 
 TEST_F(TTest, StartAndExecuteTaskThatPrintsToStdoutAndStderr) {
@@ -51,8 +51,8 @@ TEST_F(TTest, StartAndExecuteTaskWithPreTasksWithPreTasks) {
     "pre pre task 1", "pre pre task 2", "pre task 1", "pre task 2",
     "primary task"
   }));
-  EXPECT_PROCS("echo pre pre task 1", "echo pre pre task 2", "echo pre task 1",
-               "echo pre task 2", "echo primary task");
+  EXPECT_PROCS_EXACT("echo pre pre task 1", "echo pre pre task 2",
+                     "echo pre task 1", "echo pre task 2", "echo primary task");
 }
 
 TEST_F(TTest, StartAndFailPrimaryTask) {
@@ -76,20 +76,19 @@ TEST_F(TTest, StartAndFailOneOfPreTasks) {
       "pre pre task 1", "pre pre task 2", "error!!!",
       "'pre pre task 2' failed: return code: 1"
   }));
-  EXPECT_PROCS("echo pre pre task 1", "echo pre pre task 2");
-  EXPECT_NOT_PROCS("echo pre task 1", "echo pre task 2", "echo primary task");
+  EXPECT_PROCS_EXACT("echo pre pre task 1", "echo pre pre task 2");
 }
 
 TEST_F(TTest, StartAndExecuteTaskWithProfile1) {
   ASSERT_CDT_STARTED_WITH_PROFILE(profile1);
   EXPECT_CMDOUT("t11", HasSubstr("build for macos with profile profile 1"));
-  EXPECT_PROCS("echo build for macos with profile profile 1");
+  EXPECT_PROCS_EXACT("echo build for macos with profile profile 1");
 }
 
 TEST_F(TTest, StartAndExecuteTaskWithProfile2) {
   ASSERT_CDT_STARTED_WITH_PROFILE(profile2);
   EXPECT_CMDOUT("t11", HasSubstr("build for windows with profile profile 2"));
-  EXPECT_PROCS("echo build for windows with profile profile 2");
+  EXPECT_PROCS_EXACT("echo build for windows with profile profile 2");
 }
 
 TEST_F(TTest, StartAndExecuteTaskWithProfile1PreTask) {
@@ -97,8 +96,8 @@ TEST_F(TTest, StartAndExecuteTaskWithProfile1PreTask) {
   EXPECT_CMDOUT("t12", HasSubstrsInOrder(std::vector<std::string>{
     "build for macos with profile profile 1", "run on macos"
   }));
-  EXPECT_PROCS("echo build for macos with profile profile 1",
-               "echo run on macos");
+  EXPECT_PROCS_EXACT("echo build for macos with profile profile 1",
+                     "echo run on macos");
 }
 
 TEST_F(TTest, StartAndExecuteTaskWithProfile2PreTask) {
@@ -106,27 +105,27 @@ TEST_F(TTest, StartAndExecuteTaskWithProfile2PreTask) {
   EXPECT_CMDOUT("t12", HasSubstrsInOrder(std::vector<std::string>{
     "build for windows with profile profile 2", "run on windows"
   }));
-  EXPECT_PROCS("echo build for windows with profile profile 2",
-               "echo run on windows");
+  EXPECT_PROCS_EXACT("echo build for windows with profile profile 2",
+                     "echo run on windows");
 }
 
 TEST_F(TTest, StartAndExecuteTaskWithPreTaskNameOfWhichIsDefinedInProfile1) {
   AppendTaskWithVariablePreTaskName();
   ASSERT_CDT_STARTED_WITH_PROFILE(profile1);
   EXPECT_CMDOUT("t15", HasSubstr("build on macos"));
-  EXPECT_PROCS("echo build on macos", "echo run variable binary");
+  EXPECT_PROCS_EXACT("echo build on macos", "echo run variable binary");
 }
 
 TEST_F(TTest, StartAndExecuteTaskWithPreTaskNameOfWhichIsDefinedInProfile2) {
   AppendTaskWithVariablePreTaskName();
   ASSERT_CDT_STARTED_WITH_PROFILE(profile2);
   EXPECT_CMDOUT("t15", HasSubstr("build on windows"));
-  EXPECT_PROCS("echo build on windows", "echo run variable binary");
+  EXPECT_PROCS_EXACT("echo build on windows", "echo run variable binary");
 }
 
 TEST_F(TTest, StartAndFailToExecuteTaskDueToFailureToLaunchProcess) {
   mock.cmd_to_process_execs[execs.kHelloWorld].front().fail_to_exec = true;
   ASSERT_CDT_STARTED();
   EXPECT_CMDOUT("t1", HasSubstr("Failed to exec: " + execs.kHelloWorld));
-  EXPECT_PROCS(execs.kHelloWorld);
+  EXPECT_PROCS_EXACT(execs.kHelloWorld);
 }

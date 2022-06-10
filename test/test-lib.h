@@ -7,6 +7,7 @@
 #include <gmock/gmock-nice-strict.h>
 #include <gmock/gmock-spec-builders.h>
 #include <optional>
+#include <sstream>
 #include <vector>
 #include <string>
 #include <unordered_set>
@@ -78,18 +79,78 @@ public:
                     const std::function<void(const char*, size_t)>& stderr_cb,
                     const std::function<void()>& exit_cb) override;
   void FinishProcess(Process& process) override;
+
   template<typename... Args>
   std::string AssertProcsRanInOrder(Args... args) {
-    return AssertListOfProcsRanInOrder({args...});
+    std::vector<std::string> shell_cmds = {args...};
+    if (shell_cmds.empty()) {
+      return "";
+    }
+    int current_cmd = 0;
+    std::unordered_set<int> not_finished_cmds;
+    for (auto& [_, info]: proc_info) {
+      if (shell_cmds[current_cmd] != info.shell_command) {
+        continue;
+      }
+      if (!info.is_finished) {
+        not_finished_cmds.insert(current_cmd);
+      }
+      if (++current_cmd >= shell_cmds.size()) {
+        break;
+      }
+    }
+    return GetExpectedVsActualProcsErrorMessage(
+        "Expected sequence of process executions not found:",
+        current_cmd < shell_cmds.size(), shell_cmds, not_finished_cmds);
   }
+
+  template<typename... Args>
+  std::string AssertExactProcsRan(Args... args) {
+    std::vector<std::string> shell_cmds = {args...};
+    bool equal = shell_cmds.size() == proc_info.size();
+    std::unordered_set<int> not_finished_cmds;
+    if (equal) {
+      int current_cmd = 0;
+      for (auto& [_, info]: proc_info) {
+        if (shell_cmds[current_cmd] != info.shell_command) {
+          equal = false;
+          break;
+        }
+        if (!info.is_finished) {
+          not_finished_cmds.insert(current_cmd);
+        }
+        current_cmd++;
+      }
+    }
+    return GetExpectedVsActualProcsErrorMessage(
+        "Expected sequence of process executions to be exactly:", !equal,
+        shell_cmds, not_finished_cmds);
+  }
+
   template<typename... Args>
   std::string AssertProcsDidNotRan(Args... args) {
-    return AssertListOfProcsDidNotRan({args...});
+    std::unordered_set<std::string> shell_cmds = {args...};
+    if (shell_cmds.empty()) {
+      return "";
+    }
+    std::vector<std::string> unexpected_shell_cmds;
+    for (auto& [_, info]: proc_info) {
+      if (shell_cmds.count(info.shell_command) > 0) {
+        unexpected_shell_cmds.push_back(info.shell_command);
+      }
+    }
+    if (unexpected_shell_cmds.empty()) {
+      return "";
+    }
+    std::stringstream s;
+    s << "Unexpected processes executed:\n";
+    for (std::string& cmd: unexpected_shell_cmds) {
+      s << cmd << '\n';
+    }
+    s << '\n';
+    return s.str();
   }
-  std::string AssertListOfProcsRanInOrder(
-      const std::vector<std::string>& shell_cmds);
-  std::string AssertListOfProcsDidNotRan(
-      const std::unordered_set<std::string>& shell_cmds);
+
   int GetProcessExitCode(Process& process) override;
   std::chrono::system_clock::time_point TimeNow() override;
   void PressCtrlC();
@@ -105,6 +166,12 @@ public:
   std::unordered_set<PidType> unfinished_procs;
   using ExecProcess = void(const std::string&);
   testing::NiceMock<testing::MockFunction<ExecProcess>> process_calls;
+
+private:
+  std::string GetExpectedVsActualProcsErrorMessage(
+      const std::string& expected_error_msg, bool not_equal,
+      const std::vector<std::string>& shell_cmds,
+      const std::unordered_set<int>& not_finished_cmds);
 };
 
 #define OUT_LINKS_NOT_HIGHLIGHTED()\
@@ -210,6 +277,11 @@ public:
 
 #define EXPECT_PROCS(...)\
   if (std::string e = mock.AssertProcsRanInOrder(__VA_ARGS__); !e.empty()) {\
+    ADD_FAILURE() << e;\
+  }
+
+#define EXPECT_PROCS_EXACT(...)\
+  if (std::string e = mock.AssertExactProcsRan(__VA_ARGS__); !e.empty()) {\
     ADD_FAILURE() << e;\
   }
 

@@ -61,27 +61,22 @@ void OsApiMock::FinishProcess(Process &process) {
   proc_info[process.id].is_finished = true;
 }
 
-std::string OsApiMock::AssertListOfProcsRanInOrder(
-    const std::vector<std::string>& shell_cmds) {
-  if (shell_cmds.empty()) {
-    return "";
+std::string OsApiMock::DisplayNotFinishedProcesses() {
+  std::stringstream s;
+  s << "Proceses not finished with FinishProcess():\n";
+  for (PidType pid: unfinished_procs) {
+    s << proc_info[pid].shell_command << '\n';
   }
-  int current_cmd = 0;
-  std::unordered_set<int> not_finished_cmds;
-  for (auto& [_, info]: proc_info) {
-    if (shell_cmds[current_cmd] != info.shell_command) {
-      continue;
-    }
-    if (!info.is_finished) {
-      not_finished_cmds.insert(current_cmd);
-    }
-    if (++current_cmd >= shell_cmds.size()) {
-      break;
-    }
-  }
+  return s.str();
+}
+
+std::string OsApiMock::GetExpectedVsActualProcsErrorMessage(
+    const std::string& expected_error_msg, bool not_equal,
+    const std::vector<std::string>& shell_cmds,
+    const std::unordered_set<int>& not_finished_cmds) {
   std::stringstream msg;
-  if (current_cmd < shell_cmds.size()) {
-    msg << "Expected sequence of process executions not found:\n";
+  if (not_equal) {
+    msg << expected_error_msg << '\n';
     for (const std::string& cmd: shell_cmds) {
       msg << cmd << '\n';
     }
@@ -102,41 +97,8 @@ std::string OsApiMock::AssertListOfProcsRanInOrder(
       }
       msg << '\n';
     }
-    msg << '\n';
   }
   return msg.str();
-}
-
-std::string OsApiMock::AssertListOfProcsDidNotRan(
-    const std::unordered_set<std::string>& shell_cmds) {
-  if (shell_cmds.empty()) {
-    return "";
-  }
-  std::vector<std::string> unexpected_shell_cmds;
-  for (auto& [_, info]: proc_info) {
-    if (shell_cmds.count(info.shell_command) > 0) {
-      unexpected_shell_cmds.push_back(info.shell_command);
-    }
-  }
-  if (unexpected_shell_cmds.empty()) {
-    return "";
-  }
-  std::stringstream s;
-  s << "Unexpected processes executed:\n";
-  for (std::string& cmd: unexpected_shell_cmds) {
-    s << cmd << '\n';
-  }
-  s << '\n';
-  return s.str();
-}
-
-std::string OsApiMock::DisplayNotFinishedProcesses() {
-  std::stringstream s;
-  s << "Proceses not finished with FinishProcess():\n";
-  for (PidType pid: unfinished_procs) {
-    s << proc_info[pid].shell_command << '\n';
-  }
-  return s.str();
 }
 
 int OsApiMock::GetProcessExitCode(Process &process) {
