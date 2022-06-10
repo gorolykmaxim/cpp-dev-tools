@@ -253,6 +253,17 @@ private:
 
 #define WITH_GT_FILTER(VALUE) " --gtest_filter=\"" VALUE "\""
 
+// Following macros return string instead of const char to silence
+// "suspicious string literal probably missing comma" warnings
+#define RUNNING_TASK(NAME) std::string("Running \"" NAME "\"")
+
+#define RUNNING_PRE_TASK(NAME) RUNNING_TASK(NAME) + "..."
+
+#define TASK_COMPLETE(NAME) std::string("'" NAME "' complete: return code: 0")
+
+#define TASK_FAILED(NAME, CODE)\
+  std::string("'" NAME "' failed: return code: ") + std::to_string(CODE)
+
 #define ASSERT_CDT_STARTED()\
   ASSERT_TRUE(InitTestCdt()) << out.str()
 

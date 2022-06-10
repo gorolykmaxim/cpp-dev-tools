@@ -30,9 +30,8 @@ TEST_F(TTest, StartAndDisplayListOfTasksOnTaskCommand) {
 TEST_F(TTest, StartAndExecuteSingleTask) {
   ASSERT_CDT_STARTED();
   EXPECT_CMDOUT("t1", HasSubstrsInOrder(std::vector<std::string>{
-    "Running \"hello world!\"", "hello world!",
-    "'hello world!' complete: return code: 0"
-  }));
+      RUNNING_TASK("hello world!"), "hello world!",
+      TASK_COMPLETE("hello world!")}));
   EXPECT_PROCS_EXACT(execs.kHelloWorld);
 }
 
@@ -48,9 +47,10 @@ TEST_F(TTest, StartAndExecuteTaskThatPrintsToStdoutAndStderr) {
 TEST_F(TTest, StartAndExecuteTaskWithPreTasksWithPreTasks) {
   ASSERT_CDT_STARTED();
   EXPECT_CMDOUT("t2", HasSubstrsInOrder(std::vector<std::string>{
-    "pre pre task 1", "pre pre task 2", "pre task 1", "pre task 2",
-    "primary task"
-  }));
+      RUNNING_PRE_TASK("pre pre task 1"), RUNNING_PRE_TASK("pre pre task 2"),
+      RUNNING_PRE_TASK("pre task 1"), RUNNING_PRE_TASK("pre task 2"),
+      RUNNING_TASK("primary task"), "primary task",
+      TASK_COMPLETE("primary task")}));
   EXPECT_PROCS_EXACT("echo pre pre task 1", "echo pre pre task 2",
                      "echo pre task 1", "echo pre task 2", "echo primary task");
 }
@@ -60,8 +60,11 @@ TEST_F(TTest, StartAndFailPrimaryTask) {
   exec.exit_code = 1;
   exec.output_lines = {"starting...", "error!!!"};
   exec.stderr_lines = {1};
-  std::vector<std::string> expected_msgs = exec.output_lines;
-  expected_msgs.push_back("'hello world!' failed: return code: 1");
+  std::vector<std::string> expected_msgs;
+  expected_msgs.push_back(RUNNING_TASK("hello world!"));
+  expected_msgs.insert(expected_msgs.end(), exec.output_lines.begin(),
+                       exec.output_lines.end());
+  expected_msgs.push_back(TASK_FAILED("hello world!", exec.exit_code));
   ASSERT_CDT_STARTED();
   EXPECT_CMDOUT("t1", HasSubstrsInOrder(expected_msgs));
 }
@@ -73,9 +76,8 @@ TEST_F(TTest, StartAndFailOneOfPreTasks) {
   exec.stderr_lines = {0};
   ASSERT_CDT_STARTED();
   EXPECT_CMDOUT("t2", HasSubstrsInOrder(std::vector<std::string>{
-      "pre pre task 1", "pre pre task 2", "error!!!",
-      "'pre pre task 2' failed: return code: 1"
-  }));
+      RUNNING_PRE_TASK("pre pre task 1"), RUNNING_PRE_TASK("pre pre task 2"),
+      "error!!!", TASK_FAILED("pre pre task 2", exec.exit_code)}));
   EXPECT_PROCS_EXACT("echo pre pre task 1", "echo pre pre task 2");
 }
 
@@ -94,8 +96,9 @@ TEST_F(TTest, StartAndExecuteTaskWithProfile2) {
 TEST_F(TTest, StartAndExecuteTaskWithProfile1PreTask) {
   ASSERT_CDT_STARTED_WITH_PROFILE(profile1);
   EXPECT_CMDOUT("t12", HasSubstrsInOrder(std::vector<std::string>{
-    "build for macos with profile profile 1", "run on macos"
-  }));
+      RUNNING_PRE_TASK("build for macos with profile profile 1"),
+      RUNNING_TASK("run on macos"), "run on macos",
+      TASK_COMPLETE("run on macos")}));
   EXPECT_PROCS_EXACT("echo build for macos with profile profile 1",
                      "echo run on macos");
 }
@@ -103,8 +106,9 @@ TEST_F(TTest, StartAndExecuteTaskWithProfile1PreTask) {
 TEST_F(TTest, StartAndExecuteTaskWithProfile2PreTask) {
   ASSERT_CDT_STARTED_WITH_PROFILE(profile2);
   EXPECT_CMDOUT("t12", HasSubstrsInOrder(std::vector<std::string>{
-    "build for windows with profile profile 2", "run on windows"
-  }));
+      RUNNING_PRE_TASK("build for windows with profile profile 2"),
+      RUNNING_TASK("run on windows"), "run on windows",
+      TASK_COMPLETE("run on windows")}));
   EXPECT_PROCS_EXACT("echo build for windows with profile profile 2",
                      "echo run on windows");
 }
@@ -112,14 +116,14 @@ TEST_F(TTest, StartAndExecuteTaskWithProfile2PreTask) {
 TEST_F(TTest, StartAndExecuteTaskWithPreTaskNameOfWhichIsDefinedInProfile1) {
   AppendTaskWithVariablePreTaskName();
   ASSERT_CDT_STARTED_WITH_PROFILE(profile1);
-  EXPECT_CMDOUT("t15", HasSubstr("build on macos"));
+  EXPECT_CMDOUT("t15", HasSubstr(RUNNING_PRE_TASK("build on macos")));
   EXPECT_PROCS_EXACT("echo build on macos", "echo run variable binary");
 }
 
 TEST_F(TTest, StartAndExecuteTaskWithPreTaskNameOfWhichIsDefinedInProfile2) {
   AppendTaskWithVariablePreTaskName();
   ASSERT_CDT_STARTED_WITH_PROFILE(profile2);
-  EXPECT_CMDOUT("t15", HasSubstr("build on windows"));
+  EXPECT_CMDOUT("t15", HasSubstr(RUNNING_PRE_TASK("build on windows")));
   EXPECT_PROCS_EXACT("echo build on windows", "echo run variable binary");
 }
 
