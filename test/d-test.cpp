@@ -24,11 +24,8 @@ TEST_F(DTest, StartDebugPrimaryTaskWithPreTasks) {
   std::string debugger_call = WITH_DEBUG("echo primary task");
   mock.cmd_to_process_execs[debugger_call].push_back(ProcessExec{});
   ASSERT_CDT_STARTED();
-  EXPECT_CMDOUT("d2", HasSubstrsInOrder(std::vector<std::string>{
-      RUNNING_PRE_TASK("pre pre task 1"), RUNNING_PRE_TASK("pre pre task 2"),
-      RUNNING_PRE_TASK("pre task 1"), RUNNING_PRE_TASK("pre task 2"),
-      RUNNING_TASK("primary task"), "Debugger started",
-      TASK_COMPLETE("primary task")}));
+  EXPECT_CMDOUT("d2", HasSubstr("Debugger started"),
+                HasSubstr(TASK_COMPLETE("primary task")));
   EXPECT_PROCS_EXACT("echo pre pre task 1", "echo pre pre task 2",
                      "echo pre task 1", "echo pre task 2", debugger_call);
 }
@@ -46,10 +43,8 @@ TEST_F(DTest, StartDebugGtestPrimaryTaskWithPreTasks) {
   std::string debugger_call = WITH_DEBUG("tests");
   mock.cmd_to_process_execs[debugger_call].push_back(ProcessExec{});
   ASSERT_CDT_STARTED();
-  EXPECT_CMDOUT("d10", HasSubstrsInOrder(std::vector<std::string>{
-      RUNNING_PRE_TASK("pre pre task 1"), RUNNING_PRE_TASK("pre pre task 2"),
-      RUNNING_TASK("run tests with pre tasks"), "Debugger started",
-      TASK_COMPLETE("run tests with pre tasks")}));
+  EXPECT_CMDOUT("d10", HasSubstr("Debugger started"),
+                HasSubstr(TASK_COMPLETE("run tests with pre tasks")));
   EXPECT_PROCS_EXACT("echo pre pre task 1", "echo pre pre task 2",
                      debugger_call);
 }
