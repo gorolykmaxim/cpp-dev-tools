@@ -10,7 +10,6 @@
 #include <optional>
 #include <sstream>
 #include <string>
-#include <unordered_map>
 #include <unordered_set>
 #include <vector>
 
@@ -173,45 +172,40 @@ void CdtTest::SetUp() {
       .WillRepeatedly(testing::Return(paths.kTasksConfig));
   EXPECT_CALL(mock.process_calls, Call(testing::_))
       .Times(testing::AnyNumber());
-  // setup profiles
-  profile1 = "profile 1";
-  profile2 = "profile 2";
   // mock tasks config
-  nlohmann::json tasks_list;
-  tasks.helloWorld = CreateTaskAndProcess(tasks_list, "hello world!");
-  tasks.primaryTask = CreateTaskAndProcess(tasks_list, "primary task",
-                                           {"pre task 1", "pre task 2"});
-  tasks.preTask1 = CreateTaskAndProcess(tasks_list, "pre task 1",
-                                        {"pre pre task 1", "pre pre task 2"});
-  tasks.preTask2 = CreateTaskAndProcess(tasks_list, "pre task 2");
-  tasks.prePreTask1 = CreateTaskAndProcess(tasks_list, "pre pre task 1");
-  tasks.prePreTask2 = CreateTaskAndProcess(tasks_list, "pre pre task 2");
-  tasks.restart = CreateTask(tasks_list, "restart", "__restart");
-  tasks.runTests = CreateTask(tasks_list, "run tests",
-                              "__gtest " + execs.kTests);
-  tasks.taskWithGtestPreTask = CreateTaskAndProcess(tasks_list,
-                                                    "task with gtest pre task",
-                                                    {"run tests"});
-  tasks.runTestsWithPreTasks = CreateTask(tasks_list,
-                                          "run tests with pre tasks",
-                                          "__gtest " + execs.kTests,
-                                          {"pre pre task 1", "pre pre task 2"});
-  tasks.buildForPlatformWithProfile = CreateProfileTaskAndProcess(
-      tasks_list, "build for {platform} with profile {name}",
-      {{profile1, "build for macos with profile profile 1"},
-       {profile2, "build for windows with profile profile 2"}});
-  tasks.runOnPlatform = CreateProfileTaskAndProcess(
-      tasks_list, "run on {platform}",
-      {{profile1, "run on macos"}, {profile2, "run on windows"}},
-      {"build for {platform} with profile {name}"});
-  tasks_config_data["cdt_tasks"] = tasks_list;
+  std::vector<nlohmann::json> tasks;
+  tasks.push_back(CreateTaskAndProcess("hello world!"));
+  tasks.push_back(CreateTaskAndProcess("primary task",
+                                       {"pre task 1", "pre task 2"}));
+  tasks.push_back(CreateTaskAndProcess("pre task 1",
+                                       {"pre pre task 1", "pre pre task 2"}));
+  tasks.push_back(CreateTaskAndProcess("pre task 2"));
+  tasks.push_back(CreateTaskAndProcess("pre pre task 1"));
+  tasks.push_back(CreateTaskAndProcess("pre pre task 2"));
+  tasks.push_back(CreateTask("restart", "__restart"));
+  tasks.push_back(CreateTask("run tests", "__gtest " + execs.kTests));
+  tasks.push_back(CreateTaskAndProcess("task with gtest pre task",
+                                       {"run tests"}));
+  tasks.push_back(CreateTask("run tests with pre tasks",
+                             "__gtest " + execs.kTests,
+                             {"pre pre task 1", "pre pre task 2"}));
+  tasks.push_back(CreateProfileTaskAndProcess(
+      "build for {platform} with profile {name}",
+      {"build for macos with profile profile 1",
+       "build for windows with profile profile 2"}));
+  tasks.push_back(CreateProfileTaskAndProcess(
+      "run on {platform}", {"run on macos", "run on windows"},
+      {"build for {platform} with profile {name}"}));
+  tasks_config_data["cdt_tasks"] = tasks;
   mock.MockReadFile(paths.kTasksConfig, tasks_config_data.dump());
-  for (int i = 0; i < tasks_list.size(); i++) {
+  for (int i = 0; i < tasks.size(); i++) {
     std::string index = std::to_string(i + 1);
-    std::string name = tasks_list[i]["name"].get<std::string>();
+    std::string name = tasks[i]["name"].get<std::string>();
     list_of_tasks_in_ui.push_back(index + " \"" + name + '"');
   }
   // mock tasks config version with profiles in it
+  profile1 = "profile 1";
+  profile2 = "profile 2";
   tasks_config_with_profiles_data = tasks_config_data;
   std::vector<nlohmann::json> profiles = {
     {
@@ -392,56 +386,40 @@ bool CdtTest::InitTestCdt(const std::optional<std::string>& profile_name) {
   return InitCdt(argv.size(), argv.data(), cdt);
 }
 
-Task CdtTest::CreateTask(nlohmann::json& tasks, const nlohmann::json& name,
-                         const nlohmann::json& command,
-                         const nlohmann::json& pre_tasks) {
-  Task task;
+nlohmann::json CdtTest::CreateTask(const nlohmann::json& name,
+                                   const nlohmann::json& command,
+                                   const nlohmann::json& pre_tasks) {
   nlohmann::json json;
   if (!name.is_null()) {
-    task.name = name;
     json["name"] = name;
   }
   if (!command.is_null()) {
-    task.command = command;
     json["command"] = command;
   }
   if (!pre_tasks.is_null()) {
     json["pre_tasks"] = pre_tasks;
   }
-  tasks.push_back(json);
-  return task;
+  return json;
 }
 
-Task CdtTest::CreateTaskAndProcess(nlohmann::json &tasks,
-                                   const std::string &name,
-                                   std::vector<std::string> pre_tasks) {
+nlohmann::json CdtTest::CreateTaskAndProcess(
+    const std::string& name, std::vector<std::string> pre_tasks) {
   std::string cmd = "echo " + name;
   ProcessExec exec;
   exec.output_lines = {name};
   mock.cmd_to_process_execs[cmd].push_back(exec);
-  return CreateTask(tasks, name, cmd, std::move(pre_tasks));
+  return CreateTask(name, cmd, std::move(pre_tasks));
 }
 
-std::unordered_map<std::string, Task> CdtTest::CreateProfileTaskAndProcess(
-    nlohmann::json &tasks, const std::string &name,
-    const std::unordered_map<std::string, std::string> &profile_versions,
+nlohmann::json CdtTest::CreateProfileTaskAndProcess(
+    const std::string &name, const std::vector<std::string>& profile_versions,
     std::vector<std::string> pre_tasks) {
-  std::unordered_map<std::string, Task> result;
-  for (const auto& [k, v]: profile_versions) {
+  for (const std::string& v: profile_versions) {
     ProcessExec exec;
     exec.output_lines = {v};
-    std::string cmd = "echo " + v;
-    mock.cmd_to_process_execs[cmd].push_back(exec);
-    Task& task = result[k];
-    task.name = v;
-    task.command = cmd;
+    mock.cmd_to_process_execs["echo " + v].push_back(exec);
   }
-  nlohmann::json json;
-  json["name"] = name;
-  json["command"] = "echo " + name;
-  json["pre_tasks"] = pre_tasks;
-  tasks.push_back(json);
-  return result;
+  return CreateTask(name, "echo " + name, std::move(pre_tasks));
 }
 
 void CdtTest::RunCmd(const std::string& cmd,

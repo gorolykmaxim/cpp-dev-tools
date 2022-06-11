@@ -21,25 +21,24 @@ TEST_F(DTest, StartAttemptDebugTaskThatDoesNotExistAndViewListOfAllTasks) {
 }
 
 TEST_F(DTest, StartDebugPrimaryTaskWithPreTasks) {
-  std::string debugger_call = WITH_DEBUG(tasks.primaryTask.command);
+  std::string debugger_call = WITH_DEBUG("echo primary task");
   mock.cmd_to_process_execs[debugger_call].push_back(ProcessExec{});
   ASSERT_CDT_STARTED();
   EXPECT_CMDOUT("d2", HasSubstrsInOrder(std::vector<std::string>{
-      RUNNING_PRE_TASK(tasks.prePreTask1), RUNNING_PRE_TASK(tasks.prePreTask2),
-      RUNNING_PRE_TASK(tasks.preTask1), RUNNING_PRE_TASK(tasks.preTask2),
-      RUNNING_TASK(tasks.primaryTask), "Debugger started",
-      TASK_COMPLETE(tasks.primaryTask)}));
-  EXPECT_PROCS_EXACT(tasks.prePreTask1.command, tasks.prePreTask2.command,
-                     tasks.preTask1.command, tasks.preTask2.command,
-                     debugger_call);
+      RUNNING_PRE_TASK("pre pre task 1"), RUNNING_PRE_TASK("pre pre task 2"),
+      RUNNING_PRE_TASK("pre task 1"), RUNNING_PRE_TASK("pre task 2"),
+      RUNNING_TASK("primary task"), "Debugger started",
+      TASK_COMPLETE("primary task")}));
+  EXPECT_PROCS_EXACT("echo pre pre task 1", "echo pre pre task 2",
+                     "echo pre task 1", "echo pre task 2", debugger_call);
 }
 
 TEST_F(DTest, StartAndFailToDebugTask) {
-  std::string debugger_call = WITH_DEBUG(tasks.primaryTask.command);
+  std::string debugger_call = WITH_DEBUG("echo primary task");
   mock.cmd_to_process_execs[debugger_call].push_back(failed_debug_exec);
   ASSERT_CDT_STARTED();
   EXPECT_CMDOUT("d2", HasSubstr(failed_debug_exec.output_lines.front()),
-                HasSubstr(TASK_FAILED(tasks.primaryTask,
+                HasSubstr(TASK_FAILED("primary task",
                                       failed_debug_exec.exit_code)));
 }
 
@@ -48,15 +47,15 @@ TEST_F(DTest, StartDebugGtestPrimaryTaskWithPreTasks) {
   mock.cmd_to_process_execs[debugger_call].push_back(ProcessExec{});
   ASSERT_CDT_STARTED();
   EXPECT_CMDOUT("d10", HasSubstrsInOrder(std::vector<std::string>{
-      RUNNING_PRE_TASK(tasks.prePreTask1), RUNNING_PRE_TASK(tasks.prePreTask2),
-      RUNNING_TASK(tasks.runTestsWithPreTasks), "Debugger started",
-      TASK_COMPLETE(tasks.runTestsWithPreTasks)}));
-  EXPECT_PROCS_EXACT(tasks.prePreTask1.command, tasks.prePreTask2.command,
+      RUNNING_PRE_TASK("pre pre task 1"), RUNNING_PRE_TASK("pre pre task 2"),
+      RUNNING_TASK("run tests with pre tasks"), "Debugger started",
+      TASK_COMPLETE("run tests with pre tasks")}));
+  EXPECT_PROCS_EXACT("echo pre pre task 1", "echo pre pre task 2",
                      debugger_call);
 }
 
 TEST_F(DTest, StartAndFailToDebugGtestTask) {
-  std::string debugger_call = WITH_DEBUG(execs.kTests);
+  std::string debugger_call = WITH_DEBUG("tests");
   mock.cmd_to_process_execs[debugger_call].push_back(failed_debug_exec);
   ASSERT_CDT_STARTED();
   EXPECT_CMDOUT("d10", HasSubstr(failed_debug_exec.output_lines.front()));

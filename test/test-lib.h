@@ -8,7 +8,6 @@
 #include <gmock/gmock-spec-builders.h>
 #include <optional>
 #include <sstream>
-#include <unordered_map>
 #include <vector>
 #include <string>
 #include <unordered_set>
@@ -36,21 +35,6 @@ struct Executables {
   const std::string kDebugger = "lldb";
   const std::string kHelloWorld = "echo hello world!";
   const std::string kTests = "tests";
-};
-
-struct Tasks {
-  Task helloWorld;
-  Task prePreTask1;
-  Task prePreTask2;
-  Task preTask1;
-  Task preTask2;
-  Task primaryTask;
-  Task restart;
-  Task runTests;
-  Task taskWithGtestPreTask;
-  Task runTestsWithPreTasks;
-  std::unordered_map<std::string, Task> buildForPlatformWithProfile;
-  std::unordered_map<std::string, Task> runOnPlatform;
 };
 
 struct ProcessExec {
@@ -269,16 +253,16 @@ private:
 
 #define WITH_GT_FILTER(VALUE) " --gtest_filter=\"" VALUE "\""
 
-#define RUNNING_TASK(TASK) std::string("Running \"") + TASK.name + "\""
+// Following macros return string instead of const char to silence
+// "suspicious string literal probably missing comma" warnings
+#define RUNNING_TASK(NAME) std::string("Running \"" NAME "\"")
 
-#define RUNNING_PRE_TASK(TASK) RUNNING_TASK(TASK) + "..."
+#define RUNNING_PRE_TASK(NAME) RUNNING_TASK(NAME) + "..."
 
-#define TASK_COMPLETE(TASK)\
-  std::string("'") + TASK.name + "' complete: return code: 0"
+#define TASK_COMPLETE(NAME) std::string("'" NAME "' complete: return code: 0")
 
-#define TASK_FAILED(TASK, CODE)\
-  std::string("'") + TASK.name + "' failed: return code: " + \
-  std::to_string(CODE)
+#define TASK_FAILED(NAME, CODE)\
+  std::string("'" NAME "' failed: return code: ") + std::to_string(CODE)
 
 #define ASSERT_CDT_STARTED()\
   ASSERT_TRUE(InitTestCdt()) << out.str()
@@ -360,7 +344,6 @@ class CdtTest: public testing::Test {
 public:
   Paths paths;
   Executables execs;
-  Tasks tasks;
   nlohmann::json tasks_config_data, tasks_config_with_profiles_data;
   std::vector<std::string> list_of_tasks_in_ui;
   std::string profile1, profile2;
@@ -381,14 +364,13 @@ public:
   static bool ShouldCreateSnapshot();
   void SetUp() override;
   bool InitTestCdt(const std::optional<std::string>& profile_name = {});
-  Task CreateTask(nlohmann::json& tasks, const nlohmann::json& name = nullptr,
-                  const nlohmann::json& command = nullptr,
-                  const nlohmann::json& pre_tasks = nullptr);
-  Task CreateTaskAndProcess(nlohmann::json& tasks, const std::string& name,
-                            std::vector<std::string> pre_tasks = {});
-  std::unordered_map<std::string, Task> CreateProfileTaskAndProcess(
-      nlohmann::json& tasks, const std::string& name,
-      const std::unordered_map<std::string, std::string>& profile_versions,
+  nlohmann::json CreateTask(const nlohmann::json& name = nullptr,
+                            const nlohmann::json& command = nullptr,
+                            const nlohmann::json& pre_tasks = nullptr);
+  nlohmann::json CreateTaskAndProcess(const std::string& name,
+                                      std::vector<std::string> pre_tasks = {});
+  nlohmann::json CreateProfileTaskAndProcess(
+      const std::string& name, const std::vector<std::string>& profile_versions,
       std::vector<std::string> pre_tasks = {});
   void RunCmd(const std::string& cmd,
               bool break_when_process_events_stop = false);

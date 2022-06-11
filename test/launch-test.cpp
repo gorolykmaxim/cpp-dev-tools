@@ -70,19 +70,17 @@ TEST_F(LaunchTest, FailToStartDueToCdtTasksNotBeingArrayOfObjects) {
 
 TEST_F(LaunchTest, FailToStartDueToTasksConfigHavingErrors) {
   nlohmann::json tasks_config_data;
-  nlohmann::json& task_list = tasks_config_data["cdt_tasks"];
-  CreateTask(task_list, nullptr, "command");
-  CreateTask(task_list, "name", nullptr, true);
-  CreateTask(task_list, "name 2", "command",
-             std::vector<std::string>{"non-existent-task"});
-  CreateTask(task_list, "cycle-1", "command",
-             std::vector<std::string>{"cycle-2"});
-  CreateTask(task_list, "cycle-2", "command",
-             std::vector<std::string>{"cycle-3"});
-  CreateTask(task_list, "cycle-3", "command",
-             std::vector<std::string>{"cycle-1"});
-  CreateTask(task_list, "duplicate name", "command");
-  CreateTask(task_list, "duplicate name", "command");
+  tasks_config_data["cdt_tasks"] = std::vector<nlohmann::json>{
+    CreateTask(nullptr, "command"),
+    CreateTask("name", nullptr, true),
+    CreateTask("name 2", "command",
+               std::vector<std::string>{"non-existent-task"}),
+    CreateTask("cycle-1", "command", std::vector<std::string>{"cycle-2"}),
+    CreateTask("cycle-2", "command", std::vector<std::string>{"cycle-3"}),
+    CreateTask("cycle-3", "command", std::vector<std::string>{"cycle-1"}),
+    CreateTask("duplicate name", "command"),
+    CreateTask("duplicate name", "command"),
+  };
   mock.MockReadFile(paths.kTasksConfig, tasks_config_data.dump());
   EXPECT_FALSE(InitTestCdt());
   EXPECT_OUT(HasPath(paths.kTasksConfig),

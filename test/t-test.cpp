@@ -9,14 +9,12 @@ using namespace testing;
 
 class TTest: public CdtTest {
 public:
-  Task buildOnMacos, buildOnWindows, runVariableBinary;
-
   void AppendTaskWithVariablePreTaskName() {
-    nlohmann::json& tasks_list = tasks_config_with_profiles_data["cdt_tasks"];
-    buildOnMacos = CreateTaskAndProcess(tasks_list, "build on macos");
-    buildOnWindows = CreateTaskAndProcess(tasks_list, "build on windows");
-    runVariableBinary = CreateTaskAndProcess(tasks_list, "run variable binary",
-                                             {"build on {platform}"});
+    nlohmann::json& tasks = tasks_config_with_profiles_data["cdt_tasks"];
+    tasks.push_back(CreateTaskAndProcess("build on macos"));
+    tasks.push_back(CreateTaskAndProcess("build on windows"));
+    tasks.push_back(CreateTaskAndProcess("run variable binary",
+                                         {"build on {platform}"}));
   }
 };
 
@@ -32,8 +30,8 @@ TEST_F(TTest, StartAndDisplayListOfTasksOnTaskCommand) {
 TEST_F(TTest, StartAndExecuteSingleTask) {
   ASSERT_CDT_STARTED();
   EXPECT_CMDOUT("t1", HasSubstrsInOrder(std::vector<std::string>{
-      RUNNING_TASK(tasks.helloWorld), tasks.helloWorld.name,
-      TASK_COMPLETE(tasks.helloWorld)}));
+      RUNNING_TASK("hello world!"), "hello world!",
+      TASK_COMPLETE("hello world!")}));
   EXPECT_PROCS_EXACT(execs.kHelloWorld);
 }
 
@@ -49,13 +47,12 @@ TEST_F(TTest, StartAndExecuteTaskThatPrintsToStdoutAndStderr) {
 TEST_F(TTest, StartAndExecuteTaskWithPreTasksWithPreTasks) {
   ASSERT_CDT_STARTED();
   EXPECT_CMDOUT("t2", HasSubstrsInOrder(std::vector<std::string>{
-      RUNNING_PRE_TASK(tasks.prePreTask1), RUNNING_PRE_TASK(tasks.prePreTask2),
-      RUNNING_PRE_TASK(tasks.preTask1), RUNNING_PRE_TASK(tasks.preTask2),
-      RUNNING_TASK(tasks.primaryTask), tasks.primaryTask.name,
-      TASK_COMPLETE(tasks.primaryTask)}));
-  EXPECT_PROCS_EXACT(tasks.prePreTask1.command, tasks.prePreTask2.command,
-                     tasks.preTask1.command, tasks.preTask2.command,
-                     tasks.primaryTask.command);
+      RUNNING_PRE_TASK("pre pre task 1"), RUNNING_PRE_TASK("pre pre task 2"),
+      RUNNING_PRE_TASK("pre task 1"), RUNNING_PRE_TASK("pre task 2"),
+      RUNNING_TASK("primary task"), "primary task",
+      TASK_COMPLETE("primary task")}));
+  EXPECT_PROCS_EXACT("echo pre pre task 1", "echo pre pre task 2",
+                     "echo pre task 1", "echo pre task 2", "echo primary task");
 }
 
 TEST_F(TTest, StartAndFailPrimaryTask) {
@@ -64,76 +61,70 @@ TEST_F(TTest, StartAndFailPrimaryTask) {
   exec.output_lines = {"starting...", "error!!!"};
   exec.stderr_lines = {1};
   std::vector<std::string> expected_msgs;
-  expected_msgs.push_back(RUNNING_TASK(tasks.helloWorld));
+  expected_msgs.push_back(RUNNING_TASK("hello world!"));
   expected_msgs.insert(expected_msgs.end(), exec.output_lines.begin(),
                        exec.output_lines.end());
-  expected_msgs.push_back(TASK_FAILED(tasks.helloWorld, exec.exit_code));
+  expected_msgs.push_back(TASK_FAILED("hello world!", exec.exit_code));
   ASSERT_CDT_STARTED();
   EXPECT_CMDOUT("t1", HasSubstrsInOrder(expected_msgs));
 }
 
 TEST_F(TTest, StartAndFailOneOfPreTasks) {
-  ProcessExec& exec = mock.cmd_to_process_execs[tasks.prePreTask2.command]
-      .front();
+  ProcessExec& exec = mock.cmd_to_process_execs["echo pre pre task 2"].front();
   exec.exit_code = 1;
   exec.output_lines = {"error!!!"};
   exec.stderr_lines = {0};
   ASSERT_CDT_STARTED();
   EXPECT_CMDOUT("t2", HasSubstrsInOrder(std::vector<std::string>{
-      RUNNING_PRE_TASK(tasks.prePreTask1), RUNNING_PRE_TASK(tasks.prePreTask2),
-      exec.output_lines.front(),
-      TASK_FAILED(tasks.prePreTask2, exec.exit_code)}));
-  EXPECT_PROCS_EXACT(tasks.prePreTask1.command, tasks.prePreTask2.command);
+      RUNNING_PRE_TASK("pre pre task 1"), RUNNING_PRE_TASK("pre pre task 2"),
+      "error!!!", TASK_FAILED("pre pre task 2", exec.exit_code)}));
+  EXPECT_PROCS_EXACT("echo pre pre task 1", "echo pre pre task 2");
 }
 
 TEST_F(TTest, StartAndExecuteTaskWithProfile1) {
   ASSERT_CDT_STARTED_WITH_PROFILE(profile1);
-  EXPECT_CMDOUT("t11",
-                HasSubstr(tasks.buildForPlatformWithProfile[profile1].name));
-  EXPECT_PROCS_EXACT(tasks.buildForPlatformWithProfile[profile1].command);
+  EXPECT_CMDOUT("t11", HasSubstr("build for macos with profile profile 1"));
+  EXPECT_PROCS_EXACT("echo build for macos with profile profile 1");
 }
 
 TEST_F(TTest, StartAndExecuteTaskWithProfile2) {
   ASSERT_CDT_STARTED_WITH_PROFILE(profile2);
-  EXPECT_CMDOUT("t11",
-                HasSubstr(tasks.buildForPlatformWithProfile[profile2].name));
-  EXPECT_PROCS_EXACT(tasks.buildForPlatformWithProfile[profile2].command);
+  EXPECT_CMDOUT("t11", HasSubstr("build for windows with profile profile 2"));
+  EXPECT_PROCS_EXACT("echo build for windows with profile profile 2");
 }
 
 TEST_F(TTest, StartAndExecuteTaskWithProfile1PreTask) {
   ASSERT_CDT_STARTED_WITH_PROFILE(profile1);
   EXPECT_CMDOUT("t12", HasSubstrsInOrder(std::vector<std::string>{
-      RUNNING_PRE_TASK(tasks.buildForPlatformWithProfile[profile1]),
-      RUNNING_TASK(tasks.runOnPlatform[profile1]),
-      tasks.runOnPlatform[profile1].name,
-      TASK_COMPLETE(tasks.runOnPlatform[profile1])}));
-  EXPECT_PROCS_EXACT(tasks.buildForPlatformWithProfile[profile1].command,
-                     tasks.runOnPlatform[profile1].command);
+      RUNNING_PRE_TASK("build for macos with profile profile 1"),
+      RUNNING_TASK("run on macos"), "run on macos",
+      TASK_COMPLETE("run on macos")}));
+  EXPECT_PROCS_EXACT("echo build for macos with profile profile 1",
+                     "echo run on macos");
 }
 
 TEST_F(TTest, StartAndExecuteTaskWithProfile2PreTask) {
   ASSERT_CDT_STARTED_WITH_PROFILE(profile2);
   EXPECT_CMDOUT("t12", HasSubstrsInOrder(std::vector<std::string>{
-      RUNNING_PRE_TASK(tasks.buildForPlatformWithProfile[profile2]),
-      RUNNING_TASK(tasks.runOnPlatform[profile2]),
-      tasks.runOnPlatform[profile2].name,
-      TASK_COMPLETE(tasks.runOnPlatform[profile2])}));
-  EXPECT_PROCS_EXACT(tasks.buildForPlatformWithProfile[profile2].command,
-                     tasks.runOnPlatform[profile2].command);
+      RUNNING_PRE_TASK("build for windows with profile profile 2"),
+      RUNNING_TASK("run on windows"), "run on windows",
+      TASK_COMPLETE("run on windows")}));
+  EXPECT_PROCS_EXACT("echo build for windows with profile profile 2",
+                     "echo run on windows");
 }
 
 TEST_F(TTest, StartAndExecuteTaskWithPreTaskNameOfWhichIsDefinedInProfile1) {
   AppendTaskWithVariablePreTaskName();
   ASSERT_CDT_STARTED_WITH_PROFILE(profile1);
-  EXPECT_CMDOUT("t15", HasSubstr(RUNNING_PRE_TASK(buildOnMacos)));
-  EXPECT_PROCS_EXACT(buildOnMacos.command, runVariableBinary.command);
+  EXPECT_CMDOUT("t15", HasSubstr(RUNNING_PRE_TASK("build on macos")));
+  EXPECT_PROCS_EXACT("echo build on macos", "echo run variable binary");
 }
 
 TEST_F(TTest, StartAndExecuteTaskWithPreTaskNameOfWhichIsDefinedInProfile2) {
   AppendTaskWithVariablePreTaskName();
   ASSERT_CDT_STARTED_WITH_PROFILE(profile2);
-  EXPECT_CMDOUT("t15", HasSubstr(RUNNING_PRE_TASK(buildOnWindows)));
-  EXPECT_PROCS_EXACT(buildOnWindows.command, runVariableBinary.command);
+  EXPECT_CMDOUT("t15", HasSubstr(RUNNING_PRE_TASK("build on windows")));
+  EXPECT_PROCS_EXACT("echo build on windows", "echo run variable binary");
 }
 
 TEST_F(TTest, StartAndFailToExecuteTaskDueToFailureToLaunchProcess) {
