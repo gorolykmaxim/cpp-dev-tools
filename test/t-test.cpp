@@ -21,16 +21,20 @@ public:
 TEST_F(TTest, StartAndDisplayListOfTasksOnTaskCommand) {
   ASSERT_CDT_STARTED();
   // Display tasks list on no index
-  EXPECT_CMDOUT("t", HasSubstrsInOrder(list_of_tasks_in_ui));
+  CMD("t");
+  EXPECT_OUT(HasSubstrsInOrder(list_of_tasks_in_ui));
   // Display tasks list on non-existent task specified
-  EXPECT_CMDOUT("t0", HasSubstrsInOrder(list_of_tasks_in_ui));
-  EXPECT_CMDOUT("t99", HasSubstrsInOrder(list_of_tasks_in_ui));
+  CMD("t0");
+  EXPECT_OUT(HasSubstrsInOrder(list_of_tasks_in_ui));
+  CMD("t99");
+  EXPECT_OUT(HasSubstrsInOrder(list_of_tasks_in_ui));
 }
 
 TEST_F(TTest, StartAndExecuteSingleTask) {
   ASSERT_CDT_STARTED();
-  EXPECT_CMDOUT("t1", HasSubstr("hello world!"),
-                HasSubstr(TASK_COMPLETE("hello world!")));
+  CMD("t1");
+  EXPECT_OUT(HasSubstr("hello world!"));
+  EXPECT_OUT(HasSubstr(TASK_COMPLETE("hello world!")));
   EXPECT_PROCS_EXACT(execs.kHelloWorld);
 }
 
@@ -40,13 +44,15 @@ TEST_F(TTest, StartAndExecuteTaskThatPrintsToStdoutAndStderr) {
   exec.output_lines = {"stdo", "stde", "ut" + kEol, "rr" + kEol};
   exec.stderr_lines = {1, 3};
   ASSERT_CDT_STARTED();
-  EXPECT_CMDOUT("t1", HasSubstr("stdout\nstderr\n"));
+  CMD("t1");
+  EXPECT_OUT(HasSubstr("stdout\nstderr\n"));
 }
 
 TEST_F(TTest, StartAndExecuteTaskWithPreTasksWithPreTasks) {
   ASSERT_CDT_STARTED();
-  EXPECT_CMDOUT("t2", HasSubstr("primary task"),
-                HasSubstr(TASK_COMPLETE("primary task")));
+  CMD("t2");
+  EXPECT_OUT(HasSubstr("primary task"));
+  EXPECT_OUT(HasSubstr(TASK_COMPLETE("primary task")));
   EXPECT_PROCS_EXACT("echo pre pre task 1", "echo pre pre task 2",
                      "echo pre task 1", "echo pre task 2", "echo primary task");
 }
@@ -57,8 +63,9 @@ TEST_F(TTest, StartAndFailPrimaryTask) {
   exec.output_lines = {"starting...", "error!!!"};
   exec.stderr_lines = {1};
   ASSERT_CDT_STARTED();
-  EXPECT_CMDOUT("t1", HasSubstrsInOrder(exec.output_lines),
-                HasSubstr(TASK_FAILED("hello world!", exec.exit_code)));
+  CMD("t1");
+  EXPECT_OUT(HasSubstrsInOrder(exec.output_lines));
+  EXPECT_OUT(HasSubstr(TASK_FAILED("hello world!", exec.exit_code)));
 }
 
 TEST_F(TTest, StartAndFailOneOfPreTasks) {
@@ -67,35 +74,40 @@ TEST_F(TTest, StartAndFailOneOfPreTasks) {
   exec.output_lines = {"error!!!"};
   exec.stderr_lines = {0};
   ASSERT_CDT_STARTED();
-  EXPECT_CMDOUT("t2", HasSubstr(exec.output_lines.front()),
-                HasSubstr(TASK_FAILED("pre pre task 2", exec.exit_code)));
+  CMD("t2");
+  EXPECT_OUT(HasSubstr(exec.output_lines.front()));
+  EXPECT_OUT(HasSubstr(TASK_FAILED("pre pre task 2", exec.exit_code)));
   EXPECT_PROCS_EXACT("echo pre pre task 1", "echo pre pre task 2");
 }
 
 TEST_F(TTest, StartAndExecuteTaskWithProfile1) {
   ASSERT_CDT_STARTED_WITH_PROFILE(profile1);
-  EXPECT_CMDOUT("t11", HasSubstr("build for macos with profile profile 1"));
+  CMD("t11");
+  EXPECT_OUT(HasSubstr("build for macos with profile profile 1"));
   EXPECT_PROCS_EXACT("echo build for macos with profile profile 1");
 }
 
 TEST_F(TTest, StartAndExecuteTaskWithProfile2) {
   ASSERT_CDT_STARTED_WITH_PROFILE(profile2);
-  EXPECT_CMDOUT("t11", HasSubstr("build for windows with profile profile 2"));
+  CMD("t11");
+  EXPECT_OUT(HasSubstr("build for windows with profile profile 2"));
   EXPECT_PROCS_EXACT("echo build for windows with profile profile 2");
 }
 
 TEST_F(TTest, StartAndExecuteTaskWithProfile1PreTask) {
   ASSERT_CDT_STARTED_WITH_PROFILE(profile1);
-  EXPECT_CMDOUT("t12", HasSubstr("run on macos"),
-                HasSubstr(TASK_COMPLETE("run on macos")));
+  CMD("t12");
+  EXPECT_OUT(HasSubstr("run on macos"));
+  EXPECT_OUT(HasSubstr(TASK_COMPLETE("run on macos")));
   EXPECT_PROCS_EXACT("echo build for macos with profile profile 1",
                      "echo run on macos");
 }
 
 TEST_F(TTest, StartAndExecuteTaskWithProfile2PreTask) {
   ASSERT_CDT_STARTED_WITH_PROFILE(profile2);
-  EXPECT_CMDOUT("t12", HasSubstr("run on windows"),
-                HasSubstr(TASK_COMPLETE("run on windows")));
+  CMD("t12");
+  EXPECT_OUT(HasSubstr("run on windows"));
+  EXPECT_OUT(HasSubstr(TASK_COMPLETE("run on windows")));
   EXPECT_PROCS_EXACT("echo build for windows with profile profile 2",
                      "echo run on windows");
 }
@@ -103,20 +115,23 @@ TEST_F(TTest, StartAndExecuteTaskWithProfile2PreTask) {
 TEST_F(TTest, StartAndExecuteTaskWithPreTaskNameOfWhichIsDefinedInProfile1) {
   AppendTaskWithVariablePreTaskName();
   ASSERT_CDT_STARTED_WITH_PROFILE(profile1);
-  EXPECT_CMDOUT("t15", HasSubstr("build on macos"));
+  CMD("t15");
+  EXPECT_OUT(HasSubstr("build on macos"));
   EXPECT_PROCS_EXACT("echo build on macos", "echo run variable binary");
 }
 
 TEST_F(TTest, StartAndExecuteTaskWithPreTaskNameOfWhichIsDefinedInProfile2) {
   AppendTaskWithVariablePreTaskName();
   ASSERT_CDT_STARTED_WITH_PROFILE(profile2);
-  EXPECT_CMDOUT("t15", HasSubstr("build on windows"));
+  CMD("t15");
+  EXPECT_OUT(HasSubstr("build on windows"));
   EXPECT_PROCS_EXACT("echo build on windows", "echo run variable binary");
 }
 
 TEST_F(TTest, StartAndFailToExecuteTaskDueToFailureToLaunchProcess) {
   mock.cmd_to_process_execs[execs.kHelloWorld].front().fail_to_exec = true;
   ASSERT_CDT_STARTED();
-  EXPECT_CMDOUT("t1", HasSubstr("Failed to exec: " + execs.kHelloWorld));
+  CMD("t1");
+  EXPECT_OUT(HasSubstr("Failed to exec: " + execs.kHelloWorld));
   EXPECT_PROCS_EXACT(execs.kHelloWorld);
 }

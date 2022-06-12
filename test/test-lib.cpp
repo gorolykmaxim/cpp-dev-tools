@@ -439,6 +439,11 @@ void CdtTest::RunCmd(const std::string& cmd,
   }
 }
 
+void CdtTest::SaveOutput() {
+  current_out_segment = out.str();
+  out.str("");
+}
+
 std::filesystem::path CdtTest::SnapshotPath(std::string name) {
   testing::UnitTest* test = testing::UnitTest::GetInstance();
   std::filesystem::path snapshot_path(TEST_DATA_DIR);

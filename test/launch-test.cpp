@@ -13,15 +13,17 @@ class LaunchTest : public CdtTest {};
 
 TEST_F(LaunchTest, StartAndViewTasks) {
   EXPECT_CALL(mock, Init());
-  EXPECT_TRUE(InitTestCdt());
+  ASSERT_CDT_STARTED();
   std::string help_prompt = "\033[32mh\033[0m";
-  EXPECT_OUT(HasSubstr(help_prompt), HasSubstrsInOrder(list_of_tasks_in_ui));
+  EXPECT_OUT(HasSubstr(help_prompt));
+  EXPECT_OUT(HasSubstrsInOrder(list_of_tasks_in_ui));
 }
 
 TEST_F(LaunchTest, FailToStartDueToUserConfigNotBeingJson) {
   mock.MockReadFile(paths.kUserConfig, "not a json");
-  EXPECT_FALSE(InitTestCdt());
-  EXPECT_OUT(HasPath(paths.kUserConfig), HasSubstr("parse error"));
+  EXPECT_CDT_FAILED();
+  EXPECT_OUT(HasPath(paths.kUserConfig));
+  EXPECT_OUT(HasSubstr("parse error"));
 }
 
 TEST_F(LaunchTest, FailToStartDueToUserConfigHavingPropertiesInIncorrectFormat) {
@@ -29,43 +31,46 @@ TEST_F(LaunchTest, FailToStartDueToUserConfigHavingPropertiesInIncorrectFormat) 
   user_config_data["open_in_editor_command"] = "my-editor";
   user_config_data["debug_command"] = "my-debugger";
   mock.MockReadFile(paths.kUserConfig, user_config_data.dump());
-  EXPECT_FALSE(InitTestCdt());
-  EXPECT_OUT(HasSubstr("'open_in_editor_command': must be a string in format"),
-             HasSubstr("'debug_command': must be a string in format"));
+  EXPECT_CDT_FAILED();
+  EXPECT_OUT(HasSubstr("'open_in_editor_command': must be a string in format"));
+  EXPECT_OUT(HasSubstr("'debug_command': must be a string in format"));
 }
 
 TEST_F(LaunchTest, FailToStartDueToTasksConfigNotSpecified) {
   std::vector<const char*> argv = {execs.kCdt.c_str()};
   EXPECT_FALSE(InitCdt(argv.size(), argv.data(), cdt));
+  SaveOutput();
   EXPECT_OUT(HasSubstr("usage: cpp-dev-tools tasks.json [profile]"));
 }
 
 TEST_F(LaunchTest, FailToStartDueToTasksConfigNotExisting) {
   mock.MockReadFile(paths.kTasksConfig);
-  EXPECT_FALSE(InitTestCdt());
-  EXPECT_OUT(HasPath(paths.kTasksConfig), HasSubstr("does not exist"));
+  EXPECT_CDT_FAILED();
+  EXPECT_OUT(HasPath(paths.kTasksConfig));
+  EXPECT_OUT(HasSubstr("does not exist"));
 }
 
 TEST_F(LaunchTest, FailToStartDueToTasksConfigNotBeingJson) {
   mock.MockReadFile(paths.kTasksConfig, "not a json");
-  EXPECT_FALSE(InitTestCdt());
-  EXPECT_OUT(HasPath(paths.kTasksConfig), HasSubstr("parse error"));
+  EXPECT_CDT_FAILED();
+  EXPECT_OUT(HasPath(paths.kTasksConfig));
+  EXPECT_OUT(HasSubstr("parse error"));
 }
 
 TEST_F(LaunchTest, FailToStartDueToCdtTasksNotBeingSpecifiedInConfig) {
   mock.MockReadFile(paths.kTasksConfig, "{}");
-  EXPECT_FALSE(InitTestCdt());
-  EXPECT_OUT(HasPath(paths.kTasksConfig),
-             HasSubstr("'cdt_tasks': must be an array of task objects"));
+  EXPECT_CDT_FAILED();
+  EXPECT_OUT(HasPath(paths.kTasksConfig));
+  EXPECT_OUT(HasSubstr("'cdt_tasks': must be an array of task objects"));
 }
 
 TEST_F(LaunchTest, FailToStartDueToCdtTasksNotBeingArrayOfObjects) {
   nlohmann::json tasks_config_data;
   tasks_config_data["cdt_tasks"] = "string";
   mock.MockReadFile(paths.kTasksConfig, tasks_config_data.dump());
-  EXPECT_FALSE(InitTestCdt());
-  EXPECT_OUT(HasPath(paths.kTasksConfig),
-             HasSubstr("'cdt_tasks': must be an array of task objects"));
+  EXPECT_CDT_FAILED();
+  EXPECT_OUT(HasPath(paths.kTasksConfig));
+  EXPECT_OUT(HasSubstr("'cdt_tasks': must be an array of task objects"));
 }
 
 TEST_F(LaunchTest, FailToStartDueToTasksConfigHavingErrors) {
@@ -82,25 +87,25 @@ TEST_F(LaunchTest, FailToStartDueToTasksConfigHavingErrors) {
     CreateTask("duplicate name", "command"),
   };
   mock.MockReadFile(paths.kTasksConfig, tasks_config_data.dump());
-  EXPECT_FALSE(InitTestCdt());
-  EXPECT_OUT(HasPath(paths.kTasksConfig),
-             HasSubstr("task #1: 'name': must be a string"),
-             HasSubstr("task #2: 'command': must be a string"),
-             HasSubstr("task #2: 'pre_tasks': must be an array "
-                       "of other task names"),
-             HasSubstr("task #3: references task 'non-existent-task' "
-                       "that does not exist"),
-             HasSubstr("task #7: name 'duplicate name' is already used "
-                       "by task #8"),
-             HasSubstr("task #8: name 'duplicate name' is already used "
-                       "by task #7"),
-             HasSubstr("task 'cycle-1' has a circular dependency "
+  EXPECT_CDT_FAILED();
+  EXPECT_OUT(HasPath(paths.kTasksConfig));
+  EXPECT_OUT(HasSubstr("task #1: 'name': must be a string"));
+  EXPECT_OUT(HasSubstr("task #2: 'command': must be a string"));
+  EXPECT_OUT(HasSubstr("task #2: 'pre_tasks': must be an array "
+                       "of other task names"));
+  EXPECT_OUT(HasSubstr("task #3: references task 'non-existent-task' "
+                       "that does not exist"));
+  EXPECT_OUT(HasSubstr("task #7: name 'duplicate name' is already used "
+                       "by task #8"));
+  EXPECT_OUT(HasSubstr("task #8: name 'duplicate name' is already used "
+                       "by task #7"));
+  EXPECT_OUT(HasSubstr("task 'cycle-1' has a circular dependency "
                        "in it's 'pre_tasks':\n"
-                       "cycle-1 -> cycle-2 -> cycle-3 -> cycle-1"),
-             HasSubstr("task 'cycle-2' has a circular dependency "
+                       "cycle-1 -> cycle-2 -> cycle-3 -> cycle-1"));
+  EXPECT_OUT(HasSubstr("task 'cycle-2' has a circular dependency "
                        "in it's 'pre_tasks':\n"
-                       "cycle-2 -> cycle-3 -> cycle-1 -> cycle-2"),
-             HasSubstr("task 'cycle-3' has a circular dependency "
+                       "cycle-2 -> cycle-3 -> cycle-1 -> cycle-2"));
+  EXPECT_OUT(HasSubstr("task 'cycle-3' has a circular dependency "
                        "in it's 'pre_tasks':\n"
                        "cycle-3 -> cycle-1 -> cycle-2 -> cycle-3"));
 }
@@ -141,9 +146,9 @@ TEST_F(LaunchTest, StartAndNotOverrideExistingUserConfig) {
 TEST_F(LaunchTest, FailToStartDueToProfilesNotBeingArrayOfObjects) {
   tasks_config_data["cdt_profiles"] = "string";
   mock.MockReadFile(paths.kTasksConfig, tasks_config_data.dump());
-  EXPECT_FALSE(InitTestCdt());
-  EXPECT_OUT(HasPath(paths.kTasksConfig),
-             HasSubstr("'cdt_profiles': must be an array of profile objects"));
+  EXPECT_CDT_FAILED();
+  EXPECT_OUT(HasPath(paths.kTasksConfig));
+  EXPECT_OUT(HasSubstr("'cdt_profiles': must be an array of profile objects"));
 }
 
 TEST_F(LaunchTest, FailedToStartDueToProfilesHavingErrors) {
@@ -170,40 +175,39 @@ TEST_F(LaunchTest, FailedToStartDueToProfilesHavingErrors) {
   });
   tasks_config_data["cdt_profiles"] = profiles;
   mock.MockReadFile(paths.kTasksConfig, tasks_config_data.dump());
-  EXPECT_FALSE(InitTestCdt());
-  EXPECT_OUT(HasPath(paths.kTasksConfig),
-             HasSubstr("profile #1: 'd': must be a string"),
-             HasSubstr("profile #1: 'e': must be a string"),
-             HasSubstr("profile #1: 'c': must be a string"),
-             HasSubstr("profile #1: 'a': must be a string"),
-             HasSubstr("profile #1: 'b': must be a string"),
-             HasSubstr("profile #1: 'name': must be a string"),
-             HasSubstr("profile #2: 'd': must be a string"),
-             HasSubstr("profile #2: 'e': must be a string"),
-             HasSubstr("profile #2: 'a': must be a string"),
-             HasSubstr("profile #2: 'b': must be a string"));
+  EXPECT_CDT_FAILED();
+  EXPECT_OUT(HasPath(paths.kTasksConfig));
+  EXPECT_OUT(HasSubstr("profile #1: 'd': must be a string"));
+  EXPECT_OUT(HasSubstr("profile #1: 'e': must be a string"));
+  EXPECT_OUT(HasSubstr("profile #1: 'c': must be a string"));
+  EXPECT_OUT(HasSubstr("profile #1: 'a': must be a string"));
+  EXPECT_OUT(HasSubstr("profile #1: 'b': must be a string"));
+  EXPECT_OUT(HasSubstr("profile #1: 'name': must be a string"));
+  EXPECT_OUT(HasSubstr("profile #2: 'd': must be a string"));
+  EXPECT_OUT(HasSubstr("profile #2: 'e': must be a string"));
+  EXPECT_OUT(HasSubstr("profile #2: 'a': must be a string"));
+  EXPECT_OUT(HasSubstr("profile #2: 'b': must be a string"));
 }
 
 
 TEST_F(LaunchTest, FailedToStartDueToNonExistentProfileBeingSelected) {
-  mock.MockReadFile(paths.kTasksConfig, tasks_config_with_profiles_data.dump());
-  EXPECT_FALSE(InitTestCdt("unknown profile"));
-  EXPECT_OUT(HasPath(paths.kTasksConfig),
-             HasSubstr("profile with name 'unknown profile' is not defined "
+  EXPECT_CDT_FAILED_WITH_PROFILE("unknown profile");
+  EXPECT_OUT(HasPath(paths.kTasksConfig));
+  EXPECT_OUT(HasSubstr("profile with name 'unknown profile' is not defined "
                        "in 'cdt_profiles'"));
 }
 
 TEST_F(LaunchTest, StartWithFirstProfileAutoselected) {
   mock.MockReadFile(paths.kTasksConfig, tasks_config_with_profiles_data.dump());
   ASSERT_CDT_STARTED();
-  EXPECT_OUT(HasSubstr("Using profile \033[32mprofile 1\033[0m"),
-             HasSubstr("build for macos with profile profile 1"),
-             HasSubstr("run on macos"));
+  EXPECT_OUT(HasSubstr("Using profile \033[32mprofile 1\033[0m"));
+  EXPECT_OUT(HasSubstr("build for macos with profile profile 1"));
+  EXPECT_OUT(HasSubstr("run on macos"));
 }
 
 TEST_F(LaunchTest, StartWithSpecifiedProfileSelected) {
   ASSERT_CDT_STARTED_WITH_PROFILE(profile2);
-  EXPECT_OUT(HasSubstr("Using profile \033[32mprofile 2\033[0m"),
-             HasSubstr("build for windows with profile profile 2"),
-             HasSubstr("run on windows"));
+  EXPECT_OUT(HasSubstr("Using profile \033[32mprofile 2\033[0m"));
+  EXPECT_OUT(HasSubstr("build for windows with profile profile 2"));
+  EXPECT_OUT(HasSubstr("run on windows"));
 }

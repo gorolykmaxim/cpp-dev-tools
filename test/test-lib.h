@@ -261,26 +261,36 @@ private:
   std::string("'" NAME "' failed: return code: ") + std::to_string(CODE)
 
 #define ASSERT_CDT_STARTED()\
-  ASSERT_TRUE(InitTestCdt()) << out.str()
+  ASSERT_TRUE(InitTestCdt()) << out.str();\
+  SaveOutput()
 
 #define ASSERT_CDT_STARTED_WITH_PROFILE(PROFILE)\
   mock.MockReadFile(paths.kTasksConfig,\
                     tasks_config_with_profiles_data.dump());\
-  ASSERT_TRUE(InitTestCdt(PROFILE)) << out.str()
+  ASSERT_TRUE(InitTestCdt(PROFILE)) << out.str();\
+  SaveOutput()
 
-#define EXPECT_OUT(...)\
-  EXPECT_THAT(out.str(), testing::AllOf(__VA_ARGS__));\
-  out.str("")
+#define EXPECT_CDT_FAILED()\
+  EXPECT_FALSE(InitTestCdt());\
+  SaveOutput()
 
-#define EXPECT_CMDOUT(CMD, ...)\
+#define EXPECT_CDT_FAILED_WITH_PROFILE(PROFILE)\
+  mock.MockReadFile(paths.kTasksConfig,\
+                    tasks_config_with_profiles_data.dump());\
+  EXPECT_FALSE(InitTestCdt(PROFILE));\
+  SaveOutput()
+
+#define EXPECT_OUT(MATCHER) EXPECT_THAT(current_out_segment, MATCHER)
+
+#define CMD(CMD)\
   RunCmd(CMD);\
-  EXPECT_OUT(__VA_ARGS__)
+  SaveOutput()
 
-#define EXPECT_INTERRUPTED_CMDOUT(CMD, ...)\
+#define INTERRUPT_CMD(CMD)\
   RunCmd(CMD, true);\
   mock.PressCtrlC();\
   ExecCdtSystems(cdt);\
-  EXPECT_OUT(__VA_ARGS__)
+  SaveOutput()
 
 #define EXPECT_PROCS(...)\
   if (std::string e = mock.AssertProcsRanInOrder(__VA_ARGS__); !e.empty()) {\
@@ -353,6 +363,7 @@ public:
               failed_debug_exec;
   int expected_data_index;
   std::stringstream in, out;
+  std::string current_out_segment;
   testing::NiceMock<OsApiMock> mock;
   Cdt cdt;
 
@@ -370,6 +381,7 @@ public:
       std::vector<std::string> pre_tasks = {});
   void RunCmd(const std::string& cmd,
               bool break_when_process_events_stop = false);
+  void SaveOutput();
   std::filesystem::path SnapshotPath(std::string name);
   std::string ReadSnapshot(const std::string& name);
 };

@@ -16,15 +16,18 @@ TEST_F(MiscTest, StartAndDisplayHelp) {
                                             "h\t"};
   ASSERT_CDT_STARTED();
   // Display help on unknown command
-  EXPECT_CMDOUT("zz", HasSubstrs(expected_cmds));
+  CMD("zz");
+  EXPECT_OUT(HasSubstrs(expected_cmds));
   // Display help on explicit command
-  EXPECT_CMDOUT("h", HasSubstrs(expected_cmds));
+  CMD("h");
+  EXPECT_OUT(HasSubstrs(expected_cmds));
 }
 
 TEST_F(MiscTest, StartExecuteTaskAndAbortIt) {
   mock.cmd_to_process_execs[execs.kHelloWorld].front().is_long = true;
   ASSERT_CDT_STARTED();
-  EXPECT_INTERRUPTED_CMDOUT("t1", HasSubstr("failed: return code: -1"));
+  INTERRUPT_CMD("t1");
+  EXPECT_OUT(HasSubstr("failed: return code: -1"));
   EXPECT_TRUE(WillWaitForInput(cdt));
   EXPECT_PROCS_EXACT(execs.kHelloWorld);
 }
@@ -45,7 +48,8 @@ TEST_F(MiscTest, StartAndExecuteRestartTask) {
     execs.kCdt.c_str(), tasks_config_path_str.c_str(), nullptr
   };
   EXPECT_CALL(mock, Exec(StrVecEq(expected_argv))).WillRepeatedly(Return(0));
-  EXPECT_CMDOUT("t7", HasSubstr("Restarting program"));
+  CMD("t7");
+  EXPECT_OUT(HasSubstr("Restarting program"));
 }
 
 TEST_F(MiscTest, StartAndFailToExecuteRestartTask) {
@@ -60,7 +64,8 @@ TEST_F(MiscTest, StartAndFailToExecuteRestartTask) {
   EXPECT_CALL(mock, Exec(StrVecEq(expected_argv)))
       .WillRepeatedly(Return(ENOEXEC));
   ASSERT_CDT_STARTED();
-  EXPECT_CMDOUT("t7", HasSubstrsInOrder(expected_out));
+  CMD("t7");
+  EXPECT_OUT(HasSubstrsInOrder(expected_out));
 }
 
 TEST_F(MiscTest, StartAndExecuteRestartTaskWithProfileSelected) {
@@ -72,5 +77,6 @@ TEST_F(MiscTest, StartAndExecuteRestartTaskWithProfileSelected) {
     execs.kCdt.c_str(), tasks_config_path_str.c_str(), profile1.c_str(), nullptr
   };
   EXPECT_CALL(mock, Exec(StrVecEq(expected_argv))).WillRepeatedly(Return(0));
-  EXPECT_CMDOUT("t7", HasSubstr("Restarting program"));
+  CMD("t7");
+  EXPECT_OUT(HasSubstr("Restarting program"));
 }
