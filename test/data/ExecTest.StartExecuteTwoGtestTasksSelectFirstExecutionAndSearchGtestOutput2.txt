@@ -1,1 +1,0 @@
-[32m(cdt) [0m[35mSelected execution "run tests"[0m

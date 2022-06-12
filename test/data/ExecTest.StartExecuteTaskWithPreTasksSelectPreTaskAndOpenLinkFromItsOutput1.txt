@@ -1,1 +1,0 @@
-[32m(cdt) [0m[35mSelected execution "pre pre task 1"[0m

@@ -1,2 +1,0 @@
-[32m(cdt) [0m[32m(cdt) [0m[32m(cdt) [0m[32m(cdt) [0m[32m(cdt) [0m[32mExecution history:[0m
--> 1 03:00:01 "hello world!"

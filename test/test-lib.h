@@ -151,6 +151,26 @@ public:
     return s.str();
   }
 
+  template<typename... Args>
+  std::string AssertProcsLikeDidNotRan(Args... args) {
+    std::vector<std::string> shell_cmds = {args...};
+    if (shell_cmds.empty()) {
+      return "";
+    }
+    std::stringstream s;
+    bool found = false;
+    s << "Unexpected processes executed:\n";
+    for (auto& [_, info]: proc_info) {
+      for (std::string& cmd: shell_cmds) {
+        if (info.shell_command.find(cmd) != std::string::npos) {
+          s << '"' << info.shell_command << "\" (matched \"" << cmd << "\")\n";
+          found = true;
+        }
+      }
+    }
+    return found ? s.str() : "";
+  }
+
   int GetProcessExitCode(Process& process) override;
   std::chrono::system_clock::time_point TimeNow() override;
   void PressCtrlC();
@@ -179,6 +199,12 @@ private:
   "some random data",\
   "/d/e/f:15:32 something",\
   "line /a/b/c:11 and /b/c:32:1"
+
+#define OUT_LINKS_HIGHLIGHTED()\
+  "\x1B[35m[o1] /a/b/c:10\x1B[0m\n"\
+  "some random data\n"\
+  "\x1B[35m[o2] /d/e/f:15:32\x1B[0m something\n"\
+  "line \x1B[35m[o3] /a/b/c:11\x1B[0m and \x1B[35m[o4] /b/c:32:1\x1B[0m\n"
 
 #define OUT_TEST_ERROR()\
   "unknown file: Failure",\
@@ -307,6 +333,33 @@ private:
     ADD_FAILURE() << e;\
   }
 
+#define EXPECT_NOT_PROCS_LIKE(...)\
+  if (std::string e = mock.AssertProcsLikeDidNotRan(__VA_ARGS__); !e.empty()) {\
+    ADD_FAILURE() << e;\
+  }
+
+#define EXPECT_OUTPUT_LINKS_TO_OPEN_2()\
+  mock.cmd_to_process_execs[execs.kEditor + " /a/b/c:10"].push_back(\
+      ProcessExec{});\
+  mock.cmd_to_process_execs[execs.kEditor + " /d/e/f:15:32"].push_back(\
+      ProcessExec{});\
+  mock.cmd_to_process_execs[execs.kEditor + " /a/b/c:11"].push_back(\
+      ProcessExec{});\
+  mock.cmd_to_process_execs[execs.kEditor + " /b/c:32:1"].push_back(\
+      ProcessExec{});\
+  CMD("o1");\
+  CMD("o2");\
+  CMD("o3");\
+  CMD("o4");\
+  EXPECT_PROCS(execs.kEditor + " /a/b/c:10", execs.kEditor + " /d/e/f:15:32",\
+               execs.kEditor + " /a/b/c:11", execs.kEditor + " /b/c:32:1")
+
+#define EXPECT_LAST_EXEC_OUTPUT_DISPLAYED_ON_LINK_INDEX_OUT_OF_BOUNDS_2()\
+  CMD("o0");\
+  CMD("o99");\
+  CMD("o");\
+  EXPECT_NOT_PROCS_LIKE(execs.kEditor)
+
 MATCHER_P(StrVecEq, expected, "") {
   if (arg.size() != expected.size()) {
     return false;
@@ -323,6 +376,21 @@ MATCHER_P(StrVecEq, expected, "") {
 
 MATCHER_P(HasPath, path, "") {
   return arg.find(path.string()) != std::string::npos;
+}
+
+MATCHER_P2(HasSubstrNTimes, substr, times, "") {
+  std::string s(substr);
+  int cnt = 0;
+  std::string::size_type pos = 0;
+  while (true) {
+    std::string::size_type i = arg.find(s, pos);
+    pos = i + s.size();
+    if (i == std::string::npos) {
+      break;
+    }
+    cnt++;
+  }
+  return cnt == times;
 }
 
 MATCHER_P(HasSubstrs, substrs, "") {
@@ -352,6 +420,8 @@ public:
   Executables execs;
   nlohmann::json tasks_config_data, tasks_config_with_profiles_data;
   std::vector<std::string> list_of_tasks_in_ui;
+  std::vector<std::string> test_list_successful;
+  std::vector<std::string> test_list_failed;
   std::string profile1, profile2;
   ProcessExec successful_gtest_exec,
               failed_gtest_exec,

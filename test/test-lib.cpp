@@ -372,6 +372,10 @@ void CdtTest::SetUp() {
   mock.cmd_to_process_execs[execs.kTests].push_back(successful_gtest_exec);
   std::string one_test = execs.kTests + WITH_GT_FILTER("test_suit_1.test1");
   mock.cmd_to_process_execs[one_test].push_back(successful_single_gtest_exec);
+  test_list_successful = {"1 \"test_suit_1.test1\"", "2 \"test_suit_1.test2\"",
+                          "3 \"test_suit_2.test1\""};
+  test_list_failed = {"1 \"failed_test_suit_1.test1\"",
+                      "2 \"failed_test_suit_2.test1\""};
 }
 
 bool CdtTest::InitTestCdt(const std::optional<std::string>& profile_name) {

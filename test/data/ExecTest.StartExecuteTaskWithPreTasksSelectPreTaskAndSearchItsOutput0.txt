@@ -1,5 +1,0 @@
-[32m(cdt) [0m[34mRunning "pre pre task 1"...[0m
-[34mRunning "pre pre task 2"...[0m
-[35mRunning "pre task 1"[0m
-pre task 1
-[35m'pre task 1' complete: return code: 0[0m
