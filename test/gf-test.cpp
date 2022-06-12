@@ -1,12 +1,19 @@
 #include "test-lib.h"
+#include <gmock/gmock-matchers.h>
+#include <string>
+
+using namespace testing;
 
 class GfTest: public CdtTest {};
 
 TEST_F(GfTest, StartAttemptToExecuteGoogleTestsWithFilterTargetingTaskThatDoesNotExistAndViewListOfTask) {
-  EXPECT_CDT_STARTED();
-  EXPECT_CMD("gf");
-  EXPECT_CMD("gf0");
-  EXPECT_CMD("gf99");
+  ASSERT_CDT_STARTED();
+  CMD("gf");
+  EXPECT_OUT(HasSubstrsInOrder(list_of_tasks_in_ui));
+  CMD("gf0");
+  EXPECT_OUT(HasSubstrsInOrder(list_of_tasks_in_ui));
+  CMD("gf99");
+  EXPECT_OUT(HasSubstrsInOrder(list_of_tasks_in_ui));
 }
 
 TEST_F(GfTest, StartAndExecuteGtestTaskWithGtestFilter) {
@@ -27,8 +34,10 @@ TEST_F(GfTest, StartAndExecuteGtestTaskWithGtestFilter) {
     "[==========] 2 tests from 1 test suite ran. (0 ms total)",
     "[  PASSED  ] 2 tests.",
   };
-  mock.cmd_to_process_execs[execs.kTests + WITH_GT_FILTER("test_suit_1.*")]
-      .push_back(filtered_tests);
-  EXPECT_CDT_STARTED();
-  EXPECT_CMD("gf8\ntest_suit_1.*");
+  std::string cmd = execs.kTests + WITH_GT_FILTER("test_suit_1.*");
+  mock.cmd_to_process_execs[cmd].push_back(filtered_tests);
+  ASSERT_CDT_STARTED();
+  CMD("gf8\ntest_suit_1.*");
+  EXPECT_OUT(HasSubstr(TASK_COMPLETE("test_suit_1.*")));
+  EXPECT_PROCS_EXACT(cmd);
 }

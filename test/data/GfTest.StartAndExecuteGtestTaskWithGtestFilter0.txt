@@ -1,3 +1,0 @@
-[32m(cdt) [0m[32m--gtest_filter=[0m[35mRunning "test_suit_1.*"[0m
-Tests completed: 1 of 2Tests completed: 2 of 2[2K[32mSuccessfully executed 2 tests (0 ms total)[0m
-[35m'test_suit_1.*' complete: return code: 0[0m
