@@ -26,6 +26,7 @@ BOOL WINAPI HandleCtrlC(DWORD signal) {
 }
 
 void OsApi::Init() {
+  SetConsoleOutputCP(CP_UTF8);
   SetConsoleCtrlHandler(HandleCtrlC, TRUE);
 }
 
