@@ -105,6 +105,9 @@ void InitExampleUserConfig(Cdt& cdt) {
     example << "  //\"" << kDebugCommandProperty << "\": \"echo '"
             << mac_osascript << "' > " << osascript_file << " && osascript "
             << osascript_file << " '{current_dir}' '{shell_cmd}'\"\n";
+    example << "  // Debug tasks on Windows:\n";
+    example << "  //\"" << kDebugCommandProperty << "\": "
+            << "\"devenv -DebugExe {shell_cmd}\"\n";
     example << "}\n";
     cdt.os->WriteFile(cdt.user_config_path, example.str());
   }

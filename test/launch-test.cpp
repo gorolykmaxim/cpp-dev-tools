@@ -131,6 +131,8 @@ TEST_F(LaunchTest, StartAndCreateExampleUserConfig) {
       "\\\"cd \\\" & item 1 of argv & \\\" && lldb -- \\\" & item 2 of argv) "
       "in selected tab of the front window\\nend run' > /tmp/cdt-dbg.scpt && "
       "osascript /tmp/cdt-dbg.scpt '{current_dir}' '{shell_cmd}'\"\n"
+      "  // Debug tasks on Windows:\n"
+      "  //\"debug_command\": \"devenv -DebugExe {shell_cmd}\"\n"
       "}\n";
   EXPECT_CALL(mock, FileExists(paths.kUserConfig))
       .WillRepeatedly(Return(false));
