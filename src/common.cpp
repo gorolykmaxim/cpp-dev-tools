@@ -10,7 +10,8 @@ std::string DefineUserCommand(const std::string& name, const UserCommandDefiniti
 }
 
 void WarnUserConfigPropNotSpecified(const std::string& property, Cdt& cdt) {
-    cdt.os->Out() << kTcRed << '\'' << property << "' is not specified in " << cdt.user_config_path << kTcReset << std::endl;
+    cdt.os->Out() << kTcRed << '\'' << property << "' is not specified in "
+                  << cdt.user_config_path.string() << kTcReset << std::endl;
 }
 
 std::string FormatTemplate(

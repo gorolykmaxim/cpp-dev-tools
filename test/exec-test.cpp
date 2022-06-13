@@ -16,7 +16,7 @@ TEST_F(ExecTest, StartAndListExecutions) {
 
 TEST_F(ExecTest, StartExecuteTwoTasksAndListExecutions) {
   std::vector<std::string> expected_tasks = {"pre pre task 1", "hello world!"};
-  std::string hello_world_selected_regex = "-> 1 [0-9:]+ \"hello world!\"";
+  std::string hello_world_selected_regex = "-> 1 \\d\\d:00:02 \"hello world!\"";
   ASSERT_CDT_STARTED();
   CMD("t5");
   CMD("t1");
@@ -155,16 +155,16 @@ TEST_F(ExecTest, StartExecuteTaskTwiceSelectFirstExecutionExecuteAnotherTaskSeeF
   CMD("t1");
   CMD("exec2");
   CMD("exec");
-  EXPECT_OUT(ContainsRegex("-> 2 [0-9:]+ \"hello world!\""));
+  EXPECT_OUT(ContainsRegex("-> 2 \\d\\d:00:01 \"hello world!\""));
   EXPECT_OUT(HasSubstrNTimes("->", 1));
   CMD("t1");
   CMD("exec");
-  EXPECT_OUT(ContainsRegex("-> 3 [0-9:]+ \"hello world!\""));
+  EXPECT_OUT(ContainsRegex("-> 3 \\d\\d:00:01 \"hello world!\""));
   EXPECT_OUT(HasSubstrNTimes("->", 1));
   CMD("exec1");
   CMD("t1");
   CMD("exec");
-  EXPECT_OUT(ContainsRegex("-> 1 [0-9:]+ \"hello world!\""));
+  EXPECT_OUT(ContainsRegex("-> 1 \\d\\d:00:04 \"hello world!\""));
   EXPECT_OUT(HasSubstrNTimes("->", 1));
 }
 
@@ -181,9 +181,9 @@ TEST_F(ExecTest, StartExecuteGtestTaskTwiceExecuteNormalTask110TimesWhileSelecti
   }
   CMD("exec");
   // Last __gtest task execution does not get deleted
-  EXPECT_OUT(ContainsRegex("100 [0-9:]+:02 \"run tests\""));
+  EXPECT_OUT(ContainsRegex("100 \\d\\d:\\d\\d:02 \"run tests\""));
   // Selected execution does not get deleted
-  EXPECT_OUT(ContainsRegex("-> 99 [0-9:]+:03 \"hello world!\""));
+  EXPECT_OUT(ContainsRegex("-> 99 \\d\\d:\\d\\d:03 \"hello world!\""));
 }
 
 TEST_F(ExecTest, StartExecuteTaskWithPreTasksSelectPreTaskAndSearchItsOutput) {
@@ -233,6 +233,6 @@ TEST_F(ExecTest, StartExecuteTaskOpenLinksFromOuputValidateExecutionHistoryHasOn
   EXPECT_OUTPUT_LINKS_TO_OPEN();
   CMD("exec");
   // Execution history has only one line and its the first execution
-  EXPECT_OUT(ContainsRegex("\n-> 1 03:00:01 \"hello world!\"\n"));
+  EXPECT_OUT(ContainsRegex("\n-> 1 \\d\\d:00:01 \"hello world!\"\n"));
   EXPECT_OUT(HasSubstrNTimes("\n", 2));
 }
