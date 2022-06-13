@@ -130,7 +130,7 @@ void CdtTest::SetUp() {
   EXPECT_CALL(mock, Err())
       .Times(testing::AnyNumber())
       .WillRepeatedly(testing::ReturnRef(out));
-  EXPECT_CALL(mock, GetEnv("HOME"))
+  EXPECT_CALL(mock, GetEnv(kEnvVarHome))
       .Times(testing::AnyNumber())
       .WillRepeatedly(testing::Return(paths.kHome.string()));
   EXPECT_CALL(mock, GetEnv(kEnvVarLastCommand))
