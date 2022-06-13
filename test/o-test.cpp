@@ -90,3 +90,23 @@ TEST_F(OTest, StartAttemptToOpenLinkWhileOpenInEditorCommandIsNotSpecifiedAndSee
   EXPECT_OUT(HasSubstr("'open_in_editor_command' is not specified"));
   EXPECT_OUT(HasPath(paths.kUserConfig));
 }
+
+#ifdef _WIN32
+TEST_F(OTest, StartExecuteTaskWithWindowsLinksAndOpenLinksFromOutput) {
+  std::string open_link1 =
+      execs.kEditor + " C:\\Program Files\\My App\\config.txt:35:55";
+  std::string open_link2 =
+      execs.kEditor + " D:\\Games\\config.ini:32:15";
+  mock.cmd_to_process_execs[open_link1].push_back(ProcessExec{});
+  mock.cmd_to_process_execs[open_link2].push_back(ProcessExec{});
+  ProcessExec& exec = mock.cmd_to_process_execs[execs.kHelloWorld].front();
+  exec.output_lines = {"my file: C:\\Program Files\\My App\\config.txt(35,55)",
+                       "line without links",
+                       "D:\\Games\\config.ini:32:15 contains errors"};
+  ASSERT_CDT_STARTED();
+  CMD("t1");
+  CMD("o1");
+  CMD("o2");
+  EXPECT_PROCS_EXACT(execs.kHelloWorld, open_link1, open_link2);
+}
+#endif
