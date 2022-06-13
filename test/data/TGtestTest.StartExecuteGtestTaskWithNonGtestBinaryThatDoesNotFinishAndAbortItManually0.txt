@@ -1,3 +1,0 @@
-[32m(cdt) [0m[35mRunning "run tests"[0m
-[2K[31m'tests' is not a google test executable[0m
-[31m'run tests' failed: return code: -1[0m

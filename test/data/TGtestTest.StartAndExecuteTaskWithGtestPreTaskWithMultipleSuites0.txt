@@ -1,4 +1,0 @@
-[32m(cdt) [0m[34mRunning "run tests"...[0m
-[2K[35mRunning "task with gtest pre task"[0m
-task with gtest pre task
-[35m'task with gtest pre task' complete: return code: 0[0m
