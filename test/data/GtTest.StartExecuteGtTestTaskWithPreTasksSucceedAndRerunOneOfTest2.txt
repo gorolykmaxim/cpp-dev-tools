@@ -1,4 +1,0 @@
-[32m(cdt) [0m[34mRunning "pre pre task 1"...[0m
-[34mRunning "pre pre task 2"...[0m
-[35mRunning "test_suit_1.test2"[0m
-[35m'test_suit_1.test2' complete: return code: 0[0m
