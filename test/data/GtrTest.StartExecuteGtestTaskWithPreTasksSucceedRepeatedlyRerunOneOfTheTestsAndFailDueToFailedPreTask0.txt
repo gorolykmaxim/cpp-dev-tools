@@ -1,5 +1,0 @@
-[32m(cdt) [0m[34mRunning "pre pre task 1"...[0m
-[34mRunning "pre pre task 2"...[0m
-[35mRunning "run tests with pre tasks"[0m
-Tests completed: 1 of 3Tests completed: 2 of 3Tests completed: 3 of 3[2K[32mSuccessfully executed 3 tests (0 ms total)[0m
-[35m'run tests with pre tasks' complete: return code: 0[0m
