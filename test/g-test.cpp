@@ -26,7 +26,7 @@ TEST_F(Gtest, StartExecuteGtestTaskViewGtestTaskOutputWithFileLinksHighlightedIn
   ASSERT_CDT_STARTED();
   CMD("t8");
   CMD("g1");
-  EXPECT_OUTPUT_LINKS_TO_OPEN_2();
+  EXPECT_OUTPUT_LINKS_TO_OPEN();
 }
 
 TEST_F(Gtest, StartExecuteGtestTaskFailTryToViewGtestTestOutputWithIndexOutOfRangeAndSeeFailedTestsList) {
@@ -46,7 +46,7 @@ TEST_F(Gtest, StartExecuteGtestTaskFailViewGtestTestOutputWithFileLinksHighlight
   ASSERT_CDT_STARTED();
   CMD("t8");
   CMD("g1");
-  EXPECT_OUTPUT_LINKS_TO_OPEN_2();
+  EXPECT_OUTPUT_LINKS_TO_OPEN();
 }
 
 TEST_F(Gtest, StartExecuteGtestTaskExecuteNonGtestTaskAndDisplayOutputOfOneOfTheTestsExecutedPreviously) {

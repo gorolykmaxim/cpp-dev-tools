@@ -26,7 +26,7 @@ TEST_F(OTest, StartExecuteTaskAndOpenLinksFromOutput) {
   };
   ASSERT_CDT_STARTED();
   CMD("t1");
-  EXPECT_OUTPUT_LINKS_TO_OPEN_2();
+  EXPECT_OUTPUT_LINKS_TO_OPEN();
 }
 
 TEST_F(OTest, StartFailToExecuteTaskWithLinksAndOpenLinksFromOutput) {
@@ -35,7 +35,7 @@ TEST_F(OTest, StartFailToExecuteTaskWithLinksAndOpenLinksFromOutput) {
   exec.output_lines = {OUT_LINKS_NOT_HIGHLIGHTED()};
   ASSERT_CDT_STARTED();
   CMD("t1");
-  EXPECT_OUTPUT_LINKS_TO_OPEN_2();
+  EXPECT_OUTPUT_LINKS_TO_OPEN();
 }
 
 TEST_F(OTest, StartFailToExecutePreTaskOfTaskAndOpenLinksFromOutput) {
@@ -44,7 +44,7 @@ TEST_F(OTest, StartFailToExecutePreTaskOfTaskAndOpenLinksFromOutput) {
   exec.output_lines = {OUT_LINKS_NOT_HIGHLIGHTED()};
   ASSERT_CDT_STARTED();
   CMD("t3");
-  EXPECT_OUTPUT_LINKS_TO_OPEN_2();
+  EXPECT_OUTPUT_LINKS_TO_OPEN();
 }
 
 TEST_F(OTest, StartExecuteTaskWithLinksInOutputAttemptToOpenNonExistentLinkAndViewTaskOutput) {
@@ -53,7 +53,7 @@ TEST_F(OTest, StartExecuteTaskWithLinksInOutputAttemptToOpenNonExistentLinkAndVi
   };
   ASSERT_CDT_STARTED();
   CMD("t1");
-  EXPECT_LAST_EXEC_OUTPUT_DISPLAYED_ON_LINK_INDEX_OUT_OF_BOUNDS_2();
+  EXPECT_LAST_EXEC_OUTPUT_DISPLAYED_ON_LINK_INDEX_OUT_OF_BOUNDS();
 }
 
 TEST_F(OTest, StartFailToExecuteTaskWithLinksAttemptToOpenNonExistentLinkAndViewTaskOutput) {
@@ -62,7 +62,7 @@ TEST_F(OTest, StartFailToExecuteTaskWithLinksAttemptToOpenNonExistentLinkAndView
   exec.output_lines = {OUT_LINKS_NOT_HIGHLIGHTED()};
   ASSERT_CDT_STARTED();
   CMD("t1");
-  EXPECT_LAST_EXEC_OUTPUT_DISPLAYED_ON_LINK_INDEX_OUT_OF_BOUNDS_2();
+  EXPECT_LAST_EXEC_OUTPUT_DISPLAYED_ON_LINK_INDEX_OUT_OF_BOUNDS();
 }
 
 TEST_F(OTest, StartFailToExecutePreTaskOfTaskAttemptToOpenNonExistentLinkAndViewTaskOutput) {
@@ -71,7 +71,7 @@ TEST_F(OTest, StartFailToExecutePreTaskOfTaskAttemptToOpenNonExistentLinkAndView
   exec.output_lines = {OUT_LINKS_NOT_HIGHLIGHTED()};
   ASSERT_CDT_STARTED();
   CMD("t3");
-  EXPECT_LAST_EXEC_OUTPUT_DISPLAYED_ON_LINK_INDEX_OUT_OF_BOUNDS_2();
+  EXPECT_LAST_EXEC_OUTPUT_DISPLAYED_ON_LINK_INDEX_OUT_OF_BOUNDS();
 }
 
 TEST_F(OTest, StartAttemptToOpenNonExistentLinkAndViewTaskOutput) {

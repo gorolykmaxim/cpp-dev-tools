@@ -128,30 +128,6 @@ public:
   }
 
   template<typename... Args>
-  std::string AssertProcsDidNotRan(Args... args) {
-    std::unordered_set<std::string> shell_cmds = {args...};
-    if (shell_cmds.empty()) {
-      return "";
-    }
-    std::vector<std::string> unexpected_shell_cmds;
-    for (auto& [_, info]: proc_info) {
-      if (shell_cmds.count(info.shell_command) > 0) {
-        unexpected_shell_cmds.push_back(info.shell_command);
-      }
-    }
-    if (unexpected_shell_cmds.empty()) {
-      return "";
-    }
-    std::stringstream s;
-    s << "Unexpected processes executed:\n";
-    for (std::string& cmd: unexpected_shell_cmds) {
-      s << cmd << '\n';
-    }
-    s << '\n';
-    return s.str();
-  }
-
-  template<typename... Args>
   std::string AssertProcsLikeDidNotRan(Args... args) {
     std::vector<std::string> shell_cmds = {args...};
     if (shell_cmds.empty()) {
@@ -176,16 +152,12 @@ public:
   void PressCtrlC();
   void MockReadFile(const std::filesystem::path& p, const std::string& d);
   void MockReadFile(const std::filesystem::path& p);
-  std::string DisplayNotFinishedProcesses();
 
   using PidType = TinyProcessLib::Process::id_type;
   std::chrono::system_clock::time_point time_now;
   PidType pid_seed = 1;
   std::unordered_map<std::string, std::deque<ProcessExec>> cmd_to_process_execs;
   std::map<PidType, ProcessInfo> proc_info;
-  std::unordered_set<PidType> unfinished_procs;
-  using ExecProcess = void(const std::string&);
-  testing::NiceMock<testing::MockFunction<ExecProcess>> process_calls;
 
 private:
   std::string GetExpectedVsActualProcsErrorMessage(
@@ -209,70 +181,6 @@ private:
 #define OUT_TEST_ERROR()\
   "unknown file: Failure",\
   "C++ exception with description \"\" thrown in the test body."
-
-#define EXPECT_OUT_EQ_SNAPSHOT(NAME)\
-  if (ShouldCreateSnapshot())\
-    mock.OsApi::WriteFile(SnapshotPath(NAME), out.str());\
-  else\
-    EXPECT_EQ(ReadSnapshot(NAME), out.str());\
-  out.str("")
-
-#define EXPECT_CDT_STARTED()\
-  EXPECT_CALL(mock, Init());\
-  EXPECT_TRUE(InitTestCdt());\
-  EXPECT_OUT_EQ_SNAPSHOT("InitTestCdt")
-
-#define EXPECT_CDT_STARTED_WITH_PROFILE(PROFILE)\
-  mock.MockReadFile(paths.kTasksConfig,\
-                    tasks_config_with_profiles_data.dump());\
-  EXPECT_CALL(mock, Init());\
-  EXPECT_TRUE(InitTestCdt(PROFILE));\
-  EXPECT_OUT_EQ_SNAPSHOT("")
-
-#define EXPECT_CDT_ABORTED()\
-  EXPECT_FALSE(InitTestCdt());\
-  EXPECT_OUT_EQ_SNAPSHOT("")
-
-#define EXPECT_CDT_ABORTED_WITH_PROFILE(PROFILE)\
-  mock.MockReadFile(paths.kTasksConfig,\
-                    tasks_config_with_profiles_data.dump());\
-  EXPECT_FALSE(InitTestCdt(PROFILE));\
-  EXPECT_OUT_EQ_SNAPSHOT("")
-
-#define EXPECT_CMD(CMD)\
-  RunCmd(CMD);\
-  EXPECT_TRUE(mock.unfinished_procs.empty())\
-      << mock.DisplayNotFinishedProcesses();\
-  EXPECT_OUT_EQ_SNAPSHOT("")
-
-#define EXPECT_INTERRUPTED_CMD(CMD)\
-  RunCmd(CMD, true);\
-  mock.PressCtrlC();\
-  ExecCdtSystems(cdt);\
-  EXPECT_TRUE(mock.unfinished_procs.empty())\
-      << mock.DisplayNotFinishedProcesses();\
-  EXPECT_OUT_EQ_SNAPSHOT("")
-
-#define EXPECT_PROC(CMD)\
-  mock.cmd_to_process_execs[CMD].push_back(ProcessExec{});\
-  EXPECT_CALL(mock.process_calls, Call(CMD))
-
-#define EXPECT_OUTPUT_LINKS_TO_OPEN()\
-  testing::InSequence seq;\
-  EXPECT_PROC(execs.kEditor + " /a/b/c:10");\
-  EXPECT_PROC(execs.kEditor + " /d/e/f:15:32");\
-  EXPECT_PROC(execs.kEditor + " /a/b/c:11");\
-  EXPECT_PROC(execs.kEditor + " /b/c:32:1");\
-  RunCmd("o1");\
-  RunCmd("o2");\
-  RunCmd("o3");\
-  RunCmd("o4")
-
-#define EXPECT_LAST_EXEC_OUTPUT_DISPLAYED_ON_LINK_INDEX_OUT_OF_BOUNDS()\
-  EXPECT_CALL(mock.process_calls, Call(testing::_)).Times(0);\
-  EXPECT_CMD("o0");\
-  EXPECT_CMD("o99");\
-  EXPECT_CMD("o")
 
 #define WITH_DEBUG(CMD)\
   "terminal cd " + paths.kTasksConfig.parent_path().string() + " && lldb " + CMD
@@ -328,17 +236,12 @@ private:
     ADD_FAILURE() << e;\
   }
 
-#define EXPECT_NOT_PROCS(...)\
-  if (std::string e = mock.AssertProcsDidNotRan(__VA_ARGS__); !e.empty()) {\
-    ADD_FAILURE() << e;\
-  }
-
 #define EXPECT_NOT_PROCS_LIKE(...)\
   if (std::string e = mock.AssertProcsLikeDidNotRan(__VA_ARGS__); !e.empty()) {\
     ADD_FAILURE() << e;\
   }
 
-#define EXPECT_OUTPUT_LINKS_TO_OPEN_2()\
+#define EXPECT_OUTPUT_LINKS_TO_OPEN()\
   mock.cmd_to_process_execs[execs.kEditor + " /a/b/c:10"].push_back(\
       ProcessExec{});\
   mock.cmd_to_process_execs[execs.kEditor + " /d/e/f:15:32"].push_back(\
@@ -354,7 +257,7 @@ private:
   EXPECT_PROCS(execs.kEditor + " /a/b/c:10", execs.kEditor + " /d/e/f:15:32",\
                execs.kEditor + " /a/b/c:11", execs.kEditor + " /b/c:32:1")
 
-#define EXPECT_LAST_EXEC_OUTPUT_DISPLAYED_ON_LINK_INDEX_OUT_OF_BOUNDS_2()\
+#define EXPECT_LAST_EXEC_OUTPUT_DISPLAYED_ON_LINK_INDEX_OUT_OF_BOUNDS()\
   CMD("o0");\
   CMD("o99");\
   CMD("o");\
@@ -431,14 +334,11 @@ public:
               successful_rerun_gtest_exec,
               failed_rerun_gtest_exec,
               failed_debug_exec;
-  int expected_data_index;
   std::stringstream in, out;
   std::string current_out_segment;
   testing::NiceMock<OsApiMock> mock;
   Cdt cdt;
 
-  static void SetUpTestSuite();
-  static bool ShouldCreateSnapshot();
   void SetUp() override;
   bool InitTestCdt(const std::optional<std::string>& profile_name = {});
   nlohmann::json CreateTask(const nlohmann::json& name = nullptr,
@@ -452,8 +352,6 @@ public:
   void RunCmd(const std::string& cmd,
               bool break_when_process_events_stop = false);
   void SaveOutput();
-  std::filesystem::path SnapshotPath(std::string name);
-  std::string ReadSnapshot(const std::string& name);
 };
 
 #endif

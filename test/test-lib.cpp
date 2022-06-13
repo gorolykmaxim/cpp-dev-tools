@@ -23,7 +23,6 @@ void OsApiMock::StartProcess(
     throw std::runtime_error("Unexpected command called: " +
                              process.shell_command);
   }
-  process_calls.Call(process.shell_command);
   std::deque<ProcessExec>& execs = it->second;
   ProcessExec exec = execs.front();
   if (execs.size() > 1) {
@@ -31,7 +30,6 @@ void OsApiMock::StartProcess(
   }
   process.handle = std::unique_ptr<TinyProcessLib::Process>();
   process.id = exec.fail_to_exec ? 0 : pid_seed++;
-  unfinished_procs.insert(process.id);
   ProcessInfo& info = proc_info[process.id];
   info.exit_code = exec.exit_code;
   info.exit_cb = exit_cb;
@@ -57,17 +55,7 @@ void OsApiMock::StartProcess(
 }
 
 void OsApiMock::FinishProcess(Process &process) {
-  unfinished_procs.erase(process.id);
   proc_info[process.id].is_finished = true;
-}
-
-std::string OsApiMock::DisplayNotFinishedProcesses() {
-  std::stringstream s;
-  s << "Proceses not finished with FinishProcess():\n";
-  for (PidType pid: unfinished_procs) {
-    s << proc_info[pid].shell_command << '\n';
-  }
-  return s.str();
 }
 
 std::string OsApiMock::GetExpectedVsActualProcsErrorMessage(
@@ -131,23 +119,7 @@ void OsApiMock::MockReadFile(const std::filesystem::path& p) {
       .WillRepeatedly(testing::Return(false));
 }
 
-bool CdtTest::ShouldCreateSnapshot() {
-  return std::getenv("SNAPSHOT") != nullptr;
-}
-
-void CdtTest::SetUpTestSuite() {
-  static bool prev_snapshots_removed = false;
-  if (ShouldCreateSnapshot() && !prev_snapshots_removed) {
-    std::filesystem::directory_iterator iter(TEST_DATA_DIR);
-    for (const std::filesystem::directory_entry& entry: iter) {
-      std::filesystem::remove_all(entry.path());
-    }
-    prev_snapshots_removed = true;
-  }
-}
-
 void CdtTest::SetUp() {
-  expected_data_index = 0;
   cdt.os = &mock;
   EXPECT_CALL(mock, In())
       .Times(testing::AnyNumber())
@@ -170,8 +142,6 @@ void CdtTest::SetUp() {
   EXPECT_CALL(mock, AbsolutePath(paths.kTasksConfig.filename()))
       .Times(testing::AnyNumber())
       .WillRepeatedly(testing::Return(paths.kTasksConfig));
-  EXPECT_CALL(mock.process_calls, Call(testing::_))
-      .Times(testing::AnyNumber());
   // mock tasks config
   std::vector<nlohmann::json> tasks;
   tasks.push_back(CreateTaskAndProcess("hello world!"));
@@ -446,24 +416,4 @@ void CdtTest::RunCmd(const std::string& cmd,
 void CdtTest::SaveOutput() {
   current_out_segment = out.str();
   out.str("");
-}
-
-std::filesystem::path CdtTest::SnapshotPath(std::string name) {
-  testing::UnitTest* test = testing::UnitTest::GetInstance();
-  std::filesystem::path snapshot_path(TEST_DATA_DIR);
-  if (name.empty()) {
-    const testing::TestInfo* info = test->current_test_info();
-    std::string suite_name = info->test_suite_name();
-    std::string test_name = info->name();
-    std::string data_ind = std::to_string(expected_data_index++);
-    name = suite_name + '.' + test_name + data_ind;
-  }
-  snapshot_path /= name + ".txt";
-  return snapshot_path;
-}
-
-std::string CdtTest::ReadSnapshot(const std::string& name) {
-  std::string snapshot;
-  mock.OsApi::ReadFile(SnapshotPath(name), snapshot);
-  return snapshot;
 }

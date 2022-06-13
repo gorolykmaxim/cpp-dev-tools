@@ -39,8 +39,8 @@ TEST_F(ExecTest, StartExecuteTwoTasksSelectFirstExecutionAndOpenFileLinksFromIt)
   CMD("t1");
   CMD("t1");
   CMD("exec2");
-  EXPECT_LAST_EXEC_OUTPUT_DISPLAYED_ON_LINK_INDEX_OUT_OF_BOUNDS_2();
-  EXPECT_OUTPUT_LINKS_TO_OPEN_2();
+  EXPECT_LAST_EXEC_OUTPUT_DISPLAYED_ON_LINK_INDEX_OUT_OF_BOUNDS();
+  EXPECT_OUTPUT_LINKS_TO_OPEN();
 }
 
 TEST_F(ExecTest, StartExecuteTwoTasksSelectFirstExecutionAndSearchItsOutput) {
@@ -200,7 +200,7 @@ TEST_F(ExecTest, StartExecuteTaskWithPreTasksSelectPreTaskAndOpenLinkFromItsOutp
   ASSERT_CDT_STARTED();
   CMD("t3");
   CMD("exec3");
-  EXPECT_OUTPUT_LINKS_TO_OPEN_2();
+  EXPECT_OUTPUT_LINKS_TO_OPEN();
 }
 
 TEST_F(ExecTest, StartExecuteTaskWithPreTasksSelectPreTaskThenResetSelectionAndOpenLinksFromTheNewestTaskOutput) {
@@ -210,7 +210,7 @@ TEST_F(ExecTest, StartExecuteTaskWithPreTasksSelectPreTaskThenResetSelectionAndO
   CMD("t3");
   CMD("exec3");
   CMD("exec1");
-  EXPECT_OUTPUT_LINKS_TO_OPEN_2();
+  EXPECT_OUTPUT_LINKS_TO_OPEN();
 }
 
 TEST_F(ExecTest, StartExecuteGtestTaskWithPreTasksSelectOneOfPretasksWithLinksInOutputResetExecutionSelectionBackToTheLatestGtestTaskValidateThatThereAreNoLinksInItsOutput) {

@@ -70,5 +70,3 @@ add_executable(${TEST_TARGET} EXCLUDE_FROM_ALL
   test/exec-test.cpp)
 target_include_directories(${TEST_TARGET} PUBLIC test)
 target_link_libraries(${TEST_TARGET} cdt gtest gmock gtest_main)
-target_compile_definitions(${TEST_TARGET} PRIVATE
-    "TEST_DATA_DIR=\"${CMAKE_CURRENT_SOURCE_DIR}/test/data\"")
