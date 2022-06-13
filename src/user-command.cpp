@@ -16,10 +16,10 @@ static UserCommand ParseUserCommand(const std::string& str) {
     std::stringstream digits;
     for (int i = 0; i < str.size(); i++) {
         char c = str[i];
-        if (std::isspace(c)) {
+        if (c == ' ' || c == '\t') {
             continue;
         }
-        if (std::isdigit(c)) {
+        if (c >= '0' && c <= '9') {
             digits << c;
         } else {
             chars << c;
