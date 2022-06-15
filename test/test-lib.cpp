@@ -47,7 +47,7 @@ void OsApiMock::StartProcess(
   for (int i = 0; i < exec.output_lines.size(); i++) {
     std::string line = exec.output_lines[i];
     if (exec.append_eol) {
-      line += kEol;
+      line += '\n';
     }
     if (exec.stderr_lines.count(i) == 0) {
       stdout_cb(line.data(), line.size());

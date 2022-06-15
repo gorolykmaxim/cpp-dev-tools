@@ -31,10 +31,8 @@ const std::string kEnvVarLastCommand = "LAST_COMMAND";
 const std::string kGtestTask = "__gtest";
 const std::string kGtestFilterArg = "--gtest_filter";
 #ifdef _WIN32
-const std::string kEol = "\r\n";
 const std::string kEnvVarHome = "HOMEPATH";
 #else
-const std::string kEol = "\n";
 const std::string kEnvVarHome = "HOME";
 #endif
 

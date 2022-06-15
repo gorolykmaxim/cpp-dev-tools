@@ -41,7 +41,7 @@ TEST_F(TTest, StartAndExecuteSingleTask) {
 TEST_F(TTest, StartAndExecuteTaskThatPrintsToStdoutAndStderr) {
   ProcessExec& exec = mock.cmd_to_process_execs[execs.kHelloWorld].front();
   exec.append_eol = false;
-  exec.output_lines = {"stdo", "stde", "ut" + kEol, "rr" + kEol};
+  exec.output_lines = {"stdo", "stde", "ut\r\n", "rr\n"};
   exec.stderr_lines = {1, 3};
   ASSERT_CDT_STARTED();
   CMD("t1");

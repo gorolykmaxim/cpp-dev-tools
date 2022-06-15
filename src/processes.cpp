@@ -62,12 +62,16 @@ void HandleProcessEvent(Cdt& cdt) {
     std::string to_process = line_buffer + event.data;
     std::string::size_type pos = 0;
     while (true) {
-      std::string::size_type eol_pos = to_process.find(kEol, pos);
+      std::string::size_type eol_pos = to_process.find('\n', pos);
       if (eol_pos == std::string::npos) {
         break;
       }
+      std::string::size_type next_pos = eol_pos + 1;
+      if (eol_pos > 0 && to_process[eol_pos - 1] == '\r') {
+        eol_pos--;
+      }
       output.lines.push_back(to_process.substr(pos, eol_pos - pos));
-      pos = eol_pos + kEol.size();
+      pos = next_pos;
     }
     line_buffer = to_process.substr(pos, to_process.size() - pos);
   }
