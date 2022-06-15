@@ -11,10 +11,6 @@
 #include "cdt.h"
 #include "process.hpp"
 
-std::istream& OsApi::In() {
-    return std::cin;
-}
-
 std::ostream& OsApi::Out() {
     return std::cout;
 }

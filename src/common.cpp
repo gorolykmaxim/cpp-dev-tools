@@ -45,9 +45,7 @@ bool AcceptUsrCmd(const std::string& def, UserCommand& cmd) {
 
 std::string ReadInputFromStdin(const std::string& prefix, Cdt& cdt) {
     cdt.os->Out() << kTcGreen << prefix << kTcReset;
-    std::string input;
-    std::getline(cdt.os->In(), input);
-    return input;
+    return cdt.os->ReadLineFromStdin();
 }
 
 void DisplayListOfTasks(const std::vector<Task>& tasks, Cdt& cdt) {

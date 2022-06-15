@@ -3,12 +3,33 @@
 #include <windows.h>
 #include <functional>
 #include <mutex>
+#include <io.h>
+#include <fcntl.h>
+#include <codecvt>
+#include <iostream>
 
 #include "cdt.h"
 #include "process.hpp"
 
 static std::vector<TinyProcessLib::Process::id_type> active_process_ids;
 static std::mutex active_process_ids_mtx;
+
+static bool IsWindowsConsole(OsApi& os) {
+  return os.GetEnv("TERM").empty();
+}
+
+std::string OsApi::ReadLineFromStdin() {
+  using utf16_to_utf8 = std::codecvt_utf8_utf16<wchar_t>;
+  if (IsWindowsConsole(*this)) {
+    std::wstring winput;
+    std::getline(std::wcin, winput);
+    return std::wstring_convert<utf16_to_utf8, wchar_t>{}.to_bytes(winput);
+  } else {
+    std::string input;
+    std::getline(std::cin, input);
+    return input;
+  }
+}
 
 void OsApi::SetEnv(const std::string &name, const std::string &value) {
     SetEnvironmentVariable(name.c_str(), value.c_str());
@@ -26,7 +47,10 @@ BOOL WINAPI HandleCtrlC(DWORD signal) {
 }
 
 void OsApi::Init() {
-  SetConsoleOutputCP(CP_UTF8);
+  if (IsWindowsConsole(*this)) {
+    _setmode(_fileno(stdin), _O_U16TEXT);
+    SetConsoleOutputCP(CP_UTF8);
+  }
   SetConsoleCtrlHandler(HandleCtrlC, TRUE);
 }
 

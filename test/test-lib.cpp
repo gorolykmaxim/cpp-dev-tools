@@ -13,6 +13,12 @@
 #include <unordered_set>
 #include <vector>
 
+std::string OsApiMock::ReadLineFromStdin() {
+  std::string line;
+  std::getline(dummy_stdin, line);
+  return line;
+}
+
 void OsApiMock::StartProcess(
     Process &process,
     const std::function<void (const char *, size_t)> &stdout_cb,
@@ -121,9 +127,6 @@ void OsApiMock::MockReadFile(const std::filesystem::path& p) {
 
 void CdtTest::SetUp() {
   cdt.os = &mock;
-  EXPECT_CALL(mock, In())
-      .Times(testing::AnyNumber())
-      .WillRepeatedly(testing::ReturnRef(in));
   EXPECT_CALL(mock, Out())
       .Times(testing::AnyNumber())
       .WillRepeatedly(testing::ReturnRef(out));
@@ -398,7 +401,7 @@ nlohmann::json CdtTest::CreateProfileTaskAndProcess(
 
 void CdtTest::RunCmd(const std::string& cmd,
                      bool break_when_process_events_stop) {
-  in << cmd << std::endl;
+  mock.dummy_stdin << cmd << std::endl;
   while (true) {
     ExecCdtSystems(cdt);
     if (!break_when_process_events_stop && WillWaitForInput(cdt)) {

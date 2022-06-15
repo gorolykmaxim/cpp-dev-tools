@@ -146,9 +146,9 @@ struct ToSchedule {};
 class OsApi {
 public:
   virtual void Init();
-  virtual std::istream& In();
   virtual std::ostream& Out();
   virtual std::ostream& Err();
+  virtual std::string ReadLineFromStdin();
   virtual std::string GetEnv(const std::string& name);
   virtual void SetEnv(const std::string& name, const std::string& value);
   virtual void SetCurrentPath(const std::filesystem::path& path);

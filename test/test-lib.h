@@ -57,9 +57,9 @@ struct ProcessInfo {
 class OsApiMock: public OsApi {
 public:
   MOCK_METHOD(void, Init, (), (override));
-  MOCK_METHOD(std::istream&, In, (), (override));
   MOCK_METHOD(std::ostream&, Out, (), (override));
   MOCK_METHOD(std::ostream&, Err, (), (override));
+  std::string ReadLineFromStdin() override;
   MOCK_METHOD(std::string, GetEnv, (const std::string&), (override));
   MOCK_METHOD(void, SetEnv, (const std::string&, const std::string&),
               (override));
@@ -158,6 +158,7 @@ public:
   PidType pid_seed = 1;
   std::unordered_map<std::string, std::deque<ProcessExec>> cmd_to_process_execs;
   std::map<PidType, ProcessInfo> proc_info;
+  std::stringstream dummy_stdin;
 
 private:
   std::string GetExpectedVsActualProcsErrorMessage(
@@ -334,7 +335,7 @@ public:
               successful_rerun_gtest_exec,
               failed_rerun_gtest_exec,
               failed_debug_exec;
-  std::stringstream in, out;
+  std::stringstream out;
   std::string current_out_segment;
   testing::NiceMock<OsApiMock> mock;
   Cdt cdt;

@@ -1,11 +1,18 @@
 #include <functional>
 #include <csignal>
 #include <algorithm>
+#include <iostream>
 
 #include "cdt.h"
 #include "process.hpp"
 
 static std::vector<TinyProcessLib::Process::id_type> active_process_ids;
+
+std::string OsApi::ReadLineFromStdin() {
+  std::string input;
+  std::getline(std::cin, input);
+  return input;
+}
 
 void OsApi::SetEnv(const std::string &name, const std::string &value) {
     setenv(name.c_str(), value.c_str(), true);
