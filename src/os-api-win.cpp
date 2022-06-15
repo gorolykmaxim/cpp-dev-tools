@@ -35,6 +35,10 @@ void OsApi::SetEnv(const std::string &name, const std::string &value) {
     SetEnvironmentVariable(name.c_str(), value.c_str());
 }
 
+std::filesystem::path OsApi::GetHome() {
+  return GetEnv("HOMEDRIVE") + GetEnv("HOMEPATH");
+}
+
 BOOL WINAPI HandleCtrlC(DWORD signal) {
   if (signal != CTRL_C_EVENT) {
     return FALSE;

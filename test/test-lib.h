@@ -61,6 +61,7 @@ public:
   MOCK_METHOD(std::ostream&, Err, (), (override));
   std::string ReadLineFromStdin() override;
   MOCK_METHOD(std::string, GetEnv, (const std::string&), (override));
+  MOCK_METHOD(std::filesystem::path, GetHome, (), (override));
   MOCK_METHOD(void, SetEnv, (const std::string&, const std::string&),
               (override));
   MOCK_METHOD(void, SetCurrentPath, (const std::filesystem::path&),

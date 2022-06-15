@@ -18,6 +18,10 @@ void OsApi::SetEnv(const std::string &name, const std::string &value) {
     setenv(name.c_str(), value.c_str(), true);
 }
 
+std::filesystem::path OsApi::GetHome() {
+  return GetEnv("HOME");
+}
+
 static void StopRunningProcessesOrExit(int signal) {
   if (active_process_ids.empty()) {
     std::signal(signal, SIG_DFL);

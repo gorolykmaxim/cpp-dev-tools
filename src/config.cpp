@@ -81,8 +81,7 @@ static void AppendConfigErrors(const std::filesystem::path& config_path, const s
 }
 
 void InitExampleUserConfig(Cdt& cdt) {
-  std::filesystem::path home(cdt.os->GetEnv(kEnvVarHome));
-  cdt.user_config_path = home / ".cpp-dev-tools.json";
+  cdt.user_config_path = cdt.os->GetHome() / ".cpp-dev-tools.json";
   if (!cdt.os->FileExists(cdt.user_config_path)) {
     std::stringstream example;
     example << "{\n";

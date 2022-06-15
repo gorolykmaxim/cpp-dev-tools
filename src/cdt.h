@@ -30,11 +30,6 @@ const std::string kDebugCommandProperty = "debug_command";
 const std::string kEnvVarLastCommand = "LAST_COMMAND";
 const std::string kGtestTask = "__gtest";
 const std::string kGtestFilterArg = "--gtest_filter";
-#ifdef _WIN32
-const std::string kEnvVarHome = "HOMEPATH";
-#else
-const std::string kEnvVarHome = "HOME";
-#endif
 
 struct UserCommandDefinition
 {
@@ -148,6 +143,7 @@ public:
   virtual std::ostream& Err();
   virtual std::string ReadLineFromStdin();
   virtual std::string GetEnv(const std::string& name);
+  virtual std::filesystem::path GetHome();
   virtual void SetEnv(const std::string& name, const std::string& value);
   virtual void SetCurrentPath(const std::filesystem::path& path);
   virtual std::filesystem::path GetCurrentPath();
