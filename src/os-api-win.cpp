@@ -14,13 +14,14 @@
 static std::vector<TinyProcessLib::Process::id_type> active_process_ids;
 static std::mutex active_process_ids_mtx;
 
-static bool IsWindowsConsole(OsApi& os) {
-  return os.GetEnv("TERM").empty();
+static bool IsWindowsConsole() {
+  DWORD mode;
+  return GetConsoleMode(GetStdHandle(STD_OUTPUT_HANDLE), &mode) == 1;
 }
 
 std::string OsApi::ReadLineFromStdin() {
   using utf16_to_utf8 = std::codecvt_utf8_utf16<wchar_t>;
-  if (IsWindowsConsole(*this)) {
+  if (IsWindowsConsole()) {
     std::wstring winput;
     std::getline(std::wcin, winput);
     return std::wstring_convert<utf16_to_utf8, wchar_t>{}.to_bytes(winput);
@@ -51,7 +52,7 @@ BOOL WINAPI HandleCtrlC(DWORD signal) {
 }
 
 void OsApi::Init() {
-  if (IsWindowsConsole(*this)) {
+  if (IsWindowsConsole()) {
     _setmode(_fileno(stdin), _O_U16TEXT);
     SetConsoleOutputCP(CP_UTF8);
   }
