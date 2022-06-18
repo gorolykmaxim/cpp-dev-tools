@@ -14,7 +14,6 @@ protected:
   std::string cmd_pre_task, cmd_test1_rerun, cmd_test2_rerun;
 
   void SetUp() override {
-    Init();
     tasks = {
         CreateTaskAndProcess("pre task"),
         CreateTask("run tests", "__gtest " + execs.kTests, {"pre task"})};
@@ -27,13 +26,13 @@ protected:
     suites[0].tests[1].is_failed = true;
     exec_tests_failed.exit_code = 1;
     exec_tests_failed.output_lines = CreateTestOutput(suites);
-    mock.MockReadFile(paths.kUserConfig, user_config_data.dump());
     test_names = {"1 \"suite.test1\"", "2 \"suite.test2\""};
     cmd_pre_task = tasks[0]["command"];
     cmd_test1_rerun = WITH_DEBUG("tests" WITH_GT_FILTER("suite.test1"));
     cmd_test2_rerun = WITH_DEBUG("tests" WITH_GT_FILTER("suite.test2"));
     mock.MockProc(cmd_test1_rerun);
     mock.MockProc(cmd_test2_rerun);
+    Init();
   }
 };
 

@@ -12,7 +12,6 @@ protected:
   ProcessExec exec_test_success, exec_test_failure;
 
   void SetUp() override {
-    Init();
     tasks = {
       CreateTask("run tests", "__gtest " + execs.kTests),
       CreateTaskAndProcess("primary task")
@@ -25,7 +24,7 @@ protected:
     suites[0].tests[0].is_failed = true;
     exec_test_failure.output_lines = CreateTestOutput(suites);
     exec_test_failure.exit_code = 1;
-    mock.MockReadFile(paths.kUserConfig, user_config_data.dump());
+    Init();
   }
 };
 

@@ -11,11 +11,10 @@ protected:
   std::vector<nlohmann::json> tasks;
 
   void SetUp() override {
-    Init();
     tasks = {
         CreateTaskAndProcess("pre task"),
         CreateTask("run tests", "__gtest " + execs.kTests, {"pre task"})};
-    mock.MockReadFile(paths.kUserConfig, user_config_data.dump());
+    Init();
   }
 };
 

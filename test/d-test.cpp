@@ -15,7 +15,6 @@ protected:
   std::vector<nlohmann::json> tasks;
 
   void SetUp() override {
-    Init();
     failed_debug_exec.exit_code = 1;
     failed_debug_exec.output_lines = {"failed to launch debugger"};
     failed_debug_exec.stderr_lines.insert(0);
@@ -24,7 +23,7 @@ protected:
       CreateTaskAndProcess("primary task", {"pre task"}),
       CreateTask("run tests", "__gtest " + execs.kTests, {"pre task"})
     };
-    mock.MockReadFile(paths.kUserConfig, user_config_data.dump());
+    Init();
   }
 };
 

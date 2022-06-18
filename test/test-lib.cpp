@@ -156,6 +156,7 @@ void CdtTest::Init() {
       .WillRepeatedly(testing::Return(paths.kTasksConfig));
   EXPECT_CALL(mock, FileExists(paths.kUserConfig))
       .WillRepeatedly(testing::Return(true));
+  mock.MockReadFile(paths.kUserConfig, user_config_data.dump());
 }
 
 void CdtTest::SetUp() {
@@ -206,8 +207,6 @@ void CdtTest::SetUp() {
     },
   };
   tasks_config_with_profiles_data["cdt_profiles"] = profiles;
-  // mock user config
-  mock.MockReadFile(paths.kUserConfig, user_config_data.dump());
   // mock default test execution
   successful_gtest_exec.output_lines = {
     "Running main() from /lib/gtest_main.cc",

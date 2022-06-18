@@ -16,7 +16,6 @@ protected:
   std::vector<DummyTestSuite> suite_rerun;
 
   void SetUp() override {
-    Init();
     tasks = {
       CreateTask("task 1", "echo task 1"),
       CreateTaskAndProcess("task 2"),
@@ -29,7 +28,6 @@ protected:
     exec_task.output_lines = {OUT_LINKS_NOT_HIGHLIGHTED()};
     mock.MockProc("echo task 1", exec_task);
     mock.MockProc("echo task 4", exec_task);
-    mock.MockReadFile(paths.kUserConfig, user_config_data.dump());
     std::vector<DummyTestSuite> suites = {
         DummyTestSuite{"suite", {
             DummyTest{"test1", {OUT_LINKS_NOT_HIGHLIGHTED()}},
@@ -44,6 +42,7 @@ protected:
     mock.MockProc(execs.kTests, exec_tests_failed);
     cmd_test_rerun = execs.kTests + WITH_GT_FILTER("suite.test1");
     suite_rerun = {DummyTestSuite{"suite", {DummyTest{"test1"}}}};
+    Init();
   }
 };
 
