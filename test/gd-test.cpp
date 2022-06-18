@@ -1,93 +1,108 @@
+#include "json.hpp"
 #include "test-lib.h"
 #include <gmock/gmock-matchers.h>
 #include <string>
+#include <vector>
 
 using namespace testing;
 
-class GdTest: public CdtTest {};
+class GdTest: public CdtTest {
+protected:
+  std::vector<nlohmann::json> tasks;
+  std::vector<std::string> test_names;
+  ProcessExec exec_tests_failed, exec_tests_successful;
+  std::string cmd_pre_task, cmd_test1_rerun, cmd_test2_rerun;
+
+  void SetUp() override {
+    Init();
+    tasks = {
+        CreateTaskAndProcess("pre task"),
+        CreateTask("run tests", "__gtest " + execs.kTests, {"pre task"})};
+    std::vector<DummyTestSuite> suites = {
+        DummyTestSuite{"suite", {
+            DummyTest{"test1"},
+            DummyTest{"test2"}}}};
+    exec_tests_successful.output_lines = CreateTestOutput(suites);
+    suites[0].tests[0].is_failed = true;
+    suites[0].tests[1].is_failed = true;
+    exec_tests_failed.exit_code = 1;
+    exec_tests_failed.output_lines = CreateTestOutput(suites);
+    mock.MockReadFile(paths.kUserConfig, user_config_data.dump());
+    test_names = {"1 \"suite.test1\"", "2 \"suite.test2\""};
+    cmd_pre_task = tasks[0]["command"];
+    cmd_test1_rerun = WITH_DEBUG("tests" WITH_GT_FILTER("suite.test1"));
+    cmd_test2_rerun = WITH_DEBUG("tests" WITH_GT_FILTER("suite.test2"));
+    mock.MockProc(cmd_test1_rerun);
+    mock.MockProc(cmd_test2_rerun);
+  }
+};
 
 TEST_F(GdTest, StartAttemptToRerunGtestWithDebuggerWhileMandatoryPropertiesAreNotSpecifiedInUserConfig) {
   mock.MockReadFile(paths.kUserConfig);
-  ASSERT_CDT_STARTED();
-  CMD("gd");
+  ASSERT_STARTED(TestCdt(tasks, {}, args));
+  RunCmd("gd");
   EXPECT_OUT(HasSubstr("'debug_command' is not specified"));
   EXPECT_OUT(HasPath(paths.kUserConfig));
 }
 
 TEST_F(GdTest, StartAttemptToRerunGtestWithDebuggerWhenNoTestsHaveBeenExecutedYet) {
-  ASSERT_CDT_STARTED();
-  CMD("gd");
+  ASSERT_STARTED(TestCdt(tasks, {}, args));
+  RunCmd("gd");
   EXPECT_OUT(HasSubstr("No google tests have been executed yet."));
 }
 
 TEST_F(GdTest, StartExecuteGtestTaskWithPreTasksFailAttemptToRerunTestThatDoesNotExistWithDebuggerAndViewListOfFailedTests) {
-  mock.cmd_to_process_execs[execs.kTests].front() = failed_gtest_exec;
-  ASSERT_CDT_STARTED();
-  CMD("t10");
-  CMD("gd");
-  EXPECT_OUT(HasSubstrsInOrder(test_list_failed));
-  CMD("gd0");
-  EXPECT_OUT(HasSubstrsInOrder(test_list_failed));
-  CMD("gd99");
-  EXPECT_OUT(HasSubstrsInOrder(test_list_failed));
+  mock.MockProc(execs.kTests, exec_tests_failed);
+  ASSERT_STARTED(TestCdt(tasks, {}, args));
+  RunCmd("t2");
+  RunCmd("gd");
+  EXPECT_OUT(HasSubstrsInOrder(test_names));
+  RunCmd("gd0");
+  EXPECT_OUT(HasSubstrsInOrder(test_names));
+  RunCmd("gd99");
+  EXPECT_OUT(HasSubstrsInOrder(test_names));
   // Check that we don't attempt to execute any debugger calls
-  EXPECT_PROCS_EXACT("echo pre pre task 1", "echo pre pre task 2",
-                     execs.kTests);
+  EXPECT_PROCS_EXACT("echo pre task", execs.kTests);
 }
 
 TEST_F(GdTest, StartExecuteGtestTaskWithPreTasksFailAndRerunFailedTestWithDebugger) {
-  std::string pre_task1 = "echo pre pre task 1";
-  std::string pre_task2 = "echo pre pre task 2";
-  std::string rerun1 =
-      WITH_DEBUG("tests" WITH_GT_FILTER("failed_test_suit_1.test1"));
-  std::string rerun2 =
-      WITH_DEBUG("tests" WITH_GT_FILTER("failed_test_suit_2.test1"));
-  mock.cmd_to_process_execs[rerun1].push_back(ProcessExec{});
-  mock.cmd_to_process_execs[rerun2].push_back(ProcessExec{});
-  mock.cmd_to_process_execs[execs.kTests].front() = failed_gtest_exec;
-  ASSERT_CDT_STARTED();
-  CMD("t10");
-  CMD("gd1");
+  mock.MockProc(execs.kTests, exec_tests_failed);
+  ASSERT_STARTED(TestCdt(tasks, {}, args));
+  RunCmd("t2");
+  RunCmd("gd1");
   EXPECT_OUT(HasSubstr("Debugger started"));
-  EXPECT_OUT(HasSubstr(TASK_COMPLETE("failed_test_suit_1.test1")));
-  CMD("gd2");
+  EXPECT_OUT(HasSubstr(TASK_COMPLETE("suite.test1")));
+  RunCmd("gd2");
   EXPECT_OUT(HasSubstr("Debugger started"));
-  EXPECT_OUT(HasSubstr(TASK_COMPLETE("failed_test_suit_2.test1")));
-  EXPECT_PROCS_EXACT(pre_task1, pre_task2, execs.kTests, pre_task1, pre_task2,
-                     rerun1, pre_task1, pre_task2, rerun2);
+  EXPECT_OUT(HasSubstr(TASK_COMPLETE("suite.test2")));
+  EXPECT_PROCS_EXACT(cmd_pre_task, execs.kTests, cmd_pre_task, cmd_test1_rerun,
+                     cmd_pre_task, cmd_test2_rerun);
 }
 
 TEST_F(GdTest, StartExecuteGtestTaskWithPreTasksSucceedAttemptToRerunTestThatDoesNotExistWithDebuggerAndViewListOfAllTests) {
-  ASSERT_CDT_STARTED();
-  CMD("t10");
-  CMD("gd");
-  EXPECT_OUT(HasSubstrsInOrder(test_list_successful));
-  CMD("gd0");
-  EXPECT_OUT(HasSubstrsInOrder(test_list_successful));
-  CMD("gd99");
-  EXPECT_OUT(HasSubstrsInOrder(test_list_successful));
+  mock.MockProc(execs.kTests, exec_tests_successful);
+  ASSERT_STARTED(TestCdt(tasks, {}, args));
+  RunCmd("t2");
+  RunCmd("gd");
+  EXPECT_OUT(HasSubstrsInOrder(test_names));
+  RunCmd("gd0");
+  EXPECT_OUT(HasSubstrsInOrder(test_names));
+  RunCmd("gd99");
+  EXPECT_OUT(HasSubstrsInOrder(test_names));
   // Check that we don't attempt to execute any debugger calls
-  EXPECT_PROCS_EXACT("echo pre pre task 1", "echo pre pre task 2",
-                     execs.kTests);
+  EXPECT_PROCS_EXACT(cmd_pre_task, execs.kTests);
 }
 
 TEST_F(GdTest, StartExecuteGtestTaskWithPreTasksSucceedAndRerunOneOfTestsWithDebugger) {
-  std::string pre_task1 = "echo pre pre task 1";
-  std::string pre_task2 = "echo pre pre task 2";
-  std::string rerun1 =
-      WITH_DEBUG("tests" WITH_GT_FILTER("test_suit_1.test1"));
-  std::string rerun2 =
-      WITH_DEBUG("tests" WITH_GT_FILTER("test_suit_1.test2"));
-  mock.cmd_to_process_execs[rerun1].push_back(ProcessExec{});
-  mock.cmd_to_process_execs[rerun2].push_back(ProcessExec{});
-  ASSERT_CDT_STARTED();
-  CMD("t10");
-  CMD("gd1");
+  mock.MockProc(execs.kTests, exec_tests_successful);
+  ASSERT_STARTED(TestCdt(tasks, {}, args));
+  RunCmd("t2");
+  RunCmd("gd1");
   EXPECT_OUT(HasSubstr("Debugger started"));
-  EXPECT_OUT(HasSubstr(TASK_COMPLETE("test_suit_1.test1")));
-  CMD("gd2");
+  EXPECT_OUT(HasSubstr(TASK_COMPLETE("suite.test1")));
+  RunCmd("gd2");
   EXPECT_OUT(HasSubstr("Debugger started"));
-  EXPECT_OUT(HasSubstr(TASK_COMPLETE("test_suit_1.test2")));
-  EXPECT_PROCS_EXACT(pre_task1, pre_task2, execs.kTests, pre_task1, pre_task2,
-                     rerun1, pre_task1, pre_task2, rerun2);
+  EXPECT_OUT(HasSubstr(TASK_COMPLETE("suite.test2")));
+  EXPECT_PROCS_EXACT(cmd_pre_task, execs.kTests, cmd_pre_task, cmd_test1_rerun,
+                     cmd_pre_task, cmd_test2_rerun);
 }
