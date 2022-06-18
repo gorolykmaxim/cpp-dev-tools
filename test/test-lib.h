@@ -209,7 +209,7 @@ private:
 #define TASK_FAILED(NAME, CODE)\
   std::string("'" NAME "' failed: return code: ") + std::to_string(CODE)
 
-#define ASSERT_STARTED(RESULT) ASSERT_TRUE(RESULT) << out.str()
+#define ASSERT_STARTED(RESULT) ASSERT_TRUE(RESULT) << current_out_segment
 
 #define ASSERT_CDT_STARTED()\
   ASSERT_TRUE(InitTestCdt()) << out.str();\
