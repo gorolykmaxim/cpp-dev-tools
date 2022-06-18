@@ -1,66 +1,85 @@
+#include "json.hpp"
 #include "test-lib.h"
 #include <gmock/gmock-matchers.h>
+#include <gtest/gtest.h>
 #include <string>
 #include <vector>
 
 using namespace testing;
 
-class DTest: public CdtTest {};
+class DTest: public CdtTest {
+protected:
+  std::string cmd_with_debugger = WITH_DEBUG("echo primary task");
+  std::string tests_with_debugger = WITH_DEBUG(execs.kTests);
+  ProcessExec failed_debug_exec;
+  std::vector<nlohmann::json> tasks, profiles;
+
+  void SetUp() override {
+    Init();
+    failed_debug_exec.exit_code = 1;
+    failed_debug_exec.output_lines = {"failed to launch debugger"};
+    failed_debug_exec.stderr_lines.insert(0);
+    tasks = {
+      CreateTaskAndProcess("pre task"),
+      CreateTaskAndProcess("primary task", {"pre task"}),
+      CreateTask("run tests", "__gtest " + execs.kTests, {"pre task"})
+    };
+    mock.MockReadFile(paths.kUserConfig, user_config_data.dump());
+  }
+};
 
 TEST_F(DTest, StartAttemptToDebugTaskWhileMandatoryPropertiesAreNotSpecifiedInUserConfig) {
   mock.MockReadFile(paths.kUserConfig);
-  ASSERT_CDT_STARTED();
-  CMD("d");
+  ASSERT_STARTED(TestCdt(tasks, profiles, args));
+  RunCmd("d");
   EXPECT_OUT(HasSubstr("debug_command"));
   EXPECT_OUT(HasPath(paths.kUserConfig));
 }
 
 TEST_F(DTest, StartAttemptDebugTaskThatDoesNotExistAndViewListOfAllTasks) {
-  ASSERT_CDT_STARTED();
-  CMD("d");
-  EXPECT_OUT(HasSubstrsInOrder(list_of_tasks_in_ui));
-  CMD("d0");
-  EXPECT_OUT(HasSubstrsInOrder(list_of_tasks_in_ui));
-  CMD("d99");
-  EXPECT_OUT(HasSubstrsInOrder(list_of_tasks_in_ui));
+  std::vector<std::string> task_names;
+  for (nlohmann::json& t: tasks) {
+    task_names.push_back(t["name"]);
+  }
+  ASSERT_STARTED(TestCdt(tasks, profiles, args));
+  RunCmd("d");
+  EXPECT_OUT(HasSubstrsInOrder(task_names));
+  RunCmd("d0");
+  EXPECT_OUT(HasSubstrsInOrder(task_names));
+  RunCmd("d99");
+  EXPECT_OUT(HasSubstrsInOrder(task_names));
 }
 
 TEST_F(DTest, StartDebugPrimaryTaskWithPreTasks) {
-  std::string debugger_call = WITH_DEBUG("echo primary task");
-  mock.cmd_to_process_execs[debugger_call].push_back(ProcessExec{});
-  ASSERT_CDT_STARTED();
-  CMD("d2");
+  mock.MockProc(cmd_with_debugger);
+  ASSERT_STARTED(TestCdt(tasks, profiles, args));
+  RunCmd("d2");
   EXPECT_OUT(HasSubstr("Debugger started"));
   EXPECT_OUT(HasSubstr(TASK_COMPLETE("primary task")));
-  EXPECT_PROCS_EXACT("echo pre pre task 1", "echo pre pre task 2",
-                     "echo pre task 1", "echo pre task 2", debugger_call);
+  EXPECT_PROCS_EXACT("echo pre task", cmd_with_debugger);
 }
 
 TEST_F(DTest, StartAndFailToDebugTask) {
-  std::string debugger_call = WITH_DEBUG("echo primary task");
-  mock.cmd_to_process_execs[debugger_call].push_back(failed_debug_exec);
-  ASSERT_CDT_STARTED();
-  CMD("d2");
+  mock.MockProc(cmd_with_debugger, failed_debug_exec);
+  ASSERT_STARTED(TestCdt(tasks, profiles, args));
+  RunCmd("d2");
   EXPECT_OUT(HasSubstr(failed_debug_exec.output_lines.front()));
   EXPECT_OUT(HasSubstr(TASK_FAILED("primary task",
                                    failed_debug_exec.exit_code)));
 }
 
 TEST_F(DTest, StartDebugGtestPrimaryTaskWithPreTasks) {
-  std::string debugger_call = WITH_DEBUG("tests");
-  mock.cmd_to_process_execs[debugger_call].push_back(ProcessExec{});
-  ASSERT_CDT_STARTED();
-  CMD("d10");
+  mock.MockProc(tests_with_debugger);
+  ASSERT_STARTED(TestCdt(tasks, profiles, args));
+  RunCmd("d3");
   EXPECT_OUT(HasSubstr("Debugger started"));
-  EXPECT_OUT(HasSubstr(TASK_COMPLETE("run tests with pre tasks")));
-  EXPECT_PROCS_EXACT("echo pre pre task 1", "echo pre pre task 2",
-                     debugger_call);
+  EXPECT_OUT(HasSubstr(TASK_COMPLETE("run tests")));
+  EXPECT_PROCS_EXACT("echo pre task", tests_with_debugger);
 }
 
 TEST_F(DTest, StartAndFailToDebugGtestTask) {
-  std::string debugger_call = WITH_DEBUG("tests");
-  mock.cmd_to_process_execs[debugger_call].push_back(failed_debug_exec);
-  ASSERT_CDT_STARTED();
-  CMD("d10");
+  mock.MockProc(tests_with_debugger, failed_debug_exec);
+  ASSERT_STARTED(TestCdt(tasks, profiles, args));
+  RunCmd("d3");
   EXPECT_OUT(HasSubstr(failed_debug_exec.output_lines.front()));
 }

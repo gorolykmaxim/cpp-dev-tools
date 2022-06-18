@@ -113,6 +113,10 @@ void OsApiMock::PressCtrlC() {
   }
 }
 
+void OsApiMock::MockProc(const std::string &cmd, const ProcessExec& exec) {
+  cmd_to_process_execs[cmd].push_back(exec);
+}
+
 void OsApiMock::MockReadFile(const std::filesystem::path& p,
                              const std::string& d) {
   EXPECT_CALL(*this, ReadFile(testing::Eq(p), testing::_))
@@ -125,7 +129,12 @@ void OsApiMock::MockReadFile(const std::filesystem::path& p) {
       .WillRepeatedly(testing::Return(false));
 }
 
-void CdtTest::SetUp() {
+void CdtTest::Init() {
+  args = {execs.kTests, paths.kTasksConfig.filename().string()};
+  user_config_data["open_in_editor_command"] = execs.kEditor + " {}";
+  user_config_data["debug_command"] = execs.kNewTerminalTab +
+                                      " cd {current_dir} && " +
+                                      execs.kDebugger + " {shell_cmd}";
   cdt.os = &mock;
   EXPECT_CALL(mock, Out())
       .Times(testing::AnyNumber())
@@ -145,6 +154,12 @@ void CdtTest::SetUp() {
   EXPECT_CALL(mock, AbsolutePath(paths.kTasksConfig.filename()))
       .Times(testing::AnyNumber())
       .WillRepeatedly(testing::Return(paths.kTasksConfig));
+  EXPECT_CALL(mock, FileExists(paths.kUserConfig))
+      .WillRepeatedly(testing::Return(true));
+}
+
+void CdtTest::SetUp() {
+  Init();
   // mock tasks config
   std::vector<nlohmann::json> tasks;
   tasks.push_back(CreateTaskAndProcess("hello world!"));
@@ -192,14 +207,7 @@ void CdtTest::SetUp() {
   };
   tasks_config_with_profiles_data["cdt_profiles"] = profiles;
   // mock user config
-  nlohmann::json user_config_data;
-  user_config_data["open_in_editor_command"] = execs.kEditor + " {}";
-  user_config_data["debug_command"] = execs.kNewTerminalTab +
-                                      " cd {current_dir} && " +
-                                      execs.kDebugger + " {shell_cmd}";
   mock.MockReadFile(paths.kUserConfig, user_config_data.dump());
-  EXPECT_CALL(mock, FileExists(paths.kUserConfig))
-      .WillRepeatedly(testing::Return(true));
   // mock default test execution
   successful_gtest_exec.output_lines = {
     "Running main() from /lib/gtest_main.cc",
@@ -339,9 +347,6 @@ void CdtTest::SetUp() {
     "",
     " 1 FAILED TEST",
   };
-  failed_debug_exec.exit_code = 1;
-  failed_debug_exec.output_lines = {"failed to launch debugger"};
-  failed_debug_exec.stderr_lines.insert(0);
   mock.cmd_to_process_execs[execs.kTests].push_back(successful_gtest_exec);
   std::string one_test = execs.kTests + WITH_GT_FILTER("test_suit_1.test1");
   mock.cmd_to_process_execs[one_test].push_back(successful_single_gtest_exec);
@@ -349,6 +354,24 @@ void CdtTest::SetUp() {
                           "3 \"test_suit_2.test1\""};
   test_list_failed = {"1 \"failed_test_suit_1.test1\"",
                       "2 \"failed_test_suit_2.test1\""};
+}
+
+bool CdtTest::TestCdt(const std::vector<nlohmann::json>& tasks,
+                      const std::vector<nlohmann::json>& profiles,
+                      const std::vector<std::string>& args) {
+  nlohmann::json tasks_config = {
+    {"cdt_tasks", tasks},
+    {"cdt_profiles", profiles}
+  };
+  mock.MockReadFile(paths.kTasksConfig, tasks_config.dump());
+  std::vector<const char*> argv;
+  argv.reserve(args.size());
+  for (const std::string& arg: args) {
+    argv.push_back(arg.c_str());
+  }
+  bool result = InitCdt(argv.size(), argv.data(), cdt);
+  SaveOutput();
+  return result;
 }
 
 bool CdtTest::InitTestCdt(const std::optional<std::string>& profile_name) {
@@ -413,6 +436,9 @@ void CdtTest::RunCmd(const std::string& cmd,
         cdt.registry.view<Process>().size() == 1) {
       break;
     }
+  }
+  if (!break_when_process_events_stop) {
+    SaveOutput();
   }
 }
 

@@ -151,6 +151,8 @@ public:
   int GetProcessExitCode(Process& process) override;
   std::chrono::system_clock::time_point TimeNow() override;
   void PressCtrlC();
+  void MockProc(const std::string& cmd,
+                const ProcessExec& exec = ProcessExec{});
   void MockReadFile(const std::filesystem::path& p, const std::string& d);
   void MockReadFile(const std::filesystem::path& p);
 
@@ -196,6 +198,8 @@ private:
 #define TASK_FAILED(NAME, CODE)\
   std::string("'" NAME "' failed: return code: ") + std::to_string(CODE)
 
+#define ASSERT_STARTED(RESULT) ASSERT_TRUE(RESULT) << out.str()
+
 #define ASSERT_CDT_STARTED()\
   ASSERT_TRUE(InitTestCdt()) << out.str();\
   SaveOutput()
@@ -218,9 +222,7 @@ private:
 
 #define EXPECT_OUT(MATCHER) EXPECT_THAT(current_out_segment, MATCHER)
 
-#define CMD(CMD)\
-  RunCmd(CMD);\
-  SaveOutput()
+#define CMD(CMD) RunCmd(CMD)
 
 #define INTERRUPT_CMD(CMD)\
   RunCmd(CMD, true);\
@@ -323,7 +325,9 @@ class CdtTest: public testing::Test {
 public:
   Paths paths;
   Executables execs;
-  nlohmann::json tasks_config_data, tasks_config_with_profiles_data;
+  nlohmann::json tasks_config_data, tasks_config_with_profiles_data,
+                 user_config_data;
+  std::vector<std::string> args;
   std::vector<std::string> list_of_tasks_in_ui;
   std::vector<std::string> test_list_successful;
   std::vector<std::string> test_list_failed;
@@ -334,14 +338,17 @@ public:
               failed_single_gtest_exec,
               aborted_gtest_exec,
               successful_rerun_gtest_exec,
-              failed_rerun_gtest_exec,
-              failed_debug_exec;
+              failed_rerun_gtest_exec;
   std::stringstream out;
   std::string current_out_segment;
   testing::NiceMock<OsApiMock> mock;
   Cdt cdt;
 
+  void Init();
   void SetUp() override;
+  bool TestCdt(const std::vector<nlohmann::json>& tasks,
+               const std::vector<nlohmann::json>& profiles,
+               const std::vector<std::string>& args = {});
   bool InitTestCdt(const std::optional<std::string>& profile_name = {});
   nlohmann::json CreateTask(const nlohmann::json& name = nullptr,
                             const nlohmann::json& command = nullptr,
