@@ -1,58 +1,88 @@
+#include "json.hpp"
 #include "test-lib.h"
 #include <gmock/gmock-matchers.h>
+#include <string>
+#include <vector>
 
 using namespace testing;
 
-class Gtest: public CdtTest {};
+class Gtest: public CdtTest {
+protected:
+  std::vector<nlohmann::json> tasks;
+  ProcessExec exec_test_success, exec_test_failure;
+
+  void SetUp() override {
+    Init();
+    tasks = {
+      CreateTask("run tests", "__gtest " + execs.kTests),
+      CreateTaskAndProcess("primary task")
+    };
+    std::vector<DummyTestSuite> suites = {
+        DummyTestSuite{"suite1", {
+            DummyTest{"test1", {OUT_LINKS_NOT_HIGHLIGHTED()}},
+            DummyTest{"test2"}}}};
+    exec_test_success.output_lines = CreateTestOutput(suites);
+    suites[0].tests[0].is_failed = true;
+    exec_test_failure.output_lines = CreateTestOutput(suites);
+    exec_test_failure.exit_code = 1;
+    mock.MockReadFile(paths.kUserConfig, user_config_data.dump());
+  }
+};
 
 TEST_F(Gtest, StartAttemptToViewGtestTestsButSeeNoTestsHaveBeenExecutedYet) {
-  ASSERT_CDT_STARTED();
-  CMD("g");
+  ASSERT_STARTED(TestCdt(tasks, {}, args));
+  RunCmd("g");
   EXPECT_OUT(HasSubstr("No google tests have been executed yet."));
 }
 
 TEST_F(Gtest, StartExecuteGtestTaskTryToViewGtestTestOutputWithIndexOutOfRangeAndSeeAllTestsList) {
-  ASSERT_CDT_STARTED();
-  CMD("t8");
-  CMD("g0");
-  EXPECT_OUT(HasSubstrsInOrder(test_list_successful));
-  CMD("g99");
-  EXPECT_OUT(HasSubstrsInOrder(test_list_successful));
-  CMD("g");
-  EXPECT_OUT(HasSubstrsInOrder(test_list_successful));
+  std::vector<std::string> test_names = {"1 \"suite1.test1\"",
+                                         "2 \"suite1.test2\""};
+  mock.MockProc(execs.kTests, exec_test_success);
+  ASSERT_STARTED(TestCdt(tasks, {}, args));
+  RunCmd("t1");
+  RunCmd("g0");
+  EXPECT_OUT(HasSubstrsInOrder(test_names));
+  RunCmd("g99");
+  EXPECT_OUT(HasSubstrsInOrder(test_names));
+  RunCmd("g");
+  EXPECT_OUT(HasSubstrsInOrder(test_names));
 }
 
 TEST_F(Gtest, StartExecuteGtestTaskViewGtestTaskOutputWithFileLinksHighlightedInTheOutputAndOpenLinks) {
-  ASSERT_CDT_STARTED();
-  CMD("t8");
-  CMD("g1");
+  mock.MockProc(execs.kTests, exec_test_success);
+  ASSERT_STARTED(TestCdt(tasks, {}, args));
+  RunCmd("t1");
+  RunCmd("g1");
   EXPECT_OUTPUT_LINKS_TO_OPEN();
 }
 
 TEST_F(Gtest, StartExecuteGtestTaskFailTryToViewGtestTestOutputWithIndexOutOfRangeAndSeeFailedTestsList) {
-  mock.cmd_to_process_execs[execs.kTests].front() = failed_gtest_exec;
-  ASSERT_CDT_STARTED();
-  CMD("t8");
-  CMD("g0");
-  EXPECT_OUT(HasSubstrsInOrder(test_list_failed));
-  CMD("g99");
-  EXPECT_OUT(HasSubstrsInOrder(test_list_failed));
-  CMD("g");
-  EXPECT_OUT(HasSubstrsInOrder(test_list_failed));
+  std::vector<std::string> test_names = {"1 \"suite1.test1\""};
+  mock.MockProc(execs.kTests, exec_test_failure);
+  ASSERT_STARTED(TestCdt(tasks, {}, args));
+  RunCmd("t1");
+  RunCmd("g0");
+  EXPECT_OUT(HasSubstrsInOrder(test_names));
+  RunCmd("g99");
+  EXPECT_OUT(HasSubstrsInOrder(test_names));
+  RunCmd("g");
+  EXPECT_OUT(HasSubstrsInOrder(test_names));
 }
 
 TEST_F(Gtest, StartExecuteGtestTaskFailViewGtestTestOutputWithFileLinksHighlightedInTheOutputAndOpenLinks) {
-  mock.cmd_to_process_execs[execs.kTests].front() = failed_gtest_exec;
-  ASSERT_CDT_STARTED();
-  CMD("t8");
-  CMD("g1");
+  mock.MockProc(execs.kTests, exec_test_failure);
+  ASSERT_STARTED(TestCdt(tasks, {}, args));
+  RunCmd("t1");
+  RunCmd("g1");
   EXPECT_OUTPUT_LINKS_TO_OPEN();
 }
 
 TEST_F(Gtest, StartExecuteGtestTaskExecuteNonGtestTaskAndDisplayOutputOfOneOfTheTestsExecutedPreviously) {
-  ASSERT_CDT_STARTED();
-  CMD("t8");
-  CMD("t1");
-  CMD("g1");
+  mock.MockProc(execs.kTests, exec_test_success);
+  ASSERT_STARTED(TestCdt(tasks, {}, args));
+  RunCmd("t1");
+  RunCmd("t2");
+  RunCmd("g1");
   EXPECT_OUT(HasSubstr(OUT_LINKS_HIGHLIGHTED()));
 }

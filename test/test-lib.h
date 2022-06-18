@@ -54,6 +54,17 @@ struct ProcessInfo {
   std::string shell_command;
 };
 
+struct DummyTest {
+  std::string name;
+  std::vector<std::string> output_lines;
+  bool is_failed = false;
+};
+
+struct DummyTestSuite {
+  std::string name;
+  std::vector<DummyTest> tests;
+};
+
 class OsApiMock: public OsApi {
 public:
   MOCK_METHOD(void, Init, (), (override));
@@ -358,6 +369,8 @@ public:
   nlohmann::json CreateProfileTaskAndProcess(
       const std::string& name, const std::vector<std::string>& profile_versions,
       std::vector<std::string> pre_tasks = {});
+  std::vector<std::string> CreateTestOutput(
+      const std::vector<DummyTestSuite>& suites);
   void RunCmd(const std::string& cmd,
               bool break_when_process_events_stop = false);
   void SaveOutput();

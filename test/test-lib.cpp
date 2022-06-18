@@ -422,6 +422,58 @@ nlohmann::json CdtTest::CreateProfileTaskAndProcess(
   return CreateTask(name, "echo " + name, std::move(pre_tasks));
 }
 
+std::vector<std::string> CdtTest::CreateTestOutput(
+    const std::vector<DummyTestSuite> &suites) {
+  int total_test_count = 0;
+  std::vector<std::string> failed_tests;
+  std::vector<std::string> output(3);
+  output[0] = "Running main() from /lib/gtest_main.cc";
+  output[2] = "[----------] Global test environment set-up.";
+  for (const DummyTestSuite& suite: suites) {
+    total_test_count += suite.tests.size();
+    std::string test_count = std::to_string(suite.tests.size());
+    output.push_back("[----------] " + test_count + " tests from " +
+                     suite.name);
+    for (const DummyTest& test: suite.tests) {
+      std::string test_name = suite.name + "." + test.name;
+      output.push_back("[ RUN      ] " + test_name);
+      output.insert(output.end(), test.output_lines.begin(),
+                    test.output_lines.end());
+      if (test.is_failed) {
+        output.push_back("[  FAILED  ] " + test_name + " (0 ms)");
+        failed_tests.push_back(test_name);
+      } else {
+        output.push_back("[       OK ] " + test_name + " (0 ms)");
+      }
+    }
+    output.push_back("[----------] " + test_count + " tests from " +
+                     suite.name + " (0 ms total)");
+    output.push_back("");
+  }
+  std::string tests_from_test_suites = std::to_string(total_test_count) +
+                                       " tests from " +
+                                       std::to_string(suites.size()) +
+                                       " test suites";
+  output[1] = "[==========] Running " + tests_from_test_suites + ".";
+  output.push_back("[----------] Global test environment tear-down");
+  output.push_back("[==========] " + tests_from_test_suites +
+                   " ran. (0 ms total)");
+  output.push_back("[  PASSED  ] " +
+                   std::to_string(total_test_count - failed_tests.size()) +
+                   " tests.");
+  if (!failed_tests.empty()) {
+    std::string failed_test_count = std::to_string(failed_tests.size());
+    output.push_back("[  FAILED  ] " + failed_test_count +
+                     " tests, listed below:");
+    for (std::string& failed_test: failed_tests) {
+      output.push_back("[  FAILED  ] " + failed_test);
+    }
+    output.push_back("");
+    output.push_back(failed_test_count + " FAILED TESTS");
+  }
+  return output;
+}
+
 void CdtTest::RunCmd(const std::string& cmd,
                      bool break_when_process_events_stop) {
   mock.dummy_stdin << cmd << std::endl;
