@@ -12,7 +12,7 @@ protected:
     ProcessExec exec;
     exec.output_lines = {OUT_LINKS_NOT_HIGHLIGHTED()};
     mock.MockProc(tasks[0]["command"], exec);
-    Init();
+    CdtTest::SetUp();
   }
 };
 

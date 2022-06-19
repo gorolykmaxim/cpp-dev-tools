@@ -22,7 +22,7 @@ protected:
       CreateTaskAndProcess("primary task", {"pre task"}),
       CreateTask("run tests", "__gtest " + execs.kTests, {"pre task"})
     };
-    Init();
+    CdtTest::SetUp();
   }
 };
 

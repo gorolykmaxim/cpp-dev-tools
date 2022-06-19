@@ -12,7 +12,7 @@ protected:
     tasks = {
         CreateTaskAndProcess("pre task"),
         CreateTask("run tests", "__gtest " + execs.kTests, {"pre task"})};
-    Init();
+    CdtTest::SetUp();
   }
 };
 

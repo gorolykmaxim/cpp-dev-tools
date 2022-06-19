@@ -23,7 +23,7 @@ protected:
     suites[0].tests[0].is_failed = true;
     exec_test_failure.output_lines = CreateTestOutput(suites);
     exec_test_failure.exit_code = 1;
-    Init();
+    CdtTest::SetUp();
   }
 };
 

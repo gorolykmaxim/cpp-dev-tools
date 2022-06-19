@@ -39,7 +39,7 @@ protected:
     cmd_pre_task = tasks[0]["command"];
     cmd_rerun = execs.kTests + WITH_GT_FILTER("suite.test1");
     test_names_success = {"1 \"suite.test1\"", "2 \"suite.test2\""};
-    Init();
+    CdtTest::SetUp();
   }
 };
 

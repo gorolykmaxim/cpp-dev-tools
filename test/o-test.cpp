@@ -16,7 +16,7 @@ protected:
     cmd_pre_task = tasks[0]["command"];
     cmd_primary = tasks[1]["command"];
     exec_with_links.output_lines = {OUT_LINKS_NOT_HIGHLIGHTED()};
-    Init();
+    CdtTest::SetUp();
   }
 };
 

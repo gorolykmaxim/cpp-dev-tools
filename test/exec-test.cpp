@@ -41,7 +41,7 @@ protected:
     mock.MockProc(execs.kTests, exec_tests_failed);
     cmd_test_rerun = execs.kTests + WITH_GT_FILTER("suite.test1");
     suite_rerun = {DummyTestSuite{"suite", {DummyTest{"test1"}}}};
-    Init();
+    CdtTest::SetUp();
   }
 };
 

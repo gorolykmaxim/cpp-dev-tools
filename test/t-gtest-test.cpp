@@ -38,7 +38,7 @@ protected:
                       true}}}};
     exec_test_fail.exit_code = 1;
     exec_test_fail.output_lines = CreateTestOutput(suites);
-    Init();
+    CdtTest::SetUp();
   }
 };
 

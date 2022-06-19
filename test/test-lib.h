@@ -349,7 +349,6 @@ public:
   testing::NiceMock<OsApiMock> mock;
   Cdt cdt;
 
-  void Init();
   void SetUp() override;
   bool TestCdt();
   bool InitTestCdt(const std::optional<std::string>& profile_name = {});

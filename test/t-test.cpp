@@ -27,7 +27,7 @@ protected:
         {{"name", "profile 2"}, {"platform", "windows"}}};
     cmd_task1 = tasks[0]["command"];
     cmd_task2 = tasks[1]["command"];
-    Init();
+    CdtTest::SetUp();
   }
 
   std::string MockProc(const std::string& output) {

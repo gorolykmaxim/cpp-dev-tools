@@ -31,7 +31,7 @@ protected:
     cmd_test2_rerun = WITH_DEBUG("tests" WITH_GT_FILTER("suite.test2"));
     mock.MockProc(cmd_test1_rerun);
     mock.MockProc(cmd_test2_rerun);
-    Init();
+    CdtTest::SetUp();
   }
 };
 

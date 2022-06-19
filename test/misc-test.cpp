@@ -21,7 +21,7 @@ protected:
     cmd_primary = tasks[0]["command"];
     tasks_config_path_str = paths.kTasksConfig.string();
     restart_args = {execs.kCdt.c_str(), tasks_config_path_str.c_str(), nullptr};
-    Init();
+    CdtTest::SetUp();
   }
 };
 

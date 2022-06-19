@@ -23,7 +23,7 @@ protected:
     exec_tests_failed.exit_code = 1;
     exec_tests_failed.output_lines = CreateTestOutput(suites);
     test_names = {"1 \"suite.test1\"", "2 \"suite.test2\""};
-    Init();
+    CdtTest::SetUp();
   }
 };
 

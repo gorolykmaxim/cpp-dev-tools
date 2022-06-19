@@ -18,7 +18,7 @@ protected:
     tasks = {
         CreateTaskAndProcess("build for {os} with profile {name}"),
         CreateTaskAndProcess("run on {os}")};
-    Init();
+    CdtTest::SetUp();
   }
 };
 
