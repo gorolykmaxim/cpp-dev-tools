@@ -157,6 +157,7 @@ void CdtTest::Init() {
   EXPECT_CALL(mock, FileExists(paths.kUserConfig))
       .WillRepeatedly(testing::Return(true));
   mock.MockReadFile(paths.kUserConfig, user_config_data.dump());
+  MockTasksConfig();
 }
 
 void CdtTest::SetUp() {
@@ -356,11 +357,6 @@ void CdtTest::SetUp() {
 }
 
 bool CdtTest::TestCdt() {
-  nlohmann::json tasks_config = {
-    {"cdt_tasks", tasks},
-    {"cdt_profiles", profiles}
-  };
-  mock.MockReadFile(paths.kTasksConfig, tasks_config.dump());
   std::vector<const char*> argv;
   argv.reserve(args.size());
   for (const std::string& arg: args) {
@@ -479,7 +475,14 @@ std::vector<std::string> CdtTest::CreateAbortedTestOutput(
     "[----------] Global test environment set-up.",
     "[----------] 1 test from " + suite,
     "[ RUN      ] " + suite + '.' + test,
-  };;
+  };
+}
+
+void CdtTest::MockTasksConfig() {
+  nlohmann::json tasks_config = {
+      {"cdt_tasks", tasks},
+      {"cdt_profiles", profiles}};
+  mock.MockReadFile(paths.kTasksConfig, tasks_config.dump());
 }
 
 void CdtTest::RunCmd(const std::string& cmd,

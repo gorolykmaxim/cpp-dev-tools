@@ -9,57 +9,75 @@
 
 using namespace testing;
 
-class LaunchTest : public CdtTest {};
+class LaunchTest : public CdtTest {
+protected:
+  std::vector<nlohmann::json> example_profiles, example_tasks;
+
+  void SetUp() override {
+    example_profiles = {
+        {{"name", "profile 1"}, {"os", "macos"}},
+        {{"name", "profile 2"}, {"os", "windows"}}};
+    example_tasks = {
+        CreateTaskAndProcess("build for {os} with profile {name}"),
+        CreateTaskAndProcess("run on {os}")};
+    Init();
+  }
+};
 
 TEST_F(LaunchTest, StartAndViewTasks) {
   EXPECT_CALL(mock, Init());
-  ASSERT_CDT_STARTED();
+  tasks = {
+      CreateTaskAndProcess("task 1"),
+      CreateTaskAndProcess("task 2"),
+      CreateTaskAndProcess("task 3")};
+  MockTasksConfig();
+  std::vector<std::string> task_names = {"1 \"task 1\"", "2 \"task 2\"",
+                                         "3 \"task 3\""};
+  ASSERT_INIT_CDT();
   std::string help_prompt = "\033[32mh\033[0m";
   EXPECT_OUT(HasSubstr(help_prompt));
-  EXPECT_OUT(HasSubstrsInOrder(list_of_tasks_in_ui));
+  EXPECT_OUT(HasSubstrsInOrder(task_names));
 }
 
 TEST_F(LaunchTest, FailToStartDueToUserConfigNotBeingJson) {
   mock.MockReadFile(paths.kUserConfig, "not a json");
-  EXPECT_CDT_FAILED();
+  EXPECT_INIT_CDT_FAILED();
   EXPECT_OUT(HasPath(paths.kUserConfig));
   EXPECT_OUT(HasSubstr("parse error"));
 }
 
 TEST_F(LaunchTest, FailToStartDueToUserConfigHavingPropertiesInIncorrectFormat) {
-  nlohmann::json user_config_data;
   user_config_data["open_in_editor_command"] = "my-editor";
   user_config_data["debug_command"] = "my-debugger";
   mock.MockReadFile(paths.kUserConfig, user_config_data.dump());
-  EXPECT_CDT_FAILED();
+  EXPECT_INIT_CDT_FAILED();
   EXPECT_OUT(HasSubstr("'open_in_editor_command': must be a string in format"));
   EXPECT_OUT(HasSubstr("'debug_command': must be a string in format"));
 }
 
 TEST_F(LaunchTest, FailToStartDueToTasksConfigNotSpecified) {
-  std::vector<const char*> argv = {execs.kCdt.c_str()};
-  EXPECT_FALSE(InitCdt(argv.size(), argv.data(), cdt));
-  SaveOutput();
+  args = {execs.kCdt.c_str()};
+  EXPECT_INIT_CDT_FAILED();
   EXPECT_OUT(HasSubstr("usage: cpp-dev-tools tasks.json [profile]"));
 }
 
 TEST_F(LaunchTest, FailToStartDueToTasksConfigNotExisting) {
   mock.MockReadFile(paths.kTasksConfig);
-  EXPECT_CDT_FAILED();
+  EXPECT_INIT_CDT_FAILED();
   EXPECT_OUT(HasPath(paths.kTasksConfig));
   EXPECT_OUT(HasSubstr("does not exist"));
 }
 
 TEST_F(LaunchTest, FailToStartDueToTasksConfigNotBeingJson) {
   mock.MockReadFile(paths.kTasksConfig, "not a json");
-  EXPECT_CDT_FAILED();
+  EXPECT_INIT_CDT_FAILED();
   EXPECT_OUT(HasPath(paths.kTasksConfig));
   EXPECT_OUT(HasSubstr("parse error"));
 }
 
 TEST_F(LaunchTest, FailToStartDueToCdtTasksNotBeingSpecifiedInConfig) {
   mock.MockReadFile(paths.kTasksConfig, "{}");
-  EXPECT_CDT_FAILED();
+  EXPECT_INIT_CDT_FAILED();
   EXPECT_OUT(HasPath(paths.kTasksConfig));
   EXPECT_OUT(HasSubstr("'cdt_tasks': must be an array of task objects"));
 }
@@ -68,26 +86,21 @@ TEST_F(LaunchTest, FailToStartDueToCdtTasksNotBeingArrayOfObjects) {
   nlohmann::json tasks_config_data;
   tasks_config_data["cdt_tasks"] = "string";
   mock.MockReadFile(paths.kTasksConfig, tasks_config_data.dump());
-  EXPECT_CDT_FAILED();
+  EXPECT_INIT_CDT_FAILED();
   EXPECT_OUT(HasPath(paths.kTasksConfig));
   EXPECT_OUT(HasSubstr("'cdt_tasks': must be an array of task objects"));
 }
 
 TEST_F(LaunchTest, FailToStartDueToTasksConfigHavingErrors) {
-  nlohmann::json tasks_config_data;
-  tasks_config_data["cdt_tasks"] = std::vector<nlohmann::json>{
-    CreateTask(nullptr, "command"),
-    CreateTask("name", nullptr, true),
-    CreateTask("name 2", "command",
-               std::vector<std::string>{"non-existent-task"}),
-    CreateTask("cycle-1", "command", std::vector<std::string>{"cycle-2"}),
-    CreateTask("cycle-2", "command", std::vector<std::string>{"cycle-3"}),
-    CreateTask("cycle-3", "command", std::vector<std::string>{"cycle-1"}),
-    CreateTask("duplicate name", "command"),
-    CreateTask("duplicate name", "command"),
-  };
-  mock.MockReadFile(paths.kTasksConfig, tasks_config_data.dump());
-  EXPECT_CDT_FAILED();
+  tasks = {CreateTask(nullptr, "command"), CreateTask("name", nullptr, true),
+           CreateTask("name 2", "command", {"non-existent-task"}),
+           CreateTask("cycle-1", "command", {"cycle-2"}),
+           CreateTask("cycle-2", "command", {"cycle-3"}),
+           CreateTask("cycle-3", "command", {"cycle-1"}),
+           CreateTask("duplicate name", "command"),
+           CreateTask("duplicate name", "command")};
+  MockTasksConfig();
+  EXPECT_INIT_CDT_FAILED();
   EXPECT_OUT(HasPath(paths.kTasksConfig));
   EXPECT_OUT(HasSubstr("task #1: 'name': must be a string"));
   EXPECT_OUT(HasSubstr("task #2: 'command': must be a string"));
@@ -137,24 +150,24 @@ TEST_F(LaunchTest, StartAndCreateExampleUserConfig) {
   EXPECT_CALL(mock, FileExists(paths.kUserConfig))
       .WillRepeatedly(Return(false));
   EXPECT_CALL(mock, WriteFile(paths.kUserConfig, default_user_config_content));
-  ASSERT_CDT_STARTED();
+  ASSERT_INIT_CDT();
 }
 
 TEST_F(LaunchTest, StartAndNotOverrideExistingUserConfig) {
   EXPECT_CALL(mock, WriteFile(Eq(paths.kUserConfig), _)).Times(0);
-  ASSERT_CDT_STARTED();
+  ASSERT_INIT_CDT();
 }
 
 TEST_F(LaunchTest, FailToStartDueToProfilesNotBeingArrayOfObjects) {
+  nlohmann::json tasks_config_data;
   tasks_config_data["cdt_profiles"] = "string";
   mock.MockReadFile(paths.kTasksConfig, tasks_config_data.dump());
-  EXPECT_CDT_FAILED();
+  EXPECT_INIT_CDT_FAILED();
   EXPECT_OUT(HasPath(paths.kTasksConfig));
   EXPECT_OUT(HasSubstr("'cdt_profiles': must be an array of profile objects"));
 }
 
 TEST_F(LaunchTest, FailedToStartDueToProfilesHavingErrors) {
-  std::vector<nlohmann::json> profiles;
   // profile without a name and other variables
   profiles.push_back({});
   // profile with invalid variables
@@ -175,9 +188,8 @@ TEST_F(LaunchTest, FailedToStartDueToProfilesHavingErrors) {
     {"d", "d"},
     {"e", "e"},
   });
-  tasks_config_data["cdt_profiles"] = profiles;
-  mock.MockReadFile(paths.kTasksConfig, tasks_config_data.dump());
-  EXPECT_CDT_FAILED();
+  MockTasksConfig();
+  EXPECT_INIT_CDT_FAILED();
   EXPECT_OUT(HasPath(paths.kTasksConfig));
   EXPECT_OUT(HasSubstr("profile #1: 'd': must be a string"));
   EXPECT_OUT(HasSubstr("profile #1: 'e': must be a string"));
@@ -193,22 +205,29 @@ TEST_F(LaunchTest, FailedToStartDueToProfilesHavingErrors) {
 
 
 TEST_F(LaunchTest, FailedToStartDueToNonExistentProfileBeingSelected) {
-  EXPECT_CDT_FAILED_WITH_PROFILE("unknown profile");
+  args.push_back("unknown profile");
+  EXPECT_INIT_CDT_FAILED();
   EXPECT_OUT(HasPath(paths.kTasksConfig));
   EXPECT_OUT(HasSubstr("profile with name 'unknown profile' is not defined "
                        "in 'cdt_profiles'"));
 }
 
 TEST_F(LaunchTest, StartWithFirstProfileAutoselected) {
-  mock.MockReadFile(paths.kTasksConfig, tasks_config_with_profiles_data.dump());
-  ASSERT_CDT_STARTED();
+  profiles = example_profiles;
+  tasks = example_tasks;
+  MockTasksConfig();
+  ASSERT_INIT_CDT();
   EXPECT_OUT(HasSubstr("Using profile \033[32mprofile 1\033[0m"));
   EXPECT_OUT(HasSubstr("build for macos with profile profile 1"));
   EXPECT_OUT(HasSubstr("run on macos"));
 }
 
 TEST_F(LaunchTest, StartWithSpecifiedProfileSelected) {
-  ASSERT_CDT_STARTED_WITH_PROFILE(profile2);
+  profiles = example_profiles;
+  tasks = example_tasks;
+  args.push_back(profiles[1]["name"]);
+  MockTasksConfig();
+  ASSERT_INIT_CDT();
   EXPECT_OUT(HasSubstr("Using profile \033[32mprofile 2\033[0m"));
   EXPECT_OUT(HasSubstr("build for windows with profile profile 2"));
   EXPECT_OUT(HasSubstr("run on windows"));

@@ -211,6 +211,8 @@ private:
 
 #define ASSERT_INIT_CDT() ASSERT_TRUE(TestCdt()) << current_out_segment
 
+#define EXPECT_INIT_CDT_FAILED() EXPECT_FALSE(TestCdt())
+
 #define ASSERT_CDT_STARTED()\
   ASSERT_TRUE(InitTestCdt()) << out.str();\
   SaveOutput()
@@ -219,16 +221,6 @@ private:
   mock.MockReadFile(paths.kTasksConfig,\
                     tasks_config_with_profiles_data.dump());\
   ASSERT_TRUE(InitTestCdt(PROFILE)) << out.str();\
-  SaveOutput()
-
-#define EXPECT_CDT_FAILED()\
-  EXPECT_FALSE(InitTestCdt());\
-  SaveOutput()
-
-#define EXPECT_CDT_FAILED_WITH_PROFILE(PROFILE)\
-  mock.MockReadFile(paths.kTasksConfig,\
-                    tasks_config_with_profiles_data.dump());\
-  EXPECT_FALSE(InitTestCdt(PROFILE));\
   SaveOutput()
 
 #define EXPECT_OUT(MATCHER) EXPECT_THAT(current_out_segment, MATCHER)
@@ -373,6 +365,7 @@ public:
       const std::vector<DummyTestSuite>& suites);
   std::vector<std::string> CreateAbortedTestOutput(const std::string& suite,
                                                    const std::string& test);
+  void MockTasksConfig();
   void RunCmd(const std::string& cmd,
               bool break_when_process_events_stop = false);
   void InterruptCmd(const std::string& cmd);
