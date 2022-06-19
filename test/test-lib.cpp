@@ -130,7 +130,7 @@ void OsApiMock::MockReadFile(const std::filesystem::path& p) {
 }
 
 void CdtTest::Init() {
-  args = {execs.kTests, paths.kTasksConfig.filename().string()};
+  args = {execs.kCdt, paths.kTasksConfig.filename().string()};
   user_config_data["open_in_editor_command"] = execs.kEditor + " {}";
   user_config_data["debug_command"] = execs.kNewTerminalTab +
                                       " cd {current_dir} && " +
