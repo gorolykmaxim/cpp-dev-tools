@@ -16,8 +16,6 @@ protected:
     cmd_pre_task = tasks[0]["command"];
     cmd_primary = tasks[1]["command"];
     exec_with_links.output_lines = {OUT_LINKS_NOT_HIGHLIGHTED()};
-    mock.MockProc(cmd_pre_task, exec_with_links);
-    mock.MockProc(cmd_primary, exec_with_links);
     Init();
   }
 };
@@ -27,6 +25,8 @@ TEST_F(OTest, StartExecuteTaskAndFailToOpenLinksFromOutput) {
   exec.exit_code = 1;
   exec.output_lines = {"failed to open file"};
   mock.MockProc(execs.kEditor + " /a/b/c:10", exec);
+  mock.MockProc(cmd_pre_task, exec_with_links);
+  mock.MockProc(cmd_primary, exec_with_links);
   ASSERT_INIT_CDT();
   RunCmd("t2");
   RunCmd("o1");
@@ -34,12 +34,15 @@ TEST_F(OTest, StartExecuteTaskAndFailToOpenLinksFromOutput) {
 }
 
 TEST_F(OTest, StartExecuteTaskAndOpenLinksFromOutput) {
+  mock.MockProc(cmd_pre_task, exec_with_links);
+  mock.MockProc(cmd_primary, exec_with_links);
   ASSERT_INIT_CDT();
   RunCmd("t2");
   EXPECT_OUTPUT_LINKS_TO_OPEN();
 }
 
 TEST_F(OTest, StartFailToExecuteTaskWithLinksAndOpenLinksFromOutput) {
+  mock.MockProc(cmd_pre_task, exec_with_links);
   exec_with_links.exit_code = 1;
   mock.MockProc(cmd_primary, exec_with_links);
   ASSERT_INIT_CDT();
@@ -48,6 +51,7 @@ TEST_F(OTest, StartFailToExecuteTaskWithLinksAndOpenLinksFromOutput) {
 }
 
 TEST_F(OTest, StartFailToExecutePreTaskOfTaskAndOpenLinksFromOutput) {
+  mock.MockProc(cmd_primary, exec_with_links);
   exec_with_links.exit_code = 1;
   mock.MockProc(cmd_pre_task, exec_with_links);
   ASSERT_INIT_CDT();
@@ -56,6 +60,7 @@ TEST_F(OTest, StartFailToExecutePreTaskOfTaskAndOpenLinksFromOutput) {
 }
 
 TEST_F(OTest, StartExecuteTaskWithLinksInOutputAttemptToOpenNonExistentLinkAndViewTaskOutput) {
+  mock.MockProc(cmd_pre_task, exec_with_links);
   ASSERT_INIT_CDT();
   RunCmd("t1");
   EXPECT_LAST_EXEC_OUTPUT_DISPLAYED_ON_LINK_INDEX_OUT_OF_BOUNDS();
@@ -70,6 +75,7 @@ TEST_F(OTest, StartFailToExecuteTaskWithLinksAttemptToOpenNonExistentLinkAndView
 }
 
 TEST_F(OTest, StartFailToExecutePreTaskOfTaskAttemptToOpenNonExistentLinkAndViewTaskOutput) {
+  mock.MockProc(cmd_primary, exec_with_links);
   exec_with_links.exit_code = 1;
   mock.MockProc(cmd_pre_task, exec_with_links);
   ASSERT_INIT_CDT();
