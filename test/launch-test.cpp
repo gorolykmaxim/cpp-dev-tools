@@ -11,13 +11,11 @@ using namespace testing;
 
 class LaunchTest : public CdtTest {
 protected:
-  std::vector<nlohmann::json> example_profiles, example_tasks;
-
   void SetUp() override {
-    example_profiles = {
+    profiles = {
         {{"name", "profile 1"}, {"os", "macos"}},
         {{"name", "profile 2"}, {"os", "windows"}}};
-    example_tasks = {
+    tasks = {
         CreateTaskAndProcess("build for {os} with profile {name}"),
         CreateTaskAndProcess("run on {os}")};
     Init();
@@ -168,26 +166,23 @@ TEST_F(LaunchTest, FailToStartDueToProfilesNotBeingArrayOfObjects) {
 }
 
 TEST_F(LaunchTest, FailedToStartDueToProfilesHavingErrors) {
-  // profile without a name and other variables
-  profiles.push_back({});
-  // profile with invalid variables
-  profiles.push_back({
-    {"name", "wrong profile"},
-    {"a", 1},
-    {"b", false},
-    {"c", "string"},
-    {"d", std::vector<nlohmann::json>()},
-    {"e", {{"a", 1}, {"b", false}}},
-  });
-  // correct profile
-  profiles.push_back({
-    {"name", "correct profile"},
-    {"a", "a"},
-    {"b", "b"},
-    {"c", "c"},
-    {"d", "d"},
-    {"e", "e"},
-  });
+  profiles = {
+      // profile without a name and other variables
+      {},
+      // profile with invalid variables
+      {{"name", "wrong profile"},
+       {"a", 1},
+       {"b", false},
+       {"c", "string"},
+       {"d", std::vector<nlohmann::json>()},
+       {"e", {{"a", 1}, {"b", false}}}},
+      // correct profile
+      {{"name", "correct profile"},
+       {"a", "a"},
+       {"b", "b"},
+       {"c", "c"},
+       {"d", "d"},
+       {"e", "e"}}};
   MockTasksConfig();
   EXPECT_INIT_CDT_FAILED();
   EXPECT_OUT(HasPath(paths.kTasksConfig));
@@ -213,9 +208,6 @@ TEST_F(LaunchTest, FailedToStartDueToNonExistentProfileBeingSelected) {
 }
 
 TEST_F(LaunchTest, StartWithFirstProfileAutoselected) {
-  profiles = example_profiles;
-  tasks = example_tasks;
-  MockTasksConfig();
   ASSERT_INIT_CDT();
   EXPECT_OUT(HasSubstr("Using profile \033[32mprofile 1\033[0m"));
   EXPECT_OUT(HasSubstr("build for macos with profile profile 1"));
@@ -223,10 +215,7 @@ TEST_F(LaunchTest, StartWithFirstProfileAutoselected) {
 }
 
 TEST_F(LaunchTest, StartWithSpecifiedProfileSelected) {
-  profiles = example_profiles;
-  tasks = example_tasks;
   args.push_back(profiles[1]["name"]);
-  MockTasksConfig();
   ASSERT_INIT_CDT();
   EXPECT_OUT(HasSubstr("Using profile \033[32mprofile 2\033[0m"));
   EXPECT_OUT(HasSubstr("build for windows with profile profile 2"));
