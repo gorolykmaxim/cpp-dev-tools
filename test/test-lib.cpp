@@ -471,6 +471,17 @@ std::vector<std::string> CdtTest::CreateTestOutput(
   return output;
 }
 
+std::vector<std::string> CdtTest::CreateAbortedTestOutput(
+    const std::string &suite, const std::string &test) {
+  return {
+    "Running main() from /lib/gtest_main.cc",
+    "[==========] Running 1 test from 1 test suite.",
+    "[----------] Global test environment set-up.",
+    "[----------] 1 test from " + suite,
+    "[ RUN      ] " + suite + '.' + test,
+  };;
+}
+
 void CdtTest::RunCmd(const std::string& cmd,
                      bool break_when_process_events_stop) {
   mock.dummy_stdin << cmd << std::endl;
@@ -489,6 +500,13 @@ void CdtTest::RunCmd(const std::string& cmd,
   if (!break_when_process_events_stop) {
     SaveOutput();
   }
+}
+
+void CdtTest::InterruptCmd(const std::string &cmd) {
+  RunCmd(cmd, true);
+  mock.PressCtrlC();
+  ExecCdtSystems(cdt);
+  SaveOutput();
 }
 
 void CdtTest::SaveOutput() {

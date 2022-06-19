@@ -371,8 +371,11 @@ public:
       std::vector<std::string> pre_tasks = {});
   std::vector<std::string> CreateTestOutput(
       const std::vector<DummyTestSuite>& suites);
+  std::vector<std::string> CreateAbortedTestOutput(const std::string& suite,
+                                                   const std::string& test);
   void RunCmd(const std::string& cmd,
               bool break_when_process_events_stop = false);
+  void InterruptCmd(const std::string& cmd);
   void SaveOutput();
 };
 
