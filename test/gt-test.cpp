@@ -5,123 +5,116 @@
 
 using namespace testing;
 
-class GtTest: public CdtTest {};
+class GtTest: public CdtTest {
+protected:
+  ProcessExec exec_tests_fail, exec_tests_success;
+
+  void SetUp() override {
+    tasks = {
+        CreateTaskAndProcess("pre task"),
+        CreateTask("run tests", "__gtest " + execs.kTests, {"pre task"})};
+    std::vector<DummyTestSuite> suites = {
+        DummyTestSuite{"suite", {
+            DummyTest{"test1", {OUT_LINKS_NOT_HIGHLIGHTED()}},
+            DummyTest{"test2"}}}};
+    exec_tests_success.output_lines = CreateTestOutput(suites);
+    suites[0].tests[0].is_failed = true;
+    suites[0].tests[1].is_failed = true;
+    exec_tests_fail.exit_code = 1;
+    exec_tests_fail.output_lines = CreateTestOutput(suites);
+    Init();
+  }
+};
 
 TEST_F(GtTest, StartAttemptToRerunGtTestWhenNoTestsHaveBeenExecutedYet) {
-  ASSERT_CDT_STARTED();
-  CMD("gt");
+  ASSERT_INIT_CDT();
+  RunCmd("gt");
   EXPECT_OUT(HasSubstr("No google tests have been executed yet."));
 }
 
 TEST_F(GtTest, StartExecuteGtTestTaskWithPreTasksFailAttemptToRerunTestThatDoesNotExistAndViewListOfFailedTests) {
-  mock.cmd_to_process_execs[execs.kTests].front() = failed_gtest_exec;
-  ASSERT_CDT_STARTED();
-  CMD("t10");
-  CMD("gt");
-  EXPECT_OUT(HasSubstrsInOrder(test_list_failed));
-  CMD("gt0");
-  EXPECT_OUT(HasSubstrsInOrder(test_list_failed));
-  CMD("gt99");
-  EXPECT_OUT(HasSubstrsInOrder(test_list_failed));
+  std::vector<std::string> failed_tests = {"1 \"suite.test1\"",
+                                           "2 \"suite.test2\""};
+  mock.MockProc(execs.kTests, exec_tests_fail);
+  ASSERT_INIT_CDT();
+  RunCmd("t2");
+  RunCmd("gt");
+  EXPECT_OUT(HasSubstrsInOrder(failed_tests));
+  RunCmd("gt0");
+  EXPECT_OUT(HasSubstrsInOrder(failed_tests));
+  RunCmd("gt99");
+  EXPECT_OUT(HasSubstrsInOrder(failed_tests));
   // Check that we don't attempt to rerun any test
-  EXPECT_PROCS_EXACT("echo pre pre task 1", "echo pre pre task 2",
-                     execs.kTests);
+  EXPECT_PROCS_EXACT(tasks[0]["command"], execs.kTests);
 }
 
 TEST_F(GtTest, StartExecuteGtTestTaskWithPreTasksFailAndRerunFailedTest) {
-  std::string pre_task_1 = "echo pre pre task 1";
-  std::string pre_task_2 = "echo pre pre task 2";
-  ProcessExec first_test_rerun = failed_rerun_gtest_exec;
-  ProcessExec second_test_rerun;
-  second_test_rerun.exit_code = 1;
-  second_test_rerun.output_lines = {
-    "Running main() from /lib/gtest_main.cc",
-    "Note: Google Test filter = failed_test_suit_2.test1",
-    "[==========] Running 1 test from 1 test suite.",
-    "[----------] Global test environment set-up.",
-    "[----------] 1 test from failed_test_suit_2",
-    "[ RUN      ] failed_test_suit_2.test1",
-    OUT_TEST_ERROR(),
-    "[  FAILED  ] failed_test_suit_2.test1 (0 ms)",
-    "[----------] 1 test from failed_test_suit_2 (0 ms total)",
-    "",
-    "[----------] Global test environment tear-down",
-    "[==========] 1 test from 1 test suite ran. (0 ms total)",
-    "[  PASSED  ] 0 tests.",
-    "[  FAILED  ] 1 test, listed below:",
-    "[  FAILED  ] failed_test_suit_2.test1",
-    "",
-    " 1 FAILED TEST",
-  };
-  mock.cmd_to_process_execs[execs.kTests].front() = failed_gtest_exec;
-  std::string first_test_rerun_cmd =
-      execs.kTests + WITH_GT_FILTER("failed_test_suit_1.test1");
-  std::string second_test_rerun_cmd =
-      execs.kTests + WITH_GT_FILTER("failed_test_suit_2.test1");
-  mock.cmd_to_process_execs[first_test_rerun_cmd].push_back(first_test_rerun);
-  mock.cmd_to_process_execs[second_test_rerun_cmd].push_back(second_test_rerun);
-  std::vector<std::string> first_test_rerun_expected_out = {
-      OUT_LINKS_HIGHLIGHTED(), OUT_TEST_ERROR(),
-      TASK_FAILED("failed_test_suit_1.test1", first_test_rerun.exit_code)};
-  std::vector<std::string> second_test_rerun_expected_out = {
-      OUT_TEST_ERROR(),
-      TASK_FAILED("failed_test_suit_2.test1", second_test_rerun.exit_code)};
-  ASSERT_CDT_STARTED();
-  CMD("t10");
-  CMD("gt1");
-  EXPECT_OUT(HasSubstrsInOrder(first_test_rerun_expected_out));
-  CMD("gt2");
-  EXPECT_OUT(HasSubstrsInOrder(second_test_rerun_expected_out));
-  EXPECT_PROCS_EXACT(pre_task_1, pre_task_2, execs.kTests,
-                     pre_task_1, pre_task_2, first_test_rerun_cmd,
-                     pre_task_1, pre_task_2, second_test_rerun_cmd);
+  ProcessExec rerun1;
+  rerun1.exit_code = 1;
+  ProcessExec rerun2 = rerun1;
+  rerun1.output_lines = CreateTestOutput({
+      DummyTestSuite{"suite", {DummyTest{"test1", {OUT_LINKS_NOT_HIGHLIGHTED(),
+                                                   OUT_TEST_ERROR()},
+                                          true}}}});
+  rerun2.output_lines = CreateTestOutput({
+      DummyTestSuite{"suite", {DummyTest{"test2", {OUT_TEST_ERROR()}, true}}}});
+  std::string cmd_rerun1 = execs.kTests + WITH_GT_FILTER("suite.test1");
+  std::string cmd_rerun2 = execs.kTests + WITH_GT_FILTER("suite.test2");
+  mock.MockProc(execs.kTests, exec_tests_fail);
+  mock.MockProc(cmd_rerun1, rerun1);
+  mock.MockProc(cmd_rerun2, rerun2);
+  std::vector<std::string> out_rerun1 = {OUT_LINKS_HIGHLIGHTED(),
+                                         TASK_FAILED("suite.test1",
+                                                     rerun1.exit_code)};
+  std::vector<std::string> out_rerun2 = {TASK_FAILED("suite.test2",
+                                                     rerun2.exit_code)};
+  std::string cmd_pre_task = tasks[0]["command"];
+  ASSERT_INIT_CDT();
+  RunCmd("t2");
+  RunCmd("gt1");
+  EXPECT_OUT(HasSubstrsInOrder(out_rerun1));
+  RunCmd("gt2");
+  EXPECT_OUT(HasSubstrsInOrder(out_rerun2));
+  EXPECT_PROCS_EXACT(cmd_pre_task, execs.kTests, cmd_pre_task, cmd_rerun1,
+                     cmd_pre_task, cmd_rerun2);
 }
 
 TEST_F(GtTest, StartExecuteGtTestTaskWithPreTasksSucceedAttemptToRerunTestThatDoesNotExistAndViewListOfAllTests) {
-  ASSERT_CDT_STARTED();
-  CMD("t10");
-  CMD("gt");
-  EXPECT_OUT(HasSubstrsInOrder(test_list_successful));
-  CMD("gt0");
-  EXPECT_OUT(HasSubstrsInOrder(test_list_successful));
-  CMD("gt99");
-  EXPECT_OUT(HasSubstrsInOrder(test_list_successful));
+  std::vector<std::string> successful_tests = {"1 \"suite.test1\"",
+                                               "2 \"suite.test2\""};
+  mock.MockProc(execs.kTests, exec_tests_success);
+  ASSERT_INIT_CDT();
+  RunCmd("t2");
+  RunCmd("gt");
+  EXPECT_OUT(HasSubstrsInOrder(successful_tests));
+  RunCmd("gt0");
+  EXPECT_OUT(HasSubstrsInOrder(successful_tests));
+  RunCmd("gt99");
+  EXPECT_OUT(HasSubstrsInOrder(successful_tests));
   // Check that we don't attempt to rerun any test
-  EXPECT_PROCS_EXACT("echo pre pre task 1", "echo pre pre task 2",
-                     execs.kTests);
+  EXPECT_PROCS_EXACT(tasks[0]["command"], execs.kTests);
 }
 
 TEST_F(GtTest, StartExecuteGtTestTaskWithPreTasksSucceedAndRerunOneOfTest) {
-  std::string pre_task_1 = "echo pre pre task 1";
-  std::string pre_task_2 = "echo pre pre task 2";
-  std::string first_test_rerun_cmd =
-      execs.kTests + WITH_GT_FILTER("test_suit_1.test1");
-  std::string second_test_rerun_cmd =
-      execs.kTests + WITH_GT_FILTER("test_suit_1.test2");
-  ProcessExec second_test_rerun;
-  second_test_rerun.output_lines = {
-    "Running main() from /lib/gtest_main.cc",
-    "Note: Google Test filter = test_suit_1.test2",
-    "[==========] Running 1 test from 1 test suite.",
-    "[----------] Global test environment set-up.",
-    "[----------] 1 test from test_suit_1",
-    "[ RUN      ] test_suit_1.test2",
-    "[       OK ] test_suit_1.test2 (0 ms)",
-    "[----------] 1 test from test_suit_1 (0 ms total)",
-    "",
-    "[----------] Global test environment tear-down",
-    "[==========] 1 test from 1 test suite ran. (0 ms total)",
-    "[  PASSED  ] 1 test.",
-  };
-  mock.cmd_to_process_execs[second_test_rerun_cmd].push_back(second_test_rerun);
-  ASSERT_CDT_STARTED();
-  CMD("t10");
-  CMD("gt1");
+  ProcessExec rerun1, rerun2;
+  rerun1.output_lines = CreateTestOutput({
+      DummyTestSuite{"suite", {
+          DummyTest{"test1", {OUT_LINKS_NOT_HIGHLIGHTED()}}}}});
+  rerun2.output_lines = CreateTestOutput({
+      DummyTestSuite{"suite", {DummyTest{"test2"}}}});
+  std::string cmd_rerun1 = execs.kTests + WITH_GT_FILTER("suite.test1");
+  std::string cmd_rerun2 = execs.kTests + WITH_GT_FILTER("suite.test2");
+  std::string cmd_pre_task = tasks[0]["command"];
+  mock.MockProc(execs.kTests, exec_tests_success);
+  mock.MockProc(cmd_rerun1, rerun1);
+  mock.MockProc(cmd_rerun2, rerun2);
+  ASSERT_INIT_CDT();
+  RunCmd("t2");
+  RunCmd("gt1");
   EXPECT_OUT(HasSubstr(OUT_LINKS_HIGHLIGHTED()));
-  EXPECT_OUT(HasSubstr(TASK_COMPLETE("test_suit_1.test1")));
-  CMD("gt2");
-  EXPECT_OUT(HasSubstr(TASK_COMPLETE("test_suit_1.test2")));
-  EXPECT_PROCS_EXACT(pre_task_1, pre_task_2, execs.kTests,
-                     pre_task_1, pre_task_2, first_test_rerun_cmd,
-                     pre_task_1, pre_task_2, second_test_rerun_cmd);
+  EXPECT_OUT(HasSubstr(TASK_COMPLETE("suite.test1")));
+  RunCmd("gt2");
+  EXPECT_OUT(HasSubstr(TASK_COMPLETE("suite.test2")));
+  EXPECT_PROCS_EXACT(cmd_pre_task, execs.kTests, cmd_pre_task, cmd_rerun1,
+                     cmd_pre_task, cmd_rerun2);
 }
