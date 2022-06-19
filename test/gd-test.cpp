@@ -8,7 +8,6 @@ using namespace testing;
 
 class GdTest: public CdtTest {
 protected:
-  std::vector<nlohmann::json> tasks;
   std::vector<std::string> test_names;
   ProcessExec exec_tests_failed, exec_tests_successful;
   std::string cmd_pre_task, cmd_test1_rerun, cmd_test2_rerun;
@@ -38,21 +37,21 @@ protected:
 
 TEST_F(GdTest, StartAttemptToRerunGtestWithDebuggerWhileMandatoryPropertiesAreNotSpecifiedInUserConfig) {
   mock.MockReadFile(paths.kUserConfig);
-  ASSERT_STARTED(TestCdt(tasks, {}, args));
+  ASSERT_INIT_CDT();
   RunCmd("gd");
   EXPECT_OUT(HasSubstr("'debug_command' is not specified"));
   EXPECT_OUT(HasPath(paths.kUserConfig));
 }
 
 TEST_F(GdTest, StartAttemptToRerunGtestWithDebuggerWhenNoTestsHaveBeenExecutedYet) {
-  ASSERT_STARTED(TestCdt(tasks, {}, args));
+  ASSERT_INIT_CDT();
   RunCmd("gd");
   EXPECT_OUT(HasSubstr("No google tests have been executed yet."));
 }
 
 TEST_F(GdTest, StartExecuteGtestTaskWithPreTasksFailAttemptToRerunTestThatDoesNotExistWithDebuggerAndViewListOfFailedTests) {
   mock.MockProc(execs.kTests, exec_tests_failed);
-  ASSERT_STARTED(TestCdt(tasks, {}, args));
+  ASSERT_INIT_CDT();
   RunCmd("t2");
   RunCmd("gd");
   EXPECT_OUT(HasSubstrsInOrder(test_names));
@@ -66,7 +65,7 @@ TEST_F(GdTest, StartExecuteGtestTaskWithPreTasksFailAttemptToRerunTestThatDoesNo
 
 TEST_F(GdTest, StartExecuteGtestTaskWithPreTasksFailAndRerunFailedTestWithDebugger) {
   mock.MockProc(execs.kTests, exec_tests_failed);
-  ASSERT_STARTED(TestCdt(tasks, {}, args));
+  ASSERT_INIT_CDT();
   RunCmd("t2");
   RunCmd("gd1");
   EXPECT_OUT(HasSubstr("Debugger started"));
@@ -80,7 +79,7 @@ TEST_F(GdTest, StartExecuteGtestTaskWithPreTasksFailAndRerunFailedTestWithDebugg
 
 TEST_F(GdTest, StartExecuteGtestTaskWithPreTasksSucceedAttemptToRerunTestThatDoesNotExistWithDebuggerAndViewListOfAllTests) {
   mock.MockProc(execs.kTests, exec_tests_successful);
-  ASSERT_STARTED(TestCdt(tasks, {}, args));
+  ASSERT_INIT_CDT();
   RunCmd("t2");
   RunCmd("gd");
   EXPECT_OUT(HasSubstrsInOrder(test_names));
@@ -94,7 +93,7 @@ TEST_F(GdTest, StartExecuteGtestTaskWithPreTasksSucceedAttemptToRerunTestThatDoe
 
 TEST_F(GdTest, StartExecuteGtestTaskWithPreTasksSucceedAndRerunOneOfTestsWithDebugger) {
   mock.MockProc(execs.kTests, exec_tests_successful);
-  ASSERT_STARTED(TestCdt(tasks, {}, args));
+  ASSERT_INIT_CDT();
   RunCmd("t2");
   RunCmd("gd1");
   EXPECT_OUT(HasSubstr("Debugger started"));

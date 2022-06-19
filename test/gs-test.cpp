@@ -8,7 +8,6 @@ using namespace testing;
 
 class GsTest: public CdtTest {
 protected:
-  std::vector<nlohmann::json> tasks;
   ProcessExec exec_tests_failed, exec_tests_successful;
   std::vector<std::string> test_names;
 
@@ -29,14 +28,14 @@ protected:
 };
 
 TEST_F(GsTest, StartAttemptToSearchGtestOutputWhenNoTestsHaveBeenExecutedYet) {
-  ASSERT_STARTED(TestCdt(tasks, {}, args));
+  ASSERT_INIT_CDT();
   RunCmd("gs");
   EXPECT_OUT(HasSubstr("No google tests have been executed yet."));
 }
 
 TEST_F(GsTest, StartExecuteGtestTaskFailAttemptToSearchOutputOfTestThatDoesNotExistAndViewListOfFailedTests) {
   mock.MockProc(execs.kTests, exec_tests_failed);
-  ASSERT_STARTED(TestCdt(tasks, {}, args));
+  ASSERT_INIT_CDT();
   RunCmd("t1");
   RunCmd("gs");
   EXPECT_OUT(HasSubstrsInOrder(test_names));
@@ -48,7 +47,7 @@ TEST_F(GsTest, StartExecuteGtestTaskFailAttemptToSearchOutputOfTestThatDoesNotEx
 
 TEST_F(GsTest, StartExecuteGtestTaskFailAndSearchOutputOfTheTest) {
   mock.MockProc(execs.kTests, exec_tests_failed);
-  ASSERT_STARTED(TestCdt(tasks, {}, args));
+  ASSERT_INIT_CDT();
   RunCmd("t1");
   RunCmd("gs1\n(some|data)");
   EXPECT_OUT(HasSubstr("\x1B[35m1:\x1B[0m\x1B[32msome\x1B[0m random\n"
@@ -59,7 +58,7 @@ TEST_F(GsTest, StartExecuteGtestTaskFailAndSearchOutputOfTheTest) {
 
 TEST_F(GsTest, StartExecuteGtestTaskSucceedAttemptToSearchOutputOfTestThatDoesNotExistAndViewListOfAllTests) {
   mock.MockProc(execs.kTests, exec_tests_successful);
-  ASSERT_STARTED(TestCdt(tasks, {}, args));
+  ASSERT_INIT_CDT();
   RunCmd("t1");
   RunCmd("gs");
   EXPECT_OUT(HasSubstrsInOrder(test_names));
@@ -71,7 +70,7 @@ TEST_F(GsTest, StartExecuteGtestTaskSucceedAttemptToSearchOutputOfTestThatDoesNo
 
 TEST_F(GsTest, StartExecuteGtestTaskSucceedAndSearchOutputOfOneOfTheTests) {
   mock.MockProc(execs.kTests, exec_tests_successful);
-  ASSERT_STARTED(TestCdt(tasks, {}, args));
+  ASSERT_INIT_CDT();
   CMD("t1");
   CMD("gs1\n(some|data)");
   EXPECT_OUT(HasSubstr("\x1B[35m1:\x1B[0m\x1B[32msome\x1B[0m random\n"

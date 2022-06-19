@@ -355,9 +355,7 @@ void CdtTest::SetUp() {
                       "2 \"failed_test_suit_2.test1\""};
 }
 
-bool CdtTest::TestCdt(const std::vector<nlohmann::json>& tasks,
-                      const std::vector<nlohmann::json>& profiles,
-                      const std::vector<std::string>& args) {
+bool CdtTest::TestCdt() {
   nlohmann::json tasks_config = {
     {"cdt_tasks", tasks},
     {"cdt_profiles", profiles}

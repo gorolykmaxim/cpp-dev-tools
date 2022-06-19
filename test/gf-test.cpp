@@ -8,8 +8,6 @@ using namespace testing;
 
 class GfTest: public CdtTest {
 protected:
-  std::vector<nlohmann::json> tasks;
-
   void SetUp() override {
     tasks = {
         CreateTaskAndProcess("pre task"),
@@ -21,7 +19,7 @@ protected:
 TEST_F(GfTest, StartAttemptToExecuteGoogleTestsWithFilterTargetingTaskThatDoesNotExistAndViewListOfTask) {
   std::vector<std::string> list_of_tasks = {"1 \"pre task\"",
                                             "2 \"run tests\""};
-  ASSERT_STARTED(TestCdt(tasks, {}, args));
+  ASSERT_INIT_CDT();
   RunCmd("gf");
   EXPECT_OUT(HasSubstrsInOrder(list_of_tasks));
   RunCmd("gf0");
@@ -39,7 +37,7 @@ TEST_F(GfTest, StartAndExecuteGtestTaskWithPreTasksWithGtestFilter) {
   ProcessExec exec;
   exec.output_lines = CreateTestOutput(suite);
   mock.MockProc(cmd, exec);
-  ASSERT_STARTED(TestCdt(tasks, {}, args));
+  ASSERT_INIT_CDT();
   RunCmd("gf2\nsuite1.*");
   EXPECT_OUT(HasSubstr(TASK_COMPLETE("suite1.*")));
   EXPECT_PROCS_EXACT(tasks[0]["command"], cmd);

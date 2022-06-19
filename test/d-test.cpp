@@ -12,7 +12,6 @@ protected:
   std::string cmd_with_debugger = WITH_DEBUG("echo primary task");
   std::string tests_with_debugger = WITH_DEBUG(execs.kTests);
   ProcessExec failed_debug_exec;
-  std::vector<nlohmann::json> tasks;
 
   void SetUp() override {
     failed_debug_exec.exit_code = 1;
@@ -29,7 +28,7 @@ protected:
 
 TEST_F(DTest, StartAttemptToDebugTaskWhileMandatoryPropertiesAreNotSpecifiedInUserConfig) {
   mock.MockReadFile(paths.kUserConfig);
-  ASSERT_STARTED(TestCdt(tasks, {}, args));
+  ASSERT_INIT_CDT();
   RunCmd("d");
   EXPECT_OUT(HasSubstr("debug_command"));
   EXPECT_OUT(HasPath(paths.kUserConfig));
@@ -40,7 +39,7 @@ TEST_F(DTest, StartAttemptDebugTaskThatDoesNotExistAndViewListOfAllTasks) {
   for (nlohmann::json& t: tasks) {
     task_names.push_back(t["name"]);
   }
-  ASSERT_STARTED(TestCdt(tasks, {}, args));
+  ASSERT_INIT_CDT();
   RunCmd("d");
   EXPECT_OUT(HasSubstrsInOrder(task_names));
   RunCmd("d0");
@@ -51,7 +50,7 @@ TEST_F(DTest, StartAttemptDebugTaskThatDoesNotExistAndViewListOfAllTasks) {
 
 TEST_F(DTest, StartDebugPrimaryTaskWithPreTasks) {
   mock.MockProc(cmd_with_debugger);
-  ASSERT_STARTED(TestCdt(tasks, {}, args));
+  ASSERT_INIT_CDT();
   RunCmd("d2");
   EXPECT_OUT(HasSubstr("Debugger started"));
   EXPECT_OUT(HasSubstr(TASK_COMPLETE("primary task")));
@@ -60,7 +59,7 @@ TEST_F(DTest, StartDebugPrimaryTaskWithPreTasks) {
 
 TEST_F(DTest, StartAndFailToDebugTask) {
   mock.MockProc(cmd_with_debugger, failed_debug_exec);
-  ASSERT_STARTED(TestCdt(tasks, {}, args));
+  ASSERT_INIT_CDT();
   RunCmd("d2");
   EXPECT_OUT(HasSubstr(failed_debug_exec.output_lines.front()));
   EXPECT_OUT(HasSubstr(TASK_FAILED("primary task",
@@ -69,7 +68,7 @@ TEST_F(DTest, StartAndFailToDebugTask) {
 
 TEST_F(DTest, StartDebugGtestPrimaryTaskWithPreTasks) {
   mock.MockProc(tests_with_debugger);
-  ASSERT_STARTED(TestCdt(tasks, {}, args));
+  ASSERT_INIT_CDT();
   RunCmd("d3");
   EXPECT_OUT(HasSubstr("Debugger started"));
   EXPECT_OUT(HasSubstr(TASK_COMPLETE("run tests")));
@@ -78,7 +77,7 @@ TEST_F(DTest, StartDebugGtestPrimaryTaskWithPreTasks) {
 
 TEST_F(DTest, StartAndFailToDebugGtestTask) {
   mock.MockProc(tests_with_debugger, failed_debug_exec);
-  ASSERT_STARTED(TestCdt(tasks, {}, args));
+  ASSERT_INIT_CDT();
   RunCmd("d3");
   EXPECT_OUT(HasSubstr(failed_debug_exec.output_lines.front()));
 }

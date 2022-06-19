@@ -8,7 +8,6 @@ using namespace testing;
 
 class Gtest: public CdtTest {
 protected:
-  std::vector<nlohmann::json> tasks;
   ProcessExec exec_test_success, exec_test_failure;
 
   void SetUp() override {
@@ -29,7 +28,7 @@ protected:
 };
 
 TEST_F(Gtest, StartAttemptToViewGtestTestsButSeeNoTestsHaveBeenExecutedYet) {
-  ASSERT_STARTED(TestCdt(tasks, {}, args));
+  ASSERT_INIT_CDT();
   RunCmd("g");
   EXPECT_OUT(HasSubstr("No google tests have been executed yet."));
 }
@@ -38,7 +37,7 @@ TEST_F(Gtest, StartExecuteGtestTaskTryToViewGtestTestOutputWithIndexOutOfRangeAn
   std::vector<std::string> test_names = {"1 \"suite1.test1\"",
                                          "2 \"suite1.test2\""};
   mock.MockProc(execs.kTests, exec_test_success);
-  ASSERT_STARTED(TestCdt(tasks, {}, args));
+  ASSERT_INIT_CDT();
   RunCmd("t1");
   RunCmd("g0");
   EXPECT_OUT(HasSubstrsInOrder(test_names));
@@ -50,7 +49,7 @@ TEST_F(Gtest, StartExecuteGtestTaskTryToViewGtestTestOutputWithIndexOutOfRangeAn
 
 TEST_F(Gtest, StartExecuteGtestTaskViewGtestTaskOutputWithFileLinksHighlightedInTheOutputAndOpenLinks) {
   mock.MockProc(execs.kTests, exec_test_success);
-  ASSERT_STARTED(TestCdt(tasks, {}, args));
+  ASSERT_INIT_CDT();
   RunCmd("t1");
   RunCmd("g1");
   EXPECT_OUTPUT_LINKS_TO_OPEN();
@@ -59,7 +58,7 @@ TEST_F(Gtest, StartExecuteGtestTaskViewGtestTaskOutputWithFileLinksHighlightedIn
 TEST_F(Gtest, StartExecuteGtestTaskFailTryToViewGtestTestOutputWithIndexOutOfRangeAndSeeFailedTestsList) {
   std::vector<std::string> test_names = {"1 \"suite1.test1\""};
   mock.MockProc(execs.kTests, exec_test_failure);
-  ASSERT_STARTED(TestCdt(tasks, {}, args));
+  ASSERT_INIT_CDT();
   RunCmd("t1");
   RunCmd("g0");
   EXPECT_OUT(HasSubstrsInOrder(test_names));
@@ -71,7 +70,7 @@ TEST_F(Gtest, StartExecuteGtestTaskFailTryToViewGtestTestOutputWithIndexOutOfRan
 
 TEST_F(Gtest, StartExecuteGtestTaskFailViewGtestTestOutputWithFileLinksHighlightedInTheOutputAndOpenLinks) {
   mock.MockProc(execs.kTests, exec_test_failure);
-  ASSERT_STARTED(TestCdt(tasks, {}, args));
+  ASSERT_INIT_CDT();
   RunCmd("t1");
   RunCmd("g1");
   EXPECT_OUTPUT_LINKS_TO_OPEN();
@@ -79,7 +78,7 @@ TEST_F(Gtest, StartExecuteGtestTaskFailViewGtestTestOutputWithFileLinksHighlight
 
 TEST_F(Gtest, StartExecuteGtestTaskExecuteNonGtestTaskAndDisplayOutputOfOneOfTheTestsExecutedPreviously) {
   mock.MockProc(execs.kTests, exec_test_success);
-  ASSERT_STARTED(TestCdt(tasks, {}, args));
+  ASSERT_INIT_CDT();
   RunCmd("t1");
   RunCmd("t2");
   RunCmd("g1");

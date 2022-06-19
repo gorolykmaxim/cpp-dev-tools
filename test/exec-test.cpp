@@ -9,7 +9,6 @@ using namespace testing;
 
 class ExecTest: public CdtTest {
 protected:
-  std::vector<nlohmann::json> tasks;
   std::vector<std::string> list_of_successful_tests, list_of_failed_tests;
   ProcessExec exec_tests_successful, exec_tests_failed;
   std::string cmd_test_rerun;
@@ -47,7 +46,7 @@ protected:
 };
 
 TEST_F(ExecTest, StartAndListExecutions) {
-  ASSERT_STARTED(TestCdt(tasks, {}, args));
+  ASSERT_INIT_CDT();
   RunCmd("exec");
   EXPECT_OUT(HasSubstr("No task has been executed yet"));
 }
@@ -55,7 +54,7 @@ TEST_F(ExecTest, StartAndListExecutions) {
 TEST_F(ExecTest, StartExecuteTwoTasksAndListExecutions) {
   std::vector<std::string> expected_tasks = {"task 2", "task 1"};
   std::string selected_regex = "-> 1 ..:00:02 \"task 1\"";
-  ASSERT_STARTED(TestCdt(tasks, {}, args));
+  ASSERT_INIT_CDT();
   RunCmd("t2");
   RunCmd("t1");
   RunCmd("exec");
@@ -70,7 +69,7 @@ TEST_F(ExecTest, StartExecuteTwoTasksAndListExecutions) {
 }
 
 TEST_F(ExecTest, StartExecuteTwoTasksSelectFirstExecutionAndOpenFileLinksFromIt) {
-  ASSERT_STARTED(TestCdt(tasks, {}, args));
+  ASSERT_INIT_CDT();
   RunCmd("t1");
   RunCmd("t2");
   RunCmd("exec2");
@@ -79,7 +78,7 @@ TEST_F(ExecTest, StartExecuteTwoTasksSelectFirstExecutionAndOpenFileLinksFromIt)
 }
 
 TEST_F(ExecTest, StartExecuteTwoTasksSelectFirstExecutionAndSearchItsOutput) {
-  ASSERT_STARTED(TestCdt(tasks, {}, args));
+  ASSERT_INIT_CDT();
   RunCmd("t1");
   RunCmd("t2");
   RunCmd("exec2");
@@ -90,7 +89,7 @@ TEST_F(ExecTest, StartExecuteTwoTasksSelectFirstExecutionAndSearchItsOutput) {
 }
 
 TEST_F(ExecTest, StartExecuteTwoGtestTasksSelectFirstExecutionAndViewGtestOutput) {
-  ASSERT_STARTED(TestCdt(tasks, {}, args));
+  ASSERT_INIT_CDT();
   RunCmd("t3");
   RunCmd("t3");
   RunCmd("exec2");
@@ -105,7 +104,7 @@ TEST_F(ExecTest, StartExecuteTwoGtestTasksSelectFirstExecutionAndViewGtestOutput
 }
 
 TEST_F(ExecTest, StartExecuteTwoGtestTasksSelectFirstExecutionAndSearchGtestOutput) {
-  ASSERT_STARTED(TestCdt(tasks, {}, args));
+  ASSERT_INIT_CDT();
   RunCmd("t3");
   RunCmd("t3");
   RunCmd("exec2");
@@ -125,7 +124,7 @@ TEST_F(ExecTest, StartExecuteTwoGtestTasksSelectFirstExecutionAndRerunGtest) {
   ProcessExec rerun;
   rerun.output_lines = CreateTestOutput(suite_rerun);
   mock.MockProc(cmd_test_rerun, rerun);
-  ASSERT_STARTED(TestCdt(tasks, {}, args));
+  ASSERT_INIT_CDT();
   RunCmd("t3");
   RunCmd("t3");
   RunCmd("exec2");
@@ -150,7 +149,7 @@ TEST_F(ExecTest, StartExecuteTwoGtestTasksSelectFirstExecutionAndRerunGtestUntil
   mock.MockProc(cmd_test_rerun, rerun_success);
   mock.MockProc(cmd_test_rerun, rerun_success);
   mock.MockProc(cmd_test_rerun, rerun_failure);
-  ASSERT_STARTED(TestCdt(tasks, {}, args));
+  ASSERT_INIT_CDT();
   RunCmd("t3");
   RunCmd("t3");
   RunCmd("exec2");
@@ -169,7 +168,7 @@ TEST_F(ExecTest, StartExecuteTwoGtestTasksSelectFirstExecutionAndRerunGtestWithD
   std::string exec_debugger = WITH_DEBUG(cmd_test_rerun);
   mock.MockProc(execs.kTests, exec_tests_successful);
   mock.MockProc(exec_debugger);
-  ASSERT_STARTED(TestCdt(tasks, {}, args));
+  ASSERT_INIT_CDT();
   RunCmd("t3");
   RunCmd("t3");
   RunCmd("exec2");
@@ -184,7 +183,7 @@ TEST_F(ExecTest, StartExecuteTwoGtestTasksSelectFirstExecutionAndRerunGtestWithD
 }
 
 TEST_F(ExecTest, StartExecuteTaskTwiceSelectFirstExecutionExecuteAnotherTaskSeeFirstTaskStillSelectedSelectLastExecutionExecuteAnotherTaskAndSeeItBeingSelectedAutomatically) {
-  ASSERT_STARTED(TestCdt(tasks, {}, args));
+  ASSERT_INIT_CDT();
   RunCmd("t1");
   RunCmd("t1");
   RunCmd("exec2");
@@ -203,7 +202,7 @@ TEST_F(ExecTest, StartExecuteTaskTwiceSelectFirstExecutionExecuteAnotherTaskSeeF
 }
 
 TEST_F(ExecTest, StartExecuteGtestTaskTwiceExecuteNormalTask110TimesWhileSelectingFirstNormalExecutionAndViewHistoryOf100ExecutionsThatIncludesOnlyOneLastGtestTaskAndSelectedFirstNormalExecution) {
-  ASSERT_STARTED(TestCdt(tasks, {}, args));
+  ASSERT_INIT_CDT();
   for (int i = 0; i < 2; i++) {
       RunCmd("t3");
   }
@@ -223,7 +222,7 @@ TEST_F(ExecTest, StartExecuteGtestTaskTwiceExecuteNormalTask110TimesWhileSelecti
 }
 
 TEST_F(ExecTest, StartExecuteTaskWithPreTasksSelectPreTaskAndSearchItsOutput) {
-  ASSERT_STARTED(TestCdt(tasks, {}, args));
+  ASSERT_INIT_CDT();
   RunCmd("t4");
   RunCmd("exec2");
   RunCmd("s\ntask");
@@ -231,14 +230,14 @@ TEST_F(ExecTest, StartExecuteTaskWithPreTasksSelectPreTaskAndSearchItsOutput) {
 }
 
 TEST_F(ExecTest, StartExecuteTaskWithPreTasksSelectPreTaskAndOpenLinkFromItsOutput) {
-  ASSERT_STARTED(TestCdt(tasks, {}, args));
+  ASSERT_INIT_CDT();
   RunCmd("t4");
   RunCmd("exec3");
   EXPECT_OUTPUT_LINKS_TO_OPEN();
 }
 
 TEST_F(ExecTest, StartExecuteTaskWithPreTasksSelectPreTaskThenResetSelectionAndOpenLinksFromTheNewestTaskOutput) {
-  ASSERT_STARTED(TestCdt(tasks, {}, args));
+  ASSERT_INIT_CDT();
   RunCmd("t4");
   RunCmd("exec2");
   RunCmd("exec1");
@@ -246,7 +245,7 @@ TEST_F(ExecTest, StartExecuteTaskWithPreTasksSelectPreTaskThenResetSelectionAndO
 }
 
 TEST_F(ExecTest, StartExecuteGtestTaskWithPreTasksSelectOneOfPretasksWithLinksInOutputResetExecutionSelectionBackToTheLatestGtestTaskValidateThatThereAreNoLinksInItsOutput) {
-  ASSERT_STARTED(TestCdt(tasks, {}, args));
+  ASSERT_INIT_CDT();
   CMD("t5");
   CMD("exec2");
   CMD("exec1");
@@ -255,7 +254,7 @@ TEST_F(ExecTest, StartExecuteGtestTaskWithPreTasksSelectOneOfPretasksWithLinksIn
 }
 
 TEST_F(ExecTest, StartExecuteTaskOpenLinksFromOuputValidateExecutionHistoryHasOnlyOneExecution) {
-  ASSERT_STARTED(TestCdt(tasks, {}, args));
+  ASSERT_INIT_CDT();
   CMD("t1");
   EXPECT_OUTPUT_LINKS_TO_OPEN();
   CMD("exec");

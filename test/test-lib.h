@@ -209,7 +209,7 @@ private:
 #define TASK_FAILED(NAME, CODE)\
   std::string("'" NAME "' failed: return code: ") + std::to_string(CODE)
 
-#define ASSERT_STARTED(RESULT) ASSERT_TRUE(RESULT) << current_out_segment
+#define ASSERT_INIT_CDT() ASSERT_TRUE(TestCdt()) << current_out_segment
 
 #define ASSERT_CDT_STARTED()\
   ASSERT_TRUE(InitTestCdt()) << out.str();\
@@ -338,6 +338,8 @@ public:
   Executables execs;
   nlohmann::json tasks_config_data, tasks_config_with_profiles_data,
                  user_config_data;
+  std::vector<nlohmann::json> tasks;
+  std::vector<nlohmann::json> profiles;
   std::vector<std::string> args;
   std::vector<std::string> list_of_tasks_in_ui;
   std::vector<std::string> test_list_successful;
@@ -357,9 +359,7 @@ public:
 
   void Init();
   void SetUp() override;
-  bool TestCdt(const std::vector<nlohmann::json>& tasks,
-               const std::vector<nlohmann::json>& profiles,
-               const std::vector<std::string>& args = {});
+  bool TestCdt();
   bool InitTestCdt(const std::optional<std::string>& profile_name = {});
   nlohmann::json CreateTask(const nlohmann::json& name = nullptr,
                             const nlohmann::json& command = nullptr,
