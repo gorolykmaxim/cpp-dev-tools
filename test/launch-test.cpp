@@ -123,7 +123,7 @@ TEST_F(LaunchTest, FailToStartDueToTasksConfigHavingErrors) {
 
 TEST_F(LaunchTest, StartAndChangeCwdToTasksConfigsDirectory) {
   EXPECT_CALL(mock, SetCurrentPath(paths.kTasksConfig.parent_path()));
-  ASSERT_CDT_STARTED();
+  ASSERT_INIT_CDT();
 }
 
 TEST_F(LaunchTest, StartAndCreateExampleUserConfig) {

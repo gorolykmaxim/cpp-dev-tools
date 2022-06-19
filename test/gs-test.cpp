@@ -71,10 +71,10 @@ TEST_F(GsTest, StartExecuteGtestTaskSucceedAttemptToSearchOutputOfTestThatDoesNo
 TEST_F(GsTest, StartExecuteGtestTaskSucceedAndSearchOutputOfOneOfTheTests) {
   mock.MockProc(execs.kTests, exec_tests_successful);
   ASSERT_INIT_CDT();
-  CMD("t1");
-  CMD("gs1\n(some|data)");
+  RunCmd("t1");
+  RunCmd("gs1\n(some|data)");
   EXPECT_OUT(HasSubstr("\x1B[35m1:\x1B[0m\x1B[32msome\x1B[0m random\n"
                        "\x1B[35m2:\x1B[0m\x1B[32mdata\x1B[0m\n"));
-  CMD("gs2\n(some|data)");
+  RunCmd("gs2\n(some|data)");
   EXPECT_OUT(HasSubstr("No matches found"));
 }

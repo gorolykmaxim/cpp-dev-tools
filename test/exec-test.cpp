@@ -246,18 +246,18 @@ TEST_F(ExecTest, StartExecuteTaskWithPreTasksSelectPreTaskThenResetSelectionAndO
 
 TEST_F(ExecTest, StartExecuteGtestTaskWithPreTasksSelectOneOfPretasksWithLinksInOutputResetExecutionSelectionBackToTheLatestGtestTaskValidateThatThereAreNoLinksInItsOutput) {
   ASSERT_INIT_CDT();
-  CMD("t5");
-  CMD("exec2");
-  CMD("exec1");
-  CMD("o1");
+  RunCmd("t5");
+  RunCmd("exec2");
+  RunCmd("exec1");
+  RunCmd("o1");
   EXPECT_NOT_PROCS_LIKE(execs.kEditor);
 }
 
 TEST_F(ExecTest, StartExecuteTaskOpenLinksFromOuputValidateExecutionHistoryHasOnlyOneExecution) {
   ASSERT_INIT_CDT();
-  CMD("t1");
+  RunCmd("t1");
   EXPECT_OUTPUT_LINKS_TO_OPEN();
-  CMD("exec");
+  RunCmd("exec");
   // Execution history has only one line and its the first execution
   EXPECT_OUT(ContainsRegex("\n-> 1 ..:00:01 \"task 1\"\n"));
   EXPECT_OUT(HasSubstrNTimes("\n", 2));

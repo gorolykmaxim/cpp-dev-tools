@@ -79,7 +79,7 @@ TEST_F(OTest, StartFailToExecutePreTaskOfTaskAttemptToOpenNonExistentLinkAndView
   exec_with_links.exit_code = 1;
   mock.MockProc(cmd_pre_task, exec_with_links);
   ASSERT_INIT_CDT();
-  CMD("t2");
+  RunCmd("t2");
   EXPECT_LAST_EXEC_OUTPUT_DISPLAYED_ON_LINK_INDEX_OUT_OF_BOUNDS();
 }
 

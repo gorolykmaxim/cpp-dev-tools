@@ -33,7 +33,6 @@ struct Executables {
   const std::string kEditor = "subl";
   const std::string kNewTerminalTab = "terminal";
   const std::string kDebugger = "lldb";
-  const std::string kHelloWorld = "echo hello world!";
   const std::string kTests = "tests";
 };
 
@@ -209,29 +208,11 @@ private:
 #define TASK_FAILED(NAME, CODE)\
   std::string("'" NAME "' failed: return code: ") + std::to_string(CODE)
 
-#define ASSERT_INIT_CDT() ASSERT_TRUE(TestCdt()) << current_out_segment
+#define ASSERT_INIT_CDT() ASSERT_TRUE(InitTestCdt()) << current_out_segment
 
-#define EXPECT_INIT_CDT_FAILED() EXPECT_FALSE(TestCdt())
-
-#define ASSERT_CDT_STARTED()\
-  ASSERT_TRUE(InitTestCdt()) << out.str();\
-  SaveOutput()
-
-#define ASSERT_CDT_STARTED_WITH_PROFILE(PROFILE)\
-  mock.MockReadFile(paths.kTasksConfig,\
-                    tasks_config_with_profiles_data.dump());\
-  ASSERT_TRUE(InitTestCdt(PROFILE)) << out.str();\
-  SaveOutput()
+#define EXPECT_INIT_CDT_FAILED() EXPECT_FALSE(InitTestCdt())
 
 #define EXPECT_OUT(MATCHER) EXPECT_THAT(current_out_segment, MATCHER)
-
-#define CMD(CMD) RunCmd(CMD)
-
-#define INTERRUPT_CMD(CMD)\
-  RunCmd(CMD, true);\
-  mock.PressCtrlC();\
-  ExecCdtSystems(cdt);\
-  SaveOutput()
 
 #define EXPECT_PROCS(...)\
   if (std::string e = mock.AssertProcsRanInOrder(__VA_ARGS__); !e.empty()) {\
@@ -249,25 +230,21 @@ private:
   }
 
 #define EXPECT_OUTPUT_LINKS_TO_OPEN()\
-  mock.cmd_to_process_execs[execs.kEditor + " /a/b/c:10"].push_back(\
-      ProcessExec{});\
-  mock.cmd_to_process_execs[execs.kEditor + " /d/e/f:15:32"].push_back(\
-      ProcessExec{});\
-  mock.cmd_to_process_execs[execs.kEditor + " /a/b/c:11"].push_back(\
-      ProcessExec{});\
-  mock.cmd_to_process_execs[execs.kEditor + " /b/c:32:1"].push_back(\
-      ProcessExec{});\
-  CMD("o1");\
-  CMD("o2");\
-  CMD("o3");\
-  CMD("o4");\
+  mock.MockProc(execs.kEditor + " /a/b/c:10");\
+  mock.MockProc(execs.kEditor + " /d/e/f:15:32");\
+  mock.MockProc(execs.kEditor + " /a/b/c:11");\
+  mock.MockProc(execs.kEditor + " /b/c:32:1");\
+  RunCmd("o1");\
+  RunCmd("o2");\
+  RunCmd("o3");\
+  RunCmd("o4");\
   EXPECT_PROCS(execs.kEditor + " /a/b/c:10", execs.kEditor + " /d/e/f:15:32",\
                execs.kEditor + " /a/b/c:11", execs.kEditor + " /b/c:32:1")
 
 #define EXPECT_LAST_EXEC_OUTPUT_DISPLAYED_ON_LINK_INDEX_OUT_OF_BOUNDS()\
-  CMD("o0");\
-  CMD("o99");\
-  CMD("o");\
+  RunCmd("o0");\
+  RunCmd("o99");\
+  RunCmd("o");\
   EXPECT_NOT_PROCS_LIKE(execs.kEditor)
 
 MATCHER_P(StrVecEq, expected, "") {
@@ -350,16 +327,12 @@ public:
   Cdt cdt;
 
   void SetUp() override;
-  bool TestCdt();
-  bool InitTestCdt(const std::optional<std::string>& profile_name = {});
+  bool InitTestCdt();
   nlohmann::json CreateTask(const nlohmann::json& name = nullptr,
                             const nlohmann::json& command = nullptr,
                             const nlohmann::json& pre_tasks = nullptr);
   nlohmann::json CreateTaskAndProcess(const std::string& name,
                                       std::vector<std::string> pre_tasks = {});
-  nlohmann::json CreateProfileTaskAndProcess(
-      const std::string& name, const std::vector<std::string>& profile_versions,
-      std::vector<std::string> pre_tasks = {});
   std::vector<std::string> CreateTestOutput(
       const std::vector<DummyTestSuite>& suites);
   std::vector<std::string> CreateAbortedTestOutput(const std::string& suite,

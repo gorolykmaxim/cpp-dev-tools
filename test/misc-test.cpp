@@ -76,7 +76,7 @@ TEST_F(MiscTest, StartAndFailToExecuteRestartTask) {
   };
   EXPECT_CALL(mock, Exec(StrVecEq(restart_args)))
       .WillRepeatedly(Return(ENOEXEC));
-  ASSERT_CDT_STARTED();
+  ASSERT_INIT_CDT();
   RunCmd("t2");
   EXPECT_OUT(HasSubstrsInOrder(expected_out));
 }
