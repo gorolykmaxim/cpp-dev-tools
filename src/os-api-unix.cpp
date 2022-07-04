@@ -38,13 +38,13 @@ void OsApi::Init() {
   std::signal(SIGINT, StopRunningProcessesOrExit);
 }
 
-void OsApi::OnProcessStart(BoostProcess& process) {
-  active_process_ids.push_back(process.child->id());
+void OsApi::OnProcessStart(ProcessType& process) {
+  active_process_ids.push_back(process.id());
 }
 
-void OsApi::OnProcessFinish(BoostProcess& process) {
+void OsApi::OnProcessFinish(ProcessType& process) {
   auto it = std::find(active_process_ids.begin(), active_process_ids.end(),
-                      process.child->id());
+                      process.id());
   if (it != active_process_ids.end()) {
     active_process_ids.erase(it);
   }

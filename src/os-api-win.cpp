@@ -11,7 +11,7 @@
 
 #include "cdt.h"
 
-static std::vector<boost::process::child*> active_processes;
+static std::vector<ProcessType*> active_processes;
 static std::mutex active_processes_mtx;
 
 static bool IsWindowsConsole() {
@@ -45,7 +45,7 @@ BOOL WINAPI HandleCtrlC(DWORD signal) {
     return FALSE;
   }
   std::lock_guard<std::mutex> lock(active_processes_mtx);
-  for (boost::process::child* proc: active_processes) {
+  for (ProcessType* proc: active_processes) {
     proc->terminate();
   }
   return active_processes.empty() ? FALSE : TRUE;
@@ -59,15 +59,15 @@ void OsApi::Init() {
   SetConsoleCtrlHandler(HandleCtrlC, TRUE);
 }
 
-void OsApi::OnProcessStart(BoostProcess& process) {
+void OsApi::OnProcessStart(ProcessType& process) {
   std::lock_guard<std::mutex> lock(active_processes_mtx);
-  active_processes.push_back(process.child.get());
+  active_processes.push_back(&process);
 }
 
-void OsApi::OnProcessFinish(BoostProcess& process) {
+void OsApi::OnProcessFinish(ProcessType& process) {
   std::lock_guard<std::mutex> lock(active_processes_mtx);
   auto it = std::find(active_processes.begin(), active_processes.end(),
-                      process.child.get());
+                      &process);
   if (it != active_processes.end()) {
     active_processes.erase(it);
   }

@@ -13,6 +13,12 @@
 #include <windows.h>
 #endif
 
+struct BoostProcess {
+  std::unique_ptr<ProcessType> child;
+  boost::process::ipstream ip_stdout, ip_stderr;
+  std::thread read_stdout, read_stderr;
+};
+
 std::ostream& OsApi::Out() {
     return std::cout;
 }
@@ -63,7 +69,7 @@ int OsApi::Exec(const std::vector<const char *> &args) {
 }
 
 static void ReadOut(moodycamel::BlockingConcurrentQueue<ProcessEvent>& queue,
-                    boost::process::child& process, entt::entity entity,
+                    ProcessType& process, entt::entity entity,
                     boost::process::ipstream& ipstream, ProcessEventType type) {
   ProcessEvent event;
   event.process = entity;
@@ -88,7 +94,7 @@ bool OsApi::StartProcess(
   try {
     Process& proc = registry.get<Process>(entity);
     BoostProcess& boost_proc = registry.emplace<BoostProcess>(entity);
-    boost_proc.child = std::make_unique<boost::process::child>(
+    boost_proc.child = std::make_unique<ProcessType>(
         proc.shell_command, boost::process::std_out > boost_proc.ip_stdout,
         boost::process::std_err > boost_proc.ip_stderr);
     proc.id = boost_proc.child->id();
@@ -102,7 +108,7 @@ bool OsApi::StartProcess(
       ReadOut(queue, *boost_proc.child, entity, boost_proc.ip_stderr,
               ProcessEventType::kStderr);
     });
-    OnProcessStart(boost_proc);
+    OnProcessStart(*boost_proc.child);
     return true;
   } catch (const boost::process::process_error& e) {
     error = e.what();
@@ -118,7 +124,7 @@ void OsApi::FinishProcess(entt::entity entity, entt::registry &registry) {
     process.exit_code = boost_proc.child->exit_code();
     boost_proc.read_stdout.join();
     boost_proc.read_stderr.join();
-    OnProcessFinish(boost_proc);
+    OnProcessFinish(*boost_proc.child);
   }
   registry.erase<BoostProcess>(entity);
 }

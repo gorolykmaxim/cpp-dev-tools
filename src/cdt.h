@@ -51,17 +51,12 @@ struct Task
     std::string command;
 };
 
-struct BoostProcess {
-  std::unique_ptr<boost::process::child> child;
-  boost::process::ipstream ip_stdout, ip_stderr;
-  std::thread read_stdout, read_stderr;
-};
-
 enum class ProcessState {
   kScheduled, kRunning, kComplete, kFailed
 };
 
 using PidType = boost::process::pid_t;
+using ProcessType = boost::process::child;
 
 struct Process {
   bool destroy_entity_on_finish = false;
@@ -167,8 +162,8 @@ public:
   virtual void FinishProcess(entt::entity entity, entt::registry& registry);
   virtual std::chrono::system_clock::time_point TimeNow();
 private:
-  void OnProcessStart(BoostProcess& process);
-  void OnProcessFinish(BoostProcess& process);
+  void OnProcessStart(ProcessType& process);
+  void OnProcessFinish(ProcessType& process);
 };
 
 struct Cdt {
