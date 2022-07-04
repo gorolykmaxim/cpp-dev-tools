@@ -1,7 +1,7 @@
-[submodule "lib/tiny-process-library"]
-	path = lib/tiny-process-library
-	url = https://gitlab.com/eidheim/tiny-process-library.git
-	ignore = dirty
 [submodule "lib/googletest"]
 	path = lib/googletest
 	url = https://github.com/google/googletest.git
+[submodule "lib/boost"]
+	path = lib/boost
+	url = https://github.com/boostorg/boost.git
+  ignore = all

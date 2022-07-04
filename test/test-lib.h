@@ -19,7 +19,6 @@
 #include <json.hpp>
 
 #include "cdt.h"
-#include "process.hpp"
 
 struct Paths {
   using path = std::filesystem::path;
@@ -40,8 +39,7 @@ struct ProcessExec {
   std::vector<std::string> output_lines;
   std::unordered_set<int> stderr_lines;
   bool is_long = false;
-  bool fail_to_exec = false;
-  bool append_eol = true;
+  std::string fail_to_exec_error;
   int exit_code = 0;
 };
 
@@ -86,10 +84,10 @@ public:
   MOCK_METHOD(bool, FileExists, (const std::filesystem::path&), (override));
   MOCK_METHOD(int, Exec, (const std::vector<const char*>&), (override));
   bool StartProcess(
-      Process& process,
+      entt::entity entity, entt::registry& registry,
       moodycamel::BlockingConcurrentQueue<ProcessEvent>& queue,
-      entt::entity entity) override;
-  void FinishProcess(Process& process) override;
+      std::string& error) override;
+  void FinishProcess(entt::entity entity, entt::registry& registry) override;
 
   template<typename... Args>
   std::string AssertProcsRanInOrder(Args... args) {
@@ -158,7 +156,6 @@ public:
     return found ? s.str() : "";
   }
 
-  int GetProcessExitCode(Process& process) override;
   std::chrono::system_clock::time_point TimeNow() override;
   void PressCtrlC();
   void MockProc(const std::string& cmd,

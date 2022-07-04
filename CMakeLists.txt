@@ -3,21 +3,13 @@ project(cpp-dev-tools)
 
 set(CMAKE_CXX_STANDARD 17)
 
-execute_process(COMMAND git --version RESULT_VARIABLE ret OUTPUT_QUIET ERROR_QUIET)
-if (NOT ret EQUAL 0)
-    message(FATAL_ERROR "You need to have 'git' installed. I need to apply patches to libraries :(")
-else()
-    execute_process(COMMAND git apply --check --reverse ../tiny-process-library.patch WORKING_DIRECTORY lib/tiny-process-library RESULT_VARIABLE ret OUTPUT_QUIET ERROR_QUIET)
-    if (NOT ret EQUAL 0)
-        execute_process(COMMAND git apply ../tiny-process-library.patch WORKING_DIRECTORY lib/tiny-process-library)
-    endif()
-endif()
-
-add_subdirectory(lib/tiny-process-library)
+add_subdirectory(lib/boost EXCLUDE_FROM_ALL)
 add_subdirectory(lib/cameron314_concurrentqueue)
 add_subdirectory(lib/nlohmann-json)
 add_subdirectory(lib/skypjack_entt)
 add_subdirectory(lib/googletest EXCLUDE_FROM_ALL)
+
+target_compile_options(boost_process INTERFACE -Wno-deprecated-declarations)
 
 add_library(cdt STATIC
     src/cdt.h
@@ -43,7 +35,11 @@ else()
   target_sources(cdt PRIVATE src/os-api-unix.cpp)
 endif()
 target_include_directories(cdt PUBLIC src PUBLIC lib)
-target_link_libraries(cdt tiny-process-library nlohmann_json cameron314_concurrentqueue skypjack_entt)
+target_link_libraries(cdt
+  Boost::process
+  nlohmann_json
+  cameron314_concurrentqueue
+  skypjack_entt)
 
 add_executable(${PROJECT_NAME} src/main.cpp)
 target_link_libraries(${PROJECT_NAME} cdt)

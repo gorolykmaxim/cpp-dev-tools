@@ -7,12 +7,12 @@
 #include <fcntl.h>
 #include <codecvt>
 #include <iostream>
+#include <boost/process.hpp>
 
 #include "cdt.h"
-#include "process.hpp"
 
-static std::vector<PidType> active_process_ids;
-static std::mutex active_process_ids_mtx;
+static std::vector<boost::process::child*> active_processes;
+static std::mutex active_processes_mtx;
 
 static bool IsWindowsConsole() {
   DWORD mode;
@@ -44,11 +44,11 @@ BOOL WINAPI HandleCtrlC(DWORD signal) {
   if (signal != CTRL_C_EVENT) {
     return FALSE;
   }
-  std::lock_guard<std::mutex> lock(active_process_ids_mtx);
-  for (PidType id: active_process_ids) {
-    TinyProcessLib::Process::kill(id);
+  std::lock_guard<std::mutex> lock(active_processes_mtx);
+  for (boost::process::child* proc: active_processes) {
+    proc->terminate();
   }
-  return active_process_ids.empty() ? FALSE : TRUE;
+  return active_processes.empty() ? FALSE : TRUE;
 }
 
 void OsApi::Init() {
@@ -59,21 +59,16 @@ void OsApi::Init() {
   SetConsoleCtrlHandler(HandleCtrlC, TRUE);
 }
 
-bool OsApi::StartProcess(
-    Process &process,
-    moodycamel::BlockingConcurrentQueue<ProcessEvent>& queue,
-    entt::entity entity) {
-  bool result = StartProcessCommon(process, queue, entity);
-  std::lock_guard<std::mutex> lock(active_process_ids_mtx);
-  active_process_ids.push_back(process.id);
-  return result;
+void OsApi::OnProcessStart(BoostProcess& process) {
+  std::lock_guard<std::mutex> lock(active_processes_mtx);
+  active_processes.push_back(proc.child.get());
 }
 
-void OsApi::FinishProcess(Process& process) {
-  std::lock_guard<std::mutex> lock(active_process_ids_mtx);
-  auto it = std::find(active_process_ids.begin(), active_process_ids.end(),
-                      process.id);
-  if (it != active_process_ids.end()) {
-    active_process_ids.erase(it);
+void OsApi::OnProcessFinish(BoostProcess& process) {
+  std::lock_guard<std::mutex> lock(active_processes_mtx);
+  auto it = std::find(active_processes.begin(), active_processes.end(),
+                      process.child.get());
+  if (it != active_processes.end()) {
+    active_processes.erase(it);
   }
 }

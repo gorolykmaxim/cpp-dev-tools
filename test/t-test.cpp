@@ -67,17 +67,6 @@ TEST_F(TTest, StartAndExecuteSingleTask) {
   EXPECT_PROCS_EXACT(cmd_task1);
 }
 
-TEST_F(TTest, StartAndExecuteTaskThatPrintsToStdoutAndStderr) {
-  ProcessExec exec;
-  exec.append_eol = false;
-  exec.output_lines = {"stdo", "stde", "ut\r\n", "rr\n"};
-  exec.stderr_lines = {1, 3};
-  mock.MockProc(cmd_task1, exec);
-  ASSERT_INIT_CDT();
-  RunCmd("t1");
-  EXPECT_OUT(HasSubstr("stdout\nstderr\n"));
-}
-
 TEST_F(TTest, StartAndExecuteTaskWithPreTasksWithPreTasks) {
   tasks = {
       CreateTaskAndProcess("pre pre task 1"),
@@ -185,10 +174,11 @@ TEST_F(TTest, StartAndExecuteTaskWithPreTaskNameOfWhichIsDefinedInProfile2) {
 
 TEST_F(TTest, StartAndFailToExecuteTaskDueToFailureToLaunchProcess) {
   ProcessExec exec;
-  exec.fail_to_exec = true;
+  exec.fail_to_exec_error = "No such file or directory";
   mock.MockProc(cmd_task1, exec);
   ASSERT_INIT_CDT();
   RunCmd("t1");
   EXPECT_OUT(HasSubstr("Failed to exec: " + cmd_task1));
+  EXPECT_OUT(HasSubstr(exec.fail_to_exec_error));
   EXPECT_PROCS_EXACT(cmd_task1);
 }

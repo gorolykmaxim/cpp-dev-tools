@@ -9,13 +9,14 @@
 #include <memory>
 #include <ostream>
 #include <string>
+#include <thread>
 #include <vector>
 #include <optional>
 #include <deque>
 #include <unordered_map>
 #include <unordered_set>
 #include <filesystem>
-#include "process.hpp"
+#include <boost/process.hpp>
 #include "blockingconcurrentqueue.h"
 #include "entt.hpp"
 
@@ -50,18 +51,23 @@ struct Task
     std::string command;
 };
 
+struct BoostProcess {
+  std::unique_ptr<boost::process::child> child;
+  boost::process::ipstream ip_stdout, ip_stderr;
+  std::thread read_stdout, read_stderr;
+};
+
 enum class ProcessState {
   kScheduled, kRunning, kComplete, kFailed
 };
 
-using PidType = TinyProcessLib::Process::id_type;
-using ProcessType = TinyProcessLib::Process;
+using PidType = boost::process::pid_t;
 
 struct Process {
   bool destroy_entity_on_finish = false;
   std::string shell_command;
   PidType id;
-  std::unique_ptr<ProcessType> handle;
+  int exit_code = -1;
   ProcessState state = ProcessState::kScheduled;
 };
 
@@ -82,8 +88,6 @@ enum class OutputMode {
 
 struct Output {
   OutputMode mode = OutputMode::kFailure;
-  std::string stdout_line_buffer;
-  std::string stderr_line_buffer;
   std::vector<std::string> lines;
   int lines_streamed = 0;
 };
@@ -157,17 +161,14 @@ public:
   virtual bool FileExists(const std::filesystem::path& path);
   virtual int Exec(const std::vector<const char*>& args);
   virtual bool StartProcess(
-      Process& process,
+      entt::entity entity, entt::registry& registry,
       moodycamel::BlockingConcurrentQueue<ProcessEvent>& queue,
-      entt::entity entity);
-  virtual void FinishProcess(Process& process);
-  virtual int GetProcessExitCode(Process& process);
+      std::string& error);
+  virtual void FinishProcess(entt::entity entity, entt::registry& registry);
   virtual std::chrono::system_clock::time_point TimeNow();
 private:
-  bool StartProcessCommon(
-      Process& process,
-      moodycamel::BlockingConcurrentQueue<ProcessEvent>& queue,
-      entt::entity entity);
+  void OnProcessStart(BoostProcess& process);
+  void OnProcessFinish(BoostProcess& process);
 };
 
 struct Cdt {

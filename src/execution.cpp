@@ -146,17 +146,16 @@ void DisplayExecutionResult(Cdt& cdt) {
     if (proc.state == ProcessState::kRunning) {
       continue;
     }
-    int code = cdt.os->GetProcessExitCode(proc);
     if (proc.state == ProcessState::kFailed) {
       cdt.os->Out() << kTcRed << "'" << exec.name << "' failed: return code: "
-                    << code << kTcReset << std::endl;
+                    << proc.exit_code << kTcReset << std::endl;
     } else if (cdt.execs_to_run.empty()) {
       if (exec.debug == DebugStatus::kAttached) {
         cdt.os->Out() << kTcMagenta << "Debugger started" << kTcReset
                       << std::endl;
       }
       cdt.os->Out() << kTcMagenta << "'" << exec.name
-                    << "' complete: return code: " << code << kTcReset
+                    << "' complete: return code: " << proc.exit_code << kTcReset
                     << std::endl;
     }
   }

@@ -20,9 +20,10 @@ std::string OsApiMock::ReadLineFromStdin() {
 }
 
 bool OsApiMock::StartProcess(
-    Process& process,
+    entt::entity entity, entt::registry& registry,
     moodycamel::BlockingConcurrentQueue<ProcessEvent>& queue,
-    entt::entity entity) {
+    std::string& error) {
+  Process& process = registry.get<Process>(entity);
   auto it = cmd_to_process_execs.find(process.shell_command);
   if (it == cmd_to_process_execs.end()) {
     throw std::runtime_error("Unexpected command called: " +
@@ -33,8 +34,7 @@ bool OsApiMock::StartProcess(
   if (execs.size() > 1) {
     execs.pop_front();
   }
-  process.handle = std::unique_ptr<ProcessType>();
-  process.id = exec.fail_to_exec ? 0 : pid_seed++;
+  process.id = !exec.fail_to_exec_error.empty() ? 0 : pid_seed++;
   ProcessInfo& info = proc_info[process.id];
   info.exit_code = exec.exit_code;
   info.exit_cb = [&queue, entity] () {
@@ -45,8 +45,9 @@ bool OsApiMock::StartProcess(
   };
   info.is_long = exec.is_long;
   info.shell_command = process.shell_command;
-  if (exec.fail_to_exec) {
+  if (!exec.fail_to_exec_error.empty()) {
     info.exit_cb();
+    error = exec.fail_to_exec_error;
     return false;
   }
   for (int i = 0; i < exec.output_lines.size(); i++) {
@@ -56,9 +57,6 @@ bool OsApiMock::StartProcess(
                  ProcessEventType::kStdout :
                  ProcessEventType::kStderr;
     event.data = exec.output_lines[i];
-    if (exec.append_eol) {
-      event.data += '\n';
-    }
     queue.enqueue(event);
   }
   if (!exec.is_long) {
@@ -67,8 +65,11 @@ bool OsApiMock::StartProcess(
   return true;
 }
 
-void OsApiMock::FinishProcess(Process &process) {
-  proc_info[process.id].is_finished = true;
+void OsApiMock::FinishProcess(entt::entity entity, entt::registry& registry) {
+  Process& process = registry.get<Process>(entity);
+  ProcessInfo& info = proc_info[process.id];
+  info.is_finished = true;
+  process.exit_code = info.exit_code;
 }
 
 std::string OsApiMock::GetExpectedVsActualProcsErrorMessage(
@@ -100,10 +101,6 @@ std::string OsApiMock::GetExpectedVsActualProcsErrorMessage(
     }
   }
   return msg.str();
-}
-
-int OsApiMock::GetProcessExitCode(Process &process) {
-  return proc_info.at(process.id).exit_code;
 }
 
 std::chrono::system_clock::time_point OsApiMock::TimeNow() {

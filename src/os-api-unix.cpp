@@ -2,10 +2,10 @@
 #include <csignal>
 #include <algorithm>
 #include <iostream>
+#include <sys/signal.h>
 
 #include "blockingconcurrentqueue.h"
 #include "cdt.h"
-#include "process.hpp"
 
 static std::vector<PidType> active_process_ids;
 
@@ -29,7 +29,7 @@ static void StopRunningProcessesOrExit(int signal) {
     std::raise(signal);
   } else {
     for (PidType id: active_process_ids) {
-      TinyProcessLib::Process::kill(id);
+      kill(id, SIGKILL);
     }
   }
 }
@@ -38,18 +38,13 @@ void OsApi::Init() {
   std::signal(SIGINT, StopRunningProcessesOrExit);
 }
 
-bool OsApi::StartProcess(
-    Process &process,
-    moodycamel::BlockingConcurrentQueue<ProcessEvent>& queue,
-    entt::entity entity) {
-  bool result = StartProcessCommon(process, queue, entity);
-  active_process_ids.push_back(process.id);
-  return result;
+void OsApi::OnProcessStart(BoostProcess& process) {
+  active_process_ids.push_back(process.child->id());
 }
 
-void OsApi::FinishProcess(Process& process) {
+void OsApi::OnProcessFinish(BoostProcess& process) {
   auto it = std::find(active_process_ids.begin(), active_process_ids.end(),
-                      process.id);
+                      process.child->id());
   if (it != active_process_ids.end()) {
     active_process_ids.erase(it);
   }

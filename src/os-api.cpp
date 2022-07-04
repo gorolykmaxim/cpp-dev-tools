@@ -4,6 +4,8 @@
 #include <iostream>
 #include <fstream>
 #include <memory>
+#include <string>
+#include <thread>
 #ifndef _WIN32
 #include <unistd.h>
 #else
@@ -11,7 +13,6 @@
 #endif
 
 #include "cdt.h"
-#include "process.hpp"
 
 std::ostream& OsApi::Out() {
     return std::cout;
@@ -62,52 +63,65 @@ int OsApi::Exec(const std::vector<const char *> &args) {
     return errno;
 }
 
-static std::function<void(const char*, size_t)> HandleOut(
-    moodycamel::BlockingConcurrentQueue<ProcessEvent>& queue,
-    ProcessEventType event_type,
-    entt::entity entity) {
-  return [&queue, event_type, entity] (const char* data, size_t size) {
-    ProcessEvent event;
-    event.process = entity;
-    event.type = event_type;
-    event.data = std::string(data, size);
+static void ReadOut(moodycamel::BlockingConcurrentQueue<ProcessEvent>& queue,
+                    boost::process::child& process, entt::entity entity,
+                    boost::process::ipstream& ipstream, ProcessEventType type) {
+  ProcessEvent event;
+  event.process = entity;
+  event.type = type;
+  while (process.running() && ipstream && std::getline(ipstream, event.data)) {
     queue.enqueue(event);
-  };
-}
-
-static std::function<void()> HandleExit(
-    moodycamel::BlockingConcurrentQueue<ProcessEvent>& queue,
-    entt::entity entity) {
-  return [&queue, entity] () {
-    ProcessEvent event;
-    event.process = entity;
-    event.type = ProcessEventType::kExit;
-    queue.enqueue(event);
-  };
-}
-
-bool OsApi::StartProcessCommon(
-    Process& process,
-    moodycamel::BlockingConcurrentQueue<ProcessEvent>& queue,
-    entt::entity entity) {
-  std::function<void()> exit_cb = HandleExit(queue, entity);
-  process.handle = std::make_unique<TinyProcessLib::Process>(
-      process.shell_command,
-      "",
-      HandleOut(queue, ProcessEventType::kStdout, entity),
-      HandleOut(queue, ProcessEventType::kStderr, entity),
-      exit_cb);
-  process.id = process.handle->get_id();
-  if (process.id <= 0) {
-    exit_cb();
-    return false;
-  } else {
-    return true;
   }
 }
 
-int OsApi::GetProcessExitCode(Process& process) {
-    return process.handle->get_exit_status();
+static void Exit(moodycamel::BlockingConcurrentQueue<ProcessEvent>& queue,
+                 entt::entity entity) {
+  ProcessEvent event;
+  event.process = entity;
+  event.type = ProcessEventType::kExit;
+  queue.enqueue(event);
+}
+
+bool OsApi::StartProcess(
+    entt::entity entity, entt::registry& registry,
+    moodycamel::BlockingConcurrentQueue<ProcessEvent>& queue,
+    std::string& error) {
+  try {
+    Process& proc = registry.get<Process>(entity);
+    BoostProcess& boost_proc = registry.emplace<BoostProcess>(entity);
+    boost_proc.child = std::make_unique<boost::process::child>(
+        proc.shell_command, boost::process::std_out > boost_proc.ip_stdout,
+        boost::process::std_err > boost_proc.ip_stderr);
+    proc.id = boost_proc.child->id();
+    boost_proc.read_stdout = std::thread([&boost_proc, &queue, entity] () {
+      ReadOut(queue, *boost_proc.child, entity, boost_proc.ip_stdout,
+              ProcessEventType::kStdout);
+      boost_proc.child->wait();
+      Exit(queue, entity);
+    });
+    boost_proc.read_stderr = std::thread([&boost_proc, &queue, entity] () {
+      ReadOut(queue, *boost_proc.child, entity, boost_proc.ip_stderr,
+              ProcessEventType::kStderr);
+    });
+    OnProcessStart(boost_proc);
+    return true;
+  } catch (const boost::process::process_error& e) {
+    error = e.what();
+    Exit(queue, entity);
+    return false;
+  }
+}
+
+void OsApi::FinishProcess(entt::entity entity, entt::registry &registry) {
+  Process& process = registry.get<Process>(entity);
+  BoostProcess& boost_proc = registry.get<BoostProcess>(entity);
+  if (boost_proc.child) {
+    process.exit_code = boost_proc.child->exit_code();
+    boost_proc.read_stdout.join();
+    boost_proc.read_stderr.join();
+    OnProcessFinish(boost_proc);
+  }
+  registry.erase<BoostProcess>(entity);
 }
 
 std::chrono::system_clock::time_point OsApi::TimeNow() {
