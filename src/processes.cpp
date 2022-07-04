@@ -31,7 +31,7 @@ void HandleProcessEvent(Cdt& cdt) {
                  ProcessState::kComplete :
                  ProcessState::kFailed;
   } else {
-    if (event.data.back() == '\r') {
+    if (!event.data.empty() && event.data.back() == '\r') {
       event.data.erase(event.data.size() - 1, 1);
     }
     output.lines.push_back(event.data);

@@ -9,7 +9,12 @@ add_subdirectory(lib/nlohmann-json)
 add_subdirectory(lib/skypjack_entt)
 add_subdirectory(lib/googletest EXCLUDE_FROM_ALL)
 
-target_compile_options(boost_process INTERFACE -Wno-deprecated-declarations)
+# Silence BOOST warnings
+if(MSVC)
+  target_compile_definitions(boost_process INTERFACE _WIN32_WINNT=0x0501)
+else()
+  target_compile_options(boost_process INTERFACE -Wno-deprecated-declarations)
+endif()
 
 add_library(cdt STATIC
     src/cdt.h

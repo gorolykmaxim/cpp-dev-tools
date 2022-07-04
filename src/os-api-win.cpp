@@ -1,5 +1,6 @@
 #include <algorithm>
 #include <vector>
+#include <boost/process.hpp>
 #include <windows.h>
 #include <functional>
 #include <mutex>
@@ -7,7 +8,6 @@
 #include <fcntl.h>
 #include <codecvt>
 #include <iostream>
-#include <boost/process.hpp>
 
 #include "cdt.h"
 
@@ -61,7 +61,7 @@ void OsApi::Init() {
 
 void OsApi::OnProcessStart(BoostProcess& process) {
   std::lock_guard<std::mutex> lock(active_processes_mtx);
-  active_processes.push_back(proc.child.get());
+  active_processes.push_back(process.child.get());
 }
 
 void OsApi::OnProcessFinish(BoostProcess& process) {

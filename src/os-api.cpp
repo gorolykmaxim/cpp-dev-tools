@@ -1,3 +1,4 @@
+#include "cdt.h"
 #include "blockingconcurrentqueue.h"
 #include <filesystem>
 #include <functional>
@@ -11,8 +12,6 @@
 #else
 #include <windows.h>
 #endif
-
-#include "cdt.h"
 
 std::ostream& OsApi::Out() {
     return std::cout;
