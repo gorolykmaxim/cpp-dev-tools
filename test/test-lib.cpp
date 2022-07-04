@@ -19,11 +19,10 @@ std::string OsApiMock::ReadLineFromStdin() {
   return line;
 }
 
-void OsApiMock::StartProcess(
-    Process &process,
-    const std::function<void (const char *, size_t)> &stdout_cb,
-    const std::function<void (const char *, size_t)> &stderr_cb,
-    const std::function<void ()> &exit_cb) {
+bool OsApiMock::StartProcess(
+    Process& process,
+    moodycamel::BlockingConcurrentQueue<ProcessEvent>& queue,
+    entt::entity entity) {
   auto it = cmd_to_process_execs.find(process.shell_command);
   if (it == cmd_to_process_execs.end()) {
     throw std::runtime_error("Unexpected command called: " +
@@ -34,30 +33,38 @@ void OsApiMock::StartProcess(
   if (execs.size() > 1) {
     execs.pop_front();
   }
-  process.handle = std::unique_ptr<TinyProcessLib::Process>();
+  process.handle = std::unique_ptr<ProcessType>();
   process.id = exec.fail_to_exec ? 0 : pid_seed++;
   ProcessInfo& info = proc_info[process.id];
   info.exit_code = exec.exit_code;
-  info.exit_cb = exit_cb;
+  info.exit_cb = [&queue, entity] () {
+    ProcessEvent event;
+    event.process = entity;
+    event.type = ProcessEventType::kExit;
+    queue.enqueue(event);
+  };
   info.is_long = exec.is_long;
   info.shell_command = process.shell_command;
   if (exec.fail_to_exec) {
-    return;
+    info.exit_cb();
+    return false;
   }
   for (int i = 0; i < exec.output_lines.size(); i++) {
-    std::string line = exec.output_lines[i];
+    ProcessEvent event;
+    event.process = entity;
+    event.type = exec.stderr_lines.count(i) == 0 ?
+                 ProcessEventType::kStdout :
+                 ProcessEventType::kStderr;
+    event.data = exec.output_lines[i];
     if (exec.append_eol) {
-      line += '\n';
+      event.data += '\n';
     }
-    if (exec.stderr_lines.count(i) == 0) {
-      stdout_cb(line.data(), line.size());
-    } else {
-      stderr_cb(line.data(), line.size());
-    }
+    queue.enqueue(event);
   }
   if (!exec.is_long) {
-    exit_cb();
+    info.exit_cb();
   }
+  return true;
 }
 
 void OsApiMock::FinishProcess(Process &process) {

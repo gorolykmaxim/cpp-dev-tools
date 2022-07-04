@@ -54,11 +54,14 @@ enum class ProcessState {
   kScheduled, kRunning, kComplete, kFailed
 };
 
+using PidType = TinyProcessLib::Process::id_type;
+using ProcessType = TinyProcessLib::Process;
+
 struct Process {
   bool destroy_entity_on_finish = false;
   std::string shell_command;
-  TinyProcessLib::Process::id_type id;
-  std::unique_ptr<TinyProcessLib::Process> handle;
+  PidType id;
+  std::unique_ptr<ProcessType> handle;
   ProcessState state = ProcessState::kScheduled;
 };
 
@@ -153,14 +156,18 @@ public:
                          const std::string& data);
   virtual bool FileExists(const std::filesystem::path& path);
   virtual int Exec(const std::vector<const char*>& args);
-  virtual void StartProcess(
+  virtual bool StartProcess(
       Process& process,
-      const std::function<void(const char*, size_t)>& stdout_cb,
-      const std::function<void(const char*, size_t)>& stderr_cb,
-      const std::function<void()>& exit_cb);
+      moodycamel::BlockingConcurrentQueue<ProcessEvent>& queue,
+      entt::entity entity);
   virtual void FinishProcess(Process& process);
   virtual int GetProcessExitCode(Process& process);
   virtual std::chrono::system_clock::time_point TimeNow();
+private:
+  bool StartProcessCommon(
+      Process& process,
+      moodycamel::BlockingConcurrentQueue<ProcessEvent>& queue,
+      entt::entity entity);
 };
 
 struct Cdt {

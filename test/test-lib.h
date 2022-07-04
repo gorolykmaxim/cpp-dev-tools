@@ -85,10 +85,10 @@ public:
               (const std::filesystem::path&, const std::string&), (override));
   MOCK_METHOD(bool, FileExists, (const std::filesystem::path&), (override));
   MOCK_METHOD(int, Exec, (const std::vector<const char*>&), (override));
-  void StartProcess(Process& process,
-                    const std::function<void(const char*, size_t)>& stdout_cb,
-                    const std::function<void(const char*, size_t)>& stderr_cb,
-                    const std::function<void()>& exit_cb) override;
+  bool StartProcess(
+      Process& process,
+      moodycamel::BlockingConcurrentQueue<ProcessEvent>& queue,
+      entt::entity entity) override;
   void FinishProcess(Process& process) override;
 
   template<typename... Args>
@@ -166,7 +166,6 @@ public:
   void MockReadFile(const std::filesystem::path& p, const std::string& d);
   void MockReadFile(const std::filesystem::path& p);
 
-  using PidType = TinyProcessLib::Process::id_type;
   std::chrono::system_clock::time_point time_now;
   PidType pid_seed = 1;
   std::unordered_map<std::string, std::deque<ProcessExec>> cmd_to_process_execs;

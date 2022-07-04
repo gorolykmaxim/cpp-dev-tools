@@ -1,45 +1,16 @@
 #include "processes.h"
+#include "cdt.h"
 #include <functional>
 #include <ostream>
 #include <sstream>
-
-static std::function<void(const char*,size_t)> WriteTo(
-    moodycamel::BlockingConcurrentQueue<ProcessEvent>& queue,
-    entt::entity process, ProcessEventType event_type) {
-  return [&queue, process, event_type] (const char* data, size_t size) {
-    ProcessEvent event;
-    event.process = process;
-    event.type = event_type;
-    event.data = std::string(data, size);
-    queue.enqueue(event);
-  };
-}
-
-static std::function<void()> HandleExit(
-    moodycamel::BlockingConcurrentQueue<ProcessEvent>& queue,
-    entt::entity process) {
-  return [&queue, process] () {
-    ProcessEvent event;
-    event.process = process;
-    event.type = ProcessEventType::kExit;
-    queue.enqueue(event);
-  };
-}
 
 void StartProcesses(Cdt& cdt) {
   for (auto [entity, proc]: cdt.registry.view<Process>().each()) {
     if (proc.state != ProcessState::kScheduled) {
       continue;
     }
-    std::function<void()> exit_cb = HandleExit(cdt.proc_event_queue, entity);
-    cdt.os->StartProcess(
-        proc,
-        WriteTo(cdt.proc_event_queue, entity, ProcessEventType::kStdout),
-        WriteTo(cdt.proc_event_queue, entity, ProcessEventType::kStderr),
-        exit_cb);
-    if (proc.id <= 0) {
+    if (!cdt.os->StartProcess(proc, cdt.proc_event_queue, entity)) {
       cdt.os->Out() << "Failed to exec: " << proc.shell_command << std::endl;
-      exit_cb();
     }
     proc.state = ProcessState::kRunning;
   }

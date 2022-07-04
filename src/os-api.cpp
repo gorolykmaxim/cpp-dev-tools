@@ -1,4 +1,6 @@
+#include "blockingconcurrentqueue.h"
 #include <filesystem>
+#include <functional>
 #include <iostream>
 #include <fstream>
 #include <memory>
@@ -58,6 +60,50 @@ bool OsApi::FileExists(const std::filesystem::path &path) {
 int OsApi::Exec(const std::vector<const char *> &args) {
     execvp(args[0], const_cast<char* const*>(args.data()));
     return errno;
+}
+
+static std::function<void(const char*, size_t)> HandleOut(
+    moodycamel::BlockingConcurrentQueue<ProcessEvent>& queue,
+    ProcessEventType event_type,
+    entt::entity entity) {
+  return [&queue, event_type, entity] (const char* data, size_t size) {
+    ProcessEvent event;
+    event.process = entity;
+    event.type = event_type;
+    event.data = std::string(data, size);
+    queue.enqueue(event);
+  };
+}
+
+static std::function<void()> HandleExit(
+    moodycamel::BlockingConcurrentQueue<ProcessEvent>& queue,
+    entt::entity entity) {
+  return [&queue, entity] () {
+    ProcessEvent event;
+    event.process = entity;
+    event.type = ProcessEventType::kExit;
+    queue.enqueue(event);
+  };
+}
+
+bool OsApi::StartProcessCommon(
+    Process& process,
+    moodycamel::BlockingConcurrentQueue<ProcessEvent>& queue,
+    entt::entity entity) {
+  std::function<void()> exit_cb = HandleExit(queue, entity);
+  process.handle = std::make_unique<TinyProcessLib::Process>(
+      process.shell_command,
+      "",
+      HandleOut(queue, ProcessEventType::kStdout, entity),
+      HandleOut(queue, ProcessEventType::kStderr, entity),
+      exit_cb);
+  process.id = process.handle->get_id();
+  if (process.id <= 0) {
+    exit_cb();
+    return false;
+  } else {
+    return true;
+  }
 }
 
 int OsApi::GetProcessExitCode(Process& process) {
