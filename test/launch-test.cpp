@@ -95,6 +95,7 @@ TEST_F(LaunchTest, FailToStartDueToTasksConfigHavingErrors) {
            CreateTask("cycle-1", "command", {"cycle-2"}),
            CreateTask("cycle-2", "command", {"cycle-3"}),
            CreateTask("cycle-3", "command", {"cycle-1"}),
+           CreateTask("direct-cycle", "command", {"direct-cycle"}),
            CreateTask("duplicate name", "command"),
            CreateTask("duplicate name", "command")};
   MockTasksConfig();
@@ -106,10 +107,10 @@ TEST_F(LaunchTest, FailToStartDueToTasksConfigHavingErrors) {
                        "of other task names"));
   EXPECT_OUT(HasSubstr("task #3: references task 'non-existent-task' "
                        "that does not exist"));
-  EXPECT_OUT(HasSubstr("task #7: name 'duplicate name' is already used "
-                       "by task #8"));
   EXPECT_OUT(HasSubstr("task #8: name 'duplicate name' is already used "
-                       "by task #7"));
+                       "by task #9"));
+  EXPECT_OUT(HasSubstr("task #9: name 'duplicate name' is already used "
+                       "by task #8"));
   EXPECT_OUT(HasSubstr("task 'cycle-1' has a circular dependency "
                        "in it's 'pre_tasks':\n"
                        "cycle-1 -> cycle-2 -> cycle-3 -> cycle-1"));
@@ -119,6 +120,9 @@ TEST_F(LaunchTest, FailToStartDueToTasksConfigHavingErrors) {
   EXPECT_OUT(HasSubstr("task 'cycle-3' has a circular dependency "
                        "in it's 'pre_tasks':\n"
                        "cycle-3 -> cycle-1 -> cycle-2 -> cycle-3"));
+  EXPECT_OUT(HasSubstr("task 'direct-cycle' has a circular dependency "
+                       "in it's 'pre_tasks':\n"
+                       "direct-cycle -> direct-cycle"));
 }
 
 TEST_F(LaunchTest, StartAndChangeCwdToTasksConfigsDirectory) {

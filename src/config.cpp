@@ -254,17 +254,9 @@ void ReadTasksConfig(Cdt& cdt) {
     std::stack<size_t> to_visit;
     std::vector<size_t> task_call_stack;
     to_visit.push(i);
-    task_call_stack.push_back(i);
     while (!to_visit.empty()) {
       size_t task_id = to_visit.top();
       std::vector<size_t>& pre_pre_tasks = direct_pre_tasks[task_id];
-      // We are visiting each task with non-empty "pre_tasks" twice,
-      // so when we get to a task the second time - the task should already be
-      // on top of the task_call_stack.
-      // If that's the case - don't push the task to stack second time.
-      if (task_call_stack.back() != task_id) {
-        task_call_stack.push_back(task_id);
-      }
       bool all_children_visited = true;
       for (size_t child: pre_pre_tasks) {
         auto it = std::find(pre_tasks.begin(), pre_tasks.end(), child);
@@ -275,7 +267,9 @@ void ReadTasksConfig(Cdt& cdt) {
       }
       if (all_children_visited) {
         to_visit.pop();
-        task_call_stack.pop_back();
+        if (!task_call_stack.empty() && task_call_stack.back() == task_id) {
+          task_call_stack.pop_back();
+        }
         // Primary task is also in to_visit. Don't add it to pre_tasks.
         if (!to_visit.empty()) {
           pre_tasks.push_back(task_id);
@@ -298,6 +292,7 @@ void ReadTasksConfig(Cdt& cdt) {
           config_errors.emplace_back(err.str());
           break;
         }
+        task_call_stack.push_back(task_id);
         for (auto it = pre_pre_tasks.rbegin();
              it != pre_pre_tasks.rend();
              it++) {
