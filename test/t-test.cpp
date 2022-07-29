@@ -54,6 +54,9 @@ TEST_F(TTest, StartAndDisplayListOfTasksOnTaskCommand) {
   EXPECT_OUT(HasSubstrsInOrder(task_names));
   RunCmd("t99");
   EXPECT_OUT(HasSubstrsInOrder(task_names));
+  // The command should repeat on enter
+  RunCmd("");
+  EXPECT_OUT(HasSubstrsInOrder(task_names));
 }
 
 TEST_F(TTest, StartAndExecuteSingleTask) {

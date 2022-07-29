@@ -16,12 +16,55 @@ static std::string kGtestDebug;
 static std::string kGtestFilter;
 
 void InitGtest(Cdt& cdt) {
-    kGtest = DefineUserCommand("g", {"ind", "Display output of the specified google test"}, cdt);
-    kGtestSearch = DefineUserCommand("gs", {"ind", "Search through output of the specified google test with the specified regular expression"}, cdt);
-    kGtestRerun = DefineUserCommand("gt", {"ind", "Re-run the google test with the specified index"}, cdt);
-    kGtestRerunRepeat = DefineUserCommand("gtr", {"ind", "Keep re-running the google test with the specified index until it fails"}, cdt);
-    kGtestDebug = DefineUserCommand("gd", {"ind", "Re-run the google test with the specified index with debugger attached"}, cdt);
-    kGtestFilter = DefineUserCommand("gf", {"ind", "Run google tests of the task with the specified index with a specified " + kGtestFilterArg}, cdt);
+  kGtest = DefineUserCommand(
+      "g",
+      {
+        "ind",
+        "Display output of the specified google test"
+      },
+      cdt);
+  kGtestSearch = DefineUserCommand(
+      "gs",
+      {
+        "ind",
+        "Search through output of the specified google test with the specified"
+        " regular expression"
+      },
+      cdt);
+  kGtestRerun = DefineUserCommand(
+      "gt",
+      {
+        "ind",
+        "Re-run the google test with the specified index"
+      },
+      cdt,
+      true);
+  kGtestRerunRepeat = DefineUserCommand(
+      "gtr",
+      {
+        "ind",
+        "Keep re-running the google test with the specified index"
+        " until it fails"
+      },
+      cdt,
+      true);
+  kGtestDebug = DefineUserCommand(
+      "gd",
+      {
+        "ind",
+        "Re-run the google test with the specified index with debugger attached"
+      },
+      cdt,
+      true);
+  kGtestFilter = DefineUserCommand(
+      "gf",
+      {
+        "ind",
+        "Run google tests of the task with the specified index with"
+        " a specified " + kGtestFilterArg
+      },
+      cdt,
+      true);
 }
 
 static std::string GtestTaskCommandToShellCommand(const std::string& task_cmd, const std::optional<std::string>& gtest_filter = {}) {

@@ -32,24 +32,32 @@ static UserCommand ParseUserCommand(const std::string& str) {
 }
 
 void ReadUserCommandFromStdin(Cdt& cdt) {
-    if (!WillWaitForInput(cdt)) return;
-    std::string input = ReadInputFromStdin("(cdt) ", cdt);
-    if (input.empty()) {
-        cdt.last_usr_cmd.executed = false;
-    } else {
-        cdt.last_usr_cmd = ParseUserCommand(input);
-    }
+  if (!WillWaitForInput(cdt)) return;
+  std::string input = ReadInputFromStdin("(cdt) ", cdt);
+  if (input.empty()) {
+    cdt.last_usr_cmd = cdt.last_repeatable_usr_cmd;
+  } else {
+    cdt.last_usr_cmd = ParseUserCommand(input);
+  }
 }
 
 void ReadUserCommandFromEnv(Cdt& cdt) {
-    std::string str = cdt.os->GetEnv(kEnvVarLastCommand);
-    if (!str.empty()) {
-        cdt.last_usr_cmd = ParseUserCommand(str);
-    }
+  std::string str = cdt.os->GetEnv(kEnvVarLastCommand);
+  if (!str.empty()) {
+    cdt.last_repeatable_usr_cmd = ParseUserCommand(str);
+  }
 }
 
 void PromptUserToAskForHelp(Cdt& cdt) {
     cdt.os->Out() << "Type " << kTcGreen << kHelp << kTcReset << " to see list of all the user commands." << std::endl;
+}
+
+void SaveRepeatableUserCommand(Cdt& cdt) {
+  if (cdt.kRepeatableUsrCmdNames.count(cdt.last_usr_cmd.cmd) == 0) {
+    return;
+  }
+  cdt.last_repeatable_usr_cmd = cdt.last_usr_cmd;
+  cdt.last_repeatable_usr_cmd.executed = false;
 }
 
 void DisplayHelp(Cdt& cdt) {

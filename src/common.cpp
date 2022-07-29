@@ -3,10 +3,15 @@
 #include <string>
 #include <vector>
 
-std::string DefineUserCommand(const std::string& name, const UserCommandDefinition& def, Cdt& cdt) {
-    cdt.kUsrCmdNames.push_back(name);
-    cdt.kUsrCmdDefs.push_back(def);
-    return name;
+std::string DefineUserCommand(const std::string& name,
+                              const UserCommandDefinition& def, Cdt& cdt,
+                              bool repeatable) {
+  cdt.kUsrCmdNames.push_back(name);
+  cdt.kUsrCmdDefs.push_back(def);
+  if (repeatable) {
+    cdt.kRepeatableUsrCmdNames.insert(name);
+  }
+  return name;
 }
 
 void WarnUserConfigPropNotSpecified(const std::string& property, Cdt& cdt) {

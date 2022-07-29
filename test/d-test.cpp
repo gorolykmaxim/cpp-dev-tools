@@ -32,6 +32,10 @@ TEST_F(DTest, StartAttemptToDebugTaskWhileMandatoryPropertiesAreNotSpecifiedInUs
   RunCmd("d");
   EXPECT_OUT(HasSubstr("debug_command"));
   EXPECT_OUT(HasPath(paths.kUserConfig));
+  // The command should repeat on enter
+  RunCmd("");
+  EXPECT_OUT(HasSubstr("debug_command"));
+  EXPECT_OUT(HasPath(paths.kUserConfig));
 }
 
 TEST_F(DTest, StartAttemptDebugTaskThatDoesNotExistAndViewListOfAllTasks) {

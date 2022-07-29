@@ -30,7 +30,10 @@ TEST_F(TrTest, StartRepeatedlyExecuteTaskUntilItFails) {
   EXPECT_OUT(HasSubstrsInOrder(std::vector<std::string>{
       TASK_COMPLETE("run tests"), TASK_COMPLETE("run tests"),
       TASK_FAILED("run tests", exec_tests_fail.exit_code)}));
-  EXPECT_PROCS_EXACT(execs.kTests, execs.kTests, execs.kTests);
+  // The command should repeat on enter
+  RunCmd("");
+  EXPECT_OUT(HasSubstr(TASK_FAILED("run tests", exec_tests_fail.exit_code)));
+  EXPECT_PROCS_EXACT(execs.kTests, execs.kTests, execs.kTests, execs.kTests);
 }
 
 TEST_F(TrTest, StartRepeatedlyExecuteTaskUntilOneOfItsPreTasksFails) {

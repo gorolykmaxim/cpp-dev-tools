@@ -52,14 +52,6 @@ TEST_F(MiscTest, StartExecuteTaskAndAbortIt) {
   EXPECT_PROCS_EXACT(cmd_primary);
 }
 
-TEST_F(MiscTest, StartExecuteSingleTaskAndRepeateTheLastCommandOnEnter) {
-  mock.MockProc(cmd_primary);
-  ASSERT_INIT_CDT();
-  RunCmd("t1");
-  RunCmd("");
-  EXPECT_PROCS_EXACT(cmd_primary, cmd_primary);
-}
-
 TEST_F(MiscTest, StartAndExecuteRestartTask) {
   ASSERT_INIT_CDT();
   InSequence seq;

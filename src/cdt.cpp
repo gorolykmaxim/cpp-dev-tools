@@ -68,4 +68,5 @@ void ExecCdtSystems(Cdt &cdt) {
   FinishProcessExecution(cdt);
 
   RemoveOldExecutionsFromHistory(cdt);
+  SaveRepeatableUserCommand(cdt);
 }

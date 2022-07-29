@@ -26,6 +26,9 @@ TEST_F(GfTest, StartAttemptToExecuteGoogleTestsWithFilterTargetingTaskThatDoesNo
   EXPECT_OUT(HasSubstrsInOrder(list_of_tasks));
   RunCmd("gf99");
   EXPECT_OUT(HasSubstrsInOrder(list_of_tasks));
+  // The command should repeat on enter
+  RunCmd("");
+  EXPECT_OUT(HasSubstrsInOrder(list_of_tasks));
 }
 
 TEST_F(GfTest, StartAndExecuteGtestTaskWithPreTasksWithGtestFilter) {

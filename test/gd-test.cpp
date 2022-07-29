@@ -47,6 +47,9 @@ TEST_F(GdTest, StartAttemptToRerunGtestWithDebuggerWhenNoTestsHaveBeenExecutedYe
   ASSERT_INIT_CDT();
   RunCmd("gd");
   EXPECT_OUT(HasSubstr("No google tests have been executed yet."));
+  // The command should repeat on enter
+  RunCmd("");
+  EXPECT_OUT(HasSubstr("No google tests have been executed yet."));
 }
 
 TEST_F(GdTest, StartExecuteGtestTaskWithPreTasksFailAttemptToRerunTestThatDoesNotExistWithDebuggerAndViewListOfFailedTests) {

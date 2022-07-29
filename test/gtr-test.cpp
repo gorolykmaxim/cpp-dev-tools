@@ -95,6 +95,9 @@ TEST_F(GtrTest, StartAttemptToRepeatedlyRerunGtestWhenNoTestsHaveBeenExecutedYet
   ASSERT_INIT_CDT();
   RunCmd("gtr");
   EXPECT_OUT(HasSubstr("No google tests have been executed yet."));
+  // The command should repeat on enter
+  RunCmd("");
+  EXPECT_OUT(HasSubstr("No google tests have been executed yet."));
 }
 
 TEST_F(GtrTest, StartExecuteGtestTaskWithPreTasksSucceedAttemptToRepeatedlyRerunTestThatDoesNotExistAndViewListOfAllTests) {

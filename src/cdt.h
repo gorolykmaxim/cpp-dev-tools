@@ -177,8 +177,9 @@ struct Cdt {
   moodycamel::BlockingConcurrentQueue<ProcessEvent> proc_event_queue;
   ConsoleOutput output;
   std::vector<std::string> kUsrCmdNames;
+  std::unordered_set<std::string> kRepeatableUsrCmdNames;
   std::vector<UserCommandDefinition> kUsrCmdDefs;
-  UserCommand last_usr_cmd;
+  UserCommand last_usr_cmd, last_repeatable_usr_cmd;
   std::vector<Task> tasks;
   std::vector<std::vector<size_t>> pre_tasks;
   std::string open_in_editor_cmd;

@@ -16,28 +16,31 @@ static std::string kDebug;
 static std::string kSelectExecution;
 
 void InitExecution(Cdt& cdt) {
-    kTask = DefineUserCommand(
+  kTask = DefineUserCommand(
       "t",
       {
         "ind",
         "Execute the task with the specified index"
       },
-      cdt);
-    kTaskRepeat = DefineUserCommand(
+      cdt,
+      true);
+  kTaskRepeat = DefineUserCommand(
       "tr",
       {
         "ind",
         "Keep executing the task with the specified index until it fails"
       },
-      cdt);
-    kDebug = DefineUserCommand(
+      cdt,
+      true);
+  kDebug = DefineUserCommand(
       "d",
       {
         "ind",
         "Execute the task with the specified index with a debugger attached"
       },
-      cdt);
-    kSelectExecution = DefineUserCommand(
+      cdt,
+      true);
+  kSelectExecution = DefineUserCommand(
       "exec",
       {
         "ind",
