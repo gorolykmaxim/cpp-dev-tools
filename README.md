@@ -20,6 +20,6 @@ The purpose of this command line tool is to fill-in those gaps, while not being 
 ## How to build for development
 ```
 mkdir build
-cmake -B build -DCMAKE_BUILD_TYPE=Debug -DCMAKE_EXPORT_COMPILE_COMMANDS=ON
+cmake -B build
 cmake --build build
 ```
