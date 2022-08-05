@@ -119,3 +119,12 @@ TEST_F(OTest, StartExecuteTaskWithWindowsLinksAndOpenLinksFromOutput) {
   EXPECT_PROCS_EXACT(cmd_pre_task, open_link1, open_link2);
 }
 #endif
+
+TEST_F(OTest, StartExecuteTaskDisplayItsOutputPressEnterAndExpectToExecuteTaskInsteadOfDisplayingOutputAgain) {
+  mock.MockProc(cmd_pre_task, exec_with_links);
+  ASSERT_INIT_CDT();
+  RunCmd("t1");
+  RunCmd("o");
+  RunCmd("");
+  EXPECT_PROCS_EXACT(cmd_pre_task, cmd_pre_task);
+}

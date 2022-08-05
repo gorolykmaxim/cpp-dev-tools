@@ -262,3 +262,12 @@ TEST_F(ExecTest, StartExecuteTaskOpenLinksFromOuputValidateExecutionHistoryHasOn
   EXPECT_OUT(ContainsRegex("\n-> 1 ..:00:01 \"task 1\"\n"));
   EXPECT_OUT(HasSubstrNTimes("\n", 2));
 }
+
+TEST_F(ExecTest, StartExecuteTaskSelectItPressEnterAndExpectTaskToExecuteAgainInsteadOfPerformingTheSelection) {
+  std::string cmd = tasks[0]["command"];
+  ASSERT_INIT_CDT();
+  RunCmd("t1");
+  RunCmd("exec1");
+  RunCmd("");
+  EXPECT_PROCS_EXACT(cmd, cmd);
+}

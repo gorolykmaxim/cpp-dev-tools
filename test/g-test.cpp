@@ -84,3 +84,12 @@ TEST_F(Gtest, StartExecuteGtestTaskExecuteNonGtestTaskAndDisplayOutputOfOneOfThe
   RunCmd("g1");
   EXPECT_OUT(HasSubstr(OUT_LINKS_HIGHLIGHTED()));
 }
+
+TEST_F(Gtest, StartExecuteGtestTaskViewOutputPressEnterAndExpectTaskToExecuteAgainInsteadOfPrintingOutput) {
+  mock.MockProc(execs.kTests, exec_test_success);
+  ASSERT_INIT_CDT();
+  RunCmd("t1");
+  RunCmd("g1");
+  RunCmd("");
+  EXPECT_PROCS_EXACT(execs.kTests, execs.kTests);
+}

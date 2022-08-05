@@ -61,3 +61,12 @@ TEST_F(STest, StartExecuteGtestTaskSearchItsRawOutput) {
     "\x1B[35m7:\x1B[0m\x1B[32msome\x1B[0m random \x1B[32mdata\x1B[0m\n"
     "\x1B[35m8:\x1B[0m/d/e/f:15:32 \x1B[32msome\x1B[0mthing\n"));
 }
+
+TEST_F(STest, StartExecuteTaskSearchItsOutputPressEnterAndExpectTaskToExecuteInsteadOfDoingSearchAgain) {
+  std::string cmd = tasks[0]["command"];
+  ASSERT_INIT_CDT();
+  RunCmd("t1");
+  RunCmd("s\n(some|data)");
+  RunCmd("");
+  EXPECT_PROCS_EXACT(cmd, cmd);
+}

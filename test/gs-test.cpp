@@ -78,3 +78,12 @@ TEST_F(GsTest, StartExecuteGtestTaskSucceedAndSearchOutputOfOneOfTheTests) {
   RunCmd("gs2\n(some|data)");
   EXPECT_OUT(HasSubstr("No matches found"));
 }
+
+TEST_F(GsTest, StartExecuteTestsSearchOutputOfTestPressEnterAndExpectTaskToExecuteInsteadOfDoingTheSearchAgain) {
+  mock.MockProc(execs.kTests, exec_tests_successful);
+  ASSERT_INIT_CDT();
+  RunCmd("t1");
+  RunCmd("gs1\n(some|data)");
+  RunCmd("");
+  EXPECT_PROCS_EXACT(execs.kTests, execs.kTests);
+}
