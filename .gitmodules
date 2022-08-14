@@ -1,7 +1,0 @@
-[submodule "lib/googletest"]
-	path = lib/googletest
-	url = https://github.com/google/googletest.git
-[submodule "lib/boost"]
-	path = lib/boost
-	url = https://github.com/boostorg/boost.git
-  ignore = all

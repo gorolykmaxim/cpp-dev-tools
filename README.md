@@ -1,5 +1,12 @@
 # cpp-dev-tools
-A command line tool to automate command execution and much more.
+A tool to automate command execution and much more.
+
+## Prerequisistes for building
+Environment variables you need to set:
+- CMAKE_PREFIX_PATH
+
+Dependencies you need to install manually:
+- Qt 6.3 for MacOS
 
 ## How to install
 ```
@@ -15,7 +22,7 @@ However, CLion's autocomplete became slower and slower over time up to the point
 
 There are things in CLion however, that i can't live without, such as run configurations and gtest integration (and maybe some other stuff i can't remember right now). The code editors, i'm moving to, either don't have those features at all, or do have them but not in a state that i personally find usefull.
 
-The purpose of this command line tool is to fill-in those gaps, while not being tied to any particular code editor as a plugin.
+The purpose of this tool is to fill-in those gaps, while not being tied to any particular code editor as a plugin.
 
 ## How to build for development
 ```
