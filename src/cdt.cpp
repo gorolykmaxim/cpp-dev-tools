@@ -18,8 +18,8 @@ ProcessId::operator bool() const {
 }
 
 QDebug operator<<(QDebug debug, const ProcessId& id) {
-  debug.nospace() << "ProcessId{index=" << id.index << ", version="
-                  << id.version << "}";
+  debug.nospace() << "Id(i=" << id.index << ",v="
+                  << id.version << ')';
   return debug.maybeSpace();
 }
 

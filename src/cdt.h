@@ -9,6 +9,8 @@
 #include <QSharedPointer>
 #include <QtGlobal>
 
+#define EXEC_NEXT(FUNC) execute = [this] (Application& app) {FUNC(app);}
+
 class Application;
 
 class ProcessId {
