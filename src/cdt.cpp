@@ -49,7 +49,7 @@ QSharedPointer<Process> ProcessRuntime::Schedule(Process* process,
   }
   if (parent) {
     p->parent_id = parent->id;
-    parent->child_ids.insert(p->id);
+    parent->child_ids.append(p->id);
   }
   to_execute.append(p->id);
   return p;
@@ -82,7 +82,7 @@ void ProcessRuntime::WakeUpAndExecute(Process& process,
 
 void ProcessRuntime::ExecuteProcesses() {
   while (!to_execute.isEmpty() || !to_finish.isEmpty()) {
-    QList<ProcessId> execute = to_execute;
+    QVector<ProcessId> execute = to_execute;
     to_execute.clear();
     for (ProcessId id: execute) {
       QSharedPointer<Process> p = processes[id.index];
@@ -92,7 +92,7 @@ void ProcessRuntime::ExecuteProcesses() {
       exec(app);
       // Process did not specify new execute function and it has no new
       // unfinished child procesess - the process has finished.
-      if (!p->execute && finished.contains(p->child_ids)) {
+      if (!p->execute && AllChildrenFinished(p)) {
         to_finish.append(p->id);
       }
     }
@@ -101,23 +101,22 @@ void ProcessRuntime::ExecuteProcesses() {
       qDebug() << "Finishing process" << p->id;
       finished.insert(p->id);
       // Wake up parent process if all children are finished
-      if (p->parent_id &&
-          finished.contains(processes[p->parent_id.index]->child_ids)) {
+      if (p->parent_id && AllChildrenFinished(processes[p->parent_id.index])) {
         to_execute.append(p->parent_id);
       }
       // Remove all child processes
-      QSet<ProcessId> to_remove;
+      QVector<ProcessId> to_remove;
       if (!p->parent_id) {
         // If current process is a root and have finished - remove it since
         // nobody else is interested in its results.
-        to_remove.insert(p->id);
+        to_remove.append(p->id);
       }
-      QSet<ProcessId> visiting = p->child_ids;
+      QVector<ProcessId> visiting = p->child_ids;
       while (!visiting.isEmpty()) {
-        to_remove.unite(visiting);
-        QSet<ProcessId> to_visit;
+        to_remove.append(visiting);
+        QVector<ProcessId> to_visit;
         for (ProcessId id: visiting) {
-          to_visit.unite(processes[id.index]->child_ids);
+          to_visit.append(processes[id.index]->child_ids);
         }
         visiting = to_visit;
       }
@@ -130,6 +129,17 @@ void ProcessRuntime::ExecuteProcesses() {
     }
     to_finish.clear();
   }
+}
+
+bool ProcessRuntime::AllChildrenFinished(
+    const QSharedPointer<Process>& process) const {
+  Q_ASSERT(process);
+  for (ProcessId id: process->child_ids) {
+    if (!finished.contains(id)) {
+      return false;
+    }
+  }
+  return true;
 }
 
 Application::Application(): runtime(*this) {}

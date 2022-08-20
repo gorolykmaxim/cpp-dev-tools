@@ -3,9 +3,9 @@
 
 #include <functional>
 #include <optional>
-#include <QList>
-#include <QStack>
+#include <QVector>
 #include <QSet>
+#include <QStack>
 #include <QSharedPointer>
 #include <QtGlobal>
 
@@ -34,7 +34,7 @@ public:
   ProcessId id;
   ProcessId parent_id;
   ProcessExecute execute;
-  QSet<ProcessId> child_ids;
+  QVector<ProcessId> child_ids;
 };
 
 class ProcessRuntime {
@@ -45,12 +45,13 @@ public:
   void WakeUpAndExecute(Process& process, ProcessExecute execute = nullptr);
 private:
   void ExecuteProcesses();
+  bool AllChildrenFinished(const QSharedPointer<Process>& process) const;
 
-  QList<QSharedPointer<Process>> processes;
+  QVector<QSharedPointer<Process>> processes;
   QStack<ProcessId> free_process_ids;
   QSet<ProcessId> finished;
-  QList<ProcessId> to_execute;
-  QList<ProcessId> to_finish;
+  QVector<ProcessId> to_execute;
+  QVector<ProcessId> to_finish;
   Application& app;
 };
 
