@@ -63,7 +63,7 @@ void ProcessRuntime::ScheduleAndExecute(Process* process) {
 void ProcessRuntime::WakeUpAndExecute(Process& process,
                                       ProcessExecute execute) {
   ProcessId id = process.id;
-  Q_ASSERT(id && id.index < processes.size());
+  Q_ASSERT(IsValid(id));
   if (processes[id.index]->id != id) {
     qDebug() << "Attempt to resume process" << id
              << "which does not exist anymore (probably has been cancelled)";
@@ -131,6 +131,14 @@ void ProcessRuntime::ExecuteProcesses() {
   }
 }
 
+bool ProcessRuntime::IsAlive(Process& process) const {
+  if (!IsValid(process.id)) {
+    return false;
+  }
+  QSharedPointer<Process> p = processes[process.id.index];
+  return p && p->id == process.id;
+}
+
 bool ProcessRuntime::AllChildrenFinished(
     const QSharedPointer<Process>& process) const {
   Q_ASSERT(process);
@@ -140,6 +148,10 @@ bool ProcessRuntime::AllChildrenFinished(
     }
   }
   return true;
+}
+
+bool ProcessRuntime::IsValid(const ProcessId& id) const {
+  return id && id.index < processes.size();
 }
 
 Application::Application(): runtime(*this) {}
