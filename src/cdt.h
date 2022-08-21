@@ -9,7 +9,8 @@
 #include <QSharedPointer>
 #include <QtGlobal>
 
-#define EXEC_NEXT(FUNC) execute = [this] (Application& app) {FUNC(app);}
+#define EXEC(FUNC) [this] (Application& app) {FUNC(app);}
+#define EXEC_NEXT(FUNC) execute = EXEC(FUNC)
 
 class Application;
 
