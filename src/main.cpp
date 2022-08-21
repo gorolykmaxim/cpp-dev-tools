@@ -4,18 +4,21 @@
 
 class LongProcess: public Process {
 public:
-  LongProcess() {
+  LongProcess(): my_own_data(15) {
     EXEC_NEXT(DoStuff);
   }
 private:
   void DoStuff(Application& app) {
-    qDebug() << "Doing stuff";
+    QSharedPointer<LongProcess> self = app.runtime.SharedPtr(this);
+    qDebug() << "Doing stuff" << self->id << self->my_own_data;
     EXEC_NEXT(DoOtherStuff);
   }
 
   void DoOtherStuff(Application& app) {
     qDebug() << "Doing other stuff";
   }
+
+  int my_own_data;
 };
 
 class MyProcess: public Process {

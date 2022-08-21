@@ -46,6 +46,13 @@ public:
   QSharedPointer<Process> Schedule(Process* process, Process* parent = nullptr);
   void ScheduleAndExecute(Process* process);
   void WakeUpAndExecute(Process& process, ProcessExecute execute = nullptr);
+
+  template<typename T>
+  QSharedPointer<T> SharedPtr(T* process) {
+    Q_ASSERT(process && process->id && process->id.index < processes.size());
+    return processes[process->id.index].template staticCast<T>();
+  }
+
 private:
   void ExecuteProcesses();
   bool AllChildrenFinished(const QSharedPointer<Process>& process) const;
