@@ -20,7 +20,7 @@ ProcessId::operator bool() const {
 QDebug operator<<(QDebug debug, const ProcessId& id) {
   debug.nospace() << "Id(i=" << id.index << ",v="
                   << id.version << ')';
-  return debug.maybeSpace();
+  return debug.space();
 }
 
 size_t qHash(const ProcessId& id, size_t seed) noexcept {

@@ -25,6 +25,7 @@ public:
   int version;
 };
 
+QDebug operator<<(QDebug debug, const ProcessId& id);
 size_t qHash(const ProcessId& id, size_t seed) noexcept;
 
 using ProcessExecute = std::function<void(Application&)>;
