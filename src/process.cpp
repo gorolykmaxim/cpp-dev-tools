@@ -1,5 +1,5 @@
 #include <QDebug>
-#include "cdt.h"
+#include "process.h"
 
 ProcessId::ProcessId(): index(-1), version(-1) {}
 
@@ -153,7 +153,5 @@ bool ProcessRuntime::AllChildrenFinished(
 bool ProcessRuntime::IsValid(const ProcessId& id) const {
   return id && id.index < processes.size();
 }
-
-Application::Application(): runtime(*this) {}
 
 const ProcessExecute Process::kNoopExecute = [] (Application& app) {};

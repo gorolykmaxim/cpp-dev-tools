@@ -1,6 +1,6 @@
 #include <QGuiApplication>
 #include <QQmlApplicationEngine>
-#include "cdt.h"
+#include "application.h"
 
 class LongProcess: public Process {
 public:

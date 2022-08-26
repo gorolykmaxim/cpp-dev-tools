@@ -1,5 +1,4 @@
-#ifndef CDT_H
-#define CDT_H
+#pragma once
 
 #include <functional>
 #include <optional>
@@ -67,12 +66,3 @@ private:
   QVector<ProcessId> to_finish;
   Application& app;
 };
-
-class Application {
-public:
-  ProcessRuntime runtime;
-
-  Application();
-};
-
-#endif
