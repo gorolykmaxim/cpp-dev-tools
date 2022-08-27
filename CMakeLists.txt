@@ -7,6 +7,7 @@ set(CMAKE_AUTOMOC ON)
 find_package(Qt6 6.3 COMPONENTS Quick Gui Concurrent REQUIRED)
 qt_add_executable(cpp-dev-tools
   src/main.cpp
+  src/common.h
   src/process.h
   src/process.cpp
   src/threads.h

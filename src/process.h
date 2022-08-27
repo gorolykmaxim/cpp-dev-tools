@@ -5,8 +5,8 @@
 #include <QVector>
 #include <QSet>
 #include <QStack>
-#include <QSharedPointer>
 #include <QtGlobal>
+#include "common.h"
 
 #define EXEC(FUNC) [this] (Application& app) {FUNC(app);}
 #define EXEC_NEXT(FUNC) execute = EXEC(FUNC)
@@ -43,23 +43,54 @@ public:
 class ProcessRuntime {
 public:
   explicit ProcessRuntime(Application& app);
-  QSharedPointer<Process> Schedule(Process* process, Process* parent = nullptr);
-  void ScheduleAndExecute(Process* process);
+
+  template<typename P, typename... Args>
+  QPtr<P> ScheduleRoot(Args&&... args) {
+    QPtr<P> p(new P(args...));
+    if (!free_process_ids.isEmpty()) {
+      p->id = free_process_ids.pop();
+      p->id.version++;
+      processes[p->id.index] = p;
+    } else {
+      p->id = ProcessId(processes.size(), 0);
+      processes.append(p);
+    }
+    to_execute.append(p->id);
+    return p;
+  }
+
+  template<typename P, typename... Args>
+  QPtr<P> Schedule(Process* parent, Args&&... args) {
+    QPtr<P> p = ScheduleRoot<P>(args...);
+    if (parent) {
+      p->parent_id = parent->id;
+      parent->child_ids.append(p->id);
+    }
+    return p;
+  }
+
+  template<typename P, typename... Args>
+  QPtr<P> ScheduleAndExecute(Args&&... args) {
+    QPtr<P> p = ScheduleRoot<P>(args...);
+    ExecuteProcesses();
+    return p;
+  }
+
   void WakeUpAndExecute(Process& process, ProcessExecute execute = nullptr);
   bool IsAlive(Process& process) const;
 
   template<typename T>
-  QSharedPointer<T> SharedPtr(T* process) const {
+  QPtr<T> SharedPtr(T* process) const {
     Q_ASSERT(process && IsValid(process->id));
     return processes[process->id.index].template staticCast<T>();
   }
 
 private:
   void ExecuteProcesses();
-  bool AllChildrenFinished(const QSharedPointer<Process>& process) const;
+  bool AllChildrenFinished(const QPtr<Process>& process) const;
   bool IsValid(const ProcessId& id) const;
 
-  QVector<QSharedPointer<Process>> processes;
+  QVector<QPtr<Process>> processes;
   QStack<ProcessId> free_process_ids;
   QSet<ProcessId> finished;
   QVector<ProcessId> to_execute;

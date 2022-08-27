@@ -32,34 +32,6 @@ size_t qHash(const ProcessId& id, size_t seed) noexcept {
 
 ProcessRuntime::ProcessRuntime(Application& app): app(app) {}
 
-QSharedPointer<Process> ProcessRuntime::Schedule(Process* process,
-                                                 Process* parent) {
-  if (!process) {
-    return nullptr;
-  }
-  Q_ASSERT(process && process->execute);
-  QSharedPointer<Process> p(process);
-  if (!free_process_ids.isEmpty()) {
-    p->id = free_process_ids.pop();
-    p->id.version++;
-    processes[p->id.index] = p;
-  } else {
-    p->id = ProcessId(processes.size(), 0);
-    processes.append(p);
-  }
-  if (parent) {
-    p->parent_id = parent->id;
-    parent->child_ids.append(p->id);
-  }
-  to_execute.append(p->id);
-  return p;
-}
-
-void ProcessRuntime::ScheduleAndExecute(Process* process) {
-  Schedule(process);
-  ExecuteProcesses();
-}
-
 void ProcessRuntime::WakeUpAndExecute(Process& process,
                                       ProcessExecute execute) {
   ProcessId id = process.id;
@@ -85,7 +57,7 @@ void ProcessRuntime::ExecuteProcesses() {
     QVector<ProcessId> execute = to_execute;
     to_execute.clear();
     for (ProcessId id: execute) {
-      QSharedPointer<Process> p = processes[id.index];
+      QPtr<Process> p = processes[id.index];
       ProcessExecute exec = p->execute;
       p->execute = nullptr;
       qDebug() << "Executing process" << p->id;
@@ -97,7 +69,7 @@ void ProcessRuntime::ExecuteProcesses() {
       }
     }
     for (ProcessId id: to_finish) {
-      QSharedPointer<Process> p = processes[id.index];
+      QPtr<Process> p = processes[id.index];
       qDebug() << "Finishing process" << p->id;
       finished.insert(p->id);
       // Wake up parent process if all children are finished
@@ -135,12 +107,11 @@ bool ProcessRuntime::IsAlive(Process& process) const {
   if (!IsValid(process.id)) {
     return false;
   }
-  QSharedPointer<Process> p = processes[process.id.index];
+  QPtr<Process> p = processes[process.id.index];
   return p && p->id == process.id;
 }
 
-bool ProcessRuntime::AllChildrenFinished(
-    const QSharedPointer<Process>& process) const {
+bool ProcessRuntime::AllChildrenFinished(const QPtr<Process>& process) const {
   Q_ASSERT(process);
   for (ProcessId id: process->child_ids) {
     if (!finished.contains(id)) {
