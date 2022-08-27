@@ -3,7 +3,7 @@
 
 class LongProcess: public Process {
 public:
-  LongProcess(int my_own_data): my_own_data(my_own_data) {
+  LongProcess(int my_own_data) : my_own_data(my_own_data) {
     EXEC_NEXT(DoStuff);
   }
 private:

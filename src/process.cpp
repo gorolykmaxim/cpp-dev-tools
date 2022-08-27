@@ -2,9 +2,9 @@
 #include <QDebugStateSaver>
 #include "process.hpp"
 
-ProcessId::ProcessId(): index(-1), version(-1) {}
+ProcessId::ProcessId() : index(-1), version(-1) {}
 
-ProcessId::ProcessId(int index, int version): index(index), version(version) {}
+ProcessId::ProcessId(int index, int version) : index(index), version(version) {}
 
 bool ProcessId::operator==(const ProcessId& id) const {
   return index == id.index && version == id.version;
@@ -36,7 +36,7 @@ QDebug operator<<(QDebug debug, const Process& proc) {
                          << proc.dbg_execute_name << ",i=" << proc.id << ')';
 }
 
-ProcessRuntime::ProcessRuntime(Application& app): app(app) {}
+ProcessRuntime::ProcessRuntime(Application& app) : app(app) {}
 
 void ProcessRuntime::WakeUpAndExecute(Process& process,
                                       ProcessExecute execute) {
