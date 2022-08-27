@@ -1,7 +1,7 @@
 #pragma once
 
-#include "process.h"
-#include "threads.h"
+#include "process.hpp"
+#include "threads.hpp"
 
 class Application {
 public:

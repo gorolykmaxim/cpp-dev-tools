@@ -1,5 +1,5 @@
 #include <QDebug>
-#include "process.h"
+#include "process.hpp"
 
 ProcessId::ProcessId(): index(-1), version(-1) {}
 

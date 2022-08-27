@@ -7,10 +7,10 @@ set(CMAKE_AUTOMOC ON)
 find_package(Qt6 6.3 COMPONENTS Quick Gui Concurrent REQUIRED)
 qt_add_executable(cpp-dev-tools
   src/main.cpp
-  src/common.h
-  src/process.h
+  src/common.hpp
+  src/process.hpp
   src/process.cpp
-  src/threads.h
-  src/application.h)
+  src/threads.hpp
+  src/application.hpp)
 target_link_libraries(cpp-dev-tools PRIVATE Qt6::Quick Qt6::Gui Qt6::Concurrent)
 qt_add_qml_module(cpp-dev-tools URI cdt VERSION 1.0 QML_FILES qml/main.qml)

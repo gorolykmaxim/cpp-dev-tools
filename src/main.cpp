@@ -1,7 +1,7 @@
 #include <QGuiApplication>
 #include <QQmlApplicationEngine>
 #include <QThread>
-#include "application.h"
+#include "application.hpp"
 
 class LongProcess: public Process {
 public:
