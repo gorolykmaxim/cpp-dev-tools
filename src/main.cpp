@@ -1,5 +1,3 @@
-#include <QGuiApplication>
-#include <QQmlApplicationEngine>
 #include <QThread>
 #include "application.hpp"
 
@@ -31,11 +29,7 @@ public:
 };
 
 int main(int argc, char** argv) {
-  QGuiApplication q_app(argc, argv);
-  QQmlApplicationEngine engine;
-  qSetMessagePattern("%{time yyyy-MM-dd h:mm:ss.zzz} %{message}");
-  engine.load(QUrl(QStringLiteral("qrc:/cdt/qml/main.qml")));
-  Application app(engine);
+  Application app(argc, argv);
   // Test ProcessRuntime
   app.runtime.ScheduleRoot<MyProcess>();
   app.runtime.ScheduleRoot<MyProcess>();
@@ -57,5 +51,5 @@ int main(int argc, char** argv) {
       qDebug() << QThread::currentThreadId() << i << value;
     });
   }
-  return q_app.exec();
+  return app.gui_app.exec();
 }

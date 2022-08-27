@@ -7,9 +7,7 @@
 
 class Threads {
 public:
-  Threads(QObject& ui_context): ui_context(ui_context) {
-    io_pool.setMaxThreadCount(1);
-  }
+  Threads(QObject& ui_context);
 
   template<typename T>
   void ScheduleIO(const std::function<T()>& on_background,
