@@ -33,6 +33,7 @@ public:
 int main(int argc, char** argv) {
   QGuiApplication q_app(argc, argv);
   QQmlApplicationEngine engine;
+  qSetMessagePattern("%{time yyyy-MM-dd h:mm:ss.zzz} %{message}");
   engine.load(QUrl(QStringLiteral("qrc:/cdt/qml/main.qml")));
   Application app(engine);
   // Test ProcessRuntime

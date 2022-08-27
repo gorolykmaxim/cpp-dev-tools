@@ -9,7 +9,10 @@
 #include "common.hpp"
 
 #define EXEC(FUNC) [this] (Application& app) {FUNC(app);}
-#define EXEC_NEXT(FUNC) execute = EXEC(FUNC)
+#define EXEC_NEXT(FUNC)\
+  execute = EXEC(FUNC);\
+  dbg_execute_name = #FUNC;\
+  dbg_class_name = dbg_class_name ? dbg_class_name : __FUNCTION__
 
 class Application;
 
@@ -38,7 +41,11 @@ public:
   ProcessId parent_id;
   ProcessExecute execute;
   QVector<ProcessId> child_ids;
+  const char* dbg_class_name = nullptr;
+  const char* dbg_execute_name = nullptr;
 };
+
+QDebug operator<<(QDebug debug, const Process& proc);
 
 class ProcessRuntime {
 public:

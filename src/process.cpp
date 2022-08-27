@@ -1,4 +1,5 @@
 #include <QDebug>
+#include <QDebugStateSaver>
 #include "process.hpp"
 
 ProcessId::ProcessId(): index(-1), version(-1) {}
@@ -18,9 +19,8 @@ ProcessId::operator bool() const {
 }
 
 QDebug operator<<(QDebug debug, const ProcessId& id) {
-  debug.nospace() << "Id(i=" << id.index << ",v="
-                  << id.version << ')';
-  return debug.space();
+  QDebugStateSaver saver(debug);
+  return debug.nospace() << id.index << '_' << id.version;
 }
 
 size_t qHash(const ProcessId& id, size_t seed) noexcept {
@@ -28,6 +28,12 @@ size_t qHash(const ProcessId& id, size_t seed) noexcept {
   seed = hash(seed, id.index);
   seed = hash(seed, id.version);
   return seed;
+}
+
+QDebug operator<<(QDebug debug, const Process& proc) {
+  QDebugStateSaver saver(debug);
+  return debug.nospace() << proc.dbg_class_name << "(e="
+                         << proc.dbg_execute_name << ",i=" << proc.id << ')';
 }
 
 ProcessRuntime::ProcessRuntime(Application& app): app(app) {}
@@ -60,7 +66,7 @@ void ProcessRuntime::ExecuteProcesses() {
       QPtr<Process> p = processes[id.index];
       ProcessExecute exec = p->execute;
       p->execute = nullptr;
-      qDebug() << "Executing process" << p->id;
+      qDebug() << "Executing" << *p;
       exec(app);
       // Process did not specify new execute function and it has no new
       // unfinished child procesess - the process has finished.
@@ -70,7 +76,7 @@ void ProcessRuntime::ExecuteProcesses() {
     }
     for (ProcessId id: to_finish) {
       QPtr<Process> p = processes[id.index];
-      qDebug() << "Finishing process" << p->id;
+      qDebug() << "Finished" << *p;
       finished.insert(p->id);
       // Wake up parent process if all children are finished
       if (p->parent_id && AllChildrenFinished(processes[p->parent_id.index])) {
