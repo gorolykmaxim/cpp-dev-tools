@@ -8,6 +8,8 @@
 class Threads {
 public:
   Threads(QObject& ui_context);
+  void ScheduleIO(const std::function<void()>& on_background,
+                  const std::function<void()>& on_main);
 
   template<typename T>
   void ScheduleIO(const std::function<T()>& on_background,

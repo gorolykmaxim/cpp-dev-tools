@@ -12,6 +12,8 @@ qt_add_executable(cpp-dev-tools
   src/process.cpp
   src/threads.hpp
   src/threads.cpp
+  src/config.hpp
+  src/config.cpp
   src/application.hpp
   src/application.cpp)
 target_link_libraries(cpp-dev-tools PRIVATE Qt6::Quick Qt6::Gui Qt6::Concurrent)
