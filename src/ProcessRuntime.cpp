@@ -74,15 +74,21 @@ void ProcessRuntime::ExecuteProcesses() {
         to_finish.append(p->id);
       }
     }
-    for (ProcessId id: to_finish) {
+    QVector<ProcessId> finish = to_finish;
+    to_finish.clear();
+    for (ProcessId id: finish) {
       QPtr<Process> p = processes[id.index];
       qDebug() << "Finished" << *p;
       finished.insert(p->id);
       // Wake up parent process if all children are finished
       if (p->parent_id) {
         QPtr<Process> parent = processes[p->parent_id.index];
-        if (AllChildrenFinished(parent) && parent->execute) {
-          to_execute.append(parent->id);
+        if (AllChildrenFinished(parent)) {
+          if (parent->execute) {
+            to_execute.append(parent->id);
+          } else {
+            to_finish.append(parent->id);
+          }
         }
       }
       // Remove all child processes
@@ -108,7 +114,6 @@ void ProcessRuntime::ExecuteProcesses() {
       }
       p->child_ids.clear();
     }
-    to_finish.clear();
   }
 }
 
