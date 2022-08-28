@@ -1,6 +1,6 @@
 #include <QDebug>
 #include <QDebugStateSaver>
-#include "process.hpp"
+#include "process/process.hpp"
 
 ProcessId::ProcessId() : index(-1), version(-1) {}
 

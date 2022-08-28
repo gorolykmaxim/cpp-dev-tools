@@ -2,7 +2,7 @@
 
 #include <QGuiApplication>
 #include <QQmlApplicationEngine>
-#include "process.hpp"
+#include "process/process.hpp"
 #include "threads.hpp"
 
 class Application {

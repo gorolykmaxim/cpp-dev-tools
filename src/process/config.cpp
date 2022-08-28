@@ -1,4 +1,4 @@
-#include "config.hpp"
+#include "process/config.hpp"
 #include "common.hpp"
 #include <QIODevice>
 #include <QJsonParseError>
