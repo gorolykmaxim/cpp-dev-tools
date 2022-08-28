@@ -2,9 +2,9 @@
 
 #include <QGuiApplication>
 #include <QQmlApplicationEngine>
-#include "process/process.hpp"
-#include "threads.hpp"
-#include "config.hpp"
+#include "ProcessRuntime.hpp"
+#include "Threads.hpp"
+#include "UserConfig.hpp"
 
 class Application {
 public:

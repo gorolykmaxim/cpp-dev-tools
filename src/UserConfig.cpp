@@ -1,4 +1,4 @@
-#include "config.hpp"
+#include "UserConfig.hpp"
 #include <QJsonObject>
 
 void UserConfig::LoadFrom(const QJsonDocument& json) {

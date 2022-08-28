@@ -1,6 +1,6 @@
 #include <QThread>
-#include "application.hpp"
-#include "process/config.hpp"
+#include "Application.hpp"
+#include "Initialize.hpp"
 
 int main(int argc, char** argv) {
   Application app(argc, argv);

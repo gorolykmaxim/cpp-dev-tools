@@ -1,4 +1,4 @@
-#include "application.hpp"
+#include "Application.hpp"
 
 Application::Application(int argc, char** argv)
     : gui_app(argc, argv), gui_engine(), runtime(*this), threads(gui_engine) {

@@ -6,7 +6,7 @@
 #include <QSet>
 #include <QStack>
 #include <QtGlobal>
-#include "common.hpp"
+#include "Common.hpp"
 
 #define EXEC(FUNC) [this] (Application& app) {FUNC(app);}
 #define EXEC_NEXT(FUNC)\
