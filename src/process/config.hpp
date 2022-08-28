@@ -1,7 +1,7 @@
 #pragma once
 
 #include <QJsonDocument>
-#include <QFile>
+#include <QString>
 #include "application.hpp"
 
 class ReadJsonFile: public Process {
@@ -9,17 +9,24 @@ public:
   ReadJsonFile(const QString& path);
   void Read(Application& app);
 
-  QString error;
+  QString path, error;
   QJsonDocument json;
+};
+
+class WriteJsonFile: public Process {
+public:
+  WriteJsonFile(const QString& path, const QJsonDocument& json);
+  void Write(Application& app);
 private:
-  QFile file;
+  QString path, error;
+  QJsonDocument json;
 };
 
 class Initialize: public Process {
 public:
   Initialize();
-  void ReadConfigs(Application& app);
-  void DisplayConfigs(Application& app);
+  void ReadConfig(Application& app);
+  void LoadConfig(Application& app);
 private:
-  QPtr<ReadJsonFile> read_user_config, read_task_config;
+  QPtr<ReadJsonFile> read_config;
 };
