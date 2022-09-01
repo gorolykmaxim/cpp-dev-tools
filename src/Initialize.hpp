@@ -1,6 +1,6 @@
 #pragma once
 
-#include "ReadJsonFile.hpp"
+#include "JsonFileProcess.hpp"
 #include "Application.hpp"
 #include "Common.hpp"
 
@@ -10,5 +10,5 @@ public:
   void ReadConfig(Application& app);
   void LoadConfig(Application& app);
 private:
-  QPtr<ReadJsonFile> read_config;
+  QPtr<JsonFileProcess> read_config;
 };

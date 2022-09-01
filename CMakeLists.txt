@@ -16,10 +16,8 @@ qt_add_executable(cpp-dev-tools
   src/Application.cpp
   src/ProcessRuntime.hpp
   src/ProcessRuntime.cpp
-  src/ReadJsonFile.hpp
-  src/ReadJsonFile.cpp
-  src/WriteJsonFile.hpp
-  src/WriteJsonFile.cpp
+  src/JsonFileProcess.hpp
+  src/JsonFileProcess.cpp
   src/Initialize.hpp
   src/Initialize.cpp)
 target_include_directories(cpp-dev-tools PRIVATE src)
