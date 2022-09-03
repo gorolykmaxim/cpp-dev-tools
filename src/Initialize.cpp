@@ -21,4 +21,9 @@ void Initialize::LoadConfig(Application& app) {
   app.runtime.Schedule<JsonFileProcess>(this, JsonOperation::kWrite,
                                         read_config->path,
                                         app.user_config.Save());
+  EXEC_NEXT(DisplayUi);
+}
+
+void Initialize::DisplayUi(Application& app) {
+  app.ui.SetVariant("title", "Hello World!");
 }
