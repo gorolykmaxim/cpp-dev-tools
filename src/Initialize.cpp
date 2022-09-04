@@ -25,5 +25,5 @@ void Initialize::LoadConfig(Application& app) {
 }
 
 void Initialize::DisplayUi(Application& app) {
-  app.ui.SetVariant("title", "Hello World!");
+  app.ui.input_and_list.Display("Hello World!");
 }

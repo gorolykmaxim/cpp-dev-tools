@@ -2,15 +2,25 @@
 
 #include <QObject>
 #include <QString>
-#include <QVariantMap>
+#include <QQmlContext>
 
-class UserInterface: public QObject {
+class InputAndListView: public QObject {
   Q_OBJECT
-  Q_PROPERTY(QVariantMap variant MEMBER variant NOTIFY VariantChanged)
-signals:
-  void VariantChanged();
+  Q_PROPERTY(QString title MEMBER title NOTIFY TitleChanged)
 public:
-  void SetVariant(const QString& name, const QVariant& value);
+  explicit InputAndListView(QQmlContext* context);
+  void Display(const QString& title);
 
-  QVariantMap variant;
+  QString title;
+signals:
+  void TitleChanged();
+private:
+  QQmlContext* context;
+};
+
+class UserInterface {
+public:
+  UserInterface(QQmlContext* context);
+
+  InputAndListView input_and_list;
 };
