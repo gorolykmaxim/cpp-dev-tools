@@ -14,6 +14,8 @@ qt_add_executable(cpp-dev-tools
   src/UserConfig.cpp
   src/Application.hpp
   src/Application.cpp
+  src/InputAndListView.hpp
+  src/InputAndListView.cpp
   src/UserInterface.hpp
   src/UserInterface.cpp
   src/ProcessRuntime.hpp

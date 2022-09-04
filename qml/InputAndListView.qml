@@ -6,21 +6,30 @@ ColumnLayout {
   SystemPalette {id: palette; colorGroup: SystemPalette.Active}
   anchors.fill: parent
   RowLayout {
+    spacing: globalPadding * 2
+    Label {
+      text: inputAndListData.inputLabel
+    }
     TextField {
       id: input
-      placeholderText: "Enter something here"
+      text: inputAndListData.inputValue
       focus: true
       Layout.fillWidth: true
       KeyNavigation.right: button
+      onDisplayTextChanged: inputAndListData.OnValueChanged(displayText)
+      Keys.onReturnPressed: inputAndListData.OnEnter()
+      Keys.onEnterPressed: inputAndListData.OnEnter()
       Keys.onDownPressed: list.incrementCurrentIndex()
       Keys.onUpPressed: list.decrementCurrentIndex()
     }
     Button {
       id: button
-      text: "Open"
+      text: inputAndListData.buttonText
+      enabled: inputAndListData.isButtonEnabled
       KeyNavigation.left: input
       Keys.onReturnPressed: clicked()
       Keys.onEnterPressed: clicked()
+      onClicked: inputAndListData.OnEnter()
     }
   }
   ListView {
@@ -42,13 +51,18 @@ ColumnLayout {
         title: "baz"
       }
     }
+    onCurrentIndexChanged: inputAndListData.OnListItemSelected(currentIndex)
     delegate: Label {
       property var highlight: ListView.isCurrentItem
       text: title
-      width: parent.width
+      width: list.width
       background: Rectangle {
         anchors.fill: parent
         color: highlight ? palette.highlight : "transparent"
+      }
+      MouseArea {
+        anchors.fill: parent
+        onClicked: list.currentIndex = index
       }
     }
   }
