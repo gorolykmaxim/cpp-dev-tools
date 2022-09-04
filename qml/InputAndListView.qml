@@ -19,6 +19,8 @@ ColumnLayout {
       id: button
       text: "Open"
       KeyNavigation.left: input
+      Keys.onReturnPressed: clicked()
+      Keys.onEnterPressed: clicked()
     }
   }
   ListView {
