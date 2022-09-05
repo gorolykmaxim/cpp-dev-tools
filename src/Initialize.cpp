@@ -3,6 +3,8 @@
 #include <QString>
 #include <QJsonDocument>
 #include <QDebug>
+#include <QVector>
+#include <QVariant>
 
 Initialize::Initialize() {
   EXEC_NEXT(ReadConfig);
@@ -28,6 +30,13 @@ void Initialize::LoadConfig(Application& app) {
 void Initialize::DisplayUi(Application& app) {
   QString home = QStandardPaths::writableLocation(QStandardPaths::HomeLocation);
   app.ui.input_and_list.SetValue(home);
+  QVector<QVariantList> items;
+  items.append({"../"});
+  items.append({"foo/"});
+  items.append({"bar/"});
+  items.append({"baz"});
+  items.append({"tasks.json"});
+  app.ui.input_and_list.list_model.SetItems(items);
   app.ui.input_and_list.on_value_changed = [] (const QString& value) {
     qDebug() << "new value" << value;
   };

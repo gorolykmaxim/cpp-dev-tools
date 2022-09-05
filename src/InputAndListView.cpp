@@ -1,7 +1,9 @@
 #include "InputAndListView.hpp"
 #include "Common.hpp"
 
-InputAndListView::InputAndListView(QQmlContext* context) : context(context) {
+InputAndListView::InputAndListView(QQmlContext* context)
+    : context(context),
+      list_model({{0, "title"}}) {
   context->setContextProperty("inputAndListData", this);
 }
 
@@ -39,4 +41,8 @@ void InputAndListView::SetValue(const QString& value) {
 void InputAndListView::SetButtonEnabled(bool value) {
   is_button_enabled = value;
   emit IsButtonEnabledChanged();
+}
+
+QVariantListModel* InputAndListView::GetListModel() {
+  return &list_model;
 }

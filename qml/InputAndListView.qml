@@ -37,20 +37,7 @@ ColumnLayout {
     clip: true
     Layout.fillWidth: true
     Layout.fillHeight: true
-    model: ListModel {
-      ListElement {
-        title: "../"
-      }
-      ListElement {
-        title: "foo/"
-      }
-      ListElement {
-        title: "bar/"
-      }
-      ListElement {
-        title: "baz"
-      }
-    }
+    model: inputAndListData.listModel
     onCurrentIndexChanged: inputAndListData.OnListItemSelected(currentIndex)
     delegate: Label {
       property var highlight: ListView.isCurrentItem
