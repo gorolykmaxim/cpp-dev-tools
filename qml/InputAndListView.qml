@@ -49,7 +49,10 @@ ColumnLayout {
       }
       MouseArea {
         anchors.fill: parent
-        onClicked: list.currentIndex = index
+        onClicked: {
+          list.currentIndex = index;
+          inputAndListData.OnEnter();
+        }
       }
     }
   }
