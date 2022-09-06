@@ -3,6 +3,7 @@
 #include <QVector>
 #include <QVariant>
 #include <QStandardPaths>
+#include "InputAndListView.hpp"
 
 OpenProject::OpenProject() {
   EXEC_NEXT(DisplayOpenProjectView);
