@@ -3,34 +3,33 @@ import QtQuick.Layouts
 import QtQuick.Controls
 
 ColumnLayout {
-  Component.onDestruction: inputAndListData.Reset()
   SystemPalette {id: palette; colorGroup: SystemPalette.Active}
   anchors.fill: parent
   RowLayout {
     spacing: globalPadding * 2
     Label {
-      text: inputAndListData.inputLabel
+      text: inputAndListDataInputLabel
     }
     TextField {
       id: input
-      text: inputAndListData.inputValue
+      text: inputAndListDataInputValue
       focus: true
       Layout.fillWidth: true
       KeyNavigation.right: button
-      onDisplayTextChanged: inputAndListData.OnValueChanged(displayText)
-      Keys.onReturnPressed: inputAndListData.OnEnter()
-      Keys.onEnterPressed: inputAndListData.OnEnter()
+      onDisplayTextChanged: core.OnUserAction("inputValueChanged", [displayText])
+      Keys.onReturnPressed: core.OnUserAction("enterPressed", [])
+      Keys.onEnterPressed: core.OnUserAction("enterPressed", [])
       Keys.onDownPressed: list.incrementCurrentIndex()
       Keys.onUpPressed: list.decrementCurrentIndex()
     }
     Button {
       id: button
-      text: inputAndListData.buttonText
-      enabled: inputAndListData.isButtonEnabled
+      text: inputAndListDataButtonText
+      enabled: inputAndListDataIsButtonEnabled
       KeyNavigation.left: input
       Keys.onReturnPressed: clicked()
       Keys.onEnterPressed: clicked()
-      onClicked: inputAndListData.OnEnter()
+      onClicked: core.OnUserAction("enterPressed", [])
     }
   }
   ListView {
@@ -38,8 +37,8 @@ ColumnLayout {
     clip: true
     Layout.fillWidth: true
     Layout.fillHeight: true
-    model: inputAndListData.listModel
-    onCurrentIndexChanged: inputAndListData.OnListItemSelected(currentIndex)
+    model: inputAndListDataListModel
+    onCurrentIndexChanged: core.OnUserAction("itemSelected", [currentIndex])
     delegate: Label {
       property var highlight: ListView.isCurrentItem
       text: title
@@ -52,7 +51,7 @@ ColumnLayout {
         anchors.fill: parent
         onClicked: {
           list.currentIndex = index;
-          inputAndListData.OnEnter();
+          core.OnUserAction("enterPressed", []);
         }
       }
     }
