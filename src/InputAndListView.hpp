@@ -22,6 +22,7 @@ public slots:
   void OnEnter();
   void OnListItemSelected(int index);
   void OnValueChanged(const QString& value);
+  void Reset();
 public:
   explicit InputAndListView(QQmlContext* context);
   void Display(const QString& input_label, const QString& button_text);

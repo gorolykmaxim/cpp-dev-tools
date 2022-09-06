@@ -25,6 +25,17 @@ void InputAndListView::OnValueChanged(const QString& value) {
   }
 }
 
+void InputAndListView::Reset() {
+  input_value = "";
+  input_label = "";
+  button_text = "";
+  is_button_enabled = false;
+  on_enter = nullptr;
+  on_value_changed = nullptr;
+  on_list_item_selected = nullptr;
+  list_model.SetItems(QVector<QVariantList>());
+}
+
 void InputAndListView::Display(const QString& input_label,
                                const QString& button_text) {
   this->input_label = input_label;

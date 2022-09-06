@@ -3,6 +3,7 @@ import QtQuick.Layouts
 import QtQuick.Controls
 
 ColumnLayout {
+  Component.onDestruction: inputAndListData.Reset()
   SystemPalette {id: palette; colorGroup: SystemPalette.Active}
   anchors.fill: parent
   RowLayout {
