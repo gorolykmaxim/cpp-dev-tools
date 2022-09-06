@@ -24,6 +24,8 @@ qt_add_executable(cpp-dev-tools
   src/ProcessRuntime.cpp
   src/JsonFileProcess.hpp
   src/JsonFileProcess.cpp
+  src/OpenProject.hpp
+  src/OpenProject.cpp
   src/Initialize.hpp
   src/Initialize.cpp)
 target_include_directories(cpp-dev-tools PRIVATE src)

@@ -8,8 +8,7 @@ class Initialize: public Process {
 public:
   Initialize();
   void ReadConfig(Application& app);
-  void LoadConfig(Application& app);
-  void DisplayUi(Application& app);
+  void LoadUserConfigAndOpenProject(Application& app);
 private:
   QPtr<JsonFileProcess> read_config;
 };
