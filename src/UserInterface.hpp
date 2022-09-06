@@ -13,17 +13,6 @@
 #include "Common.hpp"
 
 const QString kQmlCurrentView = "currentView";
-const QString kQmlInputAndListView = "InputAndListView.qml";
-const QString kQmlInputAndListDataInputLabel = "inputAndListDataInputLabel";
-const QString kQmlInputAndListDataInputValue = "inputAndListDataInputValue";
-const QString kQmlInputAndListDataButtonText = "inputAndListDataButtonText";
-const QString kQmlInputAndListDataIsButtonEnabled = "inputAndListDataIsButtonEnabled";
-const QString kQmlInputAndListDataListModel = "inputAndListDataListModel";
-const QHash<int, QByteArray> kQmlInputAndListDataListModelRoles = {
-    {0, "title"}};
-const QString kQmlInputAndListActionInputValueChanged = "inputValueChanged";
-const QString kQmlInputAndListActionEnterPressed = "enterPressed";
-const QString kQmlInputAndListActionItemSelected = "itemSelected";
 
 using UserActionHandler = std::function<void(const QVariantList&)>;
 using DataField = QQmlContext::PropertyPair;
@@ -52,4 +41,14 @@ private:
   QHash<QString, UserActionHandler> user_action_handlers;
   QHash<QString, QPtr<QVariantListModel>> list_fields;
   QQmlApplicationEngine engine;
+};
+
+class InputAndListView {
+public:
+  static void Display(
+      const QString& input_label, const QString& input_value,
+      const QString& button_text, const QVector<QVariantList>& list_items,
+      const std::function<void(const QString&)>& on_input_value_changed,
+      const std::function<void()>& on_enter_pressed,
+      const std::function<void(int)>& on_item_selected, UserInterface& ui);
 };

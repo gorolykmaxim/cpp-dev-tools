@@ -2,8 +2,6 @@
 #include <QString>
 #include <QVector>
 #include <QVariant>
-#include <QList>
-#include <QHash>
 #include <QStandardPaths>
 
 OpenProject::OpenProject() {
@@ -18,26 +16,16 @@ void OpenProject::DisplayOpenProjectView(Application& app) {
   items.append({"bar/"});
   items.append({"baz"});
   items.append({"tasks.json"});
-  QList<DataField> data_fields = {
-      DataField{kQmlInputAndListDataInputLabel, "Open project by path:"},
-      DataField{kQmlInputAndListDataInputValue, home},
-      DataField{kQmlInputAndListDataButtonText, "Open"},
-      DataField{kQmlInputAndListDataIsButtonEnabled, false}};
-  QList<ListField> list_fields = {
-      ListField{kQmlInputAndListDataListModel,
-                kQmlInputAndListDataListModelRoles,
-                items}};
-  QHash<QString, UserActionHandler> user_action_handlers = {
-      {kQmlInputAndListActionInputValueChanged, [] (const QVariantList& args) {
-        qDebug() << "new value" << args[0];
-      }},
-      {kQmlInputAndListActionEnterPressed, [] (const QVariantList& args) {
-        qDebug() << "enter pressed";
-      }},
-      {kQmlInputAndListActionItemSelected, [] (const QVariantList& args) {
-        qDebug() << "new item" << args[0];
-      }},
+  std::function<void(const QString&)> on_new_value = [] (const QString& value) {
+    qDebug() << "new value" << value;
   };
-  app.ui.DisplayView(kQmlInputAndListView, data_fields, list_fields,
-                     user_action_handlers);
+  std::function<void()> on_enter = [] () {
+    qDebug() << "enter pressed";
+  };
+  std::function<void(int)> on_item_selected = [] (int item) {
+    qDebug() << "new item" << item;
+  };
+  InputAndListView::Display("Open project by path:", home, "Open", items,
+                            on_new_value, on_enter, on_item_selected,
+                            app.ui);
 }
