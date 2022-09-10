@@ -79,8 +79,15 @@ public:
   }
 
   template<typename P, typename... Args>
-  QPtr<P> ScheduleAndExecute(Args&&... args) {
+  QPtr<P> ScheduleAndExecuteRoot(Args&&... args) {
     QPtr<P> p = ScheduleRoot<P>(args...);
+    ExecuteProcesses();
+    return p;
+  }
+
+  template<typename P, typename... Args>
+  QPtr<P> ScheduleAndExecute(Process* parent, Args&&... args) {
+    QPtr<P> p = Schedule<P>(parent, args...);
     ExecuteProcesses();
     return p;
   }

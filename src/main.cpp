@@ -4,6 +4,6 @@
 
 int main(int argc, char** argv) {
   Application app(argc, argv);
-  app.runtime.ScheduleAndExecute<Initialize>();
+  app.runtime.ScheduleAndExecuteRoot<Initialize>();
   return app.gui_app.exec();
 }
