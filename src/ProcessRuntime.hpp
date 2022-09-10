@@ -8,9 +8,10 @@
 #include <QtGlobal>
 #include "Common.hpp"
 
-#define EXEC(FUNC) [this] (Application& app) {FUNC(app);}
+#define EXEC(PROC, FUNC) [PROC] (Application& app) {PROC->FUNC(app);}, #FUNC
+#define EXEC_STATIC(PROC, FUNC) [PROC] (Application& app) {FUNC(app);}, #FUNC
 #define EXEC_NEXT(FUNC)\
-  execute = EXEC(FUNC);\
+  execute = [this] (Application& app) {FUNC(app);};\
   dbg_execute_name = #FUNC;\
   dbg_class_name = dbg_class_name ? dbg_class_name : __FUNCTION__
 
@@ -83,7 +84,8 @@ public:
     return p;
   }
 
-  void WakeUpAndExecute(Process& process, ProcessExecute execute = nullptr);
+  void WakeUpAndExecute(Process& process, ProcessExecute execute = nullptr,
+                        const char* dbg_execute_name = nullptr);
   bool IsAlive(Process& process) const;
 
   template<typename T>

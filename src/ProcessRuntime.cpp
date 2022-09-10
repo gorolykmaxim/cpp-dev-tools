@@ -39,7 +39,8 @@ QDebug operator<<(QDebug debug, const Process& proc) {
 ProcessRuntime::ProcessRuntime(Application& app) : app(app) {}
 
 void ProcessRuntime::WakeUpAndExecute(Process& process,
-                                      ProcessExecute execute) {
+                                      ProcessExecute execute,
+                                      const char* dbg_execute_name) {
   ProcessId id = process.id;
   Q_ASSERT(IsValid(id));
   if (processes[id.index]->id != id) {
@@ -49,6 +50,7 @@ void ProcessRuntime::WakeUpAndExecute(Process& process,
   }
   if (execute) {
     process.execute = execute;
+    process.dbg_execute_name = dbg_execute_name;
   }
   if (process.execute) {
     to_execute.append(process.id);
@@ -136,7 +138,7 @@ bool ProcessRuntime::AllChildrenFinished(const QPtr<Process>& process) const {
 }
 
 bool ProcessRuntime::IsValid(const ProcessId& id) const {
-  return id && id.index < processes.size();
+  return id && id.index < processes.size() && processes[id.index] != nullptr;
 }
 
 const ProcessExecute Process::kNoopExecute = [] (Application& app) {};
