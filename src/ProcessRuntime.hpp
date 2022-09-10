@@ -55,6 +55,7 @@ public:
   template<typename P, typename... Args>
   QPtr<P> ScheduleRoot(Args&&... args) {
     QPtr<P> p = QPtr<P>::create(args...);
+    Q_ASSERT(p->execute);
     if (!free_process_ids.isEmpty()) {
       p->id = free_process_ids.pop();
       p->id.version++;
