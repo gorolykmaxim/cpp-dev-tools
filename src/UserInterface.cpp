@@ -1,5 +1,6 @@
 #include "UserInterface.hpp"
 #include <QtGlobal>
+#include <QMetaObject>
 
 UserInterface::UserInterface() {
   engine.rootContext()->setContextProperty(kQmlCurrentView, "");
@@ -55,8 +56,14 @@ QVariantListModel& UserInterface::GetListField(const QString& name) {
 
 void UserInterface::OnUserAction(const QString& action,
                                  const QVariantList& args) {
-  UserActionHandler& handler = user_action_handlers[action];
-  if (handler) {
-    handler(args);
-  }
+  // In some cases this might get called WHILE we are in the middle
+  // of the setContextProperties(), which can break some clients that
+  // expect user action callbacks to always be called asynchronously.
+  // This is why we are invoking it later instead of immediately right here.
+  QMetaObject::invokeMethod(&engine, [this, action, args] () {
+    UserActionHandler& handler = user_action_handlers[action];
+    if (handler) {
+      handler(args);
+    }
+  }, Qt::QueuedConnection);
 }
