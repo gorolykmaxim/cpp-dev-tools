@@ -33,5 +33,5 @@ void JsonFileProcess::Run(Application& app) {
       file.write(self->json.toJson());
     }
   }, [self, &app] () {app.runtime.WakeUpAndExecute(*self);});
-  EXEC_NEXT(Process::kNoopExecute);
+  EXEC_NEXT(Noop);
 }

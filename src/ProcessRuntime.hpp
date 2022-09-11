@@ -36,7 +36,8 @@ using ProcessExecute = std::function<void(Application&)>;
 
 class Process {
 public:
-  static const ProcessExecute kNoopExecute;
+  void Noop(Application& app);
+  void KeepAlive(Application& app);
 
   ProcessId id;
   ProcessId parent_id;
@@ -72,6 +73,7 @@ public:
   QPtr<P> Schedule(Process* parent, Args&&... args) {
     QPtr<P> p = ScheduleRoot<P>(args...);
     if (parent) {
+      Q_ASSERT(IsAlive(parent->id));
       p->parent_id = parent->id;
       parent->child_ids.append(p->id);
     }
@@ -94,11 +96,11 @@ public:
 
   void WakeUpAndExecute(Process& process, ProcessExecute execute = nullptr,
                         const char* dbg_execute_name = nullptr);
-  bool IsAlive(Process& process) const;
+  bool IsAlive(const ProcessId& id) const;
 
   template<typename T>
   QPtr<T> SharedPtr(T* process) const {
-    Q_ASSERT(process && IsValid(process->id));
+    Q_ASSERT(process && IsAlive(process->id));
     return processes[process->id.index].template staticCast<T>();
   }
 
@@ -106,6 +108,7 @@ private:
   void ExecuteProcesses();
   bool AllChildrenFinished(const QPtr<Process>& process) const;
   bool IsValid(const ProcessId& id) const;
+  void PrintProcesses() const; // To be called from debugger
 
   QVector<QPtr<Process>> processes;
   QStack<ProcessId> free_process_ids;

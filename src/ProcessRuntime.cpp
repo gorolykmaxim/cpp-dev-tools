@@ -30,6 +30,12 @@ size_t qHash(const ProcessId& id, size_t seed) noexcept {
   return seed;
 }
 
+void Process::Noop(Application& app) {}
+
+void Process::KeepAlive(Application& app) {
+  EXEC_NEXT(KeepAlive);
+}
+
 QDebug operator<<(QDebug debug, const Process& proc) {
   QDebugStateSaver saver(debug);
   return debug.nospace() << proc.dbg_class_name << "(e="
@@ -119,12 +125,12 @@ void ProcessRuntime::ExecuteProcesses() {
   }
 }
 
-bool ProcessRuntime::IsAlive(Process& process) const {
-  if (!IsValid(process.id)) {
+bool ProcessRuntime::IsAlive(const ProcessId& id) const {
+  if (!IsValid(id)) {
     return false;
   }
-  QPtr<Process> p = processes[process.id.index];
-  return p && p->id == process.id;
+  QPtr<Process> p = processes[id.index];
+  return p && p->id == id;
 }
 
 bool ProcessRuntime::AllChildrenFinished(const QPtr<Process>& process) const {
@@ -138,7 +144,16 @@ bool ProcessRuntime::AllChildrenFinished(const QPtr<Process>& process) const {
 }
 
 bool ProcessRuntime::IsValid(const ProcessId& id) const {
-  return id && id.index < processes.size() && processes[id.index] != nullptr;
+  return id && id.index < processes.size();
 }
 
-const ProcessExecute Process::kNoopExecute = [] (Application& app) {};
+void ProcessRuntime::PrintProcesses() const {
+  for (int i = 0; i < processes.size(); i++) {
+    const QPtr<Process>& p = processes[i];
+    if (p) {
+      qDebug() << i << *p;
+    } else {
+      qDebug() << i << nullptr;
+    }
+  }
+}
