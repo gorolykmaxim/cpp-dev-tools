@@ -48,8 +48,7 @@ void ProcessRuntime::WakeUpAndExecute(Process& process,
                                       ProcessExecute execute,
                                       const char* dbg_execute_name) {
   ProcessId id = process.id;
-  Q_ASSERT(IsValid(id));
-  if (processes[id.index]->id != id) {
+  if (!IsAlive(id)) {
     qDebug() << "Attempt to resume process" << id
              << "which does not exist anymore (probably has been cancelled)";
     return;
