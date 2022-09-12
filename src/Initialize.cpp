@@ -25,5 +25,5 @@ void Initialize::LoadUserConfigAndOpenProject(Application& app) {
   app.runtime.Schedule<JsonFileProcess>(this, JsonOperation::kWrite,
                                         read_config->path,
                                         app.user_config.Save());
-  app.runtime.Schedule<OpenProject>(this);
+  app.runtime.Schedule<OpenProject>(nullptr);
 }
