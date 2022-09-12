@@ -54,7 +54,7 @@ public:
   explicit ProcessRuntime(Application& app);
 
   template<typename P, typename... Args>
-  QPtr<P> ScheduleRoot(Args&&... args) {
+  QPtr<P> Schedule(Process* parent, Args&&... args) {
     QPtr<P> p = QPtr<P>::create(args...);
     Q_ASSERT(p->execute);
     if (!free_process_ids.isEmpty()) {
@@ -66,24 +66,11 @@ public:
       processes.append(p);
     }
     to_execute.append(p->id);
-    return p;
-  }
-
-  template<typename P, typename... Args>
-  QPtr<P> Schedule(Process* parent, Args&&... args) {
-    QPtr<P> p = ScheduleRoot<P>(args...);
     if (parent) {
       Q_ASSERT(IsAlive(parent->id));
       p->parent_id = parent->id;
       parent->child_ids.append(p->id);
     }
-    return p;
-  }
-
-  template<typename P, typename... Args>
-  QPtr<P> ScheduleAndExecuteRoot(Args&&... args) {
-    QPtr<P> p = ScheduleRoot<P>(args...);
-    ExecuteProcesses();
     return p;
   }
 
