@@ -39,7 +39,8 @@ void Process::KeepAlive(Application& app) {
 QDebug operator<<(QDebug debug, const Process& proc) {
   QDebugStateSaver saver(debug);
   return debug.nospace() << proc.dbg_class_name << "(e="
-                         << proc.dbg_execute_name << ",i=" << proc.id << ')';
+                         << proc.dbg_execute_name << ",i=" << proc.id << ",ch="
+                         << proc.running_child_ids << ')';
 }
 
 ProcessRuntime::ProcessRuntime(Application& app) : app(app) {}
@@ -77,7 +78,7 @@ void ProcessRuntime::ExecuteProcesses() {
       exec(app);
       // Process did not specify new execute function and it has no new
       // unfinished child procesess - the process has finished.
-      if (!p->execute && AllChildrenFinished(p)) {
+      if (!p->execute && p->running_child_ids.isEmpty()) {
         to_finish.append(p->id);
       }
     }
@@ -86,11 +87,11 @@ void ProcessRuntime::ExecuteProcesses() {
     for (ProcessId id: finish) {
       QPtr<Process> p = processes[id.index];
       qDebug() << "Finished" << *p;
-      finished.insert(p->id);
-      // Wake up parent process if all children are finished
       if (p->parent_id) {
         QPtr<Process> parent = processes[p->parent_id.index];
-        if (AllChildrenFinished(parent)) {
+        parent->running_child_ids.removeAll(p->id);
+        // Wake up parent process if all children are finished
+        if (parent->running_child_ids.isEmpty()) {
           if (parent->execute) {
             to_execute.append(parent->id);
           } else {
@@ -99,18 +100,13 @@ void ProcessRuntime::ExecuteProcesses() {
         }
       }
       // Remove all child processes
-      QVector<ProcessId> to_remove;
-      if (!p->parent_id) {
-        // If current process is a root and have finished - remove it since
-        // nobody else is interested in its results.
-        to_remove.append(p->id);
-      }
-      QVector<ProcessId> visiting = p->child_ids;
+      QVector<ProcessId> to_remove = {p->id};
+      QVector<ProcessId> visiting = p->running_child_ids;
       while (!visiting.isEmpty()) {
         to_remove.append(visiting);
         QVector<ProcessId> to_visit;
         for (ProcessId id: visiting) {
-          to_visit.append(processes[id.index]->child_ids);
+          to_visit.append(processes[id.index]->running_child_ids);
         }
         visiting = to_visit;
       }
@@ -118,9 +114,8 @@ void ProcessRuntime::ExecuteProcesses() {
         processes[id.index] = nullptr;
         to_execute.removeAll(id);
         free_process_ids.push(id);
-        finished.remove(id);
       }
-      p->child_ids.clear();
+      p->running_child_ids.clear();
     }
   }
 }
@@ -131,16 +126,6 @@ bool ProcessRuntime::IsAlive(const ProcessId& id) const {
   }
   QPtr<Process> p = processes[id.index];
   return p && p->id == id;
-}
-
-bool ProcessRuntime::AllChildrenFinished(const QPtr<Process>& process) const {
-  Q_ASSERT(process);
-  for (ProcessId id: process->child_ids) {
-    if (!finished.contains(id)) {
-      return false;
-    }
-  }
-  return true;
 }
 
 bool ProcessRuntime::IsValid(const ProcessId& id) const {
@@ -155,9 +140,8 @@ void ProcessRuntime::Cancel(Process* target, Process* parent) {
            (parent && parent->id == target->parent_id));
   qDebug() << "Cancelling" << *target;
   if (parent) {
-    parent->child_ids.removeAll(target->id);
-    // Detach target from its parent so that it gets completely destroyed
-    // and its parent does not get executed
+    parent->running_child_ids.removeAll(target->id);
+    // Detach target from its parent so that its parent does not get executed
     target->parent_id = ProcessId();
   }
   to_finish.append(target->id);

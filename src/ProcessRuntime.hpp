@@ -42,7 +42,7 @@ public:
   ProcessId id;
   ProcessId parent_id;
   ProcessExecute execute;
-  QVector<ProcessId> child_ids;
+  QVector<ProcessId> running_child_ids;
   const char* dbg_class_name = nullptr;
   const char* dbg_execute_name = nullptr;
 };
@@ -69,7 +69,7 @@ public:
     if (parent) {
       Q_ASSERT(IsAlive(parent->id));
       p->parent_id = parent->id;
-      parent->child_ids.append(p->id);
+      parent->running_child_ids.append(p->id);
     }
     return p;
   }
@@ -106,14 +106,12 @@ public:
 
 private:
   void ExecuteProcesses();
-  bool AllChildrenFinished(const QPtr<Process>& process) const;
   bool IsValid(const ProcessId& id) const;
   void Cancel(Process* target, Process* parent);
   void PrintProcesses() const; // To be called from debugger
 
   QVector<QPtr<Process>> processes;
   QStack<ProcessId> free_process_ids;
-  QSet<ProcessId> finished;
   QVector<ProcessId> to_execute;
   QVector<ProcessId> to_finish;
   Application& app;
