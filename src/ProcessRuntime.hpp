@@ -75,10 +75,23 @@ public:
   }
 
   template<typename P, typename... Args>
+  QPtr<P> ReSchedule(Process* target, Process* parent, Args&&... args) {
+    Cancel(target, parent);
+    return Schedule<P>(parent, args...);
+  }
+
+  template<typename P, typename... Args>
   QPtr<P> ScheduleAndExecute(Process* parent, Args&&... args) {
     QPtr<P> p = Schedule<P>(parent, args...);
     ExecuteProcesses();
     return p;
+  }
+
+  template<typename P, typename... Args>
+  QPtr<P> ReScheduleAndExecute(Process* target, Process* parent,
+                               Args&&... args) {
+    Cancel(target, parent);
+    return ScheduleAndExecute<P>(parent, args...);
   }
 
   void WakeUpAndExecute(Process& process, ProcessExecute execute = nullptr,
@@ -95,6 +108,7 @@ private:
   void ExecuteProcesses();
   bool AllChildrenFinished(const QPtr<Process>& process) const;
   bool IsValid(const ProcessId& id) const;
+  void Cancel(Process* target, Process* parent);
   void PrintProcesses() const; // To be called from debugger
 
   QVector<QPtr<Process>> processes;

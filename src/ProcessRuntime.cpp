@@ -116,6 +116,7 @@ void ProcessRuntime::ExecuteProcesses() {
       }
       for (ProcessId id: to_remove) {
         processes[id.index] = nullptr;
+        to_execute.removeAll(id);
         free_process_ids.push(id);
         finished.remove(id);
       }
@@ -144,6 +145,22 @@ bool ProcessRuntime::AllChildrenFinished(const QPtr<Process>& process) const {
 
 bool ProcessRuntime::IsValid(const ProcessId& id) const {
   return id && id.index < processes.size();
+}
+
+void ProcessRuntime::Cancel(Process* target, Process* parent) {
+  if (!target || !IsAlive(target->id)) {
+    return;
+  }
+  Q_ASSERT((!target->parent_id && !parent) ||
+           (parent && parent->id == target->parent_id));
+  qDebug() << "Cancelling" << *target;
+  if (parent) {
+    parent->child_ids.removeAll(target->id);
+    // Detach target from its parent so that it gets completely destroyed
+    // and its parent does not get executed
+    target->parent_id = ProcessId();
+  }
+  to_finish.append(target->id);
 }
 
 void ProcessRuntime::PrintProcesses() const {
