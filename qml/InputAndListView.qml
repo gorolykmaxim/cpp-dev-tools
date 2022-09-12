@@ -4,6 +4,9 @@ import QtQuick.Controls
 
 ColumnLayout {
   SystemPalette {id: palette; colorGroup: SystemPalette.Active}
+  Component.onCompleted: {
+    list.model.onModelReset.connect(() => list.currentIndex = 0);
+  }
   anchors.fill: parent
   RowLayout {
     spacing: globalPadding * 2
