@@ -8,6 +8,7 @@ find_package(Qt6 6.3 COMPONENTS Quick Gui Concurrent REQUIRED)
 qt_add_executable(cpp-dev-tools
   src/main.cpp
   src/Common.hpp
+  src/Common.cpp
   src/Threads.hpp
   src/Threads.cpp
   src/UserConfig.hpp
