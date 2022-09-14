@@ -11,8 +11,7 @@ void InputAndListView::Display(
   QList<DataField> data_fields = {
       DataField{"inputAndListDataInputLabel", input_label},
       DataField{"inputAndListDataInputValue", input_value},
-      DataField{"inputAndListDataButtonText", button_text},
-      DataField{"inputAndListDataIsButtonEnabled", false}};
+      DataField{"inputAndListDataButtonText", button_text}};
   QList<ListField> list_fields = {
       ListField{"inputAndListDataListModel", {{0, "title"}}, list_items}};
   QHash<QString, UserActionHandler> user_action_handlers = {
@@ -28,4 +27,17 @@ void InputAndListView::Display(
       }}};
   ui.DisplayView("InputAndListView.qml", data_fields, list_fields,
                  user_action_handlers);
+}
+
+void InputAndListView::SetItems(const QVector<QVariantList>& list_items,
+                                UserInterface& ui) {
+  ui.GetListField("inputAndListDataListModel").SetItems(list_items);
+}
+
+void InputAndListView::SetInput(const QString& value, UserInterface& ui) {
+  ui.SetDataField("inputAndListDataInputValue", value);
+}
+
+void InputAndListView::SetButtonText(const QString& value, UserInterface& ui) {
+  ui.SetDataField("inputAndListDataButtonText", value);
 }

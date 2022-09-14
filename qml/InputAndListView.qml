@@ -29,7 +29,6 @@ ColumnLayout {
     Button {
       id: button
       text: inputAndListDataButtonText
-      enabled: inputAndListDataIsButtonEnabled
       KeyNavigation.left: input
       Keys.onReturnPressed: clicked()
       Keys.onEnterPressed: clicked()
