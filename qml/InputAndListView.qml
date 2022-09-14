@@ -9,8 +9,8 @@ ColumnLayout {
   }
   anchors.fill: parent
   RowLayout {
-    spacing: globalPadding * 2
     Label {
+      padding: globalPadding
       text: inputAndListDataInputLabel
     }
     TextField {
@@ -19,7 +19,8 @@ ColumnLayout {
       focus: true
       Layout.fillWidth: true
       KeyNavigation.right: button
-      onDisplayTextChanged: core.OnUserAction("inputValueChanged", [displayText])
+      onDisplayTextChanged: core.OnUserAction("inputValueChanged",
+                                              [displayText])
       Keys.onReturnPressed: core.OnUserAction("enterPressed", [])
       Keys.onEnterPressed: core.OnUserAction("enterPressed", [])
       Keys.onDownPressed: list.incrementCurrentIndex()
@@ -44,6 +45,7 @@ ColumnLayout {
     onCurrentIndexChanged: core.OnUserAction("itemSelected", [currentIndex])
     delegate: Label {
       property var highlight: ListView.isCurrentItem
+      padding: globalPadding
       text: title
       width: list.width
       background: Rectangle {

@@ -9,7 +9,6 @@ Window {
   visible: true
   Page {
     anchors.fill: parent
-    padding: globalPadding
     Loader {
       anchors.fill: parent
       source: currentView
