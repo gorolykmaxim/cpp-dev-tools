@@ -11,6 +11,7 @@ void InputAndListView::Display(
   QList<DataField> data_fields = {
       DataField{"inputAndListDataInputLabel", input_label},
       DataField{"inputAndListDataInputValue", input_value},
+      DataField{"inputAndListDataError", ""},
       DataField{"inputAndListDataButtonText", button_text}};
   QList<ListField> list_fields = {
       ListField{"inputAndListDataListModel", {{0, "title"}}, list_items}};
@@ -36,6 +37,10 @@ void InputAndListView::SetItems(const QVector<QVariantList>& list_items,
 
 void InputAndListView::SetInput(const QString& value, UserInterface& ui) {
   ui.SetDataField("inputAndListDataInputValue", value);
+}
+
+void InputAndListView::SetError(const QString& value, UserInterface& ui) {
+  ui.SetDataField("inputAndListDataError", value);
 }
 
 void InputAndListView::SetButtonText(const QString& value, UserInterface& ui) {

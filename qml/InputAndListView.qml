@@ -28,12 +28,21 @@ ColumnLayout {
     }
     Button {
       id: button
+      highlighted: true
       text: inputAndListDataButtonText
-      KeyNavigation.left: input
       Keys.onReturnPressed: clicked()
       Keys.onEnterPressed: clicked()
       onClicked: core.OnUserAction("enterPressed", [])
     }
+  }
+  Label {
+    leftPadding: globalPadding
+    rightPadding: globalPadding
+    text: inputAndListDataError
+    visible: inputAndListDataError.length > 0
+    color: "red"
+    Layout.fillWidth: true
+    wrapMode: Label.WordWrap
   }
   ListView {
     id: list

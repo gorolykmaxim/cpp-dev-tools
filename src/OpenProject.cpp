@@ -140,6 +140,7 @@ void OpenProject::HandleEnter(Application& app) {
     value = folder + file_name;
   }
   if (!value.endsWith('/')) {
+    InputAndListView::SetError("", app.ui);
     qDebug() << "Opening project:" << value;
     load_project_file = app.runtime.ReScheduleAndExecute<JsonFileProcess>(
         load_project_file.get(), this, JsonOperation::kRead, value);
@@ -155,7 +156,10 @@ bool OpenProject::HasValidSuggestionAvailable() const {
 }
 
 void OpenProject::LoadProjectFile(Application& app) {
-  qDebug() << load_project_file->error;
-  qDebug() << load_project_file->json;
+  if (!load_project_file->error.isEmpty()) {
+    InputAndListView::SetError(load_project_file->error, app.ui);
+  } else {
+    qDebug() << load_project_file->json;
+  }
   EXEC_NEXT(KeepAlive);
 }
