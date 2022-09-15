@@ -132,18 +132,23 @@ void OpenProject::ChangeProjectPath(const QString& new_path, Application& app) {
 }
 
 void OpenProject::HandleEnter(Application& app) {
-  QString value;
   if (HasValidSuggestionAvailable()) {
-    value = folder + suggestions[selected_suggestion].file;
+    QString value = folder + suggestions[selected_suggestion].file;
     InputAndListView::SetInput(value, app.ui);
+    if (!value.endsWith('/')) {
+      InputAndListView::SetError("", app.ui);
+      qDebug() << "Opening project:" << value;
+      load_project_file = app.runtime.ReScheduleAndExecute<JsonFileProcess>(
+          load_project_file.get(), this, JsonOperation::kRead, value);
+      EXEC_NEXT(LoadProjectFile);
+    }
   } else {
-    value = folder + file_name;
-  }
-  if (!value.endsWith('/')) {
     InputAndListView::SetError("", app.ui);
-    qDebug() << "Opening project:" << value;
+    QString value = folder + file_name;
+    qDebug() << "Creating project:" << value;
     load_project_file = app.runtime.ReScheduleAndExecute<JsonFileProcess>(
-        load_project_file.get(), this, JsonOperation::kRead, value);
+        load_project_file.get(), this, JsonOperation::kWrite, value,
+        QJsonDocument());
     EXEC_NEXT(LoadProjectFile);
   }
 }
