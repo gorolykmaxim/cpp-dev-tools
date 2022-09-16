@@ -4,7 +4,7 @@
 QVariantListModel::QVariantListModel(const QHash<int, QByteArray>& role_names)
     : QAbstractListModel(), role_names(role_names) {}
 
-int QVariantListModel::rowCount(const QModelIndex& parent) const {
+int QVariantListModel::rowCount(const QModelIndex&) const {
   return items.size();
 }
 

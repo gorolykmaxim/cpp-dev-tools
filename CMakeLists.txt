@@ -31,6 +31,8 @@ qt_add_executable(cpp-dev-tools
   src/OpenProject.cpp
   src/Initialize.hpp
   src/Initialize.cpp)
+target_compile_options(cpp-dev-tools PRIVATE
+  -Wall -Wextra -Wpedantic -Wno-gnu-zero-variadic-macro-arguments)
 target_include_directories(cpp-dev-tools PRIVATE src)
 target_link_libraries(cpp-dev-tools PRIVATE Qt6::Quick Qt6::Gui Qt6::Concurrent)
 qt_add_qml_module(cpp-dev-tools URI cdt VERSION 1.0 QML_FILES

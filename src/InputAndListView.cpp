@@ -18,7 +18,7 @@ void InputAndListViewDisplay(
       {
         on_input_value_changed(args[0].toString());
       }},
-      {"enterPressed", [on_enter_pressed] (const QVariantList& args) {
+      {"enterPressed", [on_enter_pressed] (const QVariantList&) {
         on_enter_pressed();
       }},
       {"itemSelected", [on_item_selected] (const QVariantList& args) {
