@@ -1,4 +1,5 @@
 #include "Common.hpp"
+#include <chrono>
 #include <QDebug>
 
 using namespace std::chrono;

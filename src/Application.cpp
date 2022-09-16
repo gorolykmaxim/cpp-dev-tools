@@ -1,4 +1,5 @@
 #include "Application.hpp"
+#include <QtGlobal>
 
 Application::Application(int argc, char** argv)
     : gui_app(argc, argv),

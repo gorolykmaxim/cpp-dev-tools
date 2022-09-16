@@ -2,6 +2,7 @@
 
 #include <chrono>
 #include <QSharedPointer>
+#include <QString>
 
 template<typename T>
 using QPtr = QSharedPointer<T>;

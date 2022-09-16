@@ -1,4 +1,8 @@
 #include "Threads.hpp"
+#include <functional>
+#include <QObject>
+#include <QtConcurrent>
+#include <QMetaObject>
 
 Threads::Threads(QObject& ui_context) : ui_context(ui_context) {
   io_pool.setMaxThreadCount(1);

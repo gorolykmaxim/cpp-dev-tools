@@ -2,8 +2,9 @@
 
 #include <QString>
 #include <QVector>
-#include <QFileInfo>
+#include "ProcessRuntime.hpp"
 #include "Application.hpp"
+#include "Common.hpp"
 #include "JsonFileProcess.hpp"
 
 struct FileSuggestion {

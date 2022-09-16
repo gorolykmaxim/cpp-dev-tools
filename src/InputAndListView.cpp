@@ -1,4 +1,11 @@
 #include "InputAndListView.hpp"
+#include <functional>
+#include <QString>
+#include <QVector>
+#include <QVariant>
+#include <QList>
+#include <QHash>
+#include "UserInterface.hpp"
 
 void InputAndListViewDisplay(
     const QString& input_label, const QString& input_value,

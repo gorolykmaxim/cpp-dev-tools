@@ -1,9 +1,8 @@
 #pragma once
 
 #include <functional>
-#include <optional>
+#include <QDebug>
 #include <QVector>
-#include <QSet>
 #include <QStack>
 #include <QtGlobal>
 #include "Common.hpp"

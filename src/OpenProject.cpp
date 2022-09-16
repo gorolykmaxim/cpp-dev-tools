@@ -1,11 +1,21 @@
 #include "OpenProject.hpp"
-#include <QDir>
-#include <QVariant>
-#include <QStandardPaths>
-#include <algorithm>
 #include <limits>
-#include "Dialog.hpp"
+#include <algorithm>
+#include <QString>
+#include <QVector>
+#include <QVariant>
+#include <QDir>
+#include <QFileInfo>
+#include <QStandardPaths>
+#include <QDebug>
+#include <QJsonDocument>
+#include "UserInterface.hpp"
 #include "InputAndListView.hpp"
+#include "ProcessRuntime.hpp"
+#include "Application.hpp"
+#include "Common.hpp"
+#include "JsonFileProcess.hpp"
+#include "Dialog.hpp"
 
 static bool IsValid(const FileSuggestion& s) {
   return s.match_start >= 0 && s.match_start < s.file.size();

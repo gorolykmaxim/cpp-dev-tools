@@ -1,4 +1,3 @@
-#include <QThread>
 #include "Application.hpp"
 #include "Initialize.hpp"
 

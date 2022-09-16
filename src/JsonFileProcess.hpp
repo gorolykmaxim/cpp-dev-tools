@@ -1,8 +1,8 @@
 #pragma once
 
-#include <optional>
 #include <QString>
 #include <QJsonDocument>
+#include "ProcessRuntime.hpp"
 #include "Application.hpp"
 
 enum class JsonOperation {

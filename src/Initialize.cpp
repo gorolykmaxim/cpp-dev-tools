@@ -1,11 +1,10 @@
 #include "Initialize.hpp"
-#include "OpenProject.hpp"
-#include <QStandardPaths>
 #include <QString>
-#include <QJsonDocument>
-#include <QDebug>
-#include <QVector>
-#include <QVariant>
+#include <QStandardPaths>
+#include "ProcessRuntime.hpp"
+#include "Application.hpp"
+#include "JsonFileProcess.hpp"
+#include "OpenProject.hpp"
 
 Initialize::Initialize() {
   EXEC_NEXT(ReadConfig);

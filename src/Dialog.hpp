@@ -1,5 +1,6 @@
 #pragma once
 
+#include <QString>
 #include "UserInterface.hpp"
 
 void DialogInit(UserInterface& ui);

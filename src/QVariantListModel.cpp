@@ -1,4 +1,10 @@
 #include "QVariantListModel.hpp"
+#include <QAbstractListModel>
+#include <QHash>
+#include <QByteArray>
+#include <QModelIndex>
+#include <QVariant>
+#include <QVector>
 #include <QtGlobal>
 
 QVariantListModel::QVariantListModel(const QHash<int, QByteArray>& role_names)

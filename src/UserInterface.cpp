@@ -1,7 +1,17 @@
 #include "UserInterface.hpp"
+#include <QUrl>
+#include <QString>
+#include <QList>
+#include <QHash>
+#include <QQmlContext>
+#include <QSet>
+#include <QVariant>
 #include <QtGlobal>
 #include <QMetaObject>
+#include <Qt>
 #include "Dialog.hpp"
+#include "Common.hpp"
+#include "QVariantListModel.hpp"
 
 UserInterface::UserInterface() {
   engine.rootContext()->setContextProperty(kQmlCurrentView, "");

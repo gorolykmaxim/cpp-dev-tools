@@ -2,9 +2,10 @@
 
 #include <QAbstractListModel>
 #include <QHash>
-#include <QVector>
-#include <QVariant>
 #include <QByteArray>
+#include <QModelIndex>
+#include <QVariant>
+#include <QVector>
 
 class QVariantListModel: public QAbstractListModel {
 public:

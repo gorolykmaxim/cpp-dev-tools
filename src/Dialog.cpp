@@ -1,4 +1,7 @@
 #include "Dialog.hpp"
+#include <QVariant>
+#include <QString>
+#include "UserInterface.hpp"
 
 void DialogInit(UserInterface& ui) {
   ui.SetDataField("dialogDataTitle", QVariant());

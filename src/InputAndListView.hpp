@@ -1,5 +1,9 @@
 #pragma once
 
+#include <functional>
+#include <QString>
+#include <QVector>
+#include <QVariant>
 #include "UserInterface.hpp"
 
 void InputAndListViewDisplay(

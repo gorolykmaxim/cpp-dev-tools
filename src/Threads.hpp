@@ -1,9 +1,10 @@
 #pragma once
 
-#include <QThreadPool>
+#include <functional>
+#include <QObject>
 #include <QtConcurrent>
 #include <QMetaObject>
-#include <functional>
+#include <QThreadPool>
 
 class Threads {
 public:

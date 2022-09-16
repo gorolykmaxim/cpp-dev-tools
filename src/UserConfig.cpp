@@ -1,4 +1,6 @@
 #include "UserConfig.hpp"
+#include <QJsonDocument>
+#include <QString>
 #include <QJsonObject>
 
 void UserConfig::LoadFrom(const QJsonDocument& json) {

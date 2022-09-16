@@ -1,14 +1,16 @@
 #pragma once
 
-#include <QObject>
-#include <QVariant>
-#include <QByteArray>
-#include <QSet>
-#include <QHash>
-#include <QList>
-#include <QQmlContext>
-#include <QQmlApplicationEngine>
+#include <functional>
 #include <QString>
+#include <QVariant>
+#include <QQmlContext>
+#include <QHash>
+#include <QByteArray>
+#include <QVector>
+#include <QObject>
+#include <QList>
+#include <QSet>
+#include <QQmlApplicationEngine>
 #include "QVariantListModel.hpp"
 #include "Common.hpp"
 

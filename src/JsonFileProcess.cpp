@@ -1,8 +1,14 @@
 #include "JsonFileProcess.hpp"
+#include <utility>
+#include <QString>
 #include <QFile>
+#include <QIODevice>
 #include <QDebug>
 #include <QJsonParseError>
-#include <utility>
+#include <QJsonDocument>
+#include "ProcessRuntime.hpp"
+#include "Application.hpp"
+#include "Common.hpp"
 
 JsonFileProcess::JsonFileProcess(JsonOperation operation, const QString& path,
                                  QJsonDocument json)
