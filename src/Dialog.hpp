@@ -2,9 +2,6 @@
 
 #include "UserInterface.hpp"
 
-class Dialog {
-public:
-  static void Init(UserInterface& ui);
-  static void DisplayError(const QString& title, const QString& text,
-                           UserInterface& ui);
-};
+void DialogInit(UserInterface& ui);
+void DialogDisplayError(const QString& title, const QString& text,
+                        UserInterface& ui);

@@ -6,7 +6,7 @@
 UserInterface::UserInterface() {
   engine.rootContext()->setContextProperty(kQmlCurrentView, "");
   engine.rootContext()->setContextProperty("core", this);
-  Dialog::Init(*this);
+  DialogInit(*this);
   engine.load(QUrl(QStringLiteral("qrc:/cdt/qml/main.qml")));
 }
 

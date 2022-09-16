@@ -1,8 +1,6 @@
 #include "InputAndListView.hpp"
-#include <QHash>
-#include <QList>
 
-void InputAndListView::Display(
+void InputAndListViewDisplay(
     const QString& input_label, const QString& input_value,
     const QString& button_text, const QVector<QVariantList>& list_items,
     const std::function<void(const QString&)>& on_input_value_changed,
@@ -30,15 +28,15 @@ void InputAndListView::Display(
                  user_action_handlers);
 }
 
-void InputAndListView::SetItems(const QVector<QVariantList>& list_items,
-                                UserInterface& ui) {
+void InputAndListViewSetItems(const QVector<QVariantList>& list_items,
+                              UserInterface& ui) {
   ui.GetListField("inputAndListDataListModel").SetItems(list_items);
 }
 
-void InputAndListView::SetInput(const QString& value, UserInterface& ui) {
+void InputAndListViewSetInput(const QString& value, UserInterface& ui) {
   ui.SetDataField("inputAndListDataInputValue", value);
 }
 
-void InputAndListView::SetButtonText(const QString& value, UserInterface& ui) {
+void InputAndListViewSetButtonText(const QString& value, UserInterface& ui) {
   ui.SetDataField("inputAndListDataButtonText", value);
 }

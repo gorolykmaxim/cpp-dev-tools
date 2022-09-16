@@ -52,9 +52,9 @@ static void UpdateAndDisplaySuggestions(OpenProject& data, UserInterface& ui) {
       items.append({file});
     }
   }
-  InputAndListView::SetItems(items, ui);
+  InputAndListViewSetItems(items, ui);
   QString button_text = data.HasValidSuggestionAvailable() ? "Open" : "Create";
-  InputAndListView::SetButtonText(button_text, ui);
+  InputAndListViewSetButtonText(button_text, ui);
 }
 
 class ReloadFileList: public Process {
@@ -102,7 +102,7 @@ OpenProject::OpenProject() {
 
 void OpenProject::DisplayOpenProjectView(Application& app) {
   QPtr<OpenProject> self = app.runtime.SharedPtr(this);
-  InputAndListView::Display(
+  InputAndListViewDisplay(
       "Open project by path:",
       QStandardPaths::writableLocation(QStandardPaths::HomeLocation) + '/',
       "Open",
@@ -135,7 +135,7 @@ void OpenProject::ChangeProjectPath(const QString& new_path, Application& app) {
 void OpenProject::HandleEnter(Application& app) {
   if (HasValidSuggestionAvailable()) {
     QString value = folder + suggestions[selected_suggestion].file;
-    InputAndListView::SetInput(value, app.ui);
+    InputAndListViewSetInput(value, app.ui);
     if (!value.endsWith('/')) {
       qDebug() << "Opening project:" << value;
       load_project_file = app.runtime.ReScheduleAndExecute<JsonFileProcess>(
@@ -161,8 +161,8 @@ bool OpenProject::HasValidSuggestionAvailable() const {
 
 void OpenProject::LoadProjectFile(Application& app) {
   if (!load_project_file->error.isEmpty()) {
-    Dialog::DisplayError("Failed to open project", load_project_file->error,
-                         app.ui);
+    DialogDisplayError("Failed to open project", load_project_file->error,
+                       app.ui);
   } else {
     qDebug() << load_project_file->json;
   }
