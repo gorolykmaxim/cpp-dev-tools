@@ -19,6 +19,8 @@ qt_add_executable(cpp-dev-tools
   src/QVariantListModel.cpp
   src/InputAndListView.hpp
   src/InputAndListView.cpp
+  src/Dialog.hpp
+  src/Dialog.cpp
   src/UserInterface.hpp
   src/UserInterface.cpp
   src/ProcessRuntime.hpp
@@ -33,4 +35,5 @@ target_include_directories(cpp-dev-tools PRIVATE src)
 target_link_libraries(cpp-dev-tools PRIVATE Qt6::Quick Qt6::Gui Qt6::Concurrent)
 qt_add_qml_module(cpp-dev-tools URI cdt VERSION 1.0 QML_FILES
   qml/main.qml
+  qml/DialogMac.qml
   qml/InputAndListView.qml)

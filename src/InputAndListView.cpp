@@ -39,10 +39,6 @@ void InputAndListView::SetInput(const QString& value, UserInterface& ui) {
   ui.SetDataField("inputAndListDataInputValue", value);
 }
 
-void InputAndListView::SetError(const QString& value, UserInterface& ui) {
-  ui.SetDataField("inputAndListDataError", value);
-}
-
 void InputAndListView::SetButtonText(const QString& value, UserInterface& ui) {
   ui.SetDataField("inputAndListDataButtonText", value);
 }

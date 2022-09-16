@@ -17,6 +17,5 @@ public:
   static void SetItems(const QVector<QVariantList>& list_items,
                        UserInterface& ui);
   static void SetInput(const QString& value, UserInterface& ui);
-  static void SetError(const QString& value, UserInterface& ui);
   static void SetButtonText(const QString& value, UserInterface& ui);
 };

@@ -10,9 +10,19 @@ Window {
   Page {
     anchors.fill: parent
     Loader {
+      id: loader
       anchors.fill: parent
       source: currentView
       onLoaded: forceActiveFocus()
+    }
+    DialogMac {
+      onVisibleChanged: {
+        if (visible) {
+          forceActiveFocus();
+        } else {
+          loader.forceActiveFocus();
+        }
+      }
     }
     footer: Label {
       padding: globalPadding

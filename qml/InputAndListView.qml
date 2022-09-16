@@ -35,15 +35,6 @@ ColumnLayout {
       onClicked: core.OnUserAction("enterPressed", [])
     }
   }
-  Label {
-    leftPadding: globalPadding
-    rightPadding: globalPadding
-    text: inputAndListDataError
-    visible: inputAndListDataError.length > 0
-    color: "red"
-    Layout.fillWidth: true
-    wrapMode: Label.WordWrap
-  }
   ListView {
     id: list
     clip: true

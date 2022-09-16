@@ -4,6 +4,7 @@
 #include <QStandardPaths>
 #include <algorithm>
 #include <limits>
+#include "Dialog.hpp"
 #include "InputAndListView.hpp"
 
 static bool IsValid(const FileSuggestion& s) {
@@ -136,14 +137,12 @@ void OpenProject::HandleEnter(Application& app) {
     QString value = folder + suggestions[selected_suggestion].file;
     InputAndListView::SetInput(value, app.ui);
     if (!value.endsWith('/')) {
-      InputAndListView::SetError("", app.ui);
       qDebug() << "Opening project:" << value;
       load_project_file = app.runtime.ReScheduleAndExecute<JsonFileProcess>(
           load_project_file.get(), this, JsonOperation::kRead, value);
       EXEC_NEXT(LoadProjectFile);
     }
   } else {
-    InputAndListView::SetError("", app.ui);
     QString value = folder + file_name;
     qDebug() << "Creating project:" << value;
     load_project_file = app.runtime.ReScheduleAndExecute<JsonFileProcess>(
@@ -162,7 +161,8 @@ bool OpenProject::HasValidSuggestionAvailable() const {
 
 void OpenProject::LoadProjectFile(Application& app) {
   if (!load_project_file->error.isEmpty()) {
-    InputAndListView::SetError(load_project_file->error, app.ui);
+    Dialog::DisplayError("Failed to open project", load_project_file->error,
+                         app.ui);
   } else {
     qDebug() << load_project_file->json;
   }
