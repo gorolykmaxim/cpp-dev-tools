@@ -1,10 +1,12 @@
 #include "UserInterface.hpp"
 #include <QtGlobal>
 #include <QMetaObject>
+#include "Dialog.hpp"
 
 UserInterface::UserInterface() {
   engine.rootContext()->setContextProperty(kQmlCurrentView, "");
   engine.rootContext()->setContextProperty("core", this);
+  Dialog::Init(*this);
   engine.load(QUrl(QStringLiteral("qrc:/cdt/qml/main.qml")));
 }
 

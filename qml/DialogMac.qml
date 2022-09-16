@@ -4,10 +4,10 @@ import QtQuick.Layouts
 
 Dialog {
   id: dialog
-  title: dialogDataTitle
+  title: dialogDataTitle ?? ""
   width: parent.width / 2
   modal: true
-  visible: dialogDataVisible
+  visible: dialogDataVisible ?? false
   x: (parent.width - width) / 2
   ColumnLayout {
     anchors.fill: parent
@@ -18,7 +18,7 @@ Dialog {
         background: Rectangle {
           color: "transparent"
         }
-        text: dialogDataText
+        text: dialogDataText ?? ""
         wrapMode: TextArea.WordWrap
         KeyNavigation.down: dialogButton
         // Make text area effectively readOnly but don't hide the cursor and
@@ -33,7 +33,7 @@ Dialog {
     }
     Button {
       id: dialogButton
-      text: dialogDataButtonText
+      text: dialogDataButtonText ?? ""
       focus: true
       highlighted: true
       Layout.alignment: Qt.AlignRight
