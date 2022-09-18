@@ -6,6 +6,7 @@
 #include <QDebug>
 #include <QJsonParseError>
 #include <QJsonDocument>
+#include <QDir>
 #include "ProcessRuntime.hpp"
 #include "Application.hpp"
 #include "Common.hpp"
@@ -20,6 +21,8 @@ JsonFileProcess::JsonFileProcess(JsonOperation operation, const QString& path,
 void JsonFileProcess::Run(Application& app) {
   QPtr<JsonFileProcess> self = app.runtime.SharedPtr(this);
   app.threads.ScheduleIO([self] () {
+    QString parent_folder = QDir::cleanPath(self->path + "/..");
+    QDir().mkpath(parent_folder);
     QFile file(self->path);
     if (!file.open(QIODevice::ReadWrite | QIODevice::Text)) {
       self->error = "Failed to open JSON file '" + file.fileName() +
