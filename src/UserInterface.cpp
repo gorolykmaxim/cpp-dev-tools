@@ -9,14 +9,19 @@
 #include <QtGlobal>
 #include <QMetaObject>
 #include <Qt>
-#include "Dialog.hpp"
 #include "Common.hpp"
 #include "QVariantListModel.hpp"
 
 UserInterface::UserInterface() {
-  engine.rootContext()->setContextProperty(kQmlCurrentView, "");
+  QList<DataField> fields = {
+    DataField{kQmlCurrentView, ""},
+    DataField{"dialogDataTitle", QVariant()},
+    DataField{"dialogDataText", QVariant()},
+    DataField{"dialogDataVisible", QVariant()},
+    DataField{"dialogDataCancellable", QVariant()},
+  };
+  engine.rootContext()->setContextProperties(fields);
   engine.rootContext()->setContextProperty("core", this);
-  DialogInit(*this);
   engine.load(QUrl(QStringLiteral("qrc:/cdt/qml/main.qml")));
 }
 
@@ -56,6 +61,21 @@ void UserInterface::DisplayView(
   context->setContextProperties(fields);
 }
 
+void UserInterface::DisplayDialog(const QString& title, const QString& text,
+                                  bool cancellable,
+                                  const DialogActionHandler& accept_handler,
+                                  const DialogActionHandler& reject_handler) {
+  dialog_reject_handler = reject_handler;
+  dialog_accept_handler = accept_handler;
+  QList<DataField> fields = {
+    DataField{"dialogDataTitle", title},
+    DataField{"dialogDataText", text},
+    DataField{"dialogDataVisible", true},
+    DataField{"dialogDataCancellable", cancellable}
+  };
+  engine.rootContext()->setContextProperties(fields);
+}
+
 void UserInterface::SetDataField(const QString& name, const QVariant& value) {
   data_field_names.insert(name);
   engine.rootContext()->setContextProperty(name, value);
@@ -76,6 +96,16 @@ void UserInterface::OnUserAction(const QString& action,
     UserActionHandler& handler = user_action_handlers[action];
     if (handler) {
       handler(args);
+    }
+  }, Qt::QueuedConnection);
+}
+
+void UserInterface::OnDialogResult(bool result) {
+  QMetaObject::invokeMethod(&engine, [this, result] () {
+    if (result && dialog_accept_handler) {
+      dialog_accept_handler();
+    } else if (!result && dialog_reject_handler) {
+      dialog_reject_handler();
     }
   }, Qt::QueuedConnection);
 }

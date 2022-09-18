@@ -19,8 +19,6 @@ qt_add_executable(cpp-dev-tools
   src/QVariantListModel.cpp
   src/InputAndListView.hpp
   src/InputAndListView.cpp
-  src/Dialog.hpp
-  src/Dialog.cpp
   src/UserInterface.hpp
   src/UserInterface.cpp
   src/ProcessRuntime.hpp

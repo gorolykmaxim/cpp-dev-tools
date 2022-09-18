@@ -15,7 +15,6 @@
 #include "Application.hpp"
 #include "Common.hpp"
 #include "JsonFileProcess.hpp"
-#include "Dialog.hpp"
 
 static bool IsValid(const FileSuggestion& s) {
   return s.match_start >= 0 && s.match_start < s.file.size();
@@ -153,13 +152,25 @@ void OpenProject::HandleEnter(Application& app) {
       EXEC_NEXT(LoadProjectFile);
     }
   } else {
+    QPtr<OpenProject> self = app.runtime.SharedPtr(this);
     QString value = folder + file_name;
-    qDebug() << "Creating project:" << value;
-    load_project_file = app.runtime.ReScheduleAndExecute<JsonFileProcess>(
-        load_project_file.get(), this, JsonOperation::kWrite, value,
-        QJsonDocument());
-    EXEC_NEXT(LoadProjectFile);
+    app.ui.DisplayDialog(
+        "Create new project?",
+        "Do you want to create a new project at " + value,
+        true,
+        [self, &app] () {
+          app.runtime.WakeUpAndExecute(*self, EXEC(self, CreateNewProject));
+        });
   }
+}
+
+void OpenProject::CreateNewProject(Application& app) {
+  QString value = folder + file_name;
+  qDebug() << "Creating project:" << value;
+  load_project_file = app.runtime.ReScheduleAndExecute<JsonFileProcess>(
+      load_project_file.get(), this, JsonOperation::kWrite, value,
+      QJsonDocument());
+  EXEC_NEXT(LoadProjectFile);
 }
 
 bool OpenProject::HasValidSuggestionAvailable() const {
@@ -171,8 +182,7 @@ bool OpenProject::HasValidSuggestionAvailable() const {
 
 void OpenProject::LoadProjectFile(Application& app) {
   if (!load_project_file->error.isEmpty()) {
-    DialogDisplayError("Failed to open project", load_project_file->error,
-                       app.ui);
+    app.ui.DisplayDialog("Failed to open project", load_project_file->error);
   } else {
     qDebug() << load_project_file->json;
   }

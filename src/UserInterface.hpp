@@ -17,6 +17,7 @@
 const QString kQmlCurrentView = "currentView";
 
 using UserActionHandler = std::function<void(const QVariantList&)>;
+using DialogActionHandler = std::function<void()>;
 using DataField = QQmlContext::PropertyPair;
 
 struct ListField {
@@ -34,13 +35,19 @@ public:
       const QList<DataField>& data_fields,
       const QList<ListField>& list_fields,
       const QHash<QString, UserActionHandler> user_action_handlers);
+  void DisplayDialog(const QString& title, const QString& text,
+                     bool cancellable = false,
+                     const DialogActionHandler& accept_handler = nullptr,
+                     const DialogActionHandler& reject_handler = nullptr);
   void SetDataField(const QString& name, const QVariant& value);
   QVariantListModel& GetListField(const QString& name);
 public slots:
   void OnUserAction(const QString& action, const QVariantList& args);
+  void OnDialogResult(bool result);
 private:
   QSet<QString> data_field_names;
   QHash<QString, UserActionHandler> user_action_handlers;
+  DialogActionHandler dialog_reject_handler, dialog_accept_handler;
   QHash<QString, QPtr<QVariantListModel>> list_fields;
   QQmlApplicationEngine engine;
 };

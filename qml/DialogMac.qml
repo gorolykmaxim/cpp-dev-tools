@@ -20,7 +20,7 @@ Dialog {
         }
         text: dialogDataText ?? ""
         wrapMode: TextArea.WordWrap
-        KeyNavigation.down: dialogButton
+        KeyNavigation.down: dialogCancel.visible ? dialogCancel : dialogOk
         // Make text area effectively readOnly but don't hide the cursor and
         // allow navigating it using the cursor
         Keys.onPressed: event => {
@@ -31,15 +31,33 @@ Dialog {
         }
       }
     }
-    Button {
-      id: dialogButton
-      text: dialogDataButtonText ?? ""
-      focus: true
-      highlighted: true
+    Row {
       Layout.alignment: Qt.AlignRight
-      Keys.onReturnPressed: clicked()
-      Keys.onEnterPressed: clicked()
-      onClicked: dialog.accept()
+      Button {
+        id: dialogCancel
+        text: "Cancel"
+        focus: visible
+        visible: dialogDataCancellable ?? false
+        Keys.onReturnPressed: clicked()
+        Keys.onEnterPressed: clicked()
+        KeyNavigation.right: dialogOk
+        onClicked: {
+          dialog.reject();
+          core.OnDialogResult(false);
+        }
+      }
+      Button {
+        id: dialogOk
+        text: "OK"
+        focus: !dialogCancel.visible
+        highlighted: true
+        Keys.onReturnPressed: clicked()
+        Keys.onEnterPressed: clicked()
+        onClicked: {
+          dialog.accept();
+          core.OnDialogResult(true);
+        }
+      }
     }
   }
 }
