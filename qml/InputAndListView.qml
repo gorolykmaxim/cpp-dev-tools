@@ -11,11 +11,11 @@ ColumnLayout {
   RowLayout {
     Label {
       padding: globalPadding
-      text: inputAndListDataInputLabel
+      text: dataInputLabel
     }
     TextField {
       id: input
-      text: inputAndListDataInputValue
+      text: dataInputValue
       focus: true
       Layout.fillWidth: true
       KeyNavigation.right: button
@@ -29,7 +29,7 @@ ColumnLayout {
     Button {
       id: button
       highlighted: true
-      text: inputAndListDataButtonText
+      text: dataButtonText
       Keys.onReturnPressed: clicked()
       Keys.onEnterPressed: clicked()
       onClicked: core.OnUserAction("enterPressed", [])
@@ -40,7 +40,7 @@ ColumnLayout {
     clip: true
     Layout.fillWidth: true
     Layout.fillHeight: true
-    model: inputAndListDataListModel
+    model: dataListModel
     onCurrentIndexChanged: core.OnUserAction("itemSelected", [currentIndex])
     delegate: Label {
       property var highlight: ListView.isCurrentItem

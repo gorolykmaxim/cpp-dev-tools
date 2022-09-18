@@ -14,12 +14,12 @@ void InputAndListViewDisplay(
     const std::function<void()>& on_enter_pressed,
     const std::function<void(int)>& on_item_selected, UserInterface& ui) {
   QList<DataField> data_fields = {
-      DataField{"inputAndListDataInputLabel", input_label},
-      DataField{"inputAndListDataInputValue", input_value},
-      DataField{"inputAndListDataError", ""},
-      DataField{"inputAndListDataButtonText", button_text}};
+      DataField{"dataInputLabel", input_label},
+      DataField{"dataInputValue", input_value},
+      DataField{"dataError", ""},
+      DataField{"dataButtonText", button_text}};
   QList<ListField> list_fields = {
-      ListField{"inputAndListDataListModel", {{0, "title"}}, list_items}};
+      ListField{"dataListModel", {{0, "title"}}, list_items}};
   QHash<QString, UserActionHandler> user_action_handlers = {
       {"inputValueChanged", [on_input_value_changed] (const QVariantList& args)
       {
@@ -37,13 +37,13 @@ void InputAndListViewDisplay(
 
 void InputAndListViewSetItems(const QVector<QVariantList>& list_items,
                               UserInterface& ui) {
-  ui.GetListField("inputAndListDataListModel").SetItems(list_items);
+  ui.GetListField("dataListModel").SetItems(list_items);
 }
 
 void InputAndListViewSetInput(const QString& value, UserInterface& ui) {
-  ui.SetDataField("inputAndListDataInputValue", value);
+  ui.SetDataField("dataInputValue", value);
 }
 
 void InputAndListViewSetButtonText(const QString& value, UserInterface& ui) {
-  ui.SetDataField("inputAndListDataButtonText", value);
+  ui.SetDataField("dataButtonText", value);
 }
