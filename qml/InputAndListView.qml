@@ -3,7 +3,6 @@ import QtQuick.Layouts
 import QtQuick.Controls
 
 ColumnLayout {
-  SystemPalette {id: palette; colorGroup: SystemPalette.Active}
   Component.onCompleted: {
     list.model.onModelReset.connect(() => list.currentIndex = 0);
   }
@@ -26,12 +25,10 @@ ColumnLayout {
       Keys.onDownPressed: list.incrementCurrentIndex()
       Keys.onUpPressed: list.decrementCurrentIndex()
     }
-    Button {
+    ButtonWidget {
       id: button
       highlighted: true
       text: dataButtonText
-      Keys.onReturnPressed: clicked()
-      Keys.onEnterPressed: clicked()
       onClicked: core.OnUserAction("enterPressed", [])
     }
   }

@@ -38,6 +38,9 @@ qt_add_qml_module(cpp-dev-tools URI cdt VERSION 1.0
       qml/MaterialDesignIcons.js
       qml/main.qml
       qml/DialogMac.qml
+      qml/ButtonWidget.qml
+      qml/IconWidget.qml
+      qml/ReadOnlyTextAreaWidget.qml
       qml/InputAndListView.qml
   RESOURCES
       fonts/MaterialIcons-Regular.ttf)
