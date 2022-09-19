@@ -19,6 +19,7 @@ UserInterface::UserInterface() {
     DataField{"dialogDataText", QVariant()},
     DataField{"dialogDataVisible", QVariant()},
     DataField{"dialogDataCancellable", QVariant()},
+    DataField{"dialogDataError", QVariant()},
   };
   engine.rootContext()->setContextProperties(fields);
   engine.rootContext()->setContextProperty("core", this);
@@ -62,7 +63,7 @@ void UserInterface::DisplayView(
 }
 
 void UserInterface::DisplayDialog(const QString& title, const QString& text,
-                                  bool cancellable,
+                                  bool error, bool cancellable,
                                   const DialogActionHandler& accept_handler,
                                   const DialogActionHandler& reject_handler) {
   dialog_reject_handler = reject_handler;
@@ -71,7 +72,8 @@ void UserInterface::DisplayDialog(const QString& title, const QString& text,
     DataField{"dialogDataTitle", title},
     DataField{"dialogDataText", text},
     DataField{"dialogDataVisible", true},
-    DataField{"dialogDataCancellable", cancellable}
+    DataField{"dialogDataCancellable", cancellable},
+    DataField{"dialogDataError", error},
   };
   engine.rootContext()->setContextProperties(fields);
 }

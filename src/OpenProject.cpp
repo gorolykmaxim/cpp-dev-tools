@@ -157,7 +157,7 @@ void OpenProject::HandleEnter(Application& app) {
     app.ui.DisplayDialog(
         "Create new project?",
         "Do you want to create a new project at " + value,
-        true,
+        false, true,
         [self, &app] () {
           app.runtime.WakeUpAndExecute(*self, EXEC(self, CreateNewProject));
         });

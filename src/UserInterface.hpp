@@ -36,7 +36,7 @@ public:
       const QList<ListField>& list_fields,
       const QHash<QString, UserActionHandler> user_action_handlers);
   void DisplayDialog(const QString& title, const QString& text,
-                     bool cancellable = false,
+                     bool error = true, bool cancellable = false,
                      const DialogActionHandler& accept_handler = nullptr,
                      const DialogActionHandler& reject_handler = nullptr);
   void SetDataField(const QString& name, const QVariant& value);
