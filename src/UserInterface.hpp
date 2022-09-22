@@ -11,7 +11,8 @@
 #include <QList>
 #include <QSet>
 #include <QQmlApplicationEngine>
-#include "QVariantListModel.hpp"
+#include <QAbstractListModel>
+#include <QModelIndex>
 #include "Common.hpp"
 
 const QString kQmlCurrentView = "currentView";
@@ -24,6 +25,18 @@ struct ListField {
   QString name;
   QHash<int, QByteArray> role_names;
   QVector<QVariantList> items;
+};
+
+class QVariantListModel: public QAbstractListModel {
+public:
+  explicit QVariantListModel(const QHash<int, QByteArray>& role_names);
+  int rowCount(const QModelIndex& parent = QModelIndex()) const override;
+  QHash<int, QByteArray> roleNames() const override;
+  QVariant data(const QModelIndex& index, int role = 0) const override;
+  void SetItems(const QVector<QVariantList>& items);
+private:
+  QVector<QVariantList> items;
+  QHash<int, QByteArray> role_names;
 };
 
 class UserInterface: public QObject {
