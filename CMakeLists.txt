@@ -28,8 +28,10 @@ qt_add_executable(cpp-dev-tools
   src/OpenProject.cpp
   src/Initialize.hpp
   src/Initialize.cpp)
-target_compile_options(cpp-dev-tools PRIVATE
-  -Wall -Wextra -Wpedantic -Wno-gnu-zero-variadic-macro-arguments)
+if(NOT MSVC)
+  target_compile_options(cpp-dev-tools PRIVATE
+    -Wall -Wextra -Wpedantic -Wno-gnu-zero-variadic-macro-arguments)
+endif()
 target_include_directories(cpp-dev-tools PRIVATE src)
 target_link_libraries(cpp-dev-tools PRIVATE
   Qt6::Quick Qt6::QuickControls2 Qt6::Gui Qt6::Concurrent)

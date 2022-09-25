@@ -46,6 +46,7 @@ ColumnLayout {
       id: list
       anchors.fill: parent
       clip: true
+      boundsBehavior: ListView.StopAtBounds
       model: dataListModel
       onCurrentIndexChanged: core.OnUserAction("itemSelected", [currentIndex])
       delegate: TextWidget {
