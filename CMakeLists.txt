@@ -29,6 +29,8 @@ qt_add_executable(cpp-dev-tools
   src/Initialize.hpp
   src/Initialize.cpp)
 if(NOT MSVC)
+  # TODO: figure out how to enable all warnings in MSVC without triggering
+  # them in Qt sources
   target_compile_options(cpp-dev-tools PRIVATE
     -Wall -Wextra -Wpedantic -Wno-gnu-zero-variadic-macro-arguments)
 endif()
