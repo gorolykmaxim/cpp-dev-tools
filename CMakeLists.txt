@@ -4,7 +4,7 @@ project(cpp-dev-tools)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_AUTOMOC ON)
 
-find_package(Qt6 6.3 COMPONENTS Quick Gui Concurrent REQUIRED)
+find_package(Qt6 6.3 COMPONENTS Quick QuickControls2 Gui Concurrent REQUIRED)
 qt_add_executable(cpp-dev-tools
   src/main.cpp
   src/Base.hpp
@@ -31,14 +31,18 @@ qt_add_executable(cpp-dev-tools
 target_compile_options(cpp-dev-tools PRIVATE
   -Wall -Wextra -Wpedantic -Wno-gnu-zero-variadic-macro-arguments)
 target_include_directories(cpp-dev-tools PRIVATE src)
-target_link_libraries(cpp-dev-tools PRIVATE Qt6::Quick Qt6::Gui Qt6::Concurrent)
+target_link_libraries(cpp-dev-tools PRIVATE
+  Qt6::Quick Qt6::QuickControls2 Qt6::Gui Qt6::Concurrent)
 qt_add_qml_module(cpp-dev-tools URI cdt VERSION 1.0
   QML_FILES
       qml/MaterialDesignIcons.js
       qml/main.qml
-      qml/DialogMac.qml
+      qml/DialogWidget.qml
       qml/ButtonWidget.qml
       qml/IconWidget.qml
+      qml/TextWidget.qml
+      qml/TextFieldWidget.qml
+      qml/PaneWidget.qml
       qml/ReadOnlyTextAreaWidget.qml
       qml/InputAndListView.qml
   RESOURCES

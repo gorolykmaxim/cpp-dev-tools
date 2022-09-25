@@ -4,13 +4,20 @@ import QtQuick.Layouts
 
 Dialog {
   id: dialog
-  title: dialogDataTitle ?? ""
   width: parent.width / 2
   modal: true
   visible: dialogDataVisible ?? false
-  x: (parent.width - width) / 2
+  anchors.centerIn: parent
+  background: Rectangle {
+    color: colorBgMedium
+    radius: baseRadius
+  }
   ColumnLayout {
     anchors.fill: parent
+    TextWidget {
+      text: dialogDataTitle ?? ""
+      font.bold: true
+    }
     RowLayout {
       IconWidget {
         icon: dialogDataError ? "error" : "help"
@@ -27,6 +34,7 @@ Dialog {
       }
     }
     Row {
+      spacing: basePadding
       Layout.alignment: Qt.AlignRight
       ButtonWidget {
         id: dialogCancel
@@ -43,7 +51,6 @@ Dialog {
         id: dialogOk
         text: "OK"
         focus: !dialogCancel.visible
-        highlighted: true
         onClicked: {
           dialog.accept();
           core.OnDialogResult(true);

@@ -2,6 +2,7 @@ import QtQuick
 import QtQuick.Controls
 
 TextArea {
+  color: colorText
   background: Rectangle {
     color: "transparent"
   }

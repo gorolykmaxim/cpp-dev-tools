@@ -36,6 +36,7 @@
 #include <QQmlContext>
 #include <QQmlApplicationEngine>
 #include <QMetaObject>
+#include <QQuickStyle>
 
 template<typename T>
 using QPtr = QSharedPointer<T>;

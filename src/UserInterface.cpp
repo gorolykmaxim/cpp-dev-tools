@@ -40,6 +40,7 @@ UserInterface::UserInterface() {
   };
   engine.rootContext()->setContextProperties(fields);
   engine.rootContext()->setContextProperty("core", this);
+  QQuickStyle::setStyle("Basic");
   engine.load(QUrl(QStringLiteral("qrc:/cdt/qml/main.qml")));
 }
 
