@@ -1,11 +1,6 @@
 #pragma once
 
-#include <functional>
-#include <QDebug>
-#include <QVector>
-#include <QStack>
-#include <QtGlobal>
-#include "Common.hpp"
+#include "Base.hpp"
 
 #define EXEC(PROC, FUNC) [PROC] (Application& app) {PROC->FUNC(app);}, #FUNC
 #define EXEC_STATIC(PROC, FUNC) [PROC] (Application& app) {FUNC(app);}, #FUNC

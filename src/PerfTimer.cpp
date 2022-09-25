@@ -1,6 +1,4 @@
-#include "Common.hpp"
-#include <chrono>
-#include <QDebug>
+#include "PerfTimer.hpp"
 
 using namespace std::chrono;
 

@@ -1,7 +1,6 @@
 #pragma once
 
-#include <QString>
-#include <QJsonDocument>
+#include "Base.hpp"
 
 class UserConfig {
 public:

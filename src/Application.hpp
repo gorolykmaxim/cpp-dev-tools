@@ -1,6 +1,6 @@
 #pragma once
 
-#include <QGuiApplication>
+#include "Base.hpp"
 #include "ProcessRuntime.hpp"
 #include "Threads.hpp"
 #include "UserConfig.hpp"

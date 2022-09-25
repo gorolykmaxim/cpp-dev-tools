@@ -1,10 +1,6 @@
 #pragma once
 
-#include <functional>
-#include <QObject>
-#include <QtConcurrent>
-#include <QMetaObject>
-#include <QThreadPool>
+#include "Base.hpp"
 
 class Threads {
 public:

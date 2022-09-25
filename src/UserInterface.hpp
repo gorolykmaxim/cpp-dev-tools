@@ -1,19 +1,6 @@
 #pragma once
 
-#include <functional>
-#include <QString>
-#include <QVariant>
-#include <QQmlContext>
-#include <QHash>
-#include <QByteArray>
-#include <QVector>
-#include <QObject>
-#include <QList>
-#include <QSet>
-#include <QQmlApplicationEngine>
-#include <QAbstractListModel>
-#include <QModelIndex>
-#include "Common.hpp"
+#include "Base.hpp"
 
 const QString kQmlCurrentView = "currentView";
 

@@ -1,10 +1,7 @@
 #pragma once
 
-#include <QString>
-#include <QVector>
-#include "ProcessRuntime.hpp"
+#include "Base.hpp"
 #include "Application.hpp"
-#include "Common.hpp"
 #include "JsonFileProcess.hpp"
 
 struct FileSuggestion {

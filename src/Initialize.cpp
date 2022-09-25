@@ -1,9 +1,4 @@
 #include "Initialize.hpp"
-#include <QString>
-#include <QStandardPaths>
-#include "ProcessRuntime.hpp"
-#include "Application.hpp"
-#include "JsonFileProcess.hpp"
 #include "OpenProject.hpp"
 
 Initialize::Initialize() {

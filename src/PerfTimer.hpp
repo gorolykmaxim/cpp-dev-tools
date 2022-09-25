@@ -1,11 +1,6 @@
 #pragma once
 
-#include <chrono>
-#include <QSharedPointer>
-#include <QString>
-
-template<typename T>
-using QPtr = QSharedPointer<T>;
+#include "Base.hpp"
 
 class PerfTimer {
 public:

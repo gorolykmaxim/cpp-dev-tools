@@ -1,8 +1,7 @@
 #pragma once
 
-#include "ProcessRuntime.hpp"
+#include "Base.hpp"
 #include "Application.hpp"
-#include "Common.hpp"
 #include "JsonFileProcess.hpp"
 
 class Initialize: public Process {

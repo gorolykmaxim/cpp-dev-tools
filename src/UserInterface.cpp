@@ -1,20 +1,4 @@
 #include "UserInterface.hpp"
-#include <QUrl>
-#include <QString>
-#include <QList>
-#include <QHash>
-#include <QQmlContext>
-#include <QSet>
-#include <QVariant>
-#include <QtGlobal>
-#include <QMetaObject>
-#include <Qt>
-#include <QModelIndex>
-#include <QAbstractListModel>
-#include <QByteArray>
-#include <QtGlobal>
-#include <QVector>
-#include "Common.hpp"
 
 QVariantListModel::QVariantListModel(const QHash<int, QByteArray>& role_names)
     : QAbstractListModel(), role_names(role_names) {}

@@ -1,9 +1,4 @@
 #include "ProcessRuntime.hpp"
-#include <QDebug>
-#include <QDebugStateSaver>
-#include <QVector>
-#include <QtGlobal>
-#include "Common.hpp"
 
 ProcessId::ProcessId() : index(-1), version(-1) {}
 
