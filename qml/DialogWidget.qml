@@ -21,7 +21,7 @@ Dialog {
     RowLayout {
       IconWidget {
         icon: dialogDataError ? "error" : "help"
-        color: dialogDataError ? "red" : palette.text
+        color: dialogDataError ? "red" : colorText
         Layout.alignment: Qt.AlignTop
       }
       ScrollView {
