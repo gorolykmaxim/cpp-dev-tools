@@ -3,6 +3,7 @@ import QtQuick.Controls
 
 TextField {
   color: colorText
+  padding: basePadding
   background: Rectangle {
     color: colorBgDark
     border.color: parent.focus ? colorHighlight : colorBgBlack
