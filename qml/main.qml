@@ -14,10 +14,6 @@ Window {
   height: 600
   title: "CPP Dev Tools"
   visible: true
-  SystemPalette {
-    id: palette;
-    colorGroup: SystemPalette.Active
-  }
   FontLoader {
     id: iconFont
     source: "../fonts/MaterialIcons-Regular.ttf"
