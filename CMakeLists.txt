@@ -17,6 +17,8 @@ qt_add_executable(cpp-dev-tools
   src/Application.hpp
   src/Application.cpp
   src/InputAndListView.hpp
+  src/AlertDialog.cpp
+  src/AlertDialog.hpp
   src/InputAndListView.cpp
   src/UserInterface.hpp
   src/UserInterface.cpp
@@ -41,13 +43,13 @@ qt_add_qml_module(cpp-dev-tools URI cdt VERSION 1.0
   QML_FILES
       qml/MaterialDesignIcons.js
       qml/main.qml
-      qml/DialogWidget.qml
       qml/ButtonWidget.qml
       qml/IconWidget.qml
       qml/TextWidget.qml
       qml/TextFieldWidget.qml
       qml/PaneWidget.qml
       qml/ReadOnlyTextAreaWidget.qml
+      qml/AlertDialog.qml
       qml/InputAndListView.qml
   RESOURCES
       fonts/MaterialIcons-Regular.ttf)

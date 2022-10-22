@@ -24,18 +24,33 @@ Window {
       color: colorBgBlack
     }
     Loader {
-      id: loader
+      id: viewLoader
       anchors.fill: parent
-      source: currentView
+      source: viewSlot
       onLoaded: forceActiveFocus()
     }
-    DialogWidget {
+    Dialog {
+      id: dialog
+      width: parent.width / 2
+      modal: true
+      visible: dataDialogVisible ?? false
+      anchors.centerIn: parent
+      background: Rectangle {
+        color: colorBgMedium
+        radius: baseRadius
+      }
       onVisibleChanged: {
         if (visible) {
-          forceActiveFocus();
+          dialogLoader.forceActiveFocus();
         } else {
-          loader.forceActiveFocus();
+          viewLoader.forceActiveFocus();
         }
+      }
+      Loader {
+        id: dialogLoader
+        anchors.fill: parent
+        source: dialogSlot
+        onLoaded: forceActiveFocus()
       }
     }
     footer: TextWidget {

@@ -16,25 +16,28 @@ ColumnLayout {
     RowLayout {
       anchors.fill: parent
       TextWidget {
-        text: dataInputLabel
+        text: dataViewInputLabel
       }
       TextFieldWidget {
         id: input
-        text: dataInputValue
+        text: dataViewInputValue
         focus: true
         Layout.fillWidth: true
         KeyNavigation.right: button
-        onDisplayTextChanged: core.OnUserAction("inputValueChanged",
+        onDisplayTextChanged: core.OnUserAction("viewSlot",
+                                                "actionViewInputValueChanged",
                                                 [displayText])
-        Keys.onReturnPressed: core.OnUserAction("enterPressed", [])
-        Keys.onEnterPressed: core.OnUserAction("enterPressed", [])
+        Keys.onReturnPressed: core.OnUserAction("viewSlot",
+                                                "actionViewEnterPressed", [])
+        Keys.onEnterPressed: core.OnUserAction("viewSlot",
+                                               "actionViewEnterPressed", [])
         Keys.onDownPressed: list.incrementCurrentIndex()
         Keys.onUpPressed: list.decrementCurrentIndex()
       }
       ButtonWidget {
         id: button
-        text: dataButtonText
-        onClicked: core.OnUserAction("enterPressed", [])
+        text: dataViewButtonText
+        onClicked: core.OnUserAction("viewSlot", "actionViewEnterPressed", [])
       }
     }
   }
@@ -47,8 +50,10 @@ ColumnLayout {
       anchors.fill: parent
       clip: true
       boundsBehavior: ListView.StopAtBounds
-      model: dataListModel
-      onCurrentIndexChanged: core.OnUserAction("itemSelected", [currentIndex])
+      model: dataViewListModel
+      onCurrentIndexChanged: core.OnUserAction("viewSlot",
+                                               "actionViewItemSelected",
+                                               [currentIndex])
       delegate: TextWidget {
         text: title
         width: list.width
@@ -62,7 +67,7 @@ ColumnLayout {
           anchors.fill: parent
           onClicked: {
             list.currentIndex = index;
-            core.OnUserAction("enterPressed", []);
+            core.OnUserAction("viewSlot", "actionViewEnterPressed", []);
           }
         }
       }

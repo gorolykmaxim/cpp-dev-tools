@@ -2,7 +2,9 @@
 
 #include "Base.hpp"
 
-const QString kQmlCurrentView = "currentView";
+const QString kViewSlot = "viewSlot";
+const QString kDialogSlot = "dialogSlot";
+const QString kDataDialogVisible = "dataDialogVisible";
 
 using UserActionHandler = std::function<void(const QVariantList&)>;
 using DialogActionHandler = std::function<void()>;
@@ -26,28 +28,28 @@ private:
   QHash<int, QByteArray> role_names;
 };
 
+struct ViewData {
+  QSet<QString> data_field_names;
+  QHash<QString, QPtr<QVariantListModel>> list_fields;
+  QHash<QString, UserActionHandler> user_action_handlers;
+};
+
 class UserInterface: public QObject {
   Q_OBJECT
 public:
   UserInterface();
   void DisplayView(
-      const QString& qml_file,
-      const QList<DataField>& data_fields,
-      const QList<ListField>& list_fields,
-      const QHash<QString, UserActionHandler> user_action_handlers);
-  void DisplayDialog(const QString& title, const QString& text,
-                     bool error = true, bool cancellable = false,
-                     const DialogActionHandler& accept_handler = nullptr,
-                     const DialogActionHandler& reject_handler = nullptr);
-  void SetDataField(const QString& name, const QVariant& value);
-  QVariantListModel& GetListField(const QString& name);
+      const QString& slot_name, const QString& qml_file,
+      const QList<DataField>& data_fields, const QList<ListField>& list_fields,
+      const QHash<QString, UserActionHandler>& user_action_handlers);
+  void SetDataField(const QString& slot_name, const QString& name,
+                    const QVariant& value);
+  QVariantListModel& GetListField(const QString& slot_name,
+                                  const QString& name);
 public slots:
-  void OnUserAction(const QString& action, const QVariantList& args);
-  void OnDialogResult(bool result);
+  void OnUserAction(const QString& slot_name, const QString& action,
+                    const QVariantList& args);
 private:
-  QSet<QString> data_field_names;
-  QHash<QString, UserActionHandler> user_action_handlers;
-  DialogActionHandler dialog_reject_handler, dialog_accept_handler;
-  QHash<QString, QPtr<QVariantListModel>> list_fields;
+  QHash<QString, ViewData> view_slot_name_to_data;
   QQmlApplicationEngine engine;
 };

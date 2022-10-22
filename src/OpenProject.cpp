@@ -1,5 +1,6 @@
 #include "OpenProject.hpp"
 #include "InputAndListView.hpp"
+#include "AlertDialog.hpp"
 
 static bool IsValid(const FileSuggestion& s) {
   return s.match_start >= 0 && s.match_start < s.file.size();
@@ -46,9 +47,9 @@ static void UpdateAndDisplaySuggestions(OpenProject& data, UserInterface& ui) {
       items.append({file});
     }
   }
-  InputAndListViewSetItems(items, ui);
+  InputAndListViewSetItems(ui, items);
   QString button_text = data.HasValidSuggestionAvailable() ? "Open" : "Create";
-  InputAndListViewSetButtonText(button_text, ui);
+  InputAndListViewSetButtonText(ui, button_text);
 }
 
 class ReloadFileList: public Process {
@@ -97,6 +98,7 @@ OpenProject::OpenProject() {
 void OpenProject::DisplayOpenProjectView(Application& app) {
   QPtr<OpenProject> self = app.runtime.SharedPtr(this);
   InputAndListViewDisplay(
+      app.ui,
       "Open project by path:",
       QStandardPaths::writableLocation(QStandardPaths::HomeLocation) + '/',
       "Open",
@@ -109,8 +111,7 @@ void OpenProject::DisplayOpenProjectView(Application& app) {
       },
       [self] (int item) {
         self->selected_suggestion = item;
-      },
-      app.ui);
+      });
   EXEC_NEXT(KeepAlive);
 }
 
@@ -129,7 +130,7 @@ void OpenProject::ChangeProjectPath(const QString& new_path, Application& app) {
 void OpenProject::HandleEnter(Application& app) {
   if (HasValidSuggestionAvailable()) {
     QString value = folder + suggestions[selected_suggestion].file;
-    InputAndListViewSetInput(value, app.ui);
+    InputAndListViewSetInput(app.ui, value);
     if (!value.endsWith('/')) {
       qDebug() << "Opening project:" << value;
       load_project_file = app.runtime.ReScheduleAndExecute<JsonFileProcess>(
@@ -139,10 +140,12 @@ void OpenProject::HandleEnter(Application& app) {
   } else {
     QPtr<OpenProject> self = app.runtime.SharedPtr(this);
     QString value = folder + file_name;
-    app.ui.DisplayDialog(
+    AlertDialogDisplay(
+        app.ui,
         "Create new project?",
         "Do you want to create a new project at " + value,
-        false, true,
+        false,
+        true,
         [self, &app] () {
           app.runtime.WakeUpAndExecute(*self, EXEC(self, CreateNewProject));
         });
@@ -167,7 +170,8 @@ bool OpenProject::HasValidSuggestionAvailable() const {
 
 void OpenProject::LoadProjectFile(Application& app) {
   if (!load_project_file->error.isEmpty()) {
-    app.ui.DisplayDialog("Failed to open project", load_project_file->error);
+    AlertDialogDisplay(app.ui, "Failed to open project",
+                       load_project_file->error);
   } else {
     qDebug() << load_project_file->json;
   }
