@@ -18,7 +18,7 @@ void AlertDialogDisplay(UserInterface& ui, const QString& title,
       kDialogSlot,
       "AlertDialog.qml",
       {
-        DataField{"dataDialogVisible", true},
+        DataField{kDataDialogVisible, true},
         DataField{"dataDialogTitle", title},
         DataField{"dataDialogText", text},
         DataField{"dataDialogCancellable", cancellable},
