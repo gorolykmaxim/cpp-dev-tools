@@ -1,6 +1,6 @@
 #pragma once
 
-#include "Base.hpp"
+#include "Lib.hpp"
 #include "UserInterface.hpp"
 
 void AlertDialogDisplay(UserInterface& ui, const QString& title,

@@ -1,6 +1,6 @@
 #pragma once
 
-#include "Base.hpp"
+#include "Lib.hpp"
 
 const QString kViewSlot = "viewSlot";
 const QString kDialogSlot = "dialogSlot";

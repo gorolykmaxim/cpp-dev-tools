@@ -1,6 +1,6 @@
 #pragma once
 
-#include "Base.hpp"
+#include "Lib.hpp"
 
 class UserConfig {
 public:

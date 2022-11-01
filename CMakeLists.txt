@@ -7,7 +7,7 @@ set(CMAKE_AUTOMOC ON)
 find_package(Qt6 6.3 COMPONENTS Quick QuickControls2 Gui Concurrent REQUIRED)
 qt_add_executable(cpp-dev-tools
   src/main.cpp
-  src/Base.hpp
+  src/Lib.hpp
   src/PerfTimer.hpp
   src/PerfTimer.cpp
   src/Threads.hpp
