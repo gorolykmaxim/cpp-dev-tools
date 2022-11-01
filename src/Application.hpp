@@ -3,8 +3,16 @@
 #include "Lib.hpp"
 #include "ProcessRuntime.hpp"
 #include "Threads.hpp"
-#include "UserConfig.hpp"
 #include "UserInterface.hpp"
+
+class UserConfig {
+public:
+  UserConfig() = default;
+  void LoadFrom(const QJsonDocument& json);
+  QJsonDocument Save() const;
+
+  QString cmd_open_file_in_editor;
+};
 
 class Application {
 public:

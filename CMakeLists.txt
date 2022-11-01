@@ -12,8 +12,6 @@ qt_add_executable(cpp-dev-tools
   src/PerfTimer.cpp
   src/Threads.hpp
   src/Threads.cpp
-  src/UserConfig.hpp
-  src/UserConfig.cpp
   src/Application.hpp
   src/Application.cpp
   src/InputAndListView.hpp
