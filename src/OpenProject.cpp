@@ -190,7 +190,7 @@ void OpenProject::LoadProjectFile(Application& app) {
     return;
   }
   qDebug() << "Loading profiles";
-  QHash<QString, QHash<QString, QString>> profiles;
+  QVector<QHash<QString, QString>> profiles;
   QSet<QString> profile_property_names;
   QStringList errors;
   QJsonArray json_profiles = load_project_file->json["cdt_profiles"].toArray();
@@ -206,28 +206,27 @@ void OpenProject::LoadProjectFile(Application& app) {
       AppendProfileError(errors, i, "must have a 'name' property set");
       continue;
     }
-    QHash<QString, QString>& profile = profiles[profile_name];
+    QHash<QString, QString> profile;
     for (const QString& key: json_profile_obj.keys()) {
       profile[key] = json_profile_obj[key].toString();
       profile_property_names.insert(key);
     }
+    profiles.append(profile);
   }
-  for (const QString& name: profiles.keys()) {
-    const QHash<QString, QString>& profile = profiles[name];
+  for (const QHash<QString, QString>& profile: profiles) {
     for (const QString& property_name: profile_property_names) {
       if (!profile.contains(property_name)) {
         QString error = "is missing property '" + property_name +
                         "' defined in other profiles";
-        AppendProfileError(errors, name, error);
+        AppendProfileError(errors, profile["name"], error);
       }
     }
   }
+  qDebug() << "Loading tasks";
   if (!errors.isEmpty()) {
     AlertDialogDisplay(app.ui, "Failed to open project", errors.join('\n'));
-    EXEC_NEXT(KeepAlive);
-    return;
+  } else {
+    app.profiles = profiles;
   }
-  qDebug() << "Loading tasks";
-  app.profiles = profiles;
   EXEC_NEXT(KeepAlive);
 }

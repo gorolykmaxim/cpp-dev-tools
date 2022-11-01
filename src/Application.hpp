@@ -11,8 +11,7 @@ public:
   QGuiApplication gui_app;
   UserConfig user_config;
   ProcessRuntime runtime;
-  // Name to key-value pairs of a profile
-  QHash<QString, QHash<QString, QString>> profiles;
+  QVector<QHash<QString, QString>> profiles;
   Threads threads;
   UserInterface ui;
 
