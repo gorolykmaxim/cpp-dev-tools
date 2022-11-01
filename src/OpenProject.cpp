@@ -168,12 +168,66 @@ bool OpenProject::HasValidSuggestionAvailable() const {
   return IsValid(suggestions[selected_suggestion]);
 }
 
+static void AppendProfileError(QStringList& errors, int profile_index,
+                               const QString& error) {
+  QString full_error;
+  QTextStream(&full_error) << "Profile #" << profile_index + 1 << ' ' << error;
+  errors << full_error;
+}
+
+static void AppendProfileError(QStringList& errors, const QString& profile_name,
+                               const QString& error) {
+  QString full_error;
+  QTextStream(&full_error) << "Profile '" << profile_name << "' " << error;
+  errors << full_error;
+}
+
 void OpenProject::LoadProjectFile(Application& app) {
   if (!load_project_file->error.isEmpty()) {
     AlertDialogDisplay(app.ui, "Failed to open project",
                        load_project_file->error);
-  } else {
-    qDebug() << load_project_file->json;
+    EXEC_NEXT(KeepAlive);
+    return;
   }
+  qDebug() << "Loading profiles";
+  QHash<QString, QHash<QString, QString>> profiles;
+  QSet<QString> profile_property_names;
+  QStringList errors;
+  QJsonArray json_profiles = load_project_file->json["cdt_profiles"].toArray();
+  for (int i = 0; i < json_profiles.size(); i++) {
+    QJsonValue json_profile = json_profiles[i];
+    if (!json_profile.isObject()) {
+      AppendProfileError(errors, i, "must be an object");
+      continue;
+    }
+    QJsonObject json_profile_obj = json_profile.toObject();
+    QString profile_name = json_profile_obj["name"].toString();
+    if (profile_name.isEmpty()) {
+      AppendProfileError(errors, i, "must have a 'name' property set");
+      continue;
+    }
+    QHash<QString, QString>& profile = profiles[profile_name];
+    for (const QString& key: json_profile_obj.keys()) {
+      profile[key] = json_profile_obj[key].toString();
+      profile_property_names.insert(key);
+    }
+  }
+  for (const QString& name: profiles.keys()) {
+    const QHash<QString, QString>& profile = profiles[name];
+    for (const QString& property_name: profile_property_names) {
+      if (!profile.contains(property_name)) {
+        QString error = "is missing property '" + property_name +
+                        "' defined in other profiles";
+        AppendProfileError(errors, name, error);
+      }
+    }
+  }
+  if (!errors.isEmpty()) {
+    AlertDialogDisplay(app.ui, "Failed to open project", errors.join('\n'));
+    EXEC_NEXT(KeepAlive);
+    return;
+  }
+  qDebug() << "Loading tasks";
+  app.profiles = profiles;
   EXEC_NEXT(KeepAlive);
 }
