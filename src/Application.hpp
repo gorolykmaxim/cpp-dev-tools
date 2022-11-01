@@ -5,6 +5,15 @@
 #include "Threads.hpp"
 #include "UserInterface.hpp"
 
+class Profile {
+public:
+  QString& operator[](const QString& key);
+  QString GetName() const;
+  bool Contains(const QString& key) const;
+private:
+  QHash<QString, QString> props;
+};
+
 class UserConfig {
 public:
   UserConfig() = default;
@@ -19,7 +28,7 @@ public:
   QGuiApplication gui_app;
   UserConfig user_config;
   ProcessRuntime runtime;
-  QVector<QHash<QString, QString>> profiles;
+  QVector<Profile> profiles;
   Threads threads;
   UserInterface ui;
 

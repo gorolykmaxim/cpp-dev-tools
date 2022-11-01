@@ -186,7 +186,7 @@ void OpenProject::LoadProjectFile(Application& app) {
     return;
   }
   qDebug() << "Loading profiles";
-  QVector<QHash<QString, QString>> profiles;
+  QVector<Profile> profiles;
   QSet<QString> profile_property_names;
   QStringList errors;
   QJsonArray json_profiles = load_project_file->json["cdt_profiles"].toArray();
@@ -197,24 +197,23 @@ void OpenProject::LoadProjectFile(Application& app) {
       continue;
     }
     QJsonObject json_profile_obj = json_profile.toObject();
-    QString profile_name = json_profile_obj["name"].toString();
-    if (profile_name.isEmpty()) {
-      AppendProfileError(errors, i, "must have a 'name' property set");
-      continue;
-    }
-    QHash<QString, QString> profile;
+    Profile profile;
     for (const QString& key: json_profile_obj.keys()) {
       profile[key] = json_profile_obj[key].toString();
       profile_property_names.insert(key);
     }
+    if (profile.GetName().isEmpty()) {
+      AppendProfileError(errors, i, "must have a 'name' property set");
+      continue;
+    }
     profiles.append(profile);
   }
-  for (const QHash<QString, QString>& profile: profiles) {
+  for (const Profile& profile: profiles) {
     for (const QString& property_name: profile_property_names) {
-      if (!profile.contains(property_name)) {
+      if (!profile.Contains(property_name)) {
         QString error = "is missing property '" + property_name +
                         "' defined in other profiles";
-        AppendProfileError(errors, profile["name"], error);
+        AppendProfileError(errors, profile.GetName(), error);
       }
     }
   }

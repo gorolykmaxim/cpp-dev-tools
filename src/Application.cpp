@@ -1,5 +1,17 @@
 #include "Application.hpp"
 
+QString& Profile::operator[](const QString& key) {
+  return props[key];
+}
+
+QString Profile::GetName() const {
+  return props["name"];
+}
+
+bool Profile::Contains(const QString& key) const {
+  return props.contains(key);
+}
+
 void UserConfig::LoadFrom(const QJsonDocument& json) {
   QString value = json["open_in_editor_command"].toString();
   cmd_open_file_in_editor = value.contains("{}") ? value : "subl {}";
