@@ -1,6 +1,4 @@
 #include "OpenProject.hpp"
-#include "InputAndListView.hpp"
-#include "AlertDialog.hpp"
 
 static bool IsValid(const FileSuggestion& s) {
   return s.match_start >= 0 && s.match_start < s.file.size();
@@ -47,9 +45,9 @@ static void UpdateAndDisplaySuggestions(OpenProject& data, UserInterface& ui) {
       items.append({file});
     }
   }
-  InputAndListViewSetItems(ui, items);
+  ui.SetInputAndListViewItems(items);
   QString button_text = data.HasValidSuggestionAvailable() ? "Open" : "Create";
-  InputAndListViewSetButtonText(ui, button_text);
+  ui.SetInputAndListViewButtonText(button_text);
 }
 
 class ReloadFileList: public Process {
@@ -97,8 +95,7 @@ OpenProject::OpenProject() {
 
 void OpenProject::DisplayOpenProjectView(Application& app) {
   QPtr<OpenProject> self = app.runtime.SharedPtr(this);
-  InputAndListViewDisplay(
-      app.ui,
+  app.ui.DisplayInputAndListView(
       "Open project by path:",
       QStandardPaths::writableLocation(QStandardPaths::HomeLocation) + '/',
       "Open",
@@ -130,7 +127,7 @@ void OpenProject::ChangeProjectPath(const QString& new_path, Application& app) {
 void OpenProject::HandleEnter(Application& app) {
   if (HasValidSuggestionAvailable()) {
     QString value = folder + suggestions[selected_suggestion].file;
-    InputAndListViewSetInput(app.ui, value);
+    app.ui.SetInputAndListViewInput(value);
     if (!value.endsWith('/')) {
       qDebug() << "Opening project:" << value;
       load_project_file = app.runtime.ReScheduleAndExecute<JsonFileProcess>(
@@ -140,8 +137,7 @@ void OpenProject::HandleEnter(Application& app) {
   } else {
     QPtr<OpenProject> self = app.runtime.SharedPtr(this);
     QString value = folder + file_name;
-    AlertDialogDisplay(
-        app.ui,
+    app.ui.DisplayAlertDialog(
         "Create new project?",
         "Do you want to create a new project at " + value,
         false,
@@ -184,8 +180,8 @@ static void AppendProfileError(QStringList& errors, const QString& profile_name,
 
 void OpenProject::LoadProjectFile(Application& app) {
   if (!load_project_file->error.isEmpty()) {
-    AlertDialogDisplay(app.ui, "Failed to open project",
-                       load_project_file->error);
+    app.ui.DisplayAlertDialog("Failed to open project",
+                              load_project_file->error);
     EXEC_NEXT(KeepAlive);
     return;
   }
@@ -224,7 +220,7 @@ void OpenProject::LoadProjectFile(Application& app) {
   }
   qDebug() << "Loading tasks";
   if (!errors.isEmpty()) {
-    AlertDialogDisplay(app.ui, "Failed to open project", errors.join('\n'));
+    app.ui.DisplayAlertDialog("Failed to open project", errors.join('\n'));
   } else {
     app.profiles = profiles;
   }

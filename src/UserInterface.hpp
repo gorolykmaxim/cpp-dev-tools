@@ -46,6 +46,19 @@ public:
                     const QVariant& value);
   QVariantListModel& GetListField(const QString& slot_name,
                                   const QString& name);
+  void DisplayInputAndListView(
+    const QString& input_label, const QString& input_value,
+    const QString& button_text, const QVector<QVariantList>& list_items,
+    const std::function<void(const QString&)>& on_input_value_changed,
+    const std::function<void()>& on_enter_pressed,
+    const std::function<void(int)>& on_item_selected);
+  void SetInputAndListViewItems(const QVector<QVariantList>& list_items);
+  void SetInputAndListViewInput(const QString& value);
+  void SetInputAndListViewButtonText(const QString& value);
+  void DisplayAlertDialog(const QString& title, const QString& text,
+                          bool error = true, bool cancellable = false,
+                          const std::function<void()>& on_ok = nullptr,
+                          const std::function<void()>& on_cancel = nullptr);
 public slots:
   void OnUserAction(const QString& slot_name, const QString& action,
                     const QVariantList& args);

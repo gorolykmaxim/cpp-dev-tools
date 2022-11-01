@@ -88,6 +88,83 @@ QVariantListModel& UserInterface::GetListField(const QString& slot_name,
   return *data.list_fields[name];
 }
 
+void UserInterface::DisplayInputAndListView(
+    const QString& input_label, const QString& input_value,
+    const QString& button_text, const QVector<QVariantList>& list_items,
+    const std::function<void(const QString&)>& on_input_value_changed,
+    const std::function<void()>& on_enter_pressed,
+    const std::function<void(int)>& on_item_selected) {
+  UserActionHandler input_handler = [on_input_value_changed] (const QVariantList& args) {
+    on_input_value_changed(args[0].toString());
+  };
+  UserActionHandler enter_handler = [on_enter_pressed] (const QVariantList&) {
+    on_enter_pressed();
+  };
+  UserActionHandler item_handler = [on_item_selected] (const QVariantList& args) {
+    on_item_selected(args[0].toInt());
+  };
+  DisplayView(
+      kViewSlot,
+      "InputAndListView.qml",
+      {
+        DataField{"dataViewInputLabel", input_label},
+        DataField{"dataViewInputValue", input_value},
+        DataField{"dataViewButtonText", button_text},
+      },
+      {
+        ListField{"dataViewListModel", {{0, "title"}}, list_items},
+      },
+      {
+        {"actionViewInputValueChanged", input_handler},
+        {"actionViewEnterPressed", enter_handler},
+        {"actionViewItemSelected", item_handler},
+      });
+}
+
+void UserInterface::SetInputAndListViewItems(
+    const QVector<QVariantList>& list_items) {
+  GetListField(kViewSlot, "dataViewListModel").SetItems(list_items);
+}
+
+void UserInterface::SetInputAndListViewInput(const QString& value) {
+  SetDataField(kViewSlot, "dataViewInputValue", value);
+}
+
+void UserInterface::SetInputAndListViewButtonText(const QString& value) {
+  SetDataField(kViewSlot, "dataViewButtonText", value);
+}
+
+void UserInterface::DisplayAlertDialog(
+    const QString& title, const QString& text, bool error, bool cancellable,
+    const std::function<void()>& on_ok,
+    const std::function<void()>& on_cancel) {
+  UserActionHandler ok_handler = [on_ok] (const QVariantList&) {
+    if (on_ok) {
+      on_ok();
+    }
+  };
+  UserActionHandler cancel_handler = [on_cancel] (const QVariantList&) {
+    if (on_cancel) {
+      on_cancel();
+    }
+  };
+  DisplayView(
+      kDialogSlot,
+      "AlertDialog.qml",
+      {
+        DataField{kDataDialogVisible, true},
+        DataField{"dataDialogTitle", title},
+        DataField{"dataDialogText", text},
+        DataField{"dataDialogCancellable", cancellable},
+        DataField{"dataDialogError", error},
+      },
+      {},
+      {
+        {"actionDialogOk", ok_handler},
+        {"actionDialogCancel", cancel_handler},
+      });
+}
+
 void UserInterface::OnUserAction(const QString& slot_name,
                                  const QString& action,
                                  const QVariantList& args) {
