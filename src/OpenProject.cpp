@@ -164,18 +164,16 @@ bool OpenProject::HasValidSuggestionAvailable() const {
   return IsValid(suggestions[selected_suggestion]);
 }
 
-static void AppendProfileError(QStringList& errors, int profile_index,
-                               const QString& error) {
-  QString full_error;
-  QTextStream(&full_error) << "Profile #" << profile_index + 1 << ' ' << error;
-  errors << full_error;
-}
-
 static void AppendProfileError(QStringList& errors, const QString& profile_name,
                                const QString& error) {
   QString full_error;
   QTextStream(&full_error) << "Profile '" << profile_name << "' " << error;
   errors << full_error;
+}
+
+static void AppendProfileError(QStringList& errors, int profile_index,
+                               const QString& error) {
+  AppendProfileError(errors, QString::number(profile_index + 1), error);
 }
 
 void OpenProject::LoadProjectFile(Application& app) {
@@ -188,6 +186,7 @@ void OpenProject::LoadProjectFile(Application& app) {
   qDebug() << "Loading profiles";
   QVector<Profile> profiles;
   QSet<QString> profile_property_names;
+  QSet<QString> profile_names;
   QStringList errors;
   QJsonArray json_profiles = load_project_file->json["cdt_profiles"].toArray();
   for (int i = 0; i < json_profiles.size(); i++) {
@@ -202,10 +201,17 @@ void OpenProject::LoadProjectFile(Application& app) {
       profile[key] = json_profile_obj[key].toString();
       profile_property_names.insert(key);
     }
-    if (profile.GetName().isEmpty()) {
+    QString name = profile.GetName();
+    if (name.isEmpty()) {
       AppendProfileError(errors, i, "must have a 'name' property set");
       continue;
     }
+    if (profile_names.contains(name)) {
+      AppendProfileError(errors, i, "has a name '" + name +
+                         "' that conflicts with another profile");
+      continue;
+    }
+    profile_names.insert(name);
     profiles.append(profile);
   }
   for (const Profile& profile: profiles) {
