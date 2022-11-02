@@ -179,7 +179,7 @@ static void AppendError(QStringList& errors, const QString& type, int index,
 static void LoadProfiles(const QJsonDocument& json, QVector<Profile>& profiles,
                          QStringList& errors) {
   qDebug() << "Loading profiles";
-  QSet<QString> profile_property_names;
+  QSet<QString> profile_variable_names;
   QSet<QString> profile_names;
   QJsonArray json_profiles = json["cdt_profiles"].toArray();
   for (int i = 0; i < json_profiles.size(); i++) {
@@ -192,11 +192,11 @@ static void LoadProfiles(const QJsonDocument& json, QVector<Profile>& profiles,
     Profile profile;
     for (const QString& key: json_profile_obj.keys()) {
       profile[key] = json_profile_obj[key].toString();
-      profile_property_names.insert(key);
+      profile_variable_names.insert(key);
     }
     QString name = profile.GetName();
     if (name.isEmpty()) {
-      AppendError(errors, "Profile", i, "must have a 'name' property set");
+      AppendError(errors, "Profile", i, "must have a 'name' variable set");
       continue;
     }
     if (profile_names.contains(name)) {
@@ -208,9 +208,9 @@ static void LoadProfiles(const QJsonDocument& json, QVector<Profile>& profiles,
     profiles.append(profile);
   }
   for (const Profile& profile: profiles) {
-    for (const QString& property_name: profile_property_names) {
-      if (!profile.Contains(property_name)) {
-        QString error = "is missing property '" + property_name +
+    for (const QString& variable: profile_variable_names) {
+      if (!profile.Contains(variable)) {
+        QString error = "is missing variable '" + variable +
                         "' defined in other profiles";
         AppendError(errors, "Profile", profile.GetName(), error);
       }

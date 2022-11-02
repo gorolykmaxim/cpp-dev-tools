@@ -11,7 +11,7 @@ public:
   QString GetName() const;
   bool Contains(const QString& key) const;
 private:
-  QHash<QString, QString> props;
+  QHash<QString, QString> variables;
 };
 
 class TaskDef {

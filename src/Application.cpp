@@ -1,15 +1,15 @@
 #include "Application.hpp"
 
 QString& Profile::operator[](const QString& key) {
-  return props[key];
+  return variables[key];
 }
 
 QString Profile::GetName() const {
-  return props["name"];
+  return variables["name"];
 }
 
 bool Profile::Contains(const QString& key) const {
-  return props.contains(key);
+  return variables.contains(key);
 }
 
 void UserConfig::LoadFrom(const QJsonDocument& json) {
