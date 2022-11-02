@@ -164,35 +164,28 @@ bool OpenProject::HasValidSuggestionAvailable() const {
   return IsValid(suggestions[selected_suggestion]);
 }
 
-static void AppendProfileError(QStringList& errors, const QString& profile_name,
-                               const QString& error) {
+static void AppendError(QStringList& errors, const QString& type,
+                        const QString& name, const QString& error) {
   QString full_error;
-  QTextStream(&full_error) << "Profile '" << profile_name << "' " << error;
+  QTextStream(&full_error) << type << " '" << name << "' " << error;
   errors << full_error;
 }
 
-static void AppendProfileError(QStringList& errors, int profile_index,
-                               const QString& error) {
-  AppendProfileError(errors, QString::number(profile_index + 1), error);
+static void AppendError(QStringList& errors, const QString& type, int index,
+                        const QString& error) {
+  AppendError(errors, type, QString::number(index + 1), error);
 }
 
-void OpenProject::LoadProjectFile(Application& app) {
-  if (!load_project_file->error.isEmpty()) {
-    app.ui.DisplayAlertDialog("Failed to open project",
-                              load_project_file->error);
-    EXEC_NEXT(KeepAlive);
-    return;
-  }
+static void LoadProfiles(const QJsonDocument& json, QVector<Profile>& profiles,
+                         QStringList& errors) {
   qDebug() << "Loading profiles";
-  QVector<Profile> profiles;
   QSet<QString> profile_property_names;
   QSet<QString> profile_names;
-  QStringList errors;
-  QJsonArray json_profiles = load_project_file->json["cdt_profiles"].toArray();
+  QJsonArray json_profiles = json["cdt_profiles"].toArray();
   for (int i = 0; i < json_profiles.size(); i++) {
     QJsonValue json_profile = json_profiles[i];
     if (!json_profile.isObject()) {
-      AppendProfileError(errors, i, "must be an object");
+      AppendError(errors, "Profile", i, "must be an object");
       continue;
     }
     QJsonObject json_profile_obj = json_profile.toObject();
@@ -203,12 +196,12 @@ void OpenProject::LoadProjectFile(Application& app) {
     }
     QString name = profile.GetName();
     if (name.isEmpty()) {
-      AppendProfileError(errors, i, "must have a 'name' property set");
+      AppendError(errors, "Profile", i, "must have a 'name' property set");
       continue;
     }
     if (profile_names.contains(name)) {
-      AppendProfileError(errors, i, "has a name '" + name +
-                         "' that conflicts with another profile");
+      AppendError(errors, "Profile", i, "has a name '" + name +
+                  "' that conflicts with another profile");
       continue;
     }
     profile_names.insert(name);
@@ -219,15 +212,84 @@ void OpenProject::LoadProjectFile(Application& app) {
       if (!profile.Contains(property_name)) {
         QString error = "is missing property '" + property_name +
                         "' defined in other profiles";
-        AppendProfileError(errors, profile.GetName(), error);
+        AppendError(errors, "Profile", profile.GetName(), error);
       }
     }
   }
+}
+
+static void LoadTaskDefs(const QJsonDocument& json,
+                         QVector<TaskDef>& task_defs,
+                         QStringList& errors) {
   qDebug() << "Loading tasks";
+  QSet<QString> task_names;
+  QJsonArray json_tasks = json["cdt_tasks"].toArray();
+  for (int i = 0; i < json_tasks.size(); i++) {
+    QJsonValue json_task = json_tasks[i];
+    if (!json_task.isObject()) {
+      AppendError(errors, "Task", i, "must be an object");
+      continue;
+    }
+    QJsonObject json_task_obj = json_task.toObject();
+    TaskDef task_def;
+    bool is_valid = true;
+    task_def.name = json_task_obj["name"].toString();
+    if (task_def.name.isEmpty()) {
+      AppendError(errors, "Task", i, "must have a 'name' property set");
+      is_valid = false;
+    }
+    if (task_names.contains(task_def.name)) {
+      AppendError(errors, "Task", i, "has a name '" + task_def.name +
+                  "' that conflicts with another task");
+      is_valid = false;
+    }
+    task_def.command = json_task_obj["command"].toString();
+    if (task_def.command.isEmpty()) {
+      AppendError(errors, "Task", i, "must have a 'command' property set");
+      is_valid = false;
+    }
+    QJsonValue json_pre_tasks = json_task_obj["pre_tasks"];
+    static const QString kPreTasksErrMsg = "must have a 'pre_tasks' "
+                                           "property set to an array of "
+                                           "other task names";
+    if (!json_pre_tasks.isNull() && !json_pre_tasks.isUndefined() &&
+        !json_pre_tasks.isArray()) {
+      AppendError(errors, "Task", i, kPreTasksErrMsg);
+      is_valid = false;
+    }
+    QJsonArray json_pre_tasks_arr = json_pre_tasks.toArray();
+    for (QJsonValue json_pre_task: json_pre_tasks_arr) {
+      if (!json_pre_task.isString()) {
+        AppendError(errors, "Task", i, kPreTasksErrMsg);
+        is_valid = false;
+        break;
+      }
+      task_def.pre_tasks.append(json_pre_task.toString());
+    }
+    task_names.insert(task_def.name);
+    if (is_valid) {
+      task_defs.append(task_def);
+    }
+  }
+}
+
+void OpenProject::LoadProjectFile(Application& app) {
+  if (!load_project_file->error.isEmpty()) {
+    app.ui.DisplayAlertDialog("Failed to open project",
+                              load_project_file->error);
+    EXEC_NEXT(KeepAlive);
+    return;
+  }
+  QStringList errors;
+  QVector<Profile> profiles;
+  QVector<TaskDef> task_defs;
+  LoadProfiles(load_project_file->json, profiles, errors);
+  LoadTaskDefs(load_project_file->json, task_defs, errors);
   if (!errors.isEmpty()) {
     app.ui.DisplayAlertDialog("Failed to open project", errors.join('\n'));
   } else {
     app.profiles = profiles;
+    app.task_defs = task_defs;
   }
   EXEC_NEXT(KeepAlive);
 }

@@ -14,6 +14,13 @@ private:
   QHash<QString, QString> props;
 };
 
+class TaskDef {
+public:
+  QString name;
+  QString command;
+  QVector<QString> pre_tasks;
+};
+
 class UserConfig {
 public:
   UserConfig() = default;
@@ -29,6 +36,7 @@ public:
   UserConfig user_config;
   ProcessRuntime runtime;
   QVector<Profile> profiles;
+  QVector<TaskDef> task_defs;
   Threads threads;
   UserInterface ui;
 
