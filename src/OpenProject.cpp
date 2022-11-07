@@ -311,6 +311,14 @@ static void ValidateTasks(const QVector<Task>& tasks, QStringList& errors) {
       task_names.insert(task.name);
     }
   }
+  for (const Task& task: tasks) {
+    for (const QString& pre_task: task.pre_tasks) {
+      if (!task_names.contains(pre_task)) {
+        AppendError(errors, "Task", task.name, "in it's 'pre_tasks' references "
+                    "a task '" + pre_task + "' that does not exist");
+      }
+    }
+  }
 }
 
 void OpenProject::LoadProjectFile(Application& app) {
