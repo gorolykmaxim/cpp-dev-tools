@@ -8,7 +8,9 @@
 class Profile {
 public:
   QString& operator[](const QString& key);
+  QString operator[](const QString& key) const;
   QString GetName() const;
+  QList<QString> GetVariableNames() const;
   bool Contains(const QString& key) const;
 private:
   QHash<QString, QString> variables;
@@ -37,6 +39,7 @@ public:
   ProcessRuntime runtime;
   QVector<Profile> profiles;
   QVector<Task> task_defs;
+  QVector<Task> tasks;
   Threads threads;
   UserInterface ui;
 

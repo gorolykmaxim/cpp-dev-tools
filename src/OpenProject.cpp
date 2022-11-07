@@ -272,6 +272,23 @@ static void LoadTasks(const QJsonDocument& json, QVector<Task>& tasks,
   }
 }
 
+static void ApplyProfile(QString& str, const Profile& profile) {
+  for (const QString& name: profile.GetVariableNames()) {
+    str.replace("{" + name + "}", profile[name]);
+  }
+}
+
+static void ApplyProfile(QVector<Task>& tasks, const Profile& profile) {
+  qDebug() << "Applying profile varaibles to tasks";
+  for (Task& task: tasks) {
+    ApplyProfile(task.name, profile);
+    ApplyProfile(task.command, profile);
+    for (QString& pre_task: task.pre_tasks) {
+      ApplyProfile(pre_task, profile);
+    }
+  }
+}
+
 void OpenProject::LoadProjectFile(Application& app) {
   if (!load_project_file->error.isEmpty()) {
     app.ui.DisplayAlertDialog("Failed to open project",
@@ -284,11 +301,16 @@ void OpenProject::LoadProjectFile(Application& app) {
   QVector<Task> task_defs;
   LoadProfiles(load_project_file->json, profiles, errors);
   LoadTasks(load_project_file->json, task_defs, errors);
+  QVector<Task> tasks = task_defs;
+  if (!profiles.isEmpty()) {
+    ApplyProfile(tasks, profiles[0]);
+  }
   if (!errors.isEmpty()) {
     app.ui.DisplayAlertDialog("Failed to open project", errors.join('\n'));
   } else {
     app.profiles = profiles;
     app.task_defs = task_defs;
+    app.tasks = tasks;
   }
   EXEC_NEXT(KeepAlive);
 }

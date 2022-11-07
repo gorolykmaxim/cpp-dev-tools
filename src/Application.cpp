@@ -4,8 +4,16 @@ QString& Profile::operator[](const QString& key) {
   return variables[key];
 }
 
+QString Profile::operator[](const QString& key) const {
+  return variables[key];
+}
+
 QString Profile::GetName() const {
   return variables["name"];
+}
+
+QList<QString> Profile::GetVariableNames() const {
+  return variables.keys();
 }
 
 bool Profile::Contains(const QString& key) const {
