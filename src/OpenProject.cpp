@@ -218,9 +218,8 @@ static void LoadProfiles(const QJsonDocument& json, QVector<Profile>& profiles,
   }
 }
 
-static void LoadTaskDefs(const QJsonDocument& json,
-                         QVector<TaskDef>& task_defs,
-                         QStringList& errors) {
+static void LoadTasks(const QJsonDocument& json, QVector<Task>& tasks,
+                      QStringList& errors) {
   qDebug() << "Loading tasks";
   QSet<QString> task_names;
   QJsonArray json_tasks = json["cdt_tasks"].toArray();
@@ -231,20 +230,20 @@ static void LoadTaskDefs(const QJsonDocument& json,
       continue;
     }
     QJsonObject json_task_obj = json_task.toObject();
-    TaskDef task_def;
+    Task task;
     bool is_valid = true;
-    task_def.name = json_task_obj["name"].toString();
-    if (task_def.name.isEmpty()) {
+    task.name = json_task_obj["name"].toString();
+    if (task.name.isEmpty()) {
       AppendError(errors, "Task", i, "must have a 'name' property set");
       is_valid = false;
     }
-    if (task_names.contains(task_def.name)) {
-      AppendError(errors, "Task", i, "has a name '" + task_def.name +
+    if (task_names.contains(task.name)) {
+      AppendError(errors, "Task", i, "has a name '" + task.name +
                   "' that conflicts with another task");
       is_valid = false;
     }
-    task_def.command = json_task_obj["command"].toString();
-    if (task_def.command.isEmpty()) {
+    task.command = json_task_obj["command"].toString();
+    if (task.command.isEmpty()) {
       AppendError(errors, "Task", i, "must have a 'command' property set");
       is_valid = false;
     }
@@ -264,11 +263,11 @@ static void LoadTaskDefs(const QJsonDocument& json,
         is_valid = false;
         break;
       }
-      task_def.pre_tasks.append(json_pre_task.toString());
+      task.pre_tasks.append(json_pre_task.toString());
     }
-    task_names.insert(task_def.name);
+    task_names.insert(task.name);
     if (is_valid) {
-      task_defs.append(task_def);
+      tasks.append(task);
     }
   }
 }
@@ -282,9 +281,9 @@ void OpenProject::LoadProjectFile(Application& app) {
   }
   QStringList errors;
   QVector<Profile> profiles;
-  QVector<TaskDef> task_defs;
+  QVector<Task> task_defs;
   LoadProfiles(load_project_file->json, profiles, errors);
-  LoadTaskDefs(load_project_file->json, task_defs, errors);
+  LoadTasks(load_project_file->json, task_defs, errors);
   if (!errors.isEmpty()) {
     app.ui.DisplayAlertDialog("Failed to open project", errors.join('\n'));
   } else {

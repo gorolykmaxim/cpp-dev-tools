@@ -14,7 +14,7 @@ private:
   QHash<QString, QString> variables;
 };
 
-class TaskDef {
+class Task {
 public:
   QString name;
   QString command;
@@ -36,7 +36,7 @@ public:
   UserConfig user_config;
   ProcessRuntime runtime;
   QVector<Profile> profiles;
-  QVector<TaskDef> task_defs;
+  QVector<Task> task_defs;
   Threads threads;
   UserInterface ui;
 
