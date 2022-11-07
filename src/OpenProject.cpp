@@ -221,7 +221,6 @@ static void LoadProfiles(const QJsonDocument& json, QVector<Profile>& profiles,
 static void LoadTasks(const QJsonDocument& json, QVector<Task>& tasks,
                       QStringList& errors) {
   qDebug() << "Loading tasks";
-  QSet<QString> task_names;
   QJsonArray json_tasks = json["cdt_tasks"].toArray();
   for (int i = 0; i < json_tasks.size(); i++) {
     QJsonValue json_task = json_tasks[i];
@@ -235,11 +234,6 @@ static void LoadTasks(const QJsonDocument& json, QVector<Task>& tasks,
     task.name = json_task_obj["name"].toString();
     if (task.name.isEmpty()) {
       AppendError(errors, "Task", i, "must have a 'name' property set");
-      is_valid = false;
-    }
-    if (task_names.contains(task.name)) {
-      AppendError(errors, "Task", i, "has a name '" + task.name +
-                  "' that conflicts with another task");
       is_valid = false;
     }
     task.command = json_task_obj["command"].toString();
@@ -267,7 +261,6 @@ static void LoadTasks(const QJsonDocument& json, QVector<Task>& tasks,
       }
       task.pre_tasks.append(json_pre_task.toString());
     }
-    task_names.insert(task.name);
     if (is_valid) {
       tasks.append(task);
     }
@@ -306,6 +299,19 @@ static void MigrateOldFormatTasks(QVector<Task>& tasks) {
   }
 }
 
+static void ValidateTasks(const QVector<Task>& tasks, QStringList& errors) {
+  QSet<QString> task_names;
+  for (int i = 0; i < tasks.size(); i++) {
+    const Task& task = tasks[i];
+    if (task_names.contains(task.name)) {
+      AppendError(errors, "Task", i, "has a name '" + task.name +
+                  "' that conflicts with another task");
+    } else {
+      task_names.insert(task.name);
+    }
+  }
+}
+
 void OpenProject::LoadProjectFile(Application& app) {
   if (!load_project_file->error.isEmpty()) {
     app.ui.DisplayAlertDialog("Failed to open project",
@@ -323,6 +329,7 @@ void OpenProject::LoadProjectFile(Application& app) {
     ApplyProfile(tasks, profiles[0]);
   }
   MigrateOldFormatTasks(tasks);
+  ValidateTasks(tasks, errors);
   // TODO: remove once tasks become viewable in UI
   for (const Task& task: tasks) {
     qDebug() << task.name << task.command << task.flags << task.pre_tasks;
