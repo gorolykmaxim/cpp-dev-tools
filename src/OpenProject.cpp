@@ -288,6 +288,7 @@ static void MigrateTaskField(Task& task, const QString& prefix, int task_flag) {
   if (task.command.startsWith(prefix)) {
     task.flags |= task_flag;
     task.command.remove(0, prefix.size());
+    task.command = task.command.trimmed();
   }
 }
 
