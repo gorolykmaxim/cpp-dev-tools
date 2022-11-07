@@ -247,6 +247,8 @@ static void LoadTasks(const QJsonDocument& json, QVector<Task>& tasks,
       AppendError(errors, "Task", i, "must have a 'command' property set");
       is_valid = false;
     }
+    task.flags |= json_task_obj["is_restart"].toBool() ? kTaskRestart : 0;
+    task.flags |= json_task_obj["is_gtest"].toBool() ? kTaskGtest : 0;
     QJsonValue json_pre_tasks = json_task_obj["pre_tasks"];
     static const QString kPreTasksErrMsg = "must have a 'pre_tasks' "
                                            "property set to an array of "
@@ -289,6 +291,21 @@ static void ApplyProfile(QVector<Task>& tasks, const Profile& profile) {
   }
 }
 
+static void MigrateTaskField(Task& task, const QString& prefix, int task_flag) {
+  if (task.command.startsWith(prefix)) {
+    task.flags |= task_flag;
+    task.command.remove(0, prefix.size());
+  }
+}
+
+static void MigrateOldFormatTasks(QVector<Task>& tasks) {
+  qDebug() << "Migrating tasks from the old format to the new one";
+  for (Task& task: tasks) {
+    MigrateTaskField(task, "__gtest", kTaskGtest);
+    MigrateTaskField(task, "__restart", kTaskRestart);
+  }
+}
+
 void OpenProject::LoadProjectFile(Application& app) {
   if (!load_project_file->error.isEmpty()) {
     app.ui.DisplayAlertDialog("Failed to open project",
@@ -304,6 +321,11 @@ void OpenProject::LoadProjectFile(Application& app) {
   QVector<Task> tasks = task_defs;
   if (!profiles.isEmpty()) {
     ApplyProfile(tasks, profiles[0]);
+  }
+  MigrateOldFormatTasks(tasks);
+  // TODO: remove once tasks become viewable in UI
+  for (const Task& task: tasks) {
+    qDebug() << task.name << task.command << task.flags << task.pre_tasks;
   }
   if (!errors.isEmpty()) {
     app.ui.DisplayAlertDialog("Failed to open project", errors.join('\n'));

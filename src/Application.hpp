@@ -16,10 +16,16 @@ private:
   QHash<QString, QString> variables;
 };
 
+enum TaskFlags {
+  kTaskRestart = 1,
+  kTaskGtest = 2,
+};
+
 class Task {
 public:
   QString name;
   QString command;
+  int flags = 0;
   QVector<QString> pre_tasks;
 };
 
