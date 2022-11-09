@@ -364,11 +364,7 @@ static void ExpandPreTasks(QVector<Task> &tasks, QStringList& errors) {
         break;
       }
       task.pre_tasks.insert(0, tasks[pre_task_idx].name);
-      const QVector<int>& pre_task_pre_tasks = task_to_pre_tasks[pre_task_idx];
-      if (pre_task_pre_tasks.isEmpty()) {
-        call_stack.pop();
-      }
-      for (int pre_task_pre_task: pre_task_pre_tasks) {
+      for (int pre_task_pre_task: task_to_pre_tasks[pre_task_idx]) {
         to_visit.push(std::make_pair(pre_task_pre_task, pre_task_idx));
       }
     }
