@@ -300,7 +300,8 @@ static void MigrateOldFormatTasks(QVector<Task>& tasks) {
   }
 }
 
-static void ValidateTasks(const QVector<Task>& tasks, QStringList& errors) {
+static void ValidateUniqueTaskNames(const QVector<Task>& tasks,
+                                    QStringList& errors) {
   QSet<QString> task_names;
   for (int i = 0; i < tasks.size(); i++) {
     const Task& task = tasks[i];
@@ -311,11 +312,64 @@ static void ValidateTasks(const QVector<Task>& tasks, QStringList& errors) {
       task_names.insert(task.name);
     }
   }
-  for (const Task& task: tasks) {
-    for (const QString& pre_task: task.pre_tasks) {
-      if (!task_names.contains(pre_task)) {
+}
+
+static void ExpandPreTasks(QVector<Task> &tasks, QStringList& errors) {
+  qDebug() << "Traversing pre task tree";
+  QVector<QVector<int>> task_to_pre_tasks(tasks.size());
+  for (int i = 0; i < tasks.size(); i++) {
+    const Task& task = tasks[i];
+    for (const QString& name: task.pre_tasks) {
+      auto it = std::find_if(tasks.cbegin(),
+                             tasks.cend(),
+                             [&name] (const Task& t) {return t.name == name;});
+      if (it == tasks.end()) {
         AppendError(errors, "Task", task.name, "in it's 'pre_tasks' references "
-                    "a task '" + pre_task + "' that does not exist");
+                    "a task '" + name + "' that does not exist");
+      } else {
+        task_to_pre_tasks[i].append(it - tasks.begin());
+      }
+    }
+  }
+  for (int i = 0; i < tasks.size(); i++) {
+    Task& task = tasks[i];
+    task.pre_tasks.clear();
+    QStack<int> call_stack;
+    QStack<std::pair<int, int>> to_visit;
+    // to_visit pairs consist of:
+    // 0 - index of pre task
+    // 1 - index of the parent task of pre task
+    call_stack.push(i);
+    for (int j: task_to_pre_tasks[i]) {
+      to_visit.push(std::make_pair(j, i));
+    }
+    while (!to_visit.isEmpty()) {
+      auto [pre_task_idx, parent_idx] = to_visit.pop();
+      // In a call tree A -> B, A -> C, C -> D, C -> E we might've just been in
+      // E and now we've abruptly switched to B (because we've visited all the
+      // nodes of the C, D, E sub-tree). The call stack is still A -> C right
+      // now, so first we need to get rid of non-popped frames (C) before
+      // adding B to the stack.
+      while (call_stack.top() != parent_idx) {
+        call_stack.pop();
+      }
+      call_stack.push(pre_task_idx);
+      if (call_stack.count(pre_task_idx) > 1) {
+        QStringList call_stack_str;
+        for (int c: call_stack) {
+          call_stack_str.append(tasks[c].name);
+        }
+        AppendError(errors, "Task", task.name, "has a circular dependency "
+                    "in it's 'pre_tasks':\n" + call_stack_str.join(" -> "));
+        break;
+      }
+      task.pre_tasks.insert(0, tasks[pre_task_idx].name);
+      const QVector<int>& pre_task_pre_tasks = task_to_pre_tasks[pre_task_idx];
+      if (pre_task_pre_tasks.isEmpty()) {
+        call_stack.pop();
+      }
+      for (int pre_task_pre_task: pre_task_pre_tasks) {
+        to_visit.push(std::make_pair(pre_task_pre_task, pre_task_idx));
       }
     }
   }
@@ -338,7 +392,8 @@ void OpenProject::LoadProjectFile(Application& app) {
     ApplyProfile(tasks, profiles[0]);
   }
   MigrateOldFormatTasks(tasks);
-  ValidateTasks(tasks, errors);
+  ValidateUniqueTaskNames(tasks, errors);
+  ExpandPreTasks(tasks, errors);
   // TODO: remove once tasks become viewable in UI
   for (const Task& task: tasks) {
     qDebug() << task.name << task.command << task.flags << task.pre_tasks;
