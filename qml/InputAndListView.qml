@@ -15,9 +15,6 @@ ColumnLayout {
     padding: basePadding
     RowLayout {
       anchors.fill: parent
-      TextWidget {
-        text: dataViewInputLabel
-      }
       TextFieldWidget {
         id: input
         text: dataViewInputValue

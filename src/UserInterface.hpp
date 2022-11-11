@@ -5,6 +5,7 @@
 const QString kViewSlot = "viewSlot";
 const QString kDialogSlot = "dialogSlot";
 const QString kDataDialogVisible = "dataDialogVisible";
+const QString kDataWindowTitle = "dataWindowTitle";
 
 using UserActionHandler = std::function<void(const QVariantList&)>;
 using DialogActionHandler = std::function<void()>;
@@ -47,7 +48,7 @@ public:
   QVariantListModel& GetListField(const QString& slot_name,
                                   const QString& name);
   void DisplayInputAndListView(
-    const QString& input_label, const QString& input_value,
+    const QString& title, const QString& input_value,
     const QString& button_text, const QVector<QVariantList>& list_items,
     const std::function<void(const QString&)>& on_input_value_changed,
     const std::function<void()>& on_enter_pressed,

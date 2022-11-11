@@ -96,7 +96,7 @@ OpenProject::OpenProject() {
 void OpenProject::DisplayOpenProjectView(Application& app) {
   QPtr<OpenProject> self = app.runtime.SharedPtr(this);
   app.ui.DisplayInputAndListView(
-      "Open project by path:",
+      "Open Project",
       QStandardPaths::writableLocation(QStandardPaths::HomeLocation) + '/',
       "Open",
       QVector<QVariantList>(),

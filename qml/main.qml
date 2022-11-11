@@ -12,7 +12,7 @@ Window {
   property var colorHighlight: "#9ab8ef"
   width: 1024
   height: 600
-  title: "CPP Dev Tools"
+  title: dataWindowTitle
   visible: true
   FontLoader {
     id: iconFont
