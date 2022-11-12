@@ -17,7 +17,7 @@ ColumnLayout {
       anchors.fill: parent
       TextFieldWidget {
         id: input
-        text: dataViewInputValue
+        text: dataViewInputValue || ""
         focus: true
         Layout.fillWidth: true
         KeyNavigation.right: button
