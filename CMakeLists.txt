@@ -44,6 +44,7 @@ qt_add_qml_module(cpp-dev-tools URI cdt VERSION 1.0
       qml/PaneWidget.qml
       qml/ReadOnlyTextAreaWidget.qml
       qml/AlertDialog.qml
+      qml/TextView.qml
       qml/InputAndListView.qml
   RESOURCES
       fonts/MaterialIcons-Regular.ttf)

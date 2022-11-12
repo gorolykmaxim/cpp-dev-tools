@@ -166,6 +166,18 @@ void UserInterface::DisplayAlertDialog(
       });
 }
 
+void UserInterface::DisplayTextView(const QString& title, const QString& text) {
+  DisplayView(
+      kViewSlot,
+      "TextView.qml",
+      {
+        DataField{kDataWindowTitle, title},
+        DataField{"dataViewText", text},
+      },
+      {},
+      {});
+}
+
 void UserInterface::OnUserAction(const QString& slot_name,
                                  const QString& action,
                                  const QVariantList& args) {

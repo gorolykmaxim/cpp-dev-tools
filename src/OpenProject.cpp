@@ -400,6 +400,10 @@ void OpenProject::LoadProjectFile(Application& app) {
     app.profiles = profiles;
     app.task_defs = task_defs;
     app.tasks = tasks;
+    // TODO:
+    // - display something more useful as a title
+    // - once shortcuts are implemented - display actual configured shortcut
+    app.ui.DisplayTextView("CPP Dev Tools", "Execute Command: <b>\u2318O</b>");
   }
   EXEC_NEXT(KeepAlive);
 }

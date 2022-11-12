@@ -60,6 +60,7 @@ public:
                           bool error = true, bool cancellable = false,
                           const std::function<void()>& on_ok = nullptr,
                           const std::function<void()>& on_cancel = nullptr);
+  void DisplayTextView(const QString& title, const QString& text);
 public slots:
   void OnUserAction(const QString& slot_name, const QString& action,
                     const QVariantList& args);

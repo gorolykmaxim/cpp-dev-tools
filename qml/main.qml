@@ -9,6 +9,7 @@ Window {
   property var colorBgDark: "#282828"
   property var colorBgBlack: "#191919"
   property var colorText: "#efefef"
+  property var colorSubText: "#6d6d6d"
   property var colorHighlight: "#9ab8ef"
   width: 1024
   height: 600
