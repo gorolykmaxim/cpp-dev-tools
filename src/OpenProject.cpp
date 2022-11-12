@@ -390,10 +390,6 @@ void OpenProject::LoadProjectFile(Application& app) {
   MigrateOldFormatTasks(tasks);
   ValidateUniqueTaskNames(tasks, errors);
   ExpandPreTasks(tasks, errors);
-  // TODO: remove once tasks become viewable in UI
-  for (const Task& task: tasks) {
-    qDebug() << task.name << task.command << task.flags << task.pre_tasks;
-  }
   if (!errors.isEmpty()) {
     app.ui.DisplayAlertDialog("Failed to open project", errors.join('\n'));
   } else {
