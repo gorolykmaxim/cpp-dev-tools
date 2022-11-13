@@ -16,6 +16,16 @@ private:
   QHash<QString, QString> variables;
 };
 
+class Project {
+public:
+  Project(const QString& path);
+  bool operator==(const Project& project) const;
+  bool operator!=(const Project& project) const;
+
+  QString path;
+  int profile;
+};
+
 enum TaskFlags {
   kTaskRestart = 1,
   kTaskGtest = 2,
@@ -46,8 +56,8 @@ public:
   QVector<Profile> profiles;
   QVector<Task> task_defs;
   QVector<Task> tasks;
-  QString current_project_path;
-  int current_profile = -1;
+  // Last opened project is always first
+  QVector<Project> projects;
   Threads threads;
   UserInterface ui;
 

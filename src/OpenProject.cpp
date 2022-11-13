@@ -372,17 +372,21 @@ static void ExpandPreTasks(QVector<Task> &tasks, QStringList& errors) {
 }
 
 static void DisplayStatusBar(Application& app) {
+  if (app.projects.isEmpty()) {
+    return;
+  }
+  const Project& project = app.projects[0];
   QVector<QVariantList> itemsLeft, itemsRight;
   QString home_str = QStandardPaths::writableLocation(
       QStandardPaths::HomeLocation);
-  if (app.current_project_path.startsWith(home_str)) {
-    QString path = QDir(home_str).relativeFilePath(app.current_project_path);
+  if (project.path.startsWith(home_str)) {
+    QString path = QDir(home_str).relativeFilePath(project.path);
     itemsLeft.append({"~/" + path});
   } else {
-    itemsLeft.append({app.current_project_path});
+    itemsLeft.append({project.path});
   }
-  if (app.current_profile >= 0) {
-    QString profile_name = app.profiles[app.current_profile].GetName();
+  if (project.profile >= 0) {
+    QString profile_name = app.profiles[project.profile].GetName();
     itemsRight.append({"Profile: " + profile_name});
   }
   app.ui.DisplayStatusBar(itemsLeft, itemsRight);
@@ -401,10 +405,10 @@ void OpenProject::LoadProjectFile(Application& app) {
   LoadProfiles(load_project_file->json, profiles, errors);
   LoadTasks(load_project_file->json, task_defs, errors);
   QVector<Task> tasks = task_defs;
-  int current_profile = -1;
+  Project project(load_project_file->path);
   if (!profiles.isEmpty()) {
-    current_profile = 0;
-    ApplyProfile(tasks, profiles[current_profile]);
+    project.profile = 0;
+    ApplyProfile(tasks, profiles[project.profile]);
   }
   MigrateOldFormatTasks(tasks);
   ValidateUniqueTaskNames(tasks, errors);
@@ -415,8 +419,8 @@ void OpenProject::LoadProjectFile(Application& app) {
     app.profiles = profiles;
     app.task_defs = task_defs;
     app.tasks = tasks;
-    app.current_profile = current_profile;
-    app.current_project_path = load_project_file->path;
+    app.projects.removeOne(project);
+    app.projects.insert(0, project);
     // TODO:
     // - display something more useful as a title
     // - once shortcuts are implemented - display actual configured shortcut

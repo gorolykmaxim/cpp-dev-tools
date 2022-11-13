@@ -20,6 +20,16 @@ bool Profile::Contains(const QString& key) const {
   return variables.contains(key);
 }
 
+Project::Project(const QString& path) : path(path), profile(-1) {}
+
+bool Project::operator==(const Project& project) const {
+  return path == project.path;
+}
+
+bool Project::operator!=(const Project& project) const {
+  return !(*this == project);
+}
+
 void UserConfig::LoadFrom(const QJsonDocument& json) {
   QString value = json["open_in_editor_command"].toString();
   cmd_open_file_in_editor = value.contains("{}") ? value : "subl {}";
