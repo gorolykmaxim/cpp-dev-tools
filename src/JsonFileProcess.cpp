@@ -13,7 +13,11 @@ void JsonFileProcess::Run(Application& app) {
     QString parent_folder = QDir::cleanPath(self->path + "/..");
     QDir().mkpath(parent_folder);
     QFile file(self->path);
-    if (!file.open(QIODevice::ReadWrite | QIODevice::Text)) {
+    QIODevice::OpenMode mode = QIODevice::ReadWrite | QIODevice::Text;
+    if (self->operation == JsonOperation::kWrite) {
+      mode |= QIODevice::Truncate;
+    }
+    if (!file.open(mode)) {
       self->error = "Failed to open JSON file '" + file.fileName() +
                     "': " + file.errorString();
       return;

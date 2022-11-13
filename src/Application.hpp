@@ -39,19 +39,9 @@ public:
   QVector<QString> pre_tasks;
 };
 
-class UserConfig {
-public:
-  UserConfig() = default;
-  void LoadFrom(const QJsonDocument& json);
-  QJsonDocument Save() const;
-
-  QString cmd_open_file_in_editor;
-};
-
 class Application {
 public:
   QGuiApplication gui_app;
-  UserConfig user_config;
   ProcessRuntime runtime;
   QVector<Profile> profiles;
   QVector<Task> task_defs;

@@ -30,17 +30,6 @@ bool Project::operator!=(const Project& project) const {
   return !(*this == project);
 }
 
-void UserConfig::LoadFrom(const QJsonDocument& json) {
-  QString value = json["open_in_editor_command"].toString();
-  cmd_open_file_in_editor = value.contains("{}") ? value : "subl {}";
-}
-
-QJsonDocument UserConfig::Save() const {
-  QJsonObject json;
-  json["open_in_editor_command"] = cmd_open_file_in_editor;
-  return QJsonDocument(json);
-}
-
 Application::Application(int argc, char** argv)
     : gui_app(argc, argv),
       runtime(*this),

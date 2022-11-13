@@ -1,5 +1,6 @@
 #include "Initialize.hpp"
 #include "OpenProject.hpp"
+#include "SaveUserConfig.hpp"
 
 Initialize::Initialize() {
   EXEC_NEXT(ReadConfig);
@@ -15,9 +16,12 @@ void Initialize::ReadConfig(Application& app) {
 }
 
 void Initialize::LoadUserConfigAndOpenProject(Application& app) {
-  app.user_config.LoadFrom(read_config->json);
-  app.runtime.Schedule<JsonFileProcess>(this, JsonOperation::kWrite,
-                                        read_config->path,
-                                        app.user_config.Save());
+  QJsonArray projects = read_config->json["projects"].toArray();
+  for (QJsonValue project_val: projects) {
+    Project project(project_val["path"].toString());
+    project.profile = project_val["profile"].toInt();
+    app.projects.append(project);
+  }
+  app.runtime.Schedule<SaveUserConfig>(nullptr);
   app.runtime.Schedule<OpenProject>(nullptr);
 }

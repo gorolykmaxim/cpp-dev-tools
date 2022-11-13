@@ -22,6 +22,8 @@ qt_add_executable(cpp-dev-tools
   src/JsonFileProcess.cpp
   src/OpenProject.hpp
   src/OpenProject.cpp
+  src/SaveUserConfig.hpp
+  src/SaveUserConfig.cpp
   src/Initialize.hpp
   src/Initialize.cpp)
 if(NOT MSVC)
