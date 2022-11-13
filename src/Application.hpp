@@ -41,6 +41,7 @@ public:
 
 class Application {
 public:
+  QString user_config_path;
   QGuiApplication gui_app;
   ProcessRuntime runtime;
   QVector<Profile> profiles;
@@ -52,4 +53,6 @@ public:
   UserInterface ui;
 
   Application(int argc, char** argv);
+  void LoadFrom(const QJsonDocument& json);
+  QJsonDocument Save() const;
 };

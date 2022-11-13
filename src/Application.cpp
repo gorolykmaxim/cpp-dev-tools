@@ -35,5 +35,28 @@ Application::Application(int argc, char** argv)
       runtime(*this),
       threads(gui_app),
       ui() {
+  QString home = QStandardPaths::writableLocation(QStandardPaths::HomeLocation);
+  user_config_path = home + "/.cpp-dev-tools.json";
   qSetMessagePattern("%{time yyyy-MM-dd h:mm:ss.zzz} %{message}");
+}
+
+void Application::LoadFrom(const QJsonDocument& json) {
+  for (QJsonValue project_val: json["projects"].toArray()) {
+    Project project(project_val["path"].toString());
+    project.profile = project_val["profile"].toInt();
+    projects.append(project);
+  }
+}
+
+QJsonDocument Application::Save() const {
+  QJsonObject json;
+  QJsonArray projects_arr;
+  for (const Project& project: projects) {
+    QJsonObject project_obj;
+    project_obj["path"] = project.path;
+    project_obj["profile"] = project.profile;
+    projects_arr.append(project_obj);
+  }
+  json["projects"] = projects_arr;
+  return QJsonDocument(json);
 }

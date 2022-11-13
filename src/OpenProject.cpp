@@ -1,5 +1,4 @@
 #include "OpenProject.hpp"
-#include "SaveUserConfig.hpp"
 
 static bool IsValid(const FileSuggestion& s) {
   return s.match_start >= 0 && s.match_start < s.file.size();
@@ -422,7 +421,8 @@ void OpenProject::LoadProjectFile(Application& app) {
     app.tasks = tasks;
     app.projects.removeOne(project);
     app.projects.insert(0, project);
-    app.runtime.Schedule<SaveUserConfig>(nullptr);
+    app.runtime.Schedule<JsonFileProcess>(nullptr, JsonOperation::kWrite,
+                                          app.user_config_path, app.Save());
     // TODO:
     // - display something more useful as a title
     // - once shortcuts are implemented - display actual configured shortcut
