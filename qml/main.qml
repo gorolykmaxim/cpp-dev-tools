@@ -54,9 +54,6 @@ Window {
         onLoaded: forceActiveFocus()
       }
     }
-    footer: TextWidget {
-      padding: basePadding
-      text: "I'm in footer"
-    }
+    footer: StatusBarWidget {}
   }
 }

@@ -43,6 +43,7 @@ qt_add_qml_module(cpp-dev-tools URI cdt VERSION 1.0
       qml/TextFieldWidget.qml
       qml/PaneWidget.qml
       qml/ReadOnlyTextAreaWidget.qml
+      qml/StatusBarWidget.qml
       qml/AlertDialog.qml
       qml/TextView.qml
       qml/InputAndListView.qml

@@ -36,6 +36,9 @@ UserInterface::UserInterface() {
     DataField{kDataDialogVisible, false},
     DataField{kDataWindowTitle, "CPP Dev-Tools"},
   };
+  // Display empty status bar but make sure its 100% of its normal non-empty
+  // height
+  DisplayStatusBar({{" "}}, {});
   engine.rootContext()->setContextProperties(fields);
   engine.rootContext()->setContextProperty("core", this);
   QQuickStyle::setStyle("Basic");
@@ -175,6 +178,19 @@ void UserInterface::DisplayTextView(const QString& title, const QString& text) {
         DataField{"dataViewText", text},
       },
       {},
+      {});
+}
+
+void UserInterface::DisplayStatusBar(const QVector<QVariantList>& itemsLeft,
+                                     const QVector<QVariantList>& itemsRight) {
+  DisplayView(
+      kStatusSlot,
+      "",
+      {},
+      {
+        ListField{"dataStatusBarItemsLeft", {{0, "title"}}, itemsLeft},
+        ListField{"dataStatusBarItemsRight", {{0, "title"}}, itemsRight},
+      },
       {});
 }
 

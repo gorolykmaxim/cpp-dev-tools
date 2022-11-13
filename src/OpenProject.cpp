@@ -371,6 +371,23 @@ static void ExpandPreTasks(QVector<Task> &tasks, QStringList& errors) {
   }
 }
 
+static void DisplayStatusBar(Application& app) {
+  QVector<QVariantList> itemsLeft, itemsRight;
+  QString home_str = QStandardPaths::writableLocation(
+      QStandardPaths::HomeLocation);
+  if (app.current_project_path.startsWith(home_str)) {
+    QString path = QDir(home_str).relativeFilePath(app.current_project_path);
+    itemsLeft.append({"~/" + path});
+  } else {
+    itemsLeft.append({app.current_project_path});
+  }
+  if (app.current_profile >= 0) {
+    QString profile_name = app.profiles[app.current_profile].GetName();
+    itemsRight.append({"Profile: " + profile_name});
+  }
+  app.ui.DisplayStatusBar(itemsLeft, itemsRight);
+}
+
 void OpenProject::LoadProjectFile(Application& app) {
   if (!load_project_file->error.isEmpty()) {
     app.ui.DisplayAlertDialog("Failed to open project",
@@ -384,8 +401,10 @@ void OpenProject::LoadProjectFile(Application& app) {
   LoadProfiles(load_project_file->json, profiles, errors);
   LoadTasks(load_project_file->json, task_defs, errors);
   QVector<Task> tasks = task_defs;
+  int current_profile = -1;
   if (!profiles.isEmpty()) {
-    ApplyProfile(tasks, profiles[0]);
+    current_profile = 0;
+    ApplyProfile(tasks, profiles[current_profile]);
   }
   MigrateOldFormatTasks(tasks);
   ValidateUniqueTaskNames(tasks, errors);
@@ -396,9 +415,12 @@ void OpenProject::LoadProjectFile(Application& app) {
     app.profiles = profiles;
     app.task_defs = task_defs;
     app.tasks = tasks;
+    app.current_profile = current_profile;
+    app.current_project_path = load_project_file->path;
     // TODO:
     // - display something more useful as a title
     // - once shortcuts are implemented - display actual configured shortcut
+    DisplayStatusBar(app);
     app.ui.DisplayTextView("CPP Dev Tools", "Execute Command: <b>\u2318O</b>");
   }
   EXEC_NEXT(KeepAlive);

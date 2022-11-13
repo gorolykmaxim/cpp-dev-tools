@@ -4,6 +4,7 @@
 
 const QString kViewSlot = "viewSlot";
 const QString kDialogSlot = "dialogSlot";
+const QString kStatusSlot = "statusSlot";
 const QString kDataDialogVisible = "dataDialogVisible";
 const QString kDataWindowTitle = "dataWindowTitle";
 
@@ -61,6 +62,8 @@ public:
                           const std::function<void()>& on_ok = nullptr,
                           const std::function<void()>& on_cancel = nullptr);
   void DisplayTextView(const QString& title, const QString& text);
+  void DisplayStatusBar(const QVector<QVariantList>& itemsLeft,
+                        const QVector<QVariantList>& itemsRight);
 public slots:
   void OnUserAction(const QString& slot_name, const QString& action,
                     const QVariantList& args);

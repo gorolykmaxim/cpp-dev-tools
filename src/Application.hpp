@@ -46,6 +46,8 @@ public:
   QVector<Profile> profiles;
   QVector<Task> task_defs;
   QVector<Task> tasks;
+  QString current_project_path;
+  int current_profile = -1;
   Threads threads;
   UserInterface ui;
 
