@@ -54,5 +54,5 @@ public:
 
   Application(int argc, char** argv);
   void LoadFrom(const QJsonDocument& json);
-  QJsonDocument Save() const;
+  void SaveToUserConfig();
 };

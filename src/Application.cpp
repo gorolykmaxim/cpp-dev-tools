@@ -1,4 +1,5 @@
 #include "Application.hpp"
+#include "JsonFileProcess.hpp"
 
 QString& Profile::operator[](const QString& key) {
   return variables[key];
@@ -48,7 +49,7 @@ void Application::LoadFrom(const QJsonDocument& json) {
   }
 }
 
-QJsonDocument Application::Save() const {
+void Application::SaveToUserConfig() {
   QJsonObject json;
   QJsonArray projects_arr;
   for (const Project& project: projects) {
@@ -58,5 +59,6 @@ QJsonDocument Application::Save() const {
     projects_arr.append(project_obj);
   }
   json["projects"] = projects_arr;
-  return QJsonDocument(json);
+  runtime.Schedule<JsonFileProcess>(nullptr, JsonOperation::kWrite,
+                                    user_config_path, QJsonDocument(json));
 }

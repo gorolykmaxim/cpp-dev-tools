@@ -421,8 +421,7 @@ void OpenProject::LoadProjectFile(Application& app) {
     app.tasks = tasks;
     app.projects.removeOne(project);
     app.projects.insert(0, project);
-    app.runtime.Schedule<JsonFileProcess>(nullptr, JsonOperation::kWrite,
-                                          app.user_config_path, app.Save());
+    app.SaveToUserConfig();
     // TODO:
     // - display something more useful as a title
     // - once shortcuts are implemented - display actual configured shortcut
