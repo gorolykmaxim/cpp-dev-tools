@@ -123,18 +123,6 @@ void UserInterface::DisplayAlertDialog(
       });
 }
 
-void UserInterface::DisplayTextView(const QString& title, const QString& text) {
-  DisplayView(
-      kViewSlot,
-      "TextView.qml",
-      {
-        DataField{kWindowTitle, title},
-        DataField{"dataViewText", text},
-      },
-      {},
-      {});
-}
-
 void UserInterface::DisplayStatusBar(const QVector<QVariantList>& itemsLeft,
                                      const QVector<QVariantList>& itemsRight) {
   DisplayView(

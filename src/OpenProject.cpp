@@ -433,7 +433,15 @@ void OpenProject::LoadProjectFile(Application& app) {
     // - display something more useful as a title
     // - once shortcuts are implemented - display actual configured shortcut
     DisplayStatusBar(app);
-    app.ui.DisplayTextView("CPP Dev Tools", "Execute Command: <b>\u2318O</b>");
+    app.ui.DisplayView(
+        kViewSlot,
+        "BlankView.qml",
+        {
+          DataField{kWindowTitle, "CPP Dev Tools"},
+          DataField{"vText", "Execute Command: <b>\u2318O</b>"},
+        },
+        {},
+        {});
   }
   EXEC_NEXT(KeepAlive);
 }

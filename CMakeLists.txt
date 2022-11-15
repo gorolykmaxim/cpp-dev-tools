@@ -47,7 +47,7 @@ qt_add_qml_module(cpp-dev-tools URI cdt VERSION 1.0
       qml/ContextMenuWidget.qml
       qml/ContextMenuItemWidget.qml
       qml/AlertDialog.qml
-      qml/TextView.qml
+      qml/BlankView.qml
       qml/OpenProjectView.qml
   RESOURCES
       fonts/MaterialIcons-Regular.ttf)

@@ -52,7 +52,6 @@ public:
                           bool error = true, bool cancellable = false,
                           const std::function<void()>& on_ok = nullptr,
                           const std::function<void()>& on_cancel = nullptr);
-  void DisplayTextView(const QString& title, const QString& text);
   void DisplayStatusBar(const QVector<QVariantList>& itemsLeft,
                         const QVector<QVariantList>& itemsRight);
 public slots:
