@@ -34,7 +34,7 @@ Window {
       id: dialog
       width: parent.width / 2
       modal: true
-      visible: dataDialogVisible ?? false
+      visible: dVisible ?? false
       anchors.centerIn: parent
       background: Rectangle {
         color: colorBgMedium

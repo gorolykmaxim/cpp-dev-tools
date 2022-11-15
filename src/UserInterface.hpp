@@ -5,7 +5,7 @@
 const QString kViewSlot = "viewSlot";
 const QString kDialogSlot = "dialogSlot";
 const QString kStatusSlot = "statusSlot";
-const QString kDataDialogVisible = "dataDialogVisible";
+const QString kDialogVisible = "dVisible";
 const QString kWindowTitle = "windowTitle";
 
 using UserActionHandler = std::function<void(const QVariantList&)>;

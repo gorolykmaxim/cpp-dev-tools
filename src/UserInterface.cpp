@@ -33,7 +33,7 @@ UserInterface::UserInterface() {
   QList<DataField> fields = {
     DataField{kViewSlot, ""},
     DataField{kDialogSlot, ""},
-    DataField{kDataDialogVisible, false},
+    DataField{kDialogVisible, false},
     DataField{kWindowTitle, "CPP Dev-Tools"},
   };
   // Display empty status bar but make sure its 100% of its normal non-empty
@@ -110,16 +110,16 @@ void UserInterface::DisplayAlertDialog(
       kDialogSlot,
       "AlertDialog.qml",
       {
-        DataField{kDataDialogVisible, true},
-        DataField{"dataDialogTitle", title},
-        DataField{"dataDialogText", text},
-        DataField{"dataDialogCancellable", cancellable},
-        DataField{"dataDialogError", error},
+        DataField{kDialogVisible, true},
+        DataField{"dTitle", title},
+        DataField{"dText", text},
+        DataField{"dCancellable", cancellable},
+        DataField{"dError", error},
       },
       {},
       {
-        {"actionDialogOk", ok_handler},
-        {"actionDialogCancel", cancel_handler},
+        {"ok", ok_handler},
+        {"cancel", cancel_handler},
       });
 }
 

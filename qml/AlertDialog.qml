@@ -5,20 +5,20 @@ import QtQuick.Layouts
 ColumnLayout {
   anchors.fill: parent
   TextWidget {
-    text: dataDialogTitle ?? ""
+    text: dTitle ?? ""
     font.bold: true
   }
   RowLayout {
     IconWidget {
-      icon: dataDialogError ? "error" : "help"
-      color: dataDialogError ? "red" : colorText
+      icon: dError ? "error" : "help"
+      color: dError ? "red" : colorText
       Layout.alignment: Qt.AlignTop
     }
     ScrollView {
       Layout.fillWidth: true
       Layout.maximumHeight: 300
       ReadOnlyTextAreaWidget {
-        text: dataDialogText ?? ""
+        text: dText ?? ""
         KeyNavigation.down: dialogCancel.visible ? dialogCancel : dialogOk
       }
     }
@@ -30,11 +30,11 @@ ColumnLayout {
       id: dialogCancel
       text: "Cancel"
       focus: visible
-      visible: dataDialogCancellable ?? false
+      visible: dCancellable ?? false
       KeyNavigation.right: dialogOk
       onClicked: {
         dialog.reject();
-        core.OnUserAction("dialogSlot", "actionDialogCancel", []);
+        core.OnUserAction("dialogSlot", "cancel", []);
       }
     }
     ButtonWidget {
@@ -43,7 +43,7 @@ ColumnLayout {
       focus: !dialogCancel.visible
       onClicked: {
         dialog.accept();
-        core.OnUserAction("dialogSlot", "actionDialogOk", []);
+        core.OnUserAction("dialogSlot", "ok", []);
       }
     }
   }
