@@ -52,8 +52,7 @@ public:
     const QString& title, const QString& input_value,
     const QString& button_text, const QVector<QVariantList>& list_items,
     const std::function<void(const QString&)>& on_input_value_changed,
-    const std::function<void()>& on_enter_pressed,
-    const std::function<void(int)>& on_item_selected);
+    const std::function<void(int)>& on_item_chosen);
   void SetInputAndListViewItems(const QVector<QVariantList>& list_items);
   void SetInputAndListViewInput(const QString& value);
   void SetInputAndListViewButtonText(const QString& value);

@@ -15,7 +15,7 @@ public:
   OpenProject();
   void DisplayOpenProjectView(Application& app);
   void ChangeProjectPath(const QString& new_path, Application& app);
-  void HandleEnter(Application& app);
+  void HandleItemSelected(Application& app, int item);
   void CreateNewProject(Application& app);
   bool HasValidSuggestionAvailable() const;
   void LoadProjectFile(Application& app);

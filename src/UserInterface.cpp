@@ -96,16 +96,12 @@ void UserInterface::DisplayInputAndListView(
     const QString& title, const QString& input_value,
     const QString& button_text, const QVector<QVariantList>& list_items,
     const std::function<void(const QString&)>& on_input_value_changed,
-    const std::function<void()>& on_enter_pressed,
-    const std::function<void(int)>& on_item_selected) {
+    const std::function<void(int)>& on_item_chosen) {
   UserActionHandler input_handler = [on_input_value_changed] (const QVariantList& args) {
     on_input_value_changed(args[0].toString());
   };
-  UserActionHandler enter_handler = [on_enter_pressed] (const QVariantList&) {
-    on_enter_pressed();
-  };
-  UserActionHandler item_handler = [on_item_selected] (const QVariantList& args) {
-    on_item_selected(args[0].toInt());
+  UserActionHandler item_handler = [on_item_chosen] (const QVariantList& args) {
+    on_item_chosen(args[0].toInt());
   };
   DisplayView(
       kViewSlot,
@@ -120,8 +116,7 @@ void UserInterface::DisplayInputAndListView(
       },
       {
         {"actionViewInputValueChanged", input_handler},
-        {"actionViewEnterPressed", enter_handler},
-        {"actionViewItemSelected", item_handler},
+        {"actionViewItemChosen", item_handler},
       });
 }
 

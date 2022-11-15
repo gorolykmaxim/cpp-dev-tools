@@ -25,16 +25,19 @@ ColumnLayout {
                                                 "actionViewInputValueChanged",
                                                 [displayText])
         Keys.onReturnPressed: core.OnUserAction("viewSlot",
-                                                "actionViewEnterPressed", [])
+                                                "actionViewItemChosen",
+                                                [list.currentIndex])
         Keys.onEnterPressed: core.OnUserAction("viewSlot",
-                                               "actionViewEnterPressed", [])
+                                               "actionViewItemChosen",
+                                               [list.currentIndex])
         Keys.onDownPressed: list.incrementCurrentIndex()
         Keys.onUpPressed: list.decrementCurrentIndex()
       }
       ButtonWidget {
         id: button
         text: dataViewButtonText
-        onClicked: core.OnUserAction("viewSlot", "actionViewEnterPressed", [])
+        onClicked: core.OnUserAction("viewSlot", "actionViewItemChosen",
+                                     [list.currentIndex])
       }
     }
   }
@@ -48,9 +51,6 @@ ColumnLayout {
       clip: true
       boundsBehavior: ListView.StopAtBounds
       model: dataViewListModel
-      onCurrentIndexChanged: core.OnUserAction("viewSlot",
-                                               "actionViewItemSelected",
-                                               [currentIndex])
       delegate: TextWidget {
         text: title
         width: list.width
@@ -64,7 +64,8 @@ ColumnLayout {
           anchors.fill: parent
           onClicked: {
             list.currentIndex = index;
-            core.OnUserAction("viewSlot", "actionViewEnterPressed", []);
+            core.OnUserAction("viewSlot", "actionViewItemChosen",
+                              [list.currentIndex]);
           }
         }
       }

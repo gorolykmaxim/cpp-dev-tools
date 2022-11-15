@@ -103,11 +103,8 @@ void OpenProject::DisplayOpenProjectView(Application& app) {
       [self, &app] (const QString& value) {
         self->ChangeProjectPath(value, app);
       },
-      [self, &app] () {
-        self->HandleEnter(app);
-      },
-      [self] (int item) {
-        self->selected_suggestion = item;
+      [self, &app] (int item) {
+        self->HandleItemSelected(app, item);
       });
   EXEC_NEXT(KeepAlive);
 }
@@ -124,7 +121,8 @@ void OpenProject::ChangeProjectPath(const QString& new_path, Application& app) {
   UpdateAndDisplaySuggestions(*this, app.ui);
 }
 
-void OpenProject::HandleEnter(Application& app) {
+void OpenProject::HandleItemSelected(Application& app, int item) {
+  selected_suggestion = item;
   if (HasValidSuggestionAvailable()) {
     QString value = folder + suggestions[selected_suggestion].file;
     app.ui.SetInputAndListViewInput(value);
