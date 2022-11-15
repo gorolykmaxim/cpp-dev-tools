@@ -17,26 +17,26 @@ ColumnLayout {
       anchors.fill: parent
       TextFieldWidget {
         id: input
-        text: dataViewInputValue || ""
+        text: vPath || ""
         focus: true
         Layout.fillWidth: true
         KeyNavigation.right: button
         onDisplayTextChanged: core.OnUserAction("viewSlot",
-                                                "actionViewInputValueChanged",
+                                                "pathChanged",
                                                 [displayText])
         Keys.onReturnPressed: core.OnUserAction("viewSlot",
-                                                "actionViewItemChosen",
+                                                "suggestionPicked",
                                                 [list.currentIndex])
         Keys.onEnterPressed: core.OnUserAction("viewSlot",
-                                               "actionViewItemChosen",
+                                               "suggestionPicked",
                                                [list.currentIndex])
         Keys.onDownPressed: list.incrementCurrentIndex()
         Keys.onUpPressed: list.decrementCurrentIndex()
       }
       ButtonWidget {
         id: button
-        text: dataViewButtonText
-        onClicked: core.OnUserAction("viewSlot", "actionViewItemChosen",
+        text: vButtonText
+        onClicked: core.OnUserAction("viewSlot", "suggestionPicked",
                                      [list.currentIndex])
       }
     }
@@ -50,7 +50,7 @@ ColumnLayout {
       anchors.fill: parent
       clip: true
       boundsBehavior: ListView.StopAtBounds
-      model: dataViewListModel
+      model: vSuggestions
       delegate: TextWidget {
         text: title
         width: list.width
@@ -64,7 +64,7 @@ ColumnLayout {
           anchors.fill: parent
           onClicked: {
             list.currentIndex = index;
-            core.OnUserAction("viewSlot", "actionViewItemChosen",
+            core.OnUserAction("viewSlot", "suggestionPicked",
                               [list.currentIndex]);
           }
         }

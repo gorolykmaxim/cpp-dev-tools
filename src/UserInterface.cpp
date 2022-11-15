@@ -34,7 +34,7 @@ UserInterface::UserInterface() {
     DataField{kViewSlot, ""},
     DataField{kDialogSlot, ""},
     DataField{kDataDialogVisible, false},
-    DataField{kDataWindowTitle, "CPP Dev-Tools"},
+    DataField{kWindowTitle, "CPP Dev-Tools"},
   };
   // Display empty status bar but make sure its 100% of its normal non-empty
   // height
@@ -92,47 +92,6 @@ QVariantListModel& UserInterface::GetListField(const QString& slot_name,
   return *data.list_fields[name];
 }
 
-void UserInterface::DisplayInputAndListView(
-    const QString& title, const QString& input_value,
-    const QString& button_text, const QVector<QVariantList>& list_items,
-    const std::function<void(const QString&)>& on_input_value_changed,
-    const std::function<void(int)>& on_item_chosen) {
-  UserActionHandler input_handler = [on_input_value_changed] (const QVariantList& args) {
-    on_input_value_changed(args[0].toString());
-  };
-  UserActionHandler item_handler = [on_item_chosen] (const QVariantList& args) {
-    on_item_chosen(args[0].toInt());
-  };
-  DisplayView(
-      kViewSlot,
-      "InputAndListView.qml",
-      {
-        DataField{kDataWindowTitle, title},
-        DataField{"dataViewInputValue", input_value},
-        DataField{"dataViewButtonText", button_text},
-      },
-      {
-        ListField{"dataViewListModel", {{0, "title"}}, list_items},
-      },
-      {
-        {"actionViewInputValueChanged", input_handler},
-        {"actionViewItemChosen", item_handler},
-      });
-}
-
-void UserInterface::SetInputAndListViewItems(
-    const QVector<QVariantList>& list_items) {
-  GetListField(kViewSlot, "dataViewListModel").SetItems(list_items);
-}
-
-void UserInterface::SetInputAndListViewInput(const QString& value) {
-  SetDataField(kViewSlot, "dataViewInputValue", value);
-}
-
-void UserInterface::SetInputAndListViewButtonText(const QString& value) {
-  SetDataField(kViewSlot, "dataViewButtonText", value);
-}
-
 void UserInterface::DisplayAlertDialog(
     const QString& title, const QString& text, bool error, bool cancellable,
     const std::function<void()>& on_ok,
@@ -169,7 +128,7 @@ void UserInterface::DisplayTextView(const QString& title, const QString& text) {
       kViewSlot,
       "TextView.qml",
       {
-        DataField{kDataWindowTitle, title},
+        DataField{kWindowTitle, title},
         DataField{"dataViewText", text},
       },
       {},

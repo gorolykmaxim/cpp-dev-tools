@@ -45,9 +45,9 @@ static void UpdateAndDisplaySuggestions(OpenProject& data, UserInterface& ui) {
       items.append({file});
     }
   }
-  ui.SetInputAndListViewItems(items);
+  ui.GetListField(kViewSlot, "vSuggestions").SetItems(items);
   QString button_text = data.HasValidSuggestionAvailable() ? "Open" : "Create";
-  ui.SetInputAndListViewButtonText(button_text);
+  ui.SetDataField(kViewSlot, "vButtonText", button_text);
 }
 
 class ReloadFileList: public Process {
@@ -95,16 +95,25 @@ OpenProject::OpenProject() {
 
 void OpenProject::DisplayOpenProjectView(Application& app) {
   QPtr<OpenProject> self = app.runtime.SharedPtr(this);
-  app.ui.DisplayInputAndListView(
-      "Open Project",
-      QStandardPaths::writableLocation(QStandardPaths::HomeLocation) + '/',
-      "Open",
-      QVector<QVariantList>(),
-      [self, &app] (const QString& value) {
-        self->ChangeProjectPath(value, app);
+  QString home = QStandardPaths::writableLocation(QStandardPaths::HomeLocation);
+  app.ui.DisplayView(
+      kViewSlot,
+      "OpenProjectView.qml",
+      {
+        DataField{kWindowTitle, "Open Project"},
+        DataField{"vPath", home + '/'},
+        DataField{"vButtonText", "Open"},
       },
-      [self, &app] (int item) {
-        self->HandleItemSelected(app, item);
+      {
+        ListField{"vSuggestions", {{0, "title"}}, QVector<QVariantList>()},
+      },
+      {
+        {"pathChanged", [self, &app] (const QVariantList& args) {
+          self->ChangeProjectPath(args[0].toString(), app);
+        }},
+        {"suggestionPicked", [self, &app] (const QVariantList& args) {
+          self->HandleItemSelected(app, args[0].toInt());
+        }},
       });
   EXEC_NEXT(KeepAlive);
 }
@@ -125,7 +134,7 @@ void OpenProject::HandleItemSelected(Application& app, int item) {
   selected_suggestion = item;
   if (HasValidSuggestionAvailable()) {
     QString value = folder + suggestions[selected_suggestion].file;
-    app.ui.SetInputAndListViewInput(value);
+    app.ui.SetDataField(kViewSlot, "vPath", value);
     if (!value.endsWith('/')) {
       qDebug() << "Opening project:" << value;
       load_project_file = app.runtime.ReScheduleAndExecute<JsonFileProcess>(

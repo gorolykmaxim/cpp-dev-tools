@@ -13,7 +13,7 @@ Window {
   property var colorHighlight: "#9ab8ef"
   width: 1024
   height: 600
-  title: dataWindowTitle
+  title: windowTitle
   visible: true
   FontLoader {
     id: iconFont
