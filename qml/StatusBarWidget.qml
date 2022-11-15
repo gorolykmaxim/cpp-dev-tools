@@ -6,7 +6,7 @@ RowLayout {
     padding: basePadding
     spacing: basePadding * 2
     Repeater {
-      model: dataStatusBarItemsLeft
+      model: sItemsLeft
       TextWidget {
         text: title
       }
@@ -17,7 +17,7 @@ RowLayout {
     spacing: basePadding * 2
     Layout.alignment: Qt.AlignRight
     Repeater {
-      model: dataStatusBarItemsRight
+      model: sItemsRight
       TextWidget {
         text: title
       }

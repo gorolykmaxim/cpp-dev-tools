@@ -130,8 +130,8 @@ void UserInterface::DisplayStatusBar(const QVector<QVariantList>& itemsLeft,
       "",
       {},
       {
-        ListField{"dataStatusBarItemsLeft", {{0, "title"}}, itemsLeft},
-        ListField{"dataStatusBarItemsRight", {{0, "title"}}, itemsRight},
+        ListField{"sItemsLeft", {{0, "title"}}, itemsLeft},
+        ListField{"sItemsRight", {{0, "title"}}, itemsRight},
       },
       {});
 }
