@@ -52,21 +52,6 @@ QPtr<P> ReScheduleProcess(AppData& app, Process* target, Process* parent,
   return ScheduleProcess<P>(app, parent, args...);
 }
 
-template<typename P, typename... Args>
-QPtr<P> ScheduleAndExecuteProcess(AppData& app, Process* parent,
-                                  Args&&... args) {
-  QPtr<P> p = ScheduleProcess<P>(app, parent, args...);
-  ExecuteProcesses(app);
-  return p;
-}
-
-template<typename P, typename... Args>
-QPtr<P> ReScheduleAndExecuteProcess(AppData& app, Process* target,
-                                    Process* parent, Args&&... args) {
-  CancelProcess(app, target, parent);
-  return ScheduleAndExecuteProcess<P>(app, parent, args...);
-}
-
 template<typename T>
 QPtr<T> ProcessSharedPtr(const AppData& app, T* process) {
   Q_ASSERT(process && IsProcessAlive(app, process->id));

@@ -4,6 +4,7 @@
 
 int main(int argc, char** argv) {
   AppData app(argc, argv);
-  ScheduleAndExecuteProcess<Initialize>(app, nullptr);
+  ScheduleProcess<Initialize>(app, nullptr);
+  ExecuteProcesses(app);
   return app.gui_app.exec();
 }
