@@ -1,6 +1,6 @@
 #include "UI.hpp"
 
-void InitializeUI(Application& app) {
+void InitializeUI(AppData& app) {
   QQmlContext* context = app.gui_engine.rootContext();
   QList<UIDataField> fields = {
     UIDataField{kViewSlot, ""},
@@ -18,7 +18,7 @@ void InitializeUI(Application& app) {
 }
 
 void DisplayView(
-    Application& app, const QString& slot_name, const QString& qml_file,
+    AppData& app, const QString& slot_name, const QString& qml_file,
     const QList<UIDataField>& data_fields,
     const QList<UIListField>& list_fields,
     const QHash<QString, UserActionHandler>& user_action_handlers) {
@@ -52,20 +52,20 @@ void DisplayView(
   context->setContextProperties(fields);
 }
 
-void SetUIDataField(Application& app, const QString& slot_name,
+void SetUIDataField(AppData& app, const QString& slot_name,
                     const QString& name, const QVariant& value) {
   app.view_data[slot_name].data_field_names.insert(name);
   app.gui_engine.rootContext()->setContextProperty(name, value);
 }
 
-QVariantListModel& GetUIListField(Application& app, const QString& slot_name,
+QVariantListModel& GetUIListField(AppData& app, const QString& slot_name,
                                   const QString& name) {
   ViewData& data = app.view_data[slot_name];
   Q_ASSERT(data.list_fields.contains(name));
   return *data.list_fields[name];
 }
 
-void DisplayAlertDialog(Application& app, const QString& title,
+void DisplayAlertDialog(AppData& app, const QString& title,
                         const QString& text, bool error, bool cancellable,
                         const std::function<void()>& on_ok,
                         const std::function<void()>& on_cancel) {
@@ -97,7 +97,7 @@ void DisplayAlertDialog(Application& app, const QString& title,
       });
 }
 
-void DisplayStatusBar(Application& app, const QVector<QVariantList>& itemsLeft,
+void DisplayStatusBar(AppData& app, const QVector<QVariantList>& itemsLeft,
                       const QVector<QVariantList>& itemsRight) {
   DisplayView(
       app,

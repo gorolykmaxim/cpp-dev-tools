@@ -1,25 +1,25 @@
 #pragma once
 
-#include "Application.hpp"
+#include "AppData.hpp"
 
-#define EXEC(PROC, FUNC) [PROC] (Application& app) {PROC->FUNC(app);}, #FUNC
-#define EXEC_STATIC(PROC, FUNC) [PROC] (Application& app) {FUNC(app);}, #FUNC
+#define EXEC(PROC, FUNC) [PROC] (AppData& app) {PROC->FUNC(app);}, #FUNC
+#define EXEC_STATIC(PROC, FUNC) [PROC] (AppData& app) {FUNC(app);}, #FUNC
 #define EXEC_NEXT(FUNC)\
-  execute = [this] (Application& app) {FUNC(app);};\
+  execute = [this] (AppData& app) {FUNC(app);};\
   dbg_execute_name = #FUNC;\
   dbg_class_name = dbg_class_name ? dbg_class_name : __FUNCTION__
 
-void ExecuteProcesses(Application& app);
-bool IsProcessValid(const Application& app, const ProcessId& id);
-void CancelProcess(Application& app, Process* target, Process* parent);
-void WakeUpAndExecuteProcess(Application& app, Process& process,
+void ExecuteProcesses(AppData& app);
+bool IsProcessValid(const AppData& app, const ProcessId& id);
+void CancelProcess(AppData& app, Process* target, Process* parent);
+void WakeUpAndExecuteProcess(AppData& app, Process& process,
                              ProcessExecute execute = nullptr,
                              const char* dbg_execute_name = nullptr);
-bool IsProcessAlive(const Application& app, const ProcessId& id);
-void PrintProcesses(const Application& app); // To be called from debugger
+bool IsProcessAlive(const AppData& app, const ProcessId& id);
+void PrintProcesses(const AppData& app); // To be called from debugger
 
 template<typename P, typename... Args>
-QPtr<P> ScheduleProcess(Application& app, Process* parent, Args&&... args) {
+QPtr<P> ScheduleProcess(AppData& app, Process* parent, Args&&... args) {
   QPtr<P> p = QPtr<P>::create(args...);
   Q_ASSERT(p->execute);
   if (!app.free_proc_ids.isEmpty()) {
@@ -40,14 +40,14 @@ QPtr<P> ScheduleProcess(Application& app, Process* parent, Args&&... args) {
 }
 
 template<typename P, typename... Args>
-QPtr<P> ReScheduleProcess(Application& app, Process* target, Process* parent,
+QPtr<P> ReScheduleProcess(AppData& app, Process* target, Process* parent,
                    Args&&... args) {
   CancelProcess(app, target, parent);
   return ScheduleProcess<P>(app, parent, args...);
 }
 
 template<typename P, typename... Args>
-QPtr<P> ScheduleAndExecuteProcess(Application& app, Process* parent,
+QPtr<P> ScheduleAndExecuteProcess(AppData& app, Process* parent,
                                   Args&&... args) {
   QPtr<P> p = ScheduleProcess<P>(app, parent, args...);
   ExecuteProcesses(app);
@@ -55,14 +55,14 @@ QPtr<P> ScheduleAndExecuteProcess(Application& app, Process* parent,
 }
 
 template<typename P, typename... Args>
-QPtr<P> ReScheduleAndExecuteProcess(Application& app, Process* target,
+QPtr<P> ReScheduleAndExecuteProcess(AppData& app, Process* target,
                                     Process* parent, Args&&... args) {
   CancelProcess(app, target, parent);
   return ScheduleAndExecuteProcess<P>(app, parent, args...);
 }
 
 template<typename T>
-QPtr<T> ProcessSharedPtr(const Application& app, T* process) {
+QPtr<T> ProcessSharedPtr(const AppData& app, T* process) {
   Q_ASSERT(process && IsProcessAlive(app, process->id));
   return app.processes[process->id.index].template staticCast<T>();
 }

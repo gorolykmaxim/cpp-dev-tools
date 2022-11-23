@@ -22,8 +22,8 @@ qt_add_executable(cpp-dev-tools
   src/UIData.cpp
   src/ProcessData.hpp
   src/ProcessData.cpp
-  src/Application.hpp
-  src/Application.cpp
+  src/AppData.hpp
+  src/AppData.cpp
   src/JsonFileProcess.hpp
   src/JsonFileProcess.cpp
   src/OpenProject.hpp

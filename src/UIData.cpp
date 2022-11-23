@@ -1,5 +1,5 @@
 #include "UIData.hpp"
-#include "Application.hpp"
+#include "AppData.hpp"
 
 QVariantListModel::QVariantListModel(const QHash<int, QByteArray>& role_names)
     : QAbstractListModel(), role_names(role_names) {}
@@ -30,7 +30,7 @@ void QVariantListModel::SetItems(const QVector<QVariantList>& items) {
   endResetModel();
 }
 
-UIActionRouter::UIActionRouter(Application& app) : app(app) {}
+UIActionRouter::UIActionRouter(AppData& app) : app(app) {}
 
 void UIActionRouter::OnUserAction(const QString& slot_name,
                                   const QString& action,

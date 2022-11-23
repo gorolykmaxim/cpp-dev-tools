@@ -2,7 +2,7 @@
 
 #include "Lib.hpp"
 
-struct Application;
+struct AppData;
 
 class ProcessId {
 public:
@@ -19,12 +19,12 @@ public:
 QDebug operator<<(QDebug debug, const ProcessId& id);
 size_t qHash(const ProcessId& id, size_t seed) noexcept;
 
-using ProcessExecute = std::function<void(Application&)>;
+using ProcessExecute = std::function<void(AppData&)>;
 
 class Process {
 public:
-  void Noop(Application& app);
-  void KeepAlive(Application& app);
+  void Noop(AppData& app);
+  void KeepAlive(AppData& app);
 
   ProcessId id;
   ProcessId parent_id;

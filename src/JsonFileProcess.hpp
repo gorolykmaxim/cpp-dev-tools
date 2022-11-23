@@ -1,7 +1,7 @@
 #pragma once
 
 #include "Lib.hpp"
-#include "Application.hpp"
+#include "AppData.hpp"
 
 enum class JsonOperation {
   kRead, kWrite
@@ -11,7 +11,7 @@ class JsonFileProcess: public Process {
 public:
   JsonFileProcess(JsonOperation operation, const QString& path,
                   QJsonDocument json = QJsonDocument());
-  void Run(Application& app);
+  void Run(AppData& app);
 
   JsonOperation operation;
   QString path, error;

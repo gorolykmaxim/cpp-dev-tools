@@ -22,7 +22,7 @@ static bool Compare(const FileSuggestion& a, const FileSuggestion& b) {
   }
 }
 
-static void UpdateAndDisplaySuggestions(OpenProject& data, Application& app) {
+static void UpdateAndDisplaySuggestions(OpenProject& data, AppData& app) {
   data.selected_suggestion = 0;
   QString path = data.file_name.toLower();
   for (FileSuggestion& suggestion: data.suggestions) {
@@ -61,7 +61,7 @@ public:
     EXEC_NEXT(Query);
   }
 private:
-  void Query(Application& app) {
+  void Query(AppData& app) {
     QPtr<ReloadFileList> self = ProcessSharedPtr(app, this);
     ScheduleIOTask(app, [self] () {
       self->files = QDir(self->path).entryInfoList();
@@ -72,7 +72,7 @@ private:
     EXEC_NEXT(UpdateList);
   }
 
-  void UpdateList(Application& app) {
+  void UpdateList(AppData& app) {
     root.suggestions.clear();
     for (const QFileInfo& file: files) {
       FileSuggestion suggestion;
@@ -97,7 +97,7 @@ OpenProject::OpenProject() {
   EXEC_NEXT(DisplayOpenProjectView);
 }
 
-void OpenProject::DisplayOpenProjectView(Application& app) {
+void OpenProject::DisplayOpenProjectView(AppData& app) {
   QPtr<OpenProject> self = ProcessSharedPtr(app, this);
   QString home = QStandardPaths::writableLocation(QStandardPaths::HomeLocation);
   DisplayView(
@@ -123,7 +123,7 @@ void OpenProject::DisplayOpenProjectView(Application& app) {
   EXEC_NEXT(KeepAlive);
 }
 
-void OpenProject::ChangeProjectPath(const QString& new_path, Application& app) {
+void OpenProject::ChangeProjectPath(const QString& new_path, AppData& app) {
   QString old_folder = folder;
   qsizetype i = new_path.lastIndexOf('/');
   folder = i < 0 ? "/" : new_path.sliced(0, i + 1);
@@ -135,7 +135,7 @@ void OpenProject::ChangeProjectPath(const QString& new_path, Application& app) {
   UpdateAndDisplaySuggestions(*this, app);
 }
 
-void OpenProject::HandleItemSelected(Application& app, int item) {
+void OpenProject::HandleItemSelected(AppData& app, int item) {
   selected_suggestion = item;
   if (HasValidSuggestionAvailable()) {
     QString value = folder + suggestions[selected_suggestion].file;
@@ -161,7 +161,7 @@ void OpenProject::HandleItemSelected(Application& app, int item) {
   }
 }
 
-void OpenProject::CreateNewProject(Application& app) {
+void OpenProject::CreateNewProject(AppData& app) {
   QString value = folder + file_name;
   qDebug() << "Creating project:" << value;
   load_project_file = ReScheduleAndExecuteProcess<JsonFileProcess>(
@@ -384,7 +384,7 @@ static void ExpandPreTasks(QVector<Task> &tasks, QStringList& errors) {
   }
 }
 
-static void DisplayStatusBar(Application& app) {
+static void DisplayStatusBar(AppData& app) {
   if (app.projects.isEmpty()) {
     return;
   }
@@ -405,7 +405,7 @@ static void DisplayStatusBar(Application& app) {
   DisplayStatusBar(app, itemsLeft, itemsRight);
 }
 
-void OpenProject::LoadProjectFile(Application& app) {
+void OpenProject::LoadProjectFile(AppData& app) {
   if (!load_project_file->error.isEmpty()) {
     DisplayAlertDialog(app, "Failed to open project", load_project_file->error);
     EXEC_NEXT(KeepAlive);

@@ -1,7 +1,7 @@
 #pragma once
 
 #include "Lib.hpp"
-#include "Application.hpp"
+#include "AppData.hpp"
 #include "JsonFileProcess.hpp"
 
 struct FileSuggestion {
@@ -13,12 +13,12 @@ struct FileSuggestion {
 class OpenProject: public Process {
 public:
   OpenProject();
-  void DisplayOpenProjectView(Application& app);
-  void ChangeProjectPath(const QString& new_path, Application& app);
-  void HandleItemSelected(Application& app, int item);
-  void CreateNewProject(Application& app);
+  void DisplayOpenProjectView(AppData& app);
+  void ChangeProjectPath(const QString& new_path, AppData& app);
+  void HandleItemSelected(AppData& app, int item);
+  void CreateNewProject(AppData& app);
   bool HasValidSuggestionAvailable() const;
-  void LoadProjectFile(Application& app);
+  void LoadProjectFile(AppData& app);
 
   QString folder, file_name;
   int selected_suggestion = 0;

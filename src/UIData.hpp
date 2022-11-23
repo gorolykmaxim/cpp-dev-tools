@@ -36,15 +36,15 @@ struct ViewData {
   QHash<QString, UserActionHandler> user_action_handlers;
 };
 
-struct Application;
+struct AppData;
 
 struct UIActionRouter: public QObject {
   Q_OBJECT
 public:
-  UIActionRouter(Application& app);
+  UIActionRouter(AppData& app);
 public slots:
   void OnUserAction(const QString& slot_name, const QString& action,
                     const QVariantList& args);
 private:
-  Application& app;
+  AppData& app;
 };

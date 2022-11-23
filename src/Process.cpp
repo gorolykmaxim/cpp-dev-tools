@@ -1,6 +1,6 @@
 #include "Process.hpp"
 
-void WakeUpAndExecuteProcess(Application& app, Process& process,
+void WakeUpAndExecuteProcess(AppData& app, Process& process,
                              ProcessExecute execute,
                              const char* dbg_execute_name) {
   ProcessId id = process.id;
@@ -21,7 +21,7 @@ void WakeUpAndExecuteProcess(Application& app, Process& process,
   ExecuteProcesses(app);
 }
 
-void ExecuteProcesses(Application& app) {
+void ExecuteProcesses(AppData& app) {
   while (!app.procs_to_execute.isEmpty() || !app.procs_to_finish.isEmpty()) {
     QVector<ProcessId> execute = app.procs_to_execute;
     app.procs_to_execute.clear();
@@ -75,7 +75,7 @@ void ExecuteProcesses(Application& app) {
   }
 }
 
-bool IsProcessAlive(const Application& app, const ProcessId& id) {
+bool IsProcessAlive(const AppData& app, const ProcessId& id) {
   if (!IsProcessValid(app, id)) {
     return false;
   }
@@ -83,11 +83,11 @@ bool IsProcessAlive(const Application& app, const ProcessId& id) {
   return p && p->id == id;
 }
 
-bool IsProcessValid(const Application& app, const ProcessId& id) {
+bool IsProcessValid(const AppData& app, const ProcessId& id) {
   return id && id.index < app.processes.size();
 }
 
-void CancelProcess(Application& app, Process* target, Process* parent) {
+void CancelProcess(AppData& app, Process* target, Process* parent) {
   if (!target || !IsProcessAlive(app, target->id)) {
     return;
   }
@@ -102,7 +102,7 @@ void CancelProcess(Application& app, Process* target, Process* parent) {
   app.procs_to_finish.append(target->id);
 }
 
-void PrintProcesses(const Application& app) {
+void PrintProcesses(const AppData& app) {
   for (int i = 0; i < app.processes.size(); i++) {
     const QPtr<Process>& p = app.processes[i];
     if (p) {

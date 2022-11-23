@@ -9,7 +9,7 @@ JsonFileProcess::JsonFileProcess(JsonOperation operation, const QString& path,
 }
 
 
-void JsonFileProcess::Run(Application& app) {
+void JsonFileProcess::Run(AppData& app) {
   QPtr<JsonFileProcess> self = ProcessSharedPtr(app, this);
   ScheduleIOTask(app, [self] () {
     QString parent_folder = QDir::cleanPath(self->path + "/..");

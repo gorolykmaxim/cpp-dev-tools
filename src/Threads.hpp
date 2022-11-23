@@ -1,13 +1,13 @@
 #pragma once
 
-#include "Application.hpp"
+#include "AppData.hpp"
 
-void ScheduleIOTask(Application& app,
+void ScheduleIOTask(AppData& app,
                     const std::function<void()>& on_background,
                     const std::function<void()>& on_main);
 
 template<typename T>
-void ScheduleIOTask(Application& app,
+void ScheduleIOTask(AppData& app,
                     const std::function<T()>& on_background,
                     const std::function<void(T)>& on_main) {
   (void) QtConcurrent::run(

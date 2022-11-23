@@ -1,6 +1,6 @@
 #include "Threads.hpp"
 
-void ScheduleIOTask(Application& app,
+void ScheduleIOTask(AppData& app,
                     const std::function<void()>& on_background,
                     const std::function<void()>& on_main) {
   (void) QtConcurrent::run(

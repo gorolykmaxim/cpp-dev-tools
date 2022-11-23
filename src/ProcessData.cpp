@@ -29,9 +29,9 @@ size_t qHash(const ProcessId& id, size_t seed) noexcept {
   return seed;
 }
 
-void Process::Noop(Application&) {}
+void Process::Noop(AppData&) {}
 
-void Process::KeepAlive(Application&) {
+void Process::KeepAlive(AppData&) {
   EXEC_NEXT(KeepAlive);
 }
 

@@ -7,14 +7,14 @@ Initialize::Initialize() {
   EXEC_NEXT(ReadConfig);
 }
 
-void Initialize::ReadConfig(Application& app) {
+void Initialize::ReadConfig(AppData& app) {
   read_config = ScheduleProcess<JsonFileProcess>(app, this,
                                                  JsonOperation::kRead,
                                                  app.user_config_path);
   EXEC_NEXT(LoadUserConfigAndOpenProject);
 }
 
-void Initialize::LoadUserConfigAndOpenProject(Application& app) {
+void Initialize::LoadUserConfigAndOpenProject(AppData& app) {
   ReadUserConfigFrom(app, read_config->json);
   SaveToUserConfig(app);
   ScheduleProcess<OpenProject>(app, nullptr);

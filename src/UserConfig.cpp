@@ -2,7 +2,7 @@
 #include "JsonFileProcess.hpp"
 #include "Process.hpp"
 
-void ReadUserConfigFrom(Application& app, const QJsonDocument& json) {
+void ReadUserConfigFrom(AppData& app, const QJsonDocument& json) {
   for (QJsonValue project_val: json["projects"].toArray()) {
     Project project(project_val["path"].toString());
     project.profile = project_val["profile"].toInt();
@@ -10,7 +10,7 @@ void ReadUserConfigFrom(Application& app, const QJsonDocument& json) {
   }
 }
 
-void SaveToUserConfig(Application& app) {
+void SaveToUserConfig(AppData& app) {
   QJsonObject json;
   QJsonArray projects_arr;
   for (const Project& project: app.projects) {

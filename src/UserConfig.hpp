@@ -1,6 +1,6 @@
 #pragma once
 
-#include "Application.hpp"
+#include "AppData.hpp"
 
-void ReadUserConfigFrom(Application& app, const QJsonDocument& json);
-void SaveToUserConfig(Application& app);
+void ReadUserConfigFrom(AppData& app, const QJsonDocument& json);
+void SaveToUserConfig(AppData& app);

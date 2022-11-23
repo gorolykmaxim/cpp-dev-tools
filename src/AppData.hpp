@@ -38,7 +38,7 @@ public:
   QVector<QString> pre_tasks;
 };
 
-struct Application {
+struct AppData {
   QString user_config_path;
   QGuiApplication gui_app;
   QQmlApplicationEngine gui_engine;
@@ -56,5 +56,5 @@ struct Application {
   // Last opened project is always first
   QVector<Project> projects;
 
-  Application(int argc, char** argv);
+  AppData(int argc, char** argv);
 };

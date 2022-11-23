@@ -1,4 +1,4 @@
-#include "Application.hpp"
+#include "AppData.hpp"
 #include "UI.hpp"
 
 QString& Profile::operator[](const QString& key) {
@@ -31,7 +31,7 @@ bool Project::operator!=(const Project& project) const {
   return !(*this == project);
 }
 
-Application::Application(int argc, char** argv)
+AppData::AppData(int argc, char** argv)
     : gui_app(argc, argv),
       ui_action_router(*this) {
   QString home = QStandardPaths::writableLocation(QStandardPaths::HomeLocation);
