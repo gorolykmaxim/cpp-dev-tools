@@ -2,6 +2,7 @@
 #include "UserConfig.hpp"
 #include "Threads.hpp"
 #include "UI.hpp"
+#include "Process.hpp"
 
 static bool IsValid(const FileSuggestion& s) {
   return s.match_start >= 0 && s.match_start < s.file.size();
@@ -61,13 +62,13 @@ public:
   }
 private:
   void Query(Application& app) {
-    QPtr<ReloadFileList> self = app.runtime.SharedPtr(this);
+    QPtr<ReloadFileList> self = ProcessSharedPtr(app, this);
     ScheduleIOTask(app, [self] () {
       self->files = QDir(self->path).entryInfoList();
       for (QFileInfo& file: self->files) {
         file.stat();
       }
-    }, [self, &app] () {app.runtime.WakeUpAndExecute(*self);});
+    }, [self, &app] () {WakeUpAndExecuteProcess(app, *self);});
     EXEC_NEXT(UpdateList);
   }
 
@@ -97,7 +98,7 @@ OpenProject::OpenProject() {
 }
 
 void OpenProject::DisplayOpenProjectView(Application& app) {
-  QPtr<OpenProject> self = app.runtime.SharedPtr(this);
+  QPtr<OpenProject> self = ProcessSharedPtr(app, this);
   QString home = QStandardPaths::writableLocation(QStandardPaths::HomeLocation);
   DisplayView(
       app,
@@ -128,8 +129,8 @@ void OpenProject::ChangeProjectPath(const QString& new_path, Application& app) {
   folder = i < 0 ? "/" : new_path.sliced(0, i + 1);
   file_name = i < 0 ? new_path : new_path.sliced(i + 1);
   if (old_folder != folder) {
-    get_files = app.runtime.ReScheduleAndExecute<ReloadFileList>(
-        get_files.get(), this, folder, *this);
+    get_files = ReScheduleAndExecuteProcess<ReloadFileList>(
+        app, get_files.get(), this, folder, *this);
   }
   UpdateAndDisplaySuggestions(*this, app);
 }
@@ -141,12 +142,12 @@ void OpenProject::HandleItemSelected(Application& app, int item) {
     SetUIDataField(app, kViewSlot, "vPath", value);
     if (!value.endsWith('/')) {
       qDebug() << "Opening project:" << value;
-      load_project_file = app.runtime.ReScheduleAndExecute<JsonFileProcess>(
-          load_project_file.get(), this, JsonOperation::kRead, value);
+      load_project_file = ReScheduleAndExecuteProcess<JsonFileProcess>(
+          app, load_project_file.get(), this, JsonOperation::kRead, value);
       EXEC_NEXT(LoadProjectFile);
     }
   } else {
-    QPtr<OpenProject> self = app.runtime.SharedPtr(this);
+    QPtr<OpenProject> self = ProcessSharedPtr(app, this);
     QString value = folder + file_name;
     DisplayAlertDialog(
         app,
@@ -155,7 +156,7 @@ void OpenProject::HandleItemSelected(Application& app, int item) {
         false,
         true,
         [self, &app] () {
-          app.runtime.WakeUpAndExecute(*self, EXEC(self, CreateNewProject));
+          WakeUpAndExecuteProcess(app, *self, EXEC(self, CreateNewProject));
         });
   }
 }
@@ -163,8 +164,8 @@ void OpenProject::HandleItemSelected(Application& app, int item) {
 void OpenProject::CreateNewProject(Application& app) {
   QString value = folder + file_name;
   qDebug() << "Creating project:" << value;
-  load_project_file = app.runtime.ReScheduleAndExecute<JsonFileProcess>(
-      load_project_file.get(), this, JsonOperation::kWrite, value,
+  load_project_file = ReScheduleAndExecuteProcess<JsonFileProcess>(
+      app, load_project_file.get(), this, JsonOperation::kWrite, value,
       QJsonDocument());
   EXEC_NEXT(LoadProjectFile);
 }

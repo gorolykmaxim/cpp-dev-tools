@@ -1,7 +1,7 @@
 #pragma once
 
 #include "Lib.hpp"
-#include "ProcessRuntime.hpp"
+#include "ProcessData.hpp"
 #include "UIData.hpp"
 
 class Profile {
@@ -46,7 +46,10 @@ struct Application {
   // view slot name to its view data
   QHash<QString, ViewData> view_data;
   QThreadPool io_thread_pool;
-  ProcessRuntime runtime;
+  QVector<QPtr<Process>> processes;
+  QStack<ProcessId> free_proc_ids;
+  QVector<ProcessId> procs_to_execute;
+  QVector<ProcessId> procs_to_finish;
   QVector<Profile> profiles;
   QVector<Task> task_defs;
   QVector<Task> tasks;

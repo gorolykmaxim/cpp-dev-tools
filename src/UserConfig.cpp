@@ -1,5 +1,6 @@
 #include "UserConfig.hpp"
 #include "JsonFileProcess.hpp"
+#include "Process.hpp"
 
 void ReadUserConfigFrom(Application& app, const QJsonDocument& json) {
   for (QJsonValue project_val: json["projects"].toArray()) {
@@ -19,7 +20,6 @@ void SaveToUserConfig(Application& app) {
     projects_arr.append(project_obj);
   }
   json["projects"] = projects_arr;
-  app.runtime.Schedule<JsonFileProcess>(nullptr, JsonOperation::kWrite,
-                                        app.user_config_path,
-                                        QJsonDocument(json));
+  ScheduleProcess<JsonFileProcess>(app, nullptr, JsonOperation::kWrite,
+                                   app.user_config_path, QJsonDocument(json));
 }

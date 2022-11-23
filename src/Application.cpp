@@ -33,8 +33,7 @@ bool Project::operator!=(const Project& project) const {
 
 Application::Application(int argc, char** argv)
     : gui_app(argc, argv),
-      ui_action_router(*this),
-      runtime(*this) {
+      ui_action_router(*this) {
   QString home = QStandardPaths::writableLocation(QStandardPaths::HomeLocation);
   user_config_path = home + "/.cpp-dev-tools.json";
   qSetMessagePattern("%{time yyyy-MM-dd h:mm:ss.zzz} %{message}");

@@ -16,12 +16,14 @@ qt_add_executable(cpp-dev-tools
   src/Threads.cpp
   src/UI.hpp
   src/UI.cpp
+  src/Process.hpp
+  src/Process.cpp
   src/UIData.hpp
   src/UIData.cpp
+  src/ProcessData.hpp
+  src/ProcessData.cpp
   src/Application.hpp
   src/Application.cpp
-  src/ProcessRuntime.hpp
-  src/ProcessRuntime.cpp
   src/JsonFileProcess.hpp
   src/JsonFileProcess.cpp
   src/OpenProject.hpp
