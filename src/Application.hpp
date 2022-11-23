@@ -2,7 +2,7 @@
 
 #include "Lib.hpp"
 #include "ProcessRuntime.hpp"
-#include "UserInterface.hpp"
+#include "UIData.hpp"
 
 class Profile {
 public:
@@ -41,6 +41,10 @@ public:
 struct Application {
   QString user_config_path;
   QGuiApplication gui_app;
+  QQmlApplicationEngine gui_engine;
+  UIActionRouter ui_action_router;
+  // view slot name to its view data
+  QHash<QString, ViewData> view_data;
   QThreadPool io_thread_pool;
   ProcessRuntime runtime;
   QVector<Profile> profiles;
@@ -48,7 +52,6 @@ struct Application {
   QVector<Task> tasks;
   // Last opened project is always first
   QVector<Project> projects;
-  UserInterface ui;
 
   Application(int argc, char** argv);
 };

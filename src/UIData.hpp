@@ -10,15 +10,15 @@ const QString kWindowTitle = "windowTitle";
 
 using UserActionHandler = std::function<void(const QVariantList&)>;
 using DialogActionHandler = std::function<void()>;
-using DataField = QQmlContext::PropertyPair;
+using UIDataField = QQmlContext::PropertyPair;
 
-struct ListField {
+struct UIListField {
   QString name;
   QHash<int, QByteArray> role_names;
   QVector<QVariantList> items;
 };
 
-class QVariantListModel: public QAbstractListModel {
+struct QVariantListModel: public QAbstractListModel {
 public:
   explicit QVariantListModel(const QHash<int, QByteArray>& role_names);
   int rowCount(const QModelIndex& parent = QModelIndex()) const override;
@@ -36,28 +36,15 @@ struct ViewData {
   QHash<QString, UserActionHandler> user_action_handlers;
 };
 
-class UserInterface: public QObject {
+struct Application;
+
+struct UIActionRouter: public QObject {
   Q_OBJECT
 public:
-  UserInterface();
-  void DisplayView(
-      const QString& slot_name, const QString& qml_file,
-      const QList<DataField>& data_fields, const QList<ListField>& list_fields,
-      const QHash<QString, UserActionHandler>& user_action_handlers);
-  void SetDataField(const QString& slot_name, const QString& name,
-                    const QVariant& value);
-  QVariantListModel& GetListField(const QString& slot_name,
-                                  const QString& name);
-  void DisplayAlertDialog(const QString& title, const QString& text,
-                          bool error = true, bool cancellable = false,
-                          const std::function<void()>& on_ok = nullptr,
-                          const std::function<void()>& on_cancel = nullptr);
-  void DisplayStatusBar(const QVector<QVariantList>& itemsLeft,
-                        const QVector<QVariantList>& itemsRight);
+  UIActionRouter(Application& app);
 public slots:
   void OnUserAction(const QString& slot_name, const QString& action,
                     const QVariantList& args);
 private:
-  QHash<QString, ViewData> view_slot_name_to_data;
-  QQmlApplicationEngine engine;
+  Application& app;
 };

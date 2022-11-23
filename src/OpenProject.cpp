@@ -1,6 +1,7 @@
 #include "OpenProject.hpp"
 #include "UserConfig.hpp"
 #include "Threads.hpp"
+#include "UI.hpp"
 
 static bool IsValid(const FileSuggestion& s) {
   return s.match_start >= 0 && s.match_start < s.file.size();
@@ -20,7 +21,7 @@ static bool Compare(const FileSuggestion& a, const FileSuggestion& b) {
   }
 }
 
-static void UpdateAndDisplaySuggestions(OpenProject& data, UserInterface& ui) {
+static void UpdateAndDisplaySuggestions(OpenProject& data, Application& app) {
   data.selected_suggestion = 0;
   QString path = data.file_name.toLower();
   for (FileSuggestion& suggestion: data.suggestions) {
@@ -47,9 +48,9 @@ static void UpdateAndDisplaySuggestions(OpenProject& data, UserInterface& ui) {
       items.append({file});
     }
   }
-  ui.GetListField(kViewSlot, "vSuggestions").SetItems(items);
+  GetUIListField(app, kViewSlot, "vSuggestions").SetItems(items);
   QString button_text = data.HasValidSuggestionAvailable() ? "Open" : "Create";
-  ui.SetDataField(kViewSlot, "vButtonText", button_text);
+  SetUIDataField(app, kViewSlot, "vButtonText", button_text);
 }
 
 class ReloadFileList: public Process {
@@ -83,7 +84,7 @@ private:
       }
       root.suggestions.append(suggestion);
     }
-    UpdateAndDisplaySuggestions(root, app.ui);
+    UpdateAndDisplaySuggestions(root, app);
   }
 
   QString path;
@@ -98,16 +99,17 @@ OpenProject::OpenProject() {
 void OpenProject::DisplayOpenProjectView(Application& app) {
   QPtr<OpenProject> self = app.runtime.SharedPtr(this);
   QString home = QStandardPaths::writableLocation(QStandardPaths::HomeLocation);
-  app.ui.DisplayView(
+  DisplayView(
+      app,
       kViewSlot,
       "OpenProjectView.qml",
       {
-        DataField{kWindowTitle, "Open Project"},
-        DataField{"vPath", home + '/'},
-        DataField{"vButtonText", "Open"},
+        UIDataField{kWindowTitle, "Open Project"},
+        UIDataField{"vPath", home + '/'},
+        UIDataField{"vButtonText", "Open"},
       },
       {
-        ListField{"vSuggestions", {{0, "title"}}, QVector<QVariantList>()},
+        UIListField{"vSuggestions", {{0, "title"}}, QVector<QVariantList>()},
       },
       {
         {"pathChanged", [self, &app] (const QVariantList& args) {
@@ -129,14 +131,14 @@ void OpenProject::ChangeProjectPath(const QString& new_path, Application& app) {
     get_files = app.runtime.ReScheduleAndExecute<ReloadFileList>(
         get_files.get(), this, folder, *this);
   }
-  UpdateAndDisplaySuggestions(*this, app.ui);
+  UpdateAndDisplaySuggestions(*this, app);
 }
 
 void OpenProject::HandleItemSelected(Application& app, int item) {
   selected_suggestion = item;
   if (HasValidSuggestionAvailable()) {
     QString value = folder + suggestions[selected_suggestion].file;
-    app.ui.SetDataField(kViewSlot, "vPath", value);
+    SetUIDataField(app, kViewSlot, "vPath", value);
     if (!value.endsWith('/')) {
       qDebug() << "Opening project:" << value;
       load_project_file = app.runtime.ReScheduleAndExecute<JsonFileProcess>(
@@ -146,7 +148,8 @@ void OpenProject::HandleItemSelected(Application& app, int item) {
   } else {
     QPtr<OpenProject> self = app.runtime.SharedPtr(this);
     QString value = folder + file_name;
-    app.ui.DisplayAlertDialog(
+    DisplayAlertDialog(
+        app,
         "Create new project?",
         "Do you want to create a new project at " + value,
         false,
@@ -398,13 +401,12 @@ static void DisplayStatusBar(Application& app) {
     QString profile_name = app.profiles[project.profile].GetName();
     itemsRight.append({"Profile: " + profile_name});
   }
-  app.ui.DisplayStatusBar(itemsLeft, itemsRight);
+  DisplayStatusBar(app, itemsLeft, itemsRight);
 }
 
 void OpenProject::LoadProjectFile(Application& app) {
   if (!load_project_file->error.isEmpty()) {
-    app.ui.DisplayAlertDialog("Failed to open project",
-                              load_project_file->error);
+    DisplayAlertDialog(app, "Failed to open project", load_project_file->error);
     EXEC_NEXT(KeepAlive);
     return;
   }
@@ -423,7 +425,7 @@ void OpenProject::LoadProjectFile(Application& app) {
   ValidateUniqueTaskNames(tasks, errors);
   ExpandPreTasks(tasks, errors);
   if (!errors.isEmpty()) {
-    app.ui.DisplayAlertDialog("Failed to open project", errors.join('\n'));
+    DisplayAlertDialog(app, "Failed to open project", errors.join('\n'));
   } else {
     app.profiles = profiles;
     app.task_defs = task_defs;
@@ -435,12 +437,13 @@ void OpenProject::LoadProjectFile(Application& app) {
     // - display something more useful as a title
     // - once shortcuts are implemented - display actual configured shortcut
     DisplayStatusBar(app);
-    app.ui.DisplayView(
+    DisplayView(
+        app,
         kViewSlot,
         "BlankView.qml",
         {
-          DataField{kWindowTitle, "CPP Dev Tools"},
-          DataField{"vText", "Execute Command: <b>\u2318O</b>"},
+          UIDataField{kWindowTitle, "CPP Dev Tools"},
+          UIDataField{"vText", "Execute Command: <b>\u2318O</b>"},
         },
         {},
         {});

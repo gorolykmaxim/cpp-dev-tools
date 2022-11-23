@@ -1,5 +1,5 @@
 #include "Application.hpp"
-#include "JsonFileProcess.hpp"
+#include "UI.hpp"
 
 QString& Profile::operator[](const QString& key) {
   return variables[key];
@@ -33,10 +33,11 @@ bool Project::operator!=(const Project& project) const {
 
 Application::Application(int argc, char** argv)
     : gui_app(argc, argv),
-      runtime(*this),
-      ui() {
+      ui_action_router(*this),
+      runtime(*this) {
   QString home = QStandardPaths::writableLocation(QStandardPaths::HomeLocation);
   user_config_path = home + "/.cpp-dev-tools.json";
   qSetMessagePattern("%{time yyyy-MM-dd h:mm:ss.zzz} %{message}");
   io_thread_pool.setMaxThreadCount(1);
+  InitializeUI(*this);
 }
