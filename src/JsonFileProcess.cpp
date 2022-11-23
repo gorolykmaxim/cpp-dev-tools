@@ -1,4 +1,5 @@
 #include "JsonFileProcess.hpp"
+#include "Threads.hpp"
 
 JsonFileProcess::JsonFileProcess(JsonOperation operation, const QString& path,
                                  QJsonDocument json)
@@ -9,7 +10,7 @@ JsonFileProcess::JsonFileProcess(JsonOperation operation, const QString& path,
 
 void JsonFileProcess::Run(Application& app) {
   QPtr<JsonFileProcess> self = app.runtime.SharedPtr(this);
-  app.threads.ScheduleIO([self] () {
+  ScheduleIOTask(app, [self] () {
     QString parent_folder = QDir::cleanPath(self->path + "/..");
     QDir().mkpath(parent_folder);
     QFile file(self->path);

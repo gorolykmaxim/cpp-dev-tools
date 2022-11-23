@@ -2,7 +2,6 @@
 
 #include "Lib.hpp"
 #include "ProcessRuntime.hpp"
-#include "Threads.hpp"
 #include "UserInterface.hpp"
 
 class Profile {
@@ -42,13 +41,13 @@ public:
 struct Application {
   QString user_config_path;
   QGuiApplication gui_app;
+  QThreadPool io_thread_pool;
   ProcessRuntime runtime;
   QVector<Profile> profiles;
   QVector<Task> task_defs;
   QVector<Task> tasks;
   // Last opened project is always first
   QVector<Project> projects;
-  Threads threads;
   UserInterface ui;
 
   Application(int argc, char** argv);

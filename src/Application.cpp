@@ -34,9 +34,9 @@ bool Project::operator!=(const Project& project) const {
 Application::Application(int argc, char** argv)
     : gui_app(argc, argv),
       runtime(*this),
-      threads(gui_app),
       ui() {
   QString home = QStandardPaths::writableLocation(QStandardPaths::HomeLocation);
   user_config_path = home + "/.cpp-dev-tools.json";
   qSetMessagePattern("%{time yyyy-MM-dd h:mm:ss.zzz} %{message}");
+  io_thread_pool.setMaxThreadCount(1);
 }

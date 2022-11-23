@@ -1,5 +1,6 @@
 #include "OpenProject.hpp"
 #include "UserConfig.hpp"
+#include "Threads.hpp"
 
 static bool IsValid(const FileSuggestion& s) {
   return s.match_start >= 0 && s.match_start < s.file.size();
@@ -60,7 +61,7 @@ public:
 private:
   void Query(Application& app) {
     QPtr<ReloadFileList> self = app.runtime.SharedPtr(this);
-    app.threads.ScheduleIO([self] () {
+    ScheduleIOTask(app, [self] () {
       self->files = QDir(self->path).entryInfoList();
       for (QFileInfo& file: self->files) {
         file.stat();
