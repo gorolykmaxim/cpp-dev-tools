@@ -11,6 +11,7 @@
 #include <QHash>
 #include <QByteArray>
 #include <QList>
+#include <QQueue>
 #include <QSet>
 #include <QStack>
 #include <QUrl>

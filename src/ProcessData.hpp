@@ -33,3 +33,16 @@ struct Process {
 };
 
 QDebug operator<<(QDebug debug, const Process& proc);
+
+struct ProcessWakeUpCall {
+  ProcessId id;
+  ProcessExecute execute;
+  const char* dbg_execute_name = nullptr;
+};
+
+struct Event {
+  QString type;
+  QVariantList args;
+};
+
+QDebug operator<<(QDebug debug, const Event& event);

@@ -47,6 +47,10 @@ struct AppData {
   QStack<ProcessId> free_proc_ids;
   QList<ProcessId> procs_to_execute;
   QList<ProcessId> procs_to_finish;
+  // Event at the top is the event that should be handled right now
+  QQueue<Event> events;
+  // Event type to list of processes to wake up
+  QHash<QString, QList<ProcessWakeUpCall>> event_listeners;
   QList<Profile> profiles;
   QList<Task> task_defs;
   QList<Task> tasks;

@@ -3,7 +3,6 @@
 #include "AppData.hpp"
 
 #define EXEC(PROC, FUNC) [PROC] (AppData& app) {PROC->FUNC(app);}, #FUNC
-#define EXEC_STATIC(PROC, FUNC) [PROC] (AppData& app) {FUNC(app);}, #FUNC
 #define EXEC_NEXT(FUNC)\
   execute = [this] (AppData& app) {FUNC(app);};\
   dbg_execute_name = #FUNC;\
@@ -15,6 +14,9 @@ void CancelProcess(AppData& app, Process* target, Process* parent);
 void WakeUpAndExecuteProcess(AppData& app, Process& process,
                              ProcessExecute execute = nullptr,
                              const char* dbg_execute_name = nullptr);
+void WakeUpProcessOnEvent(AppData& app, const QString& event_type,
+                          Process& process, ProcessExecute execute = nullptr,
+                          const char* dbg_execute_name = nullptr);
 bool IsProcessAlive(const AppData& app, const ProcessId& id);
 void PrintProcesses(const AppData& app); // To be called from debugger
 
