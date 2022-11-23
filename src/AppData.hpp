@@ -4,8 +4,7 @@
 #include "ProcessData.hpp"
 #include "UIData.hpp"
 
-class Profile {
-public:
+struct Profile {
   QString& operator[](const QString& key);
   QString operator[](const QString& key) const;
   QString GetName() const;
@@ -15,8 +14,7 @@ private:
   QHash<QString, QString> variables;
 };
 
-class Project {
-public:
+struct Project {
   Project(const QString& path);
   bool operator==(const Project& project) const;
   bool operator!=(const Project& project) const;
@@ -30,8 +28,7 @@ enum TaskFlags {
   kTaskGtest = 2,
 };
 
-class Task {
-public:
+struct Task {
   QString name;
   QString command;
   int flags = 0;

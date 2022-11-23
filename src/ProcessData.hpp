@@ -4,8 +4,7 @@
 
 struct AppData;
 
-class ProcessId {
-public:
+struct ProcessId {
   ProcessId();
   ProcessId(int index, int version);
   bool operator==(const ProcessId& id) const;
@@ -21,8 +20,7 @@ size_t qHash(const ProcessId& id, size_t seed) noexcept;
 
 using ProcessExecute = std::function<void(AppData&)>;
 
-class Process {
-public:
+struct Process {
   void Noop(AppData& app);
   void KeepAlive(AppData& app);
 
