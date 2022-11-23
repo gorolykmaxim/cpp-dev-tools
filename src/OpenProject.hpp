@@ -22,7 +22,7 @@ public:
 
   QString folder, file_name;
   int selected_suggestion = 0;
-  QVector<FileSuggestion> suggestions;
+  QList<FileSuggestion> suggestions;
   QPtr<Process> get_files;
   QPtr<JsonFileProcess> load_project_file;
 };

@@ -97,8 +97,8 @@ void DisplayAlertDialog(AppData& app, const QString& title,
       });
 }
 
-void DisplayStatusBar(AppData& app, const QVector<QVariantList>& itemsLeft,
-                      const QVector<QVariantList>& itemsRight) {
+void DisplayStatusBar(AppData& app, const QList<QVariantList>& itemsLeft,
+                      const QList<QVariantList>& itemsRight) {
   DisplayView(
       app,
       kStatusSlot,

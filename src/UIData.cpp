@@ -24,7 +24,7 @@ QVariant QVariantListModel::data(const QModelIndex& index, int role) const {
   return row[role];
 }
 
-void QVariantListModel::SetItems(const QVector<QVariantList>& items) {
+void QVariantListModel::SetItems(const QList<QVariantList>& items) {
   beginResetModel();
   this->items = items;
   endResetModel();

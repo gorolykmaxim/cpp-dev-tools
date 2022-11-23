@@ -38,7 +38,7 @@ static void UpdateAndDisplaySuggestions(OpenProject& data, AppData& app) {
     }
   }
   std::sort(data.suggestions.begin(), data.suggestions.end(), Compare);
-  QVector<QVariantList> items;
+  QList<QVariantList> items;
   for (const FileSuggestion& suggestion: data.suggestions) {
     if (path.isEmpty() || IsValid(suggestion)) {
       QString file = suggestion.file;
@@ -110,7 +110,7 @@ void OpenProject::DisplayOpenProjectView(AppData& app) {
         UIDataField{"vButtonText", "Open"},
       },
       {
-        UIListField{"vSuggestions", {{0, "title"}}, QVector<QVariantList>()},
+        UIListField{"vSuggestions", {{0, "title"}}, QList<QVariantList>()},
       },
       {
         {"pathChanged", [self, &app] (const QVariantList& args) {
@@ -189,7 +189,7 @@ static void AppendError(QStringList& errors, const QString& type, int index,
   AppendError(errors, type, QString::number(index + 1), error);
 }
 
-static void LoadProfiles(const QJsonDocument& json, QVector<Profile>& profiles,
+static void LoadProfiles(const QJsonDocument& json, QList<Profile>& profiles,
                          QStringList& errors) {
   qDebug() << "Loading profiles";
   QSet<QString> profile_variable_names;
@@ -231,7 +231,7 @@ static void LoadProfiles(const QJsonDocument& json, QVector<Profile>& profiles,
   }
 }
 
-static void LoadTasks(const QJsonDocument& json, QVector<Task>& tasks,
+static void LoadTasks(const QJsonDocument& json, QList<Task>& tasks,
                       QStringList& errors) {
   qDebug() << "Loading tasks";
   QJsonArray json_tasks = json["cdt_tasks"].toArray();
@@ -286,7 +286,7 @@ static void ApplyProfile(QString& str, const Profile& profile) {
   }
 }
 
-static void ApplyProfile(QVector<Task>& tasks, const Profile& profile) {
+static void ApplyProfile(QList<Task>& tasks, const Profile& profile) {
   qDebug() << "Applying profile varaibles to tasks";
   for (Task& task: tasks) {
     ApplyProfile(task.name, profile);
@@ -305,7 +305,7 @@ static void MigrateTaskField(Task& task, const QString& prefix, int task_flag) {
   }
 }
 
-static void MigrateOldFormatTasks(QVector<Task>& tasks) {
+static void MigrateOldFormatTasks(QList<Task>& tasks) {
   qDebug() << "Migrating tasks from the old format to the new one";
   for (Task& task: tasks) {
     MigrateTaskField(task, "__gtest", kTaskGtest);
@@ -313,7 +313,7 @@ static void MigrateOldFormatTasks(QVector<Task>& tasks) {
   }
 }
 
-static void ValidateUniqueTaskNames(const QVector<Task>& tasks,
+static void ValidateUniqueTaskNames(const QList<Task>& tasks,
                                     QStringList& errors) {
   QSet<QString> task_names;
   for (int i = 0; i < tasks.size(); i++) {
@@ -327,9 +327,9 @@ static void ValidateUniqueTaskNames(const QVector<Task>& tasks,
   }
 }
 
-static void ExpandPreTasks(QVector<Task> &tasks, QStringList& errors) {
+static void ExpandPreTasks(QList<Task> &tasks, QStringList& errors) {
   qDebug() << "Traversing pre task tree";
-  QVector<QVector<int>> task_to_pre_tasks(tasks.size());
+  QList<QList<int>> task_to_pre_tasks(tasks.size());
   for (int i = 0; i < tasks.size(); i++) {
     const Task& task = tasks[i];
     for (const QString& name: task.pre_tasks) {
@@ -389,7 +389,7 @@ static void DisplayStatusBar(AppData& app) {
     return;
   }
   const Project& project = app.projects[0];
-  QVector<QVariantList> itemsLeft, itemsRight;
+  QList<QVariantList> itemsLeft, itemsRight;
   QString home_str = QStandardPaths::writableLocation(
       QStandardPaths::HomeLocation);
   if (project.path.startsWith(home_str)) {
@@ -412,11 +412,11 @@ void OpenProject::LoadProjectFile(AppData& app) {
     return;
   }
   QStringList errors;
-  QVector<Profile> profiles;
-  QVector<Task> task_defs;
+  QList<Profile> profiles;
+  QList<Task> task_defs;
   LoadProfiles(load_project_file->json, profiles, errors);
   LoadTasks(load_project_file->json, task_defs, errors);
-  QVector<Task> tasks = task_defs;
+  QList<Task> tasks = task_defs;
   Project project(load_project_file->path);
   if (!profiles.isEmpty()) {
     project.profile = 0;

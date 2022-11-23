@@ -32,7 +32,7 @@ struct Task {
   QString name;
   QString command;
   int flags = 0;
-  QVector<QString> pre_tasks;
+  QList<QString> pre_tasks;
 };
 
 struct AppData {
@@ -43,15 +43,15 @@ struct AppData {
   // view slot name to its view data
   QHash<QString, ViewData> view_data;
   QThreadPool io_thread_pool;
-  QVector<QPtr<Process>> processes;
+  QList<QPtr<Process>> processes;
   QStack<ProcessId> free_proc_ids;
-  QVector<ProcessId> procs_to_execute;
-  QVector<ProcessId> procs_to_finish;
-  QVector<Profile> profiles;
-  QVector<Task> task_defs;
-  QVector<Task> tasks;
+  QList<ProcessId> procs_to_execute;
+  QList<ProcessId> procs_to_finish;
+  QList<Profile> profiles;
+  QList<Task> task_defs;
+  QList<Task> tasks;
   // Last opened project is always first
-  QVector<Project> projects;
+  QList<Project> projects;
 
   AppData(int argc, char** argv);
 };

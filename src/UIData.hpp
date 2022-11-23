@@ -15,7 +15,7 @@ using UIDataField = QQmlContext::PropertyPair;
 struct UIListField {
   QString name;
   QHash<int, QByteArray> role_names;
-  QVector<QVariantList> items;
+  QList<QVariantList> items;
 };
 
 struct QVariantListModel: public QAbstractListModel {
@@ -24,9 +24,9 @@ public:
   int rowCount(const QModelIndex& parent = QModelIndex()) const override;
   QHash<int, QByteArray> roleNames() const override;
   QVariant data(const QModelIndex& index, int role = 0) const override;
-  void SetItems(const QVector<QVariantList>& items);
+  void SetItems(const QList<QVariantList>& items);
 private:
-  QVector<QVariantList> items;
+  QList<QVariantList> items;
   QHash<int, QByteArray> role_names;
 };
 

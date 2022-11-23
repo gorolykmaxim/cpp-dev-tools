@@ -10,7 +10,6 @@
 #include <QVariant>
 #include <QHash>
 #include <QByteArray>
-#include <QVector>
 #include <QList>
 #include <QSet>
 #include <QStack>

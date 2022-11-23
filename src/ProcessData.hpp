@@ -27,7 +27,7 @@ struct Process {
   ProcessId id;
   ProcessId parent_id;
   ProcessExecute execute;
-  QVector<ProcessId> running_child_ids;
+  QList<ProcessId> running_child_ids;
   const char* dbg_class_name = nullptr;
   const char* dbg_execute_name = nullptr;
 };

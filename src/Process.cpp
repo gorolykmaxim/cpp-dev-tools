@@ -23,7 +23,7 @@ void WakeUpAndExecuteProcess(AppData& app, Process& process,
 
 void ExecuteProcesses(AppData& app) {
   while (!app.procs_to_execute.isEmpty() || !app.procs_to_finish.isEmpty()) {
-    QVector<ProcessId> execute = app.procs_to_execute;
+    QList<ProcessId> execute = app.procs_to_execute;
     app.procs_to_execute.clear();
     for (ProcessId id: execute) {
       QPtr<Process> p = app.processes[id.index];
@@ -37,7 +37,7 @@ void ExecuteProcesses(AppData& app) {
         app.procs_to_finish.append(p->id);
       }
     }
-    QVector<ProcessId> finish = app.procs_to_finish;
+    QList<ProcessId> finish = app.procs_to_finish;
     app.procs_to_finish.clear();
     for (ProcessId id: finish) {
       QPtr<Process> p = app.processes[id.index];
@@ -55,11 +55,11 @@ void ExecuteProcesses(AppData& app) {
         }
       }
       // Remove all child processes
-      QVector<ProcessId> to_remove = {p->id};
-      QVector<ProcessId> visiting = p->running_child_ids;
+      QList<ProcessId> to_remove = {p->id};
+      QList<ProcessId> visiting = p->running_child_ids;
       while (!visiting.isEmpty()) {
         to_remove.append(visiting);
-        QVector<ProcessId> to_visit;
+        QList<ProcessId> to_visit;
         for (ProcessId id: visiting) {
           to_visit.append(app.processes[id.index]->running_child_ids);
         }
