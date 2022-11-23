@@ -21,23 +21,18 @@ ColumnLayout {
         focus: true
         Layout.fillWidth: true
         KeyNavigation.right: button
-        onDisplayTextChanged: core.OnUserAction("viewSlot",
-                                                "pathChanged",
-                                                [displayText])
-        Keys.onReturnPressed: core.OnUserAction("viewSlot",
-                                                "suggestionPicked",
-                                                [list.currentIndex])
-        Keys.onEnterPressed: core.OnUserAction("viewSlot",
-                                               "suggestionPicked",
-                                               [list.currentIndex])
+        onDisplayTextChanged: core.OnAction("vaPathChanged", [displayText])
+        Keys.onReturnPressed: core.OnAction("vaSuggestionPicked",
+                                            [list.currentIndex])
+        Keys.onEnterPressed: core.OnAction("vaSuggestionPicked",
+                                           [list.currentIndex])
         Keys.onDownPressed: list.incrementCurrentIndex()
         Keys.onUpPressed: list.decrementCurrentIndex()
       }
       ButtonWidget {
         id: button
         text: vButtonText
-        onClicked: core.OnUserAction("viewSlot", "suggestionPicked",
-                                     [list.currentIndex])
+        onClicked: core.OnAction("vaSuggestionPicked", [list.currentIndex])
       }
     }
   }
@@ -64,8 +59,7 @@ ColumnLayout {
           anchors.fill: parent
           onClicked: {
             list.currentIndex = index;
-            core.OnUserAction("viewSlot", "suggestionPicked",
-                              [list.currentIndex]);
+            core.OnAction("vaSuggestionPicked", [list.currentIndex]);
           }
         }
       }

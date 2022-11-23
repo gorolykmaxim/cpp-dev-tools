@@ -17,14 +17,17 @@ void InitializeUI(AppData& app) {
   app.gui_engine.load(QUrl(QStringLiteral("qrc:/cdt/qml/main.qml")));
 }
 
-void DisplayView(
-    AppData& app, const QString& slot_name, const QString& qml_file,
-    const QList<UIDataField>& data_fields,
-    const QList<UIListField>& list_fields,
-    const QHash<QString, UserActionHandler>& user_action_handlers) {
+void DisplayView(AppData& app, const QString& slot_name,
+                 const QString& qml_file, const QList<UIDataField>& data_fields,
+                 const QList<UIListField>& list_fields,
+                 const QList<QString>& event_types) {
   QQmlContext* context = app.gui_engine.rootContext();
   ViewData& data = app.view_data[slot_name];
-  data.user_action_handlers = user_action_handlers;
+  for (const QString& event_type: data.event_types) {
+    qDebug() << "Removing listeners of event" << event_type;
+    app.event_listeners.remove(event_type);
+  }
+  data.event_types = event_types;
   // Initialize list_fields
   for (const QString& name: data.list_fields.keys()) {
     context->setContextProperty(name, nullptr);
@@ -66,19 +69,7 @@ QVariantListModel& GetUIListField(AppData& app, const QString& slot_name,
 }
 
 void DisplayAlertDialog(AppData& app, const QString& title,
-                        const QString& text, bool error, bool cancellable,
-                        const std::function<void()>& on_ok,
-                        const std::function<void()>& on_cancel) {
-  UserActionHandler ok_handler = [on_ok] (const QVariantList&) {
-    if (on_ok) {
-      on_ok();
-    }
-  };
-  UserActionHandler cancel_handler = [on_cancel] (const QVariantList&) {
-    if (on_cancel) {
-      on_cancel();
-    }
-  };
+                        const QString& text, bool error, bool cancellable) {
   DisplayView(
       app,
       kDialogSlot,
@@ -91,10 +82,7 @@ void DisplayAlertDialog(AppData& app, const QString& title,
         UIDataField{"dError", error},
       },
       {},
-      {
-        {"ok", ok_handler},
-        {"cancel", cancel_handler},
-      });
+      {"daCancel", "daOk"});
 }
 
 void DisplayStatusBar(AppData& app, const QList<QVariantList>& itemsLeft,

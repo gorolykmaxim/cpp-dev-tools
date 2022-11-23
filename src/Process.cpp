@@ -40,7 +40,13 @@ void WakeUpProcessOnEvent(AppData& app, const QString& event_type,
   call.execute = execute;
   call.dbg_execute_name = dbg_execute_name;
   app.event_listeners[event_type].append(call);
+  qDebug() << "Process" << process.id << "starts to listen to" << event_type
+           << "events";
   EXEC_NEXT_OBJ(process, Noop);
+}
+
+QVariant GetEventArg(const AppData& app, int i) {
+  return app.events.head().args[i];
 }
 
 void ExecuteProcesses(AppData& app) {
@@ -51,6 +57,9 @@ void ExecuteProcesses(AppData& app) {
       QList<ProcessWakeUpCall>& calls = app.event_listeners[event.type];
       for (ProcessWakeUpCall& call: calls) {
         QPtr<Process> p = app.processes[call.id.index];
+        if (p->ignore_events_until_execute) {
+          continue;
+        }
         WakeUpProcess(app, *p, call.execute, call.dbg_execute_name);
         qDebug() << "Waking up" << *p;
       }
@@ -62,6 +71,7 @@ void ExecuteProcesses(AppData& app) {
         QPtr<Process> p = app.processes[id.index];
         ProcessExecute exec = p->execute;
         p->execute = nullptr;
+        p->ignore_events_until_execute = false;
         qDebug() << "Executing" << *p;
         exec(app);
         // Process did not specify new execute function and it has no new

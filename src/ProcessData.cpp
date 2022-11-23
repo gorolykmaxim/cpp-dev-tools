@@ -42,6 +42,10 @@ QDebug operator<<(QDebug debug, const Process& proc) {
                          << proc.running_child_ids << ')';
 }
 
+Event::Event(const QString& type, const QVariantList& args)
+    : type(type),
+      args(args) {}
+
 QDebug operator<<(QDebug debug, const Event& event) {
   QDebugStateSaver saver(debug);
   return debug.nospace() << "Event(t=" << event.type << ",args="

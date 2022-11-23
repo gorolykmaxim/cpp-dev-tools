@@ -1,5 +1,6 @@
 #include "UIData.hpp"
 #include "AppData.hpp"
+#include "Process.hpp"
 
 QVariantListModel::QVariantListModel(const QHash<int, QByteArray>& role_names)
     : QAbstractListModel(), role_names(role_names) {}
@@ -32,21 +33,13 @@ void QVariantListModel::SetItems(const QList<QVariantList>& items) {
 
 UIActionRouter::UIActionRouter(AppData& app) : app(app) {}
 
-void UIActionRouter::OnUserAction(const QString& slot_name,
-                                  const QString& action,
-                                  const QVariantList& args) {
+void UIActionRouter::OnAction(const QString& type, const QVariantList& args) {
   // In some cases this might get called WHILE we are in the middle
   // of the setContextProperties(), which can break some clients that
   // expect user action callbacks to always be called asynchronously.
   // This is why we are invoking it later instead of immediately right here.
-  QMetaObject::invokeMethod(
-      &app.gui_engine,
-      [this, slot_name, action, args] () {
-        ViewData& data = app.view_data[slot_name];
-        UserActionHandler& handler = data.user_action_handlers[action];
-        if (handler) {
-          handler(args);
-        }
-      },
-      Qt::QueuedConnection);
+  QMetaObject::invokeMethod(&app.gui_engine, [this, type, args] () {
+    app.events.enqueue(Event(type, args));
+    ExecuteProcesses(app);
+  }, Qt::QueuedConnection);
 }

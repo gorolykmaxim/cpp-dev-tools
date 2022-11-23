@@ -14,8 +14,8 @@ class OpenProject: public Process {
 public:
   OpenProject();
   void DisplayOpenProjectView(AppData& app);
-  void ChangeProjectPath(const QString& new_path, AppData& app);
-  void HandleItemSelected(AppData& app, int item);
+  void ChangeProjectPath(AppData& app);
+  void HandleItemSelected(AppData& app);
   void CreateNewProject(AppData& app);
   bool HasValidSuggestionAvailable() const;
   void LoadProjectFile(AppData& app);

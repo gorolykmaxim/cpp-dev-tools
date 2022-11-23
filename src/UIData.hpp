@@ -33,7 +33,7 @@ private:
 struct ViewData {
   QSet<QString> data_field_names;
   QHash<QString, QPtr<QVariantListModel>> list_fields;
-  QHash<QString, UserActionHandler> user_action_handlers;
+  QList<QString> event_types;
 };
 
 struct AppData;
@@ -43,8 +43,7 @@ struct UIActionRouter: public QObject {
 public:
   UIActionRouter(AppData& app);
 public slots:
-  void OnUserAction(const QString& slot_name, const QString& action,
-                    const QVariantList& args);
+  void OnAction(const QString& type, const QVariantList& args);
 private:
   AppData& app;
 };

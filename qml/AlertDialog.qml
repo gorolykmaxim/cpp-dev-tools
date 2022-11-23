@@ -34,7 +34,7 @@ ColumnLayout {
       KeyNavigation.right: dialogOk
       onClicked: {
         dialog.reject();
-        core.OnUserAction("dialogSlot", "cancel", []);
+        core.OnAction("daCancel", []);
       }
     }
     ButtonWidget {
@@ -43,7 +43,7 @@ ColumnLayout {
       focus: !dialogCancel.visible
       onClicked: {
         dialog.accept();
-        core.OnUserAction("dialogSlot", "ok", []);
+        core.OnAction("daOk", []);
       }
     }
   }

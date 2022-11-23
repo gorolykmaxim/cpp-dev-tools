@@ -7,6 +7,9 @@
   execute = [this] (AppData& app) {FUNC(app);};\
   dbg_execute_name = #FUNC;\
   dbg_class_name = dbg_class_name ? dbg_class_name : __FUNCTION__
+#define EXEC_AND_WAIT_FOR_NEXT(FUNC)\
+  EXEC_NEXT(FUNC);\
+  ignore_events_until_execute = true
 
 void ExecuteProcesses(AppData& app);
 bool IsProcessValid(const AppData& app, const ProcessId& id);
@@ -17,6 +20,7 @@ void WakeUpAndExecuteProcess(AppData& app, Process& process,
 void WakeUpProcessOnEvent(AppData& app, const QString& event_type,
                           Process& process, ProcessExecute execute = nullptr,
                           const char* dbg_execute_name = nullptr);
+QVariant GetEventArg(const AppData& app, int i);
 bool IsProcessAlive(const AppData& app, const ProcessId& id);
 void PrintProcesses(const AppData& app); // To be called from debugger
 

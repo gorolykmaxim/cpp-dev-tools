@@ -28,6 +28,7 @@ struct Process {
   ProcessId parent_id;
   ProcessExecute execute;
   QList<ProcessId> running_child_ids;
+  bool ignore_events_until_execute = false;
   const char* dbg_class_name = nullptr;
   const char* dbg_execute_name = nullptr;
 };
@@ -41,6 +42,8 @@ struct ProcessWakeUpCall {
 };
 
 struct Event {
+  Event(const QString& type, const QVariantList& args);
+
   QString type;
   QVariantList args;
 };

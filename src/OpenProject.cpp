@@ -98,7 +98,6 @@ OpenProject::OpenProject() {
 }
 
 void OpenProject::DisplayOpenProjectView(AppData& app) {
-  QPtr<OpenProject> self = ProcessSharedPtr(app, this);
   QString home = QStandardPaths::writableLocation(QStandardPaths::HomeLocation);
   DisplayView(
       app,
@@ -112,59 +111,55 @@ void OpenProject::DisplayOpenProjectView(AppData& app) {
       {
         UIListField{"vSuggestions", {{0, "title"}}, QList<QVariantList>()},
       },
-      {
-        {"pathChanged", [self, &app] (const QVariantList& args) {
-          self->ChangeProjectPath(args[0].toString(), app);
-        }},
-        {"suggestionPicked", [self, &app] (const QVariantList& args) {
-          self->HandleItemSelected(app, args[0].toInt());
-        }},
-      });
-  EXEC_NEXT(KeepAlive);
+      {"vaPathChanged", "vaSuggestionPicked"});
+  WakeUpProcessOnEvent(app, "vaPathChanged", *this,
+                       EXEC(this, ChangeProjectPath));
+  WakeUpProcessOnEvent(app, "vaSuggestionPicked", *this,
+                       EXEC(this, HandleItemSelected));
 }
 
-void OpenProject::ChangeProjectPath(const QString& new_path, AppData& app) {
+void OpenProject::ChangeProjectPath(AppData& app) {
+  QString new_path = GetEventArg(app, 0).toString();
   QString old_folder = folder;
   qsizetype i = new_path.lastIndexOf('/');
   folder = i < 0 ? "/" : new_path.sliced(0, i + 1);
   file_name = i < 0 ? new_path : new_path.sliced(i + 1);
   if (old_folder != folder) {
-    get_files = ReScheduleAndExecuteProcess<ReloadFileList>(
-        app, get_files.get(), this, folder, *this);
+    get_files = ReScheduleProcess<ReloadFileList>(app, get_files.get(), this,
+                                                  folder, *this);
   }
   UpdateAndDisplaySuggestions(*this, app);
+  EXEC_NEXT(KeepAlive);
 }
 
-void OpenProject::HandleItemSelected(AppData& app, int item) {
-  selected_suggestion = item;
+void OpenProject::HandleItemSelected(AppData& app) {
+  selected_suggestion = GetEventArg(app, 0).toInt();
   if (HasValidSuggestionAvailable()) {
     QString value = folder + suggestions[selected_suggestion].file;
     SetUIDataField(app, kViewSlot, "vPath", value);
     if (!value.endsWith('/')) {
       qDebug() << "Opening project:" << value;
-      load_project_file = ReScheduleAndExecuteProcess<JsonFileProcess>(
+      load_project_file = ReScheduleProcess<JsonFileProcess>(
           app, load_project_file.get(), this, JsonOperation::kRead, value);
-      EXEC_NEXT(LoadProjectFile);
+      EXEC_AND_WAIT_FOR_NEXT(LoadProjectFile);
+    } else {
+      EXEC_NEXT(Noop);
     }
   } else {
-    QPtr<OpenProject> self = ProcessSharedPtr(app, this);
-    QString value = folder + file_name;
     DisplayAlertDialog(
         app,
         "Create new project?",
-        "Do you want to create a new project at " + value,
+        "Do you want to create a new project at " + folder + file_name,
         false,
-        true,
-        [self, &app] () {
-          WakeUpAndExecuteProcess(app, *self, EXEC(self, CreateNewProject));
-        });
+        true);
+    WakeUpProcessOnEvent(app, "daOk", *this, EXEC(this, CreateNewProject));
   }
 }
 
 void OpenProject::CreateNewProject(AppData& app) {
   QString value = folder + file_name;
   qDebug() << "Creating project:" << value;
-  load_project_file = ReScheduleAndExecuteProcess<JsonFileProcess>(
+  load_project_file = ReScheduleProcess<JsonFileProcess>(
       app, load_project_file.get(), this, JsonOperation::kWrite, value,
       QJsonDocument());
   EXEC_NEXT(LoadProjectFile);
