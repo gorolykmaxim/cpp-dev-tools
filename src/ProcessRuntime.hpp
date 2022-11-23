@@ -9,7 +9,7 @@
   dbg_execute_name = #FUNC;\
   dbg_class_name = dbg_class_name ? dbg_class_name : __FUNCTION__
 
-class Application;
+struct Application;
 
 class ProcessId {
 public:

@@ -1,5 +1,6 @@
 #include "Initialize.hpp"
 #include "OpenProject.hpp"
+#include "UserConfig.hpp"
 
 Initialize::Initialize() {
   EXEC_NEXT(ReadConfig);
@@ -13,7 +14,7 @@ void Initialize::ReadConfig(Application& app) {
 }
 
 void Initialize::LoadUserConfigAndOpenProject(Application& app) {
-  app.LoadFrom(read_config->json);
-  app.SaveToUserConfig();
+  ReadUserConfigFrom(app, read_config->json);
+  SaveToUserConfig(app);
   app.runtime.Schedule<OpenProject>(nullptr);
 }

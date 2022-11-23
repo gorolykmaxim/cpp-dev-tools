@@ -10,6 +10,8 @@ qt_add_executable(cpp-dev-tools
   src/Lib.hpp
   src/PerfTimer.hpp
   src/PerfTimer.cpp
+  src/UserConfig.hpp
+  src/UserConfig.cpp
   src/Threads.hpp
   src/Threads.cpp
   src/Application.hpp

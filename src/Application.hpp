@@ -39,8 +39,7 @@ public:
   QVector<QString> pre_tasks;
 };
 
-class Application {
-public:
+struct Application {
   QString user_config_path;
   QGuiApplication gui_app;
   ProcessRuntime runtime;
@@ -53,6 +52,4 @@ public:
   UserInterface ui;
 
   Application(int argc, char** argv);
-  void LoadFrom(const QJsonDocument& json);
-  void SaveToUserConfig();
 };
