@@ -16,6 +16,8 @@ private:
 
 struct Project {
   Project(const QString& path);
+  QString GetPathRelativeToHome() const;
+  QString GetFolderName() const;
   bool operator==(const Project& project) const;
   bool operator!=(const Project& project) const;
 

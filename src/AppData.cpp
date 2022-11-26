@@ -23,6 +23,22 @@ bool Profile::Contains(const QString& key) const {
 
 Project::Project(const QString& path) : path(path), profile(-1) {}
 
+QString Project::GetPathRelativeToHome() const {
+  QString home_str = QStandardPaths::writableLocation(
+      QStandardPaths::HomeLocation);
+  if (path.startsWith(home_str)) {
+    return "~/" + QDir(home_str).relativeFilePath(path);
+  } else {
+    return path;
+  }
+}
+
+QString Project::GetFolderName() const {
+  QDir dir(path);
+  dir.cdUp();
+  return dir.dirName();
+}
+
 bool Project::operator==(const Project& project) const {
   return path == project.path;
 }

@@ -1,5 +1,5 @@
 #include "Initialize.hpp"
-#include "OpenProject.hpp"
+#include "SelectProject.hpp"
 #include "UserConfig.hpp"
 #include "Process.hpp"
 
@@ -17,5 +17,5 @@ void Initialize::ReadConfig(AppData& app) {
 void Initialize::LoadUserConfigAndOpenProject(AppData& app) {
   ReadUserConfigFrom(app, read_config->json);
   SaveToUserConfig(app);
-  ScheduleProcess<OpenProject>(app, nullptr);
+  ScheduleProcess<SelectProject>(app, nullptr);
 }

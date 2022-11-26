@@ -385,14 +385,7 @@ static void DisplayStatusBar(AppData& app) {
   }
   const Project& project = app.projects[0];
   QList<QVariantList> itemsLeft, itemsRight;
-  QString home_str = QStandardPaths::writableLocation(
-      QStandardPaths::HomeLocation);
-  if (project.path.startsWith(home_str)) {
-    QString path = QDir(home_str).relativeFilePath(project.path);
-    itemsLeft.append({"~/" + path});
-  } else {
-    itemsLeft.append({project.path});
-  }
+  itemsLeft.append({project.GetPathRelativeToHome()});
   if (project.profile >= 0) {
     QString profile_name = app.profiles[project.profile].GetName();
     itemsRight.append({"Profile: " + profile_name});
