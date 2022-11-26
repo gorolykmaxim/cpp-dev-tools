@@ -20,6 +20,10 @@ void WakeUpAndExecuteProcess(AppData& app, Process& process,
 void WakeUpProcessOnEvent(AppData& app, const QString& event_type,
                           Process& process, ProcessExecute execute = nullptr,
                           const char* dbg_execute_name = nullptr);
+void WakeUpProcessOnUIEvent(AppData& app, const QString& slot_name,
+                            const QString& event_type, Process& process,
+                            ProcessExecute execute = nullptr,
+                            const char* dbg_execute_name = nullptr);
 QVariant GetEventArg(const AppData& app, int i);
 bool IsProcessAlive(const AppData& app, const ProcessId& id);
 void PrintProcesses(const AppData& app); // To be called from debugger

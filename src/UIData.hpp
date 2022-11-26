@@ -33,7 +33,7 @@ private:
 struct ViewData {
   QSet<QString> data_field_names;
   QHash<QString, QPtr<QVariantListModel>> list_fields;
-  QList<QString> event_types;
+  QSet<QString> event_types;
 };
 
 struct AppData;

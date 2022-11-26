@@ -110,14 +110,14 @@ void OpenProject::DisplayOpenProjectView(AppData& app) {
       },
       {
         UIListField{"vSuggestions", {{0, "title"}}, QList<QVariantList>()},
-      },
-      {"vaPathChanged", "vaSuggestionPicked", "vaOpeningCancelled"});
-  WakeUpProcessOnEvent(app, "vaPathChanged", *this,
-                       EXEC(this, ChangeProjectPath));
-  WakeUpProcessOnEvent(app, "vaSuggestionPicked", *this,
-                       EXEC(this, HandleItemSelected));
+      });
+  WakeUpProcessOnUIEvent(app, kViewSlot, "vaPathChanged", *this,
+                         EXEC(this, ChangeProjectPath));
+  WakeUpProcessOnUIEvent(app, kViewSlot, "vaSuggestionPicked", *this,
+                         EXEC(this, HandleItemSelected));
   // In case of cancelling - just finish this process
-  WakeUpProcessOnEvent(app, "vaOpeningCancelled", *this, EXEC(this, Noop));
+  WakeUpProcessOnUIEvent(app, kViewSlot, "vaOpeningCancelled", *this,
+                         EXEC(this, Noop));
 }
 
 void OpenProject::ChangeProjectPath(AppData& app) {
@@ -154,7 +154,8 @@ void OpenProject::HandleItemSelected(AppData& app) {
         "Do you want to create a new project at " + folder + file_name,
         false,
         true);
-    WakeUpProcessOnEvent(app, "daOk", *this, EXEC(this, CreateNewProject));
+    WakeUpProcessOnUIEvent(app, kDialogSlot, "daOk", *this,
+                           EXEC(this, CreateNewProject));
   }
 }
 
@@ -437,7 +438,6 @@ void OpenProject::LoadProjectFile(AppData& app) {
           UIDataField{kWindowTitle, "CPP Dev Tools"},
           UIDataField{"vText", "Execute Command: <b>\u2318O</b>"},
         },
-        {},
         {});
   }
 }

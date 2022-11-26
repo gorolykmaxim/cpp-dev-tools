@@ -19,15 +19,14 @@ void InitializeUI(AppData& app) {
 
 void DisplayView(AppData& app, const QString& slot_name,
                  const QString& qml_file, const QList<UIDataField>& data_fields,
-                 const QList<UIListField>& list_fields,
-                 const QList<QString>& event_types) {
+                 const QList<UIListField>& list_fields) {
   QQmlContext* context = app.gui_engine.rootContext();
   ViewData& data = app.view_data[slot_name];
   for (const QString& event_type: data.event_types) {
     qDebug() << "Removing listeners of event" << event_type;
     app.event_listeners.remove(event_type);
   }
-  data.event_types = event_types;
+  data.event_types.clear();
   // Initialize list_fields
   for (const QString& name: data.list_fields.keys()) {
     context->setContextProperty(name, nullptr);
@@ -81,8 +80,7 @@ void DisplayAlertDialog(AppData& app, const QString& title,
         UIDataField{"dCancellable", cancellable},
         UIDataField{"dError", error},
       },
-      {},
-      {"daCancel", "daOk"});
+      {});
 }
 
 void DisplayStatusBar(AppData& app, const QList<QVariantList>& itemsLeft,
@@ -95,6 +93,5 @@ void DisplayStatusBar(AppData& app, const QList<QVariantList>& itemsLeft,
       {
         UIListField{"sItemsLeft", {{0, "title"}}, itemsLeft},
         UIListField{"sItemsRight", {{0, "title"}}, itemsRight},
-      },
-      {});
+      });
 }

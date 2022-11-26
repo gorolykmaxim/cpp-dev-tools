@@ -31,9 +31,9 @@ void SelectProject::DisplaySelectProjectView(AppData& app) {
       },
       {
         UIListField{"vProjects", role_names, projects},
-      },
-      {"vaFilterChanged", "vaProjectSelected", "vaNewProject"});
-  WakeUpProcessOnEvent(app, "vaNewProject", *this, EXEC(this, OpenNewProject));
+      });
+  WakeUpProcessOnUIEvent(app, kViewSlot, "vaNewProject", *this,
+                         EXEC(this, OpenNewProject));
 }
 
 void SelectProject::OpenNewProject(AppData& app) {

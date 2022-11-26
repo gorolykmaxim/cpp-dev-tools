@@ -45,6 +45,14 @@ void WakeUpProcessOnEvent(AppData& app, const QString& event_type,
   EXEC_NEXT_OBJ(process, Noop);
 }
 
+void WakeUpProcessOnUIEvent(AppData& app, const QString& slot_name,
+                            const QString& event_type, Process& process,
+                            ProcessExecute execute,
+                            const char* dbg_execute_name) {
+  WakeUpProcessOnEvent(app, event_type, process, execute, dbg_execute_name);
+  app.view_data[slot_name].event_types.insert(event_type);
+}
+
 QVariant GetEventArg(const AppData& app, int i) {
   return app.events.head().args[i];
 }

@@ -5,8 +5,7 @@
 void InitializeUI(AppData& app);
 void DisplayView(AppData& app, const QString& slot_name,
                  const QString& qml_file, const QList<UIDataField>& data_fields,
-                 const QList<UIListField>& list_fields,
-                 const QList<QString>& event_types);
+                 const QList<UIListField>& list_fields);
 void SetUIDataField(AppData& app, const QString& slot_name,
                     const QString& name, const QVariant& value);
 QVariantListModel& GetUIListField(AppData& app, const QString& slot_name,
