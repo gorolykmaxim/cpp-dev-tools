@@ -1,5 +1,4 @@
 #include "SelectProject.hpp"
-#include "OpenProject.hpp"
 #include "UI.hpp"
 #include "Process.hpp"
 
@@ -35,9 +34,15 @@ void SelectProject::DisplaySelectProjectView(AppData& app) {
       },
       {"vaFilterChanged", "vaProjectSelected", "vaNewProject"});
   WakeUpProcessOnEvent(app, "vaNewProject", *this, EXEC(this, OpenNewProject));
-  EXEC_NEXT(KeepAlive);
 }
 
 void SelectProject::OpenNewProject(AppData& app) {
-  ScheduleProcess<OpenProject>(app, this);
+  open_project = ScheduleProcess<OpenProject>(app, this);
+  EXEC_NEXT(HandleOpenProjectCompletion);
+}
+
+void SelectProject::HandleOpenProjectCompletion(AppData& app) {
+  if (!open_project->opened) {
+    DisplaySelectProjectView(app);
+  }
 }

@@ -111,11 +111,13 @@ void OpenProject::DisplayOpenProjectView(AppData& app) {
       {
         UIListField{"vSuggestions", {{0, "title"}}, QList<QVariantList>()},
       },
-      {"vaPathChanged", "vaSuggestionPicked"});
+      {"vaPathChanged", "vaSuggestionPicked", "vaOpeningCancelled"});
   WakeUpProcessOnEvent(app, "vaPathChanged", *this,
                        EXEC(this, ChangeProjectPath));
   WakeUpProcessOnEvent(app, "vaSuggestionPicked", *this,
                        EXEC(this, HandleItemSelected));
+  // In case of cancelling - just finish this process
+  WakeUpProcessOnEvent(app, "vaOpeningCancelled", *this, EXEC(this, Noop));
 }
 
 void OpenProject::ChangeProjectPath(AppData& app) {
@@ -421,6 +423,7 @@ void OpenProject::LoadProjectFile(AppData& app) {
     app.tasks = tasks;
     app.projects.removeOne(project);
     app.projects.insert(0, project);
+    opened = true;
     SaveToUserConfig(app);
     // TODO:
     // - display something more useful as a title

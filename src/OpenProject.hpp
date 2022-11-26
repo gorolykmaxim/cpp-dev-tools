@@ -25,4 +25,5 @@ public:
   QList<FileSuggestion> suggestions;
   QPtr<Process> get_files;
   QPtr<JsonFileProcess> load_project_file;
+  bool opened = false;
 };

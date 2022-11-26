@@ -20,7 +20,7 @@ ColumnLayout {
         text: vPath || ""
         focus: true
         Layout.fillWidth: true
-        KeyNavigation.right: button
+        KeyNavigation.right: openBtn
         onDisplayTextChanged: core.OnAction("vaPathChanged", [displayText])
         Keys.onReturnPressed: core.OnAction("vaSuggestionPicked",
                                             [list.currentIndex])
@@ -30,9 +30,15 @@ ColumnLayout {
         Keys.onUpPressed: list.decrementCurrentIndex()
       }
       ButtonWidget {
-        id: button
+        id: openBtn
         text: vButtonText
+        KeyNavigation.right: cancelBtn
         onClicked: core.OnAction("vaSuggestionPicked", [list.currentIndex])
+      }
+      ButtonWidget {
+        id: cancelBtn
+        text: "Cancel"
+        onClicked: core.OnAction("vaOpeningCancelled", [])
       }
     }
   }
