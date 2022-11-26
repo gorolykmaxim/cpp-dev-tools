@@ -437,5 +437,4 @@ void OpenProject::LoadProjectFile(AppData& app) {
         {},
         {});
   }
-  EXEC_NEXT(KeepAlive);
 }

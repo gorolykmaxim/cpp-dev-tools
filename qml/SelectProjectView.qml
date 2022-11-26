@@ -46,13 +46,6 @@ ColumnLayout {
       anchors.fill: parent
       clip: true
       boundsBehavior: ListView.StopAtBounds
-      // model: ListModel {
-      //   ListElement {
-      //     idx: 1
-      //     title: "Project 1"
-      //     subTitle: "~/dev/Project 1"
-      //   }
-      // }
       model: vProjects
       delegate: Rectangle {
         property var isSelected: ListView.isCurrentItem

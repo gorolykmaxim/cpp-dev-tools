@@ -1,4 +1,5 @@
 #include "SelectProject.hpp"
+#include "OpenProject.hpp"
 #include "UI.hpp"
 #include "Process.hpp"
 
@@ -26,11 +27,17 @@ void SelectProject::DisplaySelectProjectView(AppData& app) {
       kViewSlot,
       "SelectProjectView.qml",
       {
+        UIDataField{kWindowTitle, "Open Project"},
         UIDataField{"vFilter", ""},
       },
       {
         UIListField{"vProjects", role_names, projects},
       },
       {"vaFilterChanged", "vaProjectSelected", "vaNewProject"});
+  WakeUpProcessOnEvent(app, "vaNewProject", *this, EXEC(this, OpenNewProject));
   EXEC_NEXT(KeepAlive);
+}
+
+void SelectProject::OpenNewProject(AppData& app) {
+  ScheduleProcess<OpenProject>(app, this);
 }

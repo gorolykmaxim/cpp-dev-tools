@@ -6,4 +6,5 @@ class SelectProject: public Process {
 public:
   SelectProject();
   void DisplaySelectProjectView(AppData& app);
+  void OpenNewProject(AppData& app);
 };
