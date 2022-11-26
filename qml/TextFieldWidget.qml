@@ -4,6 +4,7 @@ import QtQuick.Controls
 TextField {
   id: textField
   color: colorText
+  placeholderTextColor: colorSubText
   padding: basePadding
   selectByMouse: true
   selectionColor: colorHighlight
