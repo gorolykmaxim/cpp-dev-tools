@@ -8,9 +8,7 @@ void InitializeUI(AppData& app) {
     UIDataField{kDialogVisible, false},
     UIDataField{kWindowTitle, "CPP Dev-Tools"},
   };
-  // Display empty status bar but make sure its 100% of its normal non-empty
-  // height
-  DisplayStatusBar(app, {{" "}}, {});
+  DisplayStatusBar(app);
   context->setContextProperties(fields);
   context->setContextProperty("core", &app.ui_action_router);
   QQuickStyle::setStyle("Basic");
@@ -83,8 +81,20 @@ void DisplayAlertDialog(AppData& app, const QString& title,
       {});
 }
 
-void DisplayStatusBar(AppData& app, const QList<QVariantList>& itemsLeft,
-                      const QList<QVariantList>& itemsRight) {
+void DisplayStatusBar(AppData& app) {
+  QList<QVariantList> itemsLeft, itemsRight;
+  if (app.projects.isEmpty()) {
+    // Display empty status bar but make sure its 100% of its normal non-empty
+    // height
+    itemsLeft.append({" "});
+  } else {
+    const Project& project = app.projects[0];
+    itemsLeft.append({project.GetPathRelativeToHome()});
+    if (project.profile >= 0) {
+      QString profile_name = app.profiles[project.profile].GetName();
+      itemsRight.append({"Profile: " + profile_name});
+    }
+  }
   DisplayView(
       app,
       kStatusSlot,

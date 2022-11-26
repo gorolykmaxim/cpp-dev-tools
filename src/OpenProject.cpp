@@ -382,20 +382,6 @@ static void ExpandPreTasks(QList<Task> &tasks, QStringList& errors) {
   }
 }
 
-static void DisplayStatusBar(AppData& app) {
-  if (app.projects.isEmpty()) {
-    return;
-  }
-  const Project& project = app.projects[0];
-  QList<QVariantList> itemsLeft, itemsRight;
-  itemsLeft.append({project.GetPathRelativeToHome()});
-  if (project.profile >= 0) {
-    QString profile_name = app.profiles[project.profile].GetName();
-    itemsRight.append({"Profile: " + profile_name});
-  }
-  DisplayStatusBar(app, itemsLeft, itemsRight);
-}
-
 void OpenProject::LoadProjectFile(AppData& app) {
   if (!load_project_file->error.isEmpty()) {
     DisplayAlertDialog(app, "Failed to open project", load_project_file->error);

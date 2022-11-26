@@ -13,5 +13,4 @@ QVariantListModel& GetUIListField(AppData& app, const QString& slot_name,
 void DisplayAlertDialog(AppData& app, const QString& title,
                         const QString& text, bool error = true,
                         bool cancellable = false);
-void DisplayStatusBar(AppData& app, const QList<QVariantList>& itemsLeft,
-                      const QList<QVariantList>& itemsRight);
+void DisplayStatusBar(AppData& app);
