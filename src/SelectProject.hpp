@@ -9,6 +9,7 @@ public:
   SelectProject();
   void SanitizeProjectList(AppData& app);
   void LoadLastProjectOrDisplaySelectProjectView(AppData& app);
+  void HandleOpenLastProjectCompletion(AppData& app);
   void DisplaySelectProjectView(AppData& app);
   void OpenNewProject(AppData& app);
   void HandleOpenNewProjectCompletion(AppData& app);

@@ -31,16 +31,20 @@ void SelectProject::SanitizeProjectList(AppData& app) {
 }
 
 void SelectProject::LoadLastProjectOrDisplaySelectProjectView(AppData& app) {
-  // We are displaying the view right now because the process might fail
-  // and display an error dialog and in such case we want the view to already
-  // be displayed. Otherwise it will steal the focus from the dialog.
-  DisplaySelectProjectView(app);
   if (!app.projects.isEmpty() &&
       app.projects[0].path == app.current_project_path) {
     qDebug() << "Loading current project" << app.current_project_path;
     load_project_file = ScheduleProcess<LoadTaskConfig>(
         app, this, app.current_project_path);
-    EXEC_AND_WAIT_FOR_NEXT(HandleOpenExistingProjectCompletion);
+    EXEC_NEXT(HandleOpenLastProjectCompletion);
+  } else {
+    DisplaySelectProjectView(app);
+  }
+}
+
+void SelectProject::HandleOpenLastProjectCompletion(AppData& app) {
+  if (!load_project_file->success) {
+    DisplaySelectProjectView(app);
   }
 }
 

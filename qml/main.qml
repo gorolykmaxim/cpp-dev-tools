@@ -28,7 +28,11 @@ Window {
       id: viewLoader
       anchors.fill: parent
       source: viewSlot
-      onLoaded: forceActiveFocus()
+      onLoaded: {
+        if (!dialog.visible) {
+          forceActiveFocus();
+        }
+      }
     }
     Dialog {
       id: dialog
