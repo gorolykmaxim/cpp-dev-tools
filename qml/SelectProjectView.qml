@@ -69,12 +69,27 @@ ColumnLayout {
         }
         MouseArea {
           anchors.fill: parent
-          onClicked: {
+          acceptedButtons: Qt.LeftButton | Qt.RightButton
+          onClicked: e => {
             list.currentIndex = index;
-            core.OnAction("vaProjectSelected", [list.currentItem.itemId]);
+            if (e.button == Qt.LeftButton) {
+              core.OnAction("vaProjectSelected", [list.currentItem.itemId]);
+            } else if (e.button == Qt.RightButton) {
+              contextMenu.popup();
+            }
           }
         }
       }
+    }
+  }
+  ContextMenuWidget {
+    id: contextMenu
+    ContextMenuItemWidget {
+      text: "Open"
+      onTriggered: core.OnAction("vaProjectSelected", [list.currentItem.itemId])
+    }
+    ContextMenuItemWidget {
+      text: "Remove From List"
     }
   }
 }
