@@ -12,7 +12,10 @@ public:
   void HandleOpenNewProjectCompletion(AppData& app);
   void OpenExistingProject(AppData& app);
   void HandleOpenExistingProjectCompletion(AppData& app);
+  void FilterProjects(AppData& app);
+  QList<QVariantList> MakeFilteredListOfProjects(AppData& app);
 
+  QString filter;
   QPtr<OpenProject> open_project;
   QPtr<LoadTaskConfig> load_project_file;
 };
