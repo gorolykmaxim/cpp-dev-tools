@@ -1,8 +1,8 @@
 #include "OpenProject.hpp"
-#include "UserConfig.hpp"
 #include "Threads.hpp"
 #include "UI.hpp"
 #include "Process.hpp"
+#include "SaveUserConfig.hpp"
 
 static bool IsValid(const FileSuggestion& s) {
   return s.match_start >= 0 && s.match_start < s.file.size();
@@ -411,7 +411,7 @@ void OpenProject::LoadProjectFile(AppData& app) {
     app.projects.removeOne(project);
     app.projects.insert(0, project);
     opened = true;
-    SaveToUserConfig(app);
+    ScheduleProcess<SaveUserConfig>(app, this);
     // TODO:
     // - display something more useful as a title
     // - once shortcuts are implemented - display actual configured shortcut

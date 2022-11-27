@@ -1,21 +1,19 @@
 #include "Initialize.hpp"
 #include "SelectProject.hpp"
-#include "UserConfig.hpp"
 #include "Process.hpp"
+#include "LoadUserConfig.hpp"
+#include "SaveUserConfig.hpp"
 
 Initialize::Initialize() {
-  EXEC_NEXT(ReadConfig);
+  EXEC_NEXT(ReadUserConfig);
 }
 
-void Initialize::ReadConfig(AppData& app) {
-  read_config = ScheduleProcess<JsonFileProcess>(app, this,
-                                                 JsonOperation::kRead,
-                                                 app.user_config_path);
-  EXEC_NEXT(LoadUserConfigAndOpenProject);
+void Initialize::ReadUserConfig(AppData& app) {
+  ScheduleProcess<LoadUserConfig>(app, this);
+  EXEC_NEXT(UpdateConfigAndSelectProject);
 }
 
-void Initialize::LoadUserConfigAndOpenProject(AppData& app) {
-  ReadUserConfigFrom(app, read_config->json);
-  SaveToUserConfig(app);
+void Initialize::UpdateConfigAndSelectProject(AppData& app) {
+  ScheduleProcess<SaveUserConfig>(app, this);
   ScheduleProcess<SelectProject>(app, nullptr);
 }

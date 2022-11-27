@@ -10,8 +10,6 @@ qt_add_executable(cpp-dev-tools
   src/Lib.hpp
   src/PerfTimer.hpp
   src/PerfTimer.cpp
-  src/UserConfig.hpp
-  src/UserConfig.cpp
   src/Threads.hpp
   src/Threads.cpp
   src/UI.hpp
@@ -30,6 +28,10 @@ qt_add_executable(cpp-dev-tools
   src/OpenProject.cpp
   src/SelectProject.hpp
   src/SelectProject.cpp
+  src/LoadUserConfig.hpp
+  src/LoadUserConfig.cpp
+  src/SaveUserConfig.hpp
+  src/SaveUserConfig.cpp
   src/Initialize.hpp
   src/Initialize.cpp)
 if(NOT MSVC)
