@@ -54,6 +54,7 @@ void WakeUpProcessOnUIEvent(AppData& app, const QString& slot_name,
 }
 
 QVariant GetEventArg(const AppData& app, int i) {
+  Q_ASSERT(!app.events.isEmpty());
   return app.events.head().args[i];
 }
 
