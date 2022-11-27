@@ -2,8 +2,31 @@
 #include "UI.hpp"
 #include "Process.hpp"
 #include "SaveUserConfig.hpp"
+#include "Threads.hpp"
 
 SelectProject::SelectProject() {
+  EXEC_NEXT(SanitizeProjectList);
+}
+
+void SelectProject::SanitizeProjectList(AppData& app) {
+  qDebug() << "Removing projects that no longer exist";
+  QList<Project> projects = app.projects;
+  QPtr<SelectProject> self = ProcessSharedPtr(app, this);
+  ScheduleIOTask<QList<Project>>(app, [projects] () {
+    QList<Project> result;
+    for (const Project& project: projects) {
+      if (QFile(project.path).exists()) {
+        result.append(project);
+      } else {
+        qDebug() << "Project" << project.path << "no longer exists - removing";
+      }
+    }
+    return result;
+  }, [&app, self] (QList<Project> projects) {
+    app.projects = projects;
+    ScheduleProcess<SaveUserConfig>(app, nullptr);
+    WakeUpAndExecuteProcess(app, *self);
+  });
   EXEC_NEXT(DisplaySelectProjectView);
 }
 
