@@ -13,6 +13,7 @@ public:
   void OpenExistingProject(AppData& app);
   void HandleOpenExistingProjectCompletion(AppData& app);
   void FilterProjects(AppData& app);
+  void RemoveProject(AppData& app);
   QList<QVariantList> MakeFilteredListOfProjects(AppData& app);
 
   QString filter;

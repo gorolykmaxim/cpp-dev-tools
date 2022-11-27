@@ -1,6 +1,7 @@
 #include "SelectProject.hpp"
 #include "UI.hpp"
 #include "Process.hpp"
+#include "SaveUserConfig.hpp"
 
 SelectProject::SelectProject() {
   EXEC_NEXT(DisplaySelectProjectView);
@@ -29,6 +30,8 @@ void SelectProject::DisplaySelectProjectView(AppData& app) {
                          EXEC(this, OpenExistingProject));
   WakeUpProcessOnUIEvent(app, kViewSlot, "vaFilterChanged", *this,
                          EXEC(this, FilterProjects));
+  WakeUpProcessOnUIEvent(app, kViewSlot, "vaRemoveProject", *this,
+                         EXEC(this, RemoveProject));
 }
 
 void SelectProject::OpenNewProject(AppData& app) {
@@ -57,6 +60,15 @@ void SelectProject::HandleOpenExistingProjectCompletion(AppData&) {
 
 void SelectProject::FilterProjects(AppData& app) {
   filter = GetEventArg(app, 0).toString();
+  QList<QVariantList> projects = MakeFilteredListOfProjects(app);
+  GetUIListField(app, kViewSlot, "vProjects").SetItems(projects);
+  EXEC_NEXT(KeepAlive);
+}
+
+void SelectProject::RemoveProject(AppData& app) {
+  int i = GetEventArg(app, 0).toInt();
+  app.projects.remove(i);
+  ScheduleProcess<SaveUserConfig>(app, nullptr);
   QList<QVariantList> projects = MakeFilteredListOfProjects(app);
   GetUIListField(app, kViewSlot, "vProjects").SetItems(projects);
   EXEC_NEXT(KeepAlive);

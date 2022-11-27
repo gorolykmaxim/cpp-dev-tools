@@ -90,6 +90,7 @@ ColumnLayout {
     }
     ContextMenuItemWidget {
       text: "Remove From List"
+      onTriggered: core.OnAction("vaRemoveProject", [list.currentItem.itemId])
     }
   }
 }
