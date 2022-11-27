@@ -27,7 +27,21 @@ void SelectProject::SanitizeProjectList(AppData& app) {
     ScheduleProcess<SaveUserConfig>(app, nullptr);
     WakeUpAndExecuteProcess(app, *self);
   });
-  EXEC_NEXT(DisplaySelectProjectView);
+  EXEC_NEXT(LoadLastProjectOrDisplaySelectProjectView);
+}
+
+void SelectProject::LoadLastProjectOrDisplaySelectProjectView(AppData& app) {
+  // We are displaying the view right now because the process might fail
+  // and display an error dialog and in such case we want the view to already
+  // be displayed. Otherwise it will steal the focus from the dialog.
+  DisplaySelectProjectView(app);
+  if (!app.projects.isEmpty() &&
+      app.projects[0].path == app.current_project_path) {
+    qDebug() << "Loading current project" << app.current_project_path;
+    load_project_file = ScheduleProcess<LoadTaskConfig>(
+        app, this, app.current_project_path);
+    EXEC_AND_WAIT_FOR_NEXT(HandleOpenExistingProjectCompletion);
+  }
 }
 
 void SelectProject::DisplaySelectProjectView(AppData& app) {

@@ -16,6 +16,7 @@ void SaveUserConfig::Save(AppData& app) {
     projects_arr.append(project_obj);
   }
   json["projects"] = projects_arr;
+  json["currentProjectPath"] = app.current_project_path;
   ScheduleProcess<JsonFileProcess>(app, this, JsonOperation::kWrite,
                                    app.user_config_path, QJsonDocument(json));
 }

@@ -254,6 +254,7 @@ void LoadTaskConfig::Read(AppData& app) {
     app.tasks = tasks;
     app.projects.removeOne(project);
     app.projects.insert(0, project);
+    app.current_project_path = project.path;
     success = true;
     ScheduleProcess<SaveUserConfig>(app, this);
     // TODO:

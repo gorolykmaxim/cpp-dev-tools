@@ -39,6 +39,7 @@ struct Task {
 
 struct AppData {
   QString user_config_path;
+  QString current_project_path;
   QGuiApplication gui_app;
   QQmlApplicationEngine gui_engine;
   UIActionRouter ui_action_router;

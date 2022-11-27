@@ -17,4 +17,5 @@ void LoadUserConfig::Read(AppData& app) {
     project.profile = project_val["profile"].toInt();
     app.projects.append(project);
   }
+  app.current_project_path = load_file->json["currentProjectPath"].toString();
 }
