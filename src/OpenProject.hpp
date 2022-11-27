@@ -1,8 +1,7 @@
 #pragma once
 
-#include "Lib.hpp"
 #include "AppData.hpp"
-#include "JsonFileProcess.hpp"
+#include "LoadTaskConfig.hpp"
 
 struct FileSuggestion {
   QString file;
@@ -18,12 +17,12 @@ public:
   void HandleItemSelected(AppData& app);
   void CreateNewProject(AppData& app);
   bool HasValidSuggestionAvailable() const;
-  void LoadProjectFile(AppData& app);
+  void HandleOpeningCompletion(AppData& app);
 
   QString folder, file_name;
   int selected_suggestion = 0;
   QList<FileSuggestion> suggestions;
   QPtr<Process> get_files;
-  QPtr<JsonFileProcess> load_project_file;
+  QPtr<LoadTaskConfig> load_project_file;
   bool opened = false;
 };
