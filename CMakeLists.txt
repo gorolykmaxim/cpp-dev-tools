@@ -56,8 +56,6 @@ qt_add_qml_module(cpp-dev-tools URI cdt VERSION 1.0
       qml/PaneWidget.qml
       qml/ReadOnlyTextAreaWidget.qml
       qml/StatusBarWidget.qml
-      qml/ContextMenuWidget.qml
-      qml/ContextMenuItemWidget.qml
       qml/AlertDialog.qml
       qml/BlankView.qml
       qml/SelectProjectView.qml

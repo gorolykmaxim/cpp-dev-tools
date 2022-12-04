@@ -1,5 +1,6 @@
 import QtQuick
 import QtQuick.Controls
+import Qt.labs.platform
 
 TextField {
   id: textField
@@ -10,7 +11,7 @@ TextField {
   selectionColor: colorHighlight
   onPressed: e => {
     if (e.button == Qt.RightButton) {
-      contextMenu.popup();
+      contextMenu.open();
     }
   }
   background: Rectangle {
@@ -19,18 +20,21 @@ TextField {
     border.width: parent.focus ? 2 : 1
     radius: baseRadius
   }
-  ContextMenuWidget {
+  Menu {
     id: contextMenu
-    ContextMenuItemWidget {
+    MenuItem {
       text: "Cut"
+      shortcut: StandardKey.Cut
       onTriggered: textField.cut()
     }
-    ContextMenuItemWidget {
+    MenuItem {
       text: "Copy"
+      shortcut: StandardKey.Copy
       onTriggered: textField.copy()
     }
-    ContextMenuItemWidget {
+    MenuItem {
       text: "Paste"
+      shortcut: StandardKey.Paste
       onTriggered: textField.paste()
     }
   }

@@ -1,6 +1,7 @@
 import QtQuick
 import QtQuick.Layouts
 import QtQuick.Controls
+import Qt.labs.platform
 
 ColumnLayout {
   Component.onCompleted: {
@@ -75,20 +76,20 @@ ColumnLayout {
             if (e.button == Qt.LeftButton) {
               core.OnAction("vaProjectSelected", [list.currentItem.itemId]);
             } else if (e.button == Qt.RightButton) {
-              contextMenu.popup();
+              contextMenu.open();
             }
           }
         }
       }
     }
   }
-  ContextMenuWidget {
+  Menu {
     id: contextMenu
-    ContextMenuItemWidget {
+    MenuItem {
       text: "Open"
       onTriggered: core.OnAction("vaProjectSelected", [list.currentItem.itemId])
     }
-    ContextMenuItemWidget {
+    MenuItem {
       text: "Remove From List"
       onTriggered: core.OnAction("vaRemoveProject", [list.currentItem.itemId])
     }
