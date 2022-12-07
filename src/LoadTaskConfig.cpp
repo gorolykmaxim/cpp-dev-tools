@@ -260,6 +260,7 @@ void LoadTaskConfig::Read(AppData& app) {
     // TODO:
     // - display something more useful as a title
     // - once shortcuts are implemented - display actual configured shortcut
+    DisplayMenuBar(app);
     DisplayStatusBar(app);
     DisplayView(
         app,

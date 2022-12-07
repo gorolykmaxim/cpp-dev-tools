@@ -8,6 +8,7 @@ void InitializeUI(AppData& app) {
     UIDataField{kDialogVisible, false},
     UIDataField{kWindowTitle, "CPP Dev-Tools"},
   };
+  DisplayMenuBar(app);
   DisplayStatusBar(app);
   context->setContextProperties(fields);
   context->setContextProperty("core", &app.ui_action_router);
@@ -103,5 +104,39 @@ void DisplayStatusBar(AppData& app) {
       {
         UIListField{"sItemsLeft", {{0, "title"}}, itemsLeft},
         UIListField{"sItemsRight", {{0, "title"}}, itemsRight},
+      });
+}
+
+void DisplayMenuBar(AppData& app) {
+  static bool empty = true;
+  QHash<int, QByteArray> role_names = {
+      {0, "menu"},
+      {1, "item"},
+      {2, "shortcut"},
+      {3, "eventType"}
+  };
+  QList<QVariantList> actions;
+  if (!empty) {
+    for (int i = 1; i < 6; i++) {
+      QString menu;
+      if (i < 3) {
+        menu = "File";
+      } else if (i < 5) {
+        menu = "Edit";
+      } else {
+        menu = "Custom";
+      }
+      QString idx = QString::number(i);
+      actions.append({menu, "Action " + idx, "Ctrl+" + idx, "Event" + idx});
+    }
+  }
+  empty = false;
+  DisplayView(
+      app,
+      kHeaderSlot,
+      "",
+      {},
+      {
+        UIListField{"hActions", role_names, actions},
       });
 }

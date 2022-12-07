@@ -19,6 +19,9 @@ Window {
     id: iconFont
     source: "../fonts/MaterialIcons-Regular.ttf"
   }
+  MenuBarWidget {
+    model: hActions
+  }
   Page {
     anchors.fill: parent
     background: Rectangle {

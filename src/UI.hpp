@@ -14,3 +14,4 @@ void DisplayAlertDialog(AppData& app, const QString& title,
                         const QString& text, bool error = true,
                         bool cancellable = false);
 void DisplayStatusBar(AppData& app);
+void DisplayMenuBar(AppData& app);
