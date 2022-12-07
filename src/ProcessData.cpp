@@ -51,3 +51,12 @@ QDebug operator<<(QDebug debug, const Event& event) {
   return debug.nospace() << "Event(t=" << event.type << ",args="
                          << event.args << ')';
 }
+
+DeferredExecuteChange::~DeferredExecuteChange() {
+  if (!target) {
+    return;
+  }
+  target->execute = execute;
+  target->dbg_execute_name = dbg_execute_name;
+  target->dbg_class_name = dbg_class_name;
+}

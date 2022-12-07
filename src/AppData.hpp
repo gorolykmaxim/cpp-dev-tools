@@ -37,6 +37,15 @@ struct Task {
   QList<QString> pre_tasks;
 };
 
+struct UserCommand {
+  QString group;
+  QString name;
+  QString shortcut;
+  std::function<void()> callback;
+
+  QString GetFormattedShortcut() const;
+};
+
 struct AppData {
   QString user_config_path;
   QString current_project_path;
@@ -59,6 +68,8 @@ struct AppData {
   QList<Task> tasks;
   // Last opened project is always first
   QList<Project> projects;
+  // Event type to user command to execute
+  QHash<QString, UserCommand> user_commands;
 
   AppData(int argc, char** argv);
 };

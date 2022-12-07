@@ -257,18 +257,18 @@ void LoadTaskConfig::Read(AppData& app) {
     app.current_project_path = project.path;
     success = true;
     ScheduleProcess<SaveUserConfig>(app, this);
-    // TODO:
-    // - display something more useful as a title
-    // - once shortcuts are implemented - display actual configured shortcut
     DisplayMenuBar(app);
     DisplayStatusBar(app);
+    UserCommand& main_cmd = app.user_commands["searchUserCommands"];
+    QString text = main_cmd.name + ": <b>" + main_cmd.GetFormattedShortcut() +
+                   "</b>";
     DisplayView(
         app,
         kViewSlot,
         "BlankView.qml",
         {
           UIDataField{kWindowTitle, "CPP Dev Tools"},
-          UIDataField{"vText", "Execute Command: <b>\u2318O</b>"},
+          UIDataField{"vText", text},
         },
         {});
   }

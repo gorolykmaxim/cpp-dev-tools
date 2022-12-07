@@ -34,6 +34,10 @@ qt_add_executable(cpp-dev-tools
   src/SaveUserConfig.cpp
   src/LoadTaskConfig.hpp
   src/LoadTaskConfig.cpp
+  src/ExecuteUserCommands.hpp
+  src/ExecuteUserCommands.cpp
+  src/SearchUserCommands.hpp
+  src/SearchUserCommands.cpp
   src/Initialize.hpp
   src/Initialize.cpp)
 if(NOT MSVC)

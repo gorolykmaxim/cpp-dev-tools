@@ -108,7 +108,6 @@ void DisplayStatusBar(AppData& app) {
 }
 
 void DisplayMenuBar(AppData& app) {
-  static bool empty = true;
   QHash<int, QByteArray> role_names = {
       {0, "menu"},
       {1, "item"},
@@ -116,21 +115,10 @@ void DisplayMenuBar(AppData& app) {
       {3, "eventType"}
   };
   QList<QVariantList> actions;
-  if (!empty) {
-    for (int i = 1; i < 6; i++) {
-      QString menu;
-      if (i < 3) {
-        menu = "File";
-      } else if (i < 5) {
-        menu = "Edit";
-      } else {
-        menu = "Custom";
-      }
-      QString idx = QString::number(i);
-      actions.append({menu, "Action " + idx, "Ctrl+" + idx, "Event" + idx});
-    }
+  for (const QString& event_type: app.user_commands.keys()) {
+    UserCommand& cmd = app.user_commands[event_type];
+    actions.append({cmd.group, cmd.name, cmd.shortcut, event_type});
   }
-  empty = false;
   DisplayView(
       app,
       kHeaderSlot,

@@ -49,3 +49,12 @@ struct Event {
 };
 
 QDebug operator<<(QDebug debug, const Event& event);
+
+struct DeferredExecuteChange {
+  Process* target = nullptr;
+  ProcessExecute execute;
+  const char* dbg_class_name = nullptr;
+  const char* dbg_execute_name = nullptr;
+
+  ~DeferredExecuteChange();
+};

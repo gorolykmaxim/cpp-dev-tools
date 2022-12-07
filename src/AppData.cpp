@@ -1,5 +1,7 @@
 #include "AppData.hpp"
 #include "UI.hpp"
+#include "Process.hpp"
+#include "SearchUserCommands.hpp"
 
 QString& Profile::operator[](const QString& key) {
   return variables[key];
@@ -47,6 +49,27 @@ bool Project::operator!=(const Project& project) const {
   return !(*this == project);
 }
 
+QString UserCommand::GetFormattedShortcut() const {
+  QString result = shortcut.toUpper();
+#if __APPLE__
+  result.replace("CTRL", "\u2318");
+#endif
+  return result;
+}
+
+template<typename P, typename... Args>
+static void RegisterUserCommand(AppData* app, const QString& event_type,
+                                const QString& group, const QString& name,
+                                const QString& shortcut, Args&&... args) {
+  UserCommand& cmd = app->user_commands[event_type];
+  cmd.group = group;
+  cmd.name = name;
+  cmd.shortcut = shortcut;
+  cmd.callback = [=] () {
+    ScheduleProcess<P>(*app, nullptr, args...);
+  };
+}
+
 AppData::AppData(int argc, char** argv)
     : gui_app(argc, argv),
       ui_action_router(*this) {
@@ -55,4 +78,6 @@ AppData::AppData(int argc, char** argv)
   qSetMessagePattern("%{time yyyy-MM-dd h:mm:ss.zzz} %{message}");
   io_thread_pool.setMaxThreadCount(1);
   InitializeUI(*this);
+  RegisterUserCommand<SearchUserCommands>(this, "searchUserCommands", "General",
+                                          "Execute Command", "Ctrl+P");
 }

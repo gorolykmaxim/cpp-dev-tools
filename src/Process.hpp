@@ -7,6 +7,12 @@
   execute = [this] (AppData& app) {FUNC(app);};\
   dbg_execute_name = #FUNC;\
   dbg_class_name = dbg_class_name ? dbg_class_name : __FUNCTION__
+#define EXEC_NEXT_DEFERRED(FUNC)\
+  DeferredExecuteChange change;\
+  change.target = this;\
+  change.execute = [this] (AppData& app) {FUNC(app);};\
+  change.dbg_execute_name = #FUNC;\
+  change.dbg_class_name = dbg_class_name ? dbg_class_name : __FUNCTION__
 #define EXEC_AND_WAIT_FOR_NEXT(FUNC)\
   EXEC_NEXT(FUNC);\
   ignore_events_until_execute = true
