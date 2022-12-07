@@ -115,9 +115,11 @@ void DisplayMenuBar(AppData& app) {
       {3, "eventType"}
   };
   QList<QVariantList> actions;
-  for (const QString& event_type: app.user_commands.keys()) {
-    UserCommand& cmd = app.user_commands[event_type];
-    actions.append({cmd.group, cmd.name, cmd.shortcut, event_type});
+  if (!app.current_project_path.isEmpty()) {
+    for (const QString& event_type: app.user_commands.keys()) {
+      UserCommand& cmd = app.user_commands[event_type];
+      actions.append({cmd.group, cmd.name, cmd.shortcut, event_type});
+    }
   }
   DisplayView(
       app,

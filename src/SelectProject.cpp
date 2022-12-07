@@ -38,6 +38,7 @@ void SelectProject::LoadLastProjectOrDisplaySelectProjectView(AppData& app) {
         app, this, app.current_project_path);
     EXEC_NEXT(HandleOpenLastProjectCompletion);
   } else {
+    app.current_project_path = "";
     DisplaySelectProjectView(app);
   }
 }
