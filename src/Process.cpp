@@ -66,7 +66,7 @@ void ExecuteProcesses(AppData& app) {
       QList<ProcessWakeUpCall>& calls = app.event_listeners[event.type];
       for (ProcessWakeUpCall& call: calls) {
         QPtr<Process> p = app.processes[call.id.index];
-        if (p->ignore_events_until_execute) {
+        if (p->flags & kProcessIgnoreEventsUntilNextWakeUp) {
           continue;
         }
         WakeUpProcess(app, *p, call.execute, call.dbg_execute_name);
@@ -80,7 +80,7 @@ void ExecuteProcesses(AppData& app) {
         QPtr<Process> p = app.processes[id.index];
         ProcessExecute exec = p->execute;
         p->execute = nullptr;
-        p->ignore_events_until_execute = false;
+        p->flags &= ~kProcessIgnoreEventsUntilNextWakeUp;
         qDebug() << "Executing" << *p;
         exec(app);
         // Process did not specify new execute function and it has no new

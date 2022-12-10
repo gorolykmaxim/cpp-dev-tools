@@ -20,6 +20,10 @@ size_t qHash(const ProcessId& id, size_t seed) noexcept;
 
 using ProcessExecute = std::function<void(AppData&)>;
 
+enum ProcessFlags {
+  kProcessIgnoreEventsUntilNextWakeUp = 1,
+};
+
 struct Process {
   void Noop(AppData& app);
   void KeepAlive(AppData& app);
@@ -28,7 +32,7 @@ struct Process {
   ProcessId parent_id;
   ProcessExecute execute;
   QList<ProcessId> running_child_ids;
-  bool ignore_events_until_execute = false;
+  int flags = 0;
   const char* dbg_class_name = nullptr;
   const char* dbg_execute_name = nullptr;
 };

@@ -39,7 +39,8 @@ QDebug operator<<(QDebug debug, const Process& proc) {
   QDebugStateSaver saver(debug);
   return debug.nospace() << proc.dbg_class_name << "(e="
                          << proc.dbg_execute_name << ",i=" << proc.id << ",ch="
-                         << proc.running_child_ids << ')';
+                         << proc.running_child_ids << ",f=" << proc.flags
+                         << ')';
 }
 
 Event::Event(const QString& type, const QVariantList& args)

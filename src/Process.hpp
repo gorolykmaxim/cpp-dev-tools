@@ -15,7 +15,7 @@
   change.dbg_class_name = dbg_class_name ? dbg_class_name : __FUNCTION__
 #define EXEC_AND_WAIT_FOR_NEXT(FUNC)\
   EXEC_NEXT(FUNC);\
-  ignore_events_until_execute = true
+  flags |= kProcessIgnoreEventsUntilNextWakeUp
 
 void ExecuteProcesses(AppData& app);
 bool IsProcessValid(const AppData& app, const ProcessId& id);
