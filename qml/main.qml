@@ -1,7 +1,7 @@
 import QtQuick
 import QtQuick.Controls
 
-Window {
+ApplicationWindow {
   property var basePadding: 4
   property var baseRadius: 4
   property var colorBgLight: "#585859"
@@ -19,9 +19,7 @@ Window {
     id: iconFont
     source: "../fonts/MaterialIcons-Regular.ttf"
   }
-  MenuBarWidget {
-    model: hActions
-  }
+  menuBar: MenuBarWidget {}
   Page {
     anchors.fill: parent
     background: Rectangle {

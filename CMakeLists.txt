@@ -52,6 +52,7 @@ target_link_libraries(cpp-dev-tools PRIVATE
 qt_add_qml_module(cpp-dev-tools URI cdt VERSION 1.0
   QML_FILES
       qml/MaterialDesignIcons.js
+      qml/Common.js
       qml/main.qml
       qml/ButtonWidget.qml
       qml/IconWidget.qml
@@ -61,6 +62,8 @@ qt_add_qml_module(cpp-dev-tools URI cdt VERSION 1.0
       qml/ReadOnlyTextAreaWidget.qml
       qml/StatusBarWidget.qml
       qml/MenuBarWidget.qml
+      qml/NativeMenuBarWidget.qml
+      qml/CrossPlatformMenuBarWidget.qml
       qml/AlertDialog.qml
       qml/BlankView.qml
       qml/SelectProjectView.qml

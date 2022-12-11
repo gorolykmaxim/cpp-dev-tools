@@ -8,6 +8,11 @@ void InitializeUI(AppData& app) {
     UIDataField{kDialogVisible, false},
     UIDataField{kWindowTitle, "CPP Dev-Tools"},
   };
+#if __APPLE__
+  fields.append(UIDataField{"useNativeMenuBar", true});
+#else
+  fields.append(UIDataField{"useNativeMenuBar", false});
+#endif
   DisplayMenuBar(app);
   DisplayStatusBar(app);
   context->setContextProperties(fields);
