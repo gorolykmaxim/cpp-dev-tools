@@ -52,6 +52,8 @@ ApplicationWindow {
           viewLoader.forceActiveFocus();
         }
       }
+      onAccepted: core.OnAction("daOk", [])
+      onRejected: core.OnAction("daCancel", [])
       Loader {
         id: dialogLoader
         anchors.fill: parent

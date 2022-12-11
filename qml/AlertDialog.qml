@@ -32,19 +32,13 @@ ColumnLayout {
       focus: visible
       visible: dCancellable ?? false
       KeyNavigation.right: dialogOk
-      onClicked: {
-        dialog.reject();
-        core.OnAction("daCancel", []);
-      }
+      onClicked: dialog.reject()
     }
     ButtonWidget {
       id: dialogOk
       text: "OK"
       focus: !dialogCancel.visible
-      onClicked: {
-        dialog.accept();
-        core.OnAction("daOk", []);
-      }
+      onClicked: dialog.accept()
     }
   }
 }
