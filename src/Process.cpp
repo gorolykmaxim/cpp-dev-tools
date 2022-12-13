@@ -161,6 +161,7 @@ void CancelProcess(AppData& app, Process* target, Process* parent) {
     // Detach target from its parent so that its parent does not get executed
     target->parent_id = ProcessId();
   }
+  app.procs_to_execute.removeAll(target->id);
   app.procs_to_finish.append(target->id);
 }
 
