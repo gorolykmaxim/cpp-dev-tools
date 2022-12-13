@@ -74,21 +74,6 @@ void ExecuteProcesses(AppData& app) {
       }
     }
     while (!app.procs_to_execute.isEmpty() || !app.procs_to_finish.isEmpty()) {
-      QSet<ProcessId> execute = app.procs_to_execute;
-      app.procs_to_execute.clear();
-      for (ProcessId id: execute) {
-        QPtr<Process> p = app.processes[id.index];
-        ProcessExecute exec = p->execute;
-        p->execute = nullptr;
-        p->flags &= ~kProcessIgnoreEventsUntilNextWakeUp;
-        qDebug() << "Executing" << *p;
-        exec(app);
-        // Process did not specify new execute function and it has no new
-        // unfinished child procesess - the process has finished.
-        if (!p->execute && p->running_child_ids.isEmpty()) {
-          app.procs_to_finish.insert(p->id);
-        }
-      }
       QSet<ProcessId> finish = app.procs_to_finish;
       app.procs_to_finish.clear();
       for (ProcessId id: finish) {
@@ -130,6 +115,21 @@ void ExecuteProcesses(AppData& app) {
         }
         p->running_child_ids.clear();
       }
+      QSet<ProcessId> execute = app.procs_to_execute;
+      app.procs_to_execute.clear();
+      for (ProcessId id: execute) {
+        QPtr<Process> p = app.processes[id.index];
+        ProcessExecute exec = p->execute;
+        p->execute = nullptr;
+        p->flags &= ~kProcessIgnoreEventsUntilNextWakeUp;
+        qDebug() << "Executing" << *p;
+        exec(app);
+        // Process did not specify new execute function and it has no new
+        // unfinished child procesess - the process has finished.
+        if (!p->execute && p->running_child_ids.isEmpty()) {
+          app.procs_to_finish.insert(p->id);
+        }
+      }
     }
     if (!app.events.isEmpty()) {
       app.events.dequeue();
@@ -161,7 +161,6 @@ void CancelProcess(AppData& app, Process* target, Process* parent) {
     // Detach target from its parent so that its parent does not get executed
     target->parent_id = ProcessId();
   }
-  app.procs_to_execute.remove(target->id);
   app.procs_to_finish.insert(target->id);
 }
 
