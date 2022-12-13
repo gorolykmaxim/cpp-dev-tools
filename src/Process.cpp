@@ -12,9 +12,9 @@ static void WakeUpProcess(AppData& app, Process& process,
     process.dbg_execute_name = dbg_execute_name;
   }
   if (process.execute) {
-    app.procs_to_execute.append(process.id);
+    app.procs_to_execute.insert(process.id);
   } else {
-    app.procs_to_finish.append(process.id);
+    app.procs_to_finish.insert(process.id);
   }
 }
 
@@ -74,7 +74,7 @@ void ExecuteProcesses(AppData& app) {
       }
     }
     while (!app.procs_to_execute.isEmpty() || !app.procs_to_finish.isEmpty()) {
-      QList<ProcessId> execute = app.procs_to_execute;
+      QSet<ProcessId> execute = app.procs_to_execute;
       app.procs_to_execute.clear();
       for (ProcessId id: execute) {
         QPtr<Process> p = app.processes[id.index];
@@ -86,10 +86,10 @@ void ExecuteProcesses(AppData& app) {
         // Process did not specify new execute function and it has no new
         // unfinished child procesess - the process has finished.
         if (!p->execute && p->running_child_ids.isEmpty()) {
-          app.procs_to_finish.append(p->id);
+          app.procs_to_finish.insert(p->id);
         }
       }
-      QList<ProcessId> finish = app.procs_to_finish;
+      QSet<ProcessId> finish = app.procs_to_finish;
       app.procs_to_finish.clear();
       for (ProcessId id: finish) {
         QPtr<Process> p = app.processes[id.index];
@@ -100,9 +100,9 @@ void ExecuteProcesses(AppData& app) {
           // Wake up parent process if all children are finished
           if (parent->running_child_ids.isEmpty()) {
             if (parent->execute) {
-              app.procs_to_execute.append(parent->id);
+              app.procs_to_execute.insert(parent->id);
             } else {
-              app.procs_to_finish.append(parent->id);
+              app.procs_to_finish.insert(parent->id);
             }
           }
         }
@@ -119,7 +119,7 @@ void ExecuteProcesses(AppData& app) {
         }
         for (ProcessId id: to_remove) {
           app.processes[id.index] = nullptr;
-          app.procs_to_execute.removeAll(id);
+          app.procs_to_execute.remove(id);
           app.free_proc_ids.push(id);
           for (const QString& event_type: app.event_listeners.keys()) {
             QList<ProcessWakeUpCall>& calls = app.event_listeners[event_type];
@@ -161,8 +161,8 @@ void CancelProcess(AppData& app, Process* target, Process* parent) {
     // Detach target from its parent so that its parent does not get executed
     target->parent_id = ProcessId();
   }
-  app.procs_to_execute.removeAll(target->id);
-  app.procs_to_finish.append(target->id);
+  app.procs_to_execute.remove(target->id);
+  app.procs_to_finish.insert(target->id);
 }
 
 void PrintProcesses(const AppData& app) {

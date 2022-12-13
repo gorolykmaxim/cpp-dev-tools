@@ -46,7 +46,7 @@ QPtr<P> ScheduleProcess(AppData& app, Process* parent, Args&&... args) {
     p->id = ProcessId(app.processes.size(), 0);
     app.processes.append(p);
   }
-  app.procs_to_execute.append(p->id);
+  app.procs_to_execute.insert(p->id);
   if (parent) {
     Q_ASSERT(IsProcessAlive(app, parent->id));
     p->parent_id = parent->id;

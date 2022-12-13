@@ -57,8 +57,8 @@ struct AppData {
   QThreadPool io_thread_pool;
   QList<QPtr<Process>> processes;
   QStack<ProcessId> free_proc_ids;
-  QList<ProcessId> procs_to_execute;
-  QList<ProcessId> procs_to_finish;
+  QSet<ProcessId> procs_to_execute;
+  QSet<ProcessId> procs_to_finish;
   // Event at the top is the event that should be handled right now
   QQueue<Event> events;
   // Event type to list of processes to wake up
