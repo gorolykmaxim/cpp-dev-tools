@@ -102,7 +102,15 @@ void ExecuteProcesses(AppData& app) {
           }
           visiting = to_visit;
         }
-        for (ProcessId id: to_remove) {
+        bool is_cancelled = p->flags & kProcessCancelled;
+        // Traversing it backwards to execute "cancel" functions of the
+        // child processes before the parent process.
+        for (auto it = to_remove.rbegin(); it != to_remove.rend(); it++) {
+          ProcessId& id = *it;
+          QPtr<Process> proc = app.processes[id.index];
+          if (is_cancelled && proc->cancel) {
+            proc->cancel(app);
+          }
           app.processes[id.index] = nullptr;
           app.procs_to_execute.remove(id);
           app.free_proc_ids.push(id);
@@ -160,6 +168,7 @@ static void CancelProcess(AppData& app, Process& target) {
     // Detach target from its parent so that its parent does not get executed
     target.parent_id = ProcessId();
   }
+  target.flags |= kProcessCancelled;
   app.procs_to_finish.insert(target.id);
 }
 

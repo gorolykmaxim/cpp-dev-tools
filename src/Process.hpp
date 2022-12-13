@@ -16,6 +16,7 @@
 #define EXEC_AND_WAIT_FOR_NEXT(FUNC)\
   EXEC_NEXT(FUNC);\
   flags |= kProcessIgnoreEventsUntilNextWakeUp
+#define ON_CANCEL(FUNC) cancel = [this] (AppData& app) {FUNC(app);}
 
 void ExecuteProcesses(AppData& app);
 bool IsProcessValid(const AppData& app, const ProcessId& id);

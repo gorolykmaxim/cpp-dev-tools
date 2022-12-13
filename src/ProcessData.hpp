@@ -22,6 +22,7 @@ using ProcessExecute = std::function<void(AppData&)>;
 
 enum ProcessFlags {
   kProcessIgnoreEventsUntilNextWakeUp = 1,
+  kProcessCancelled = 2,
 };
 
 struct Process {
@@ -30,7 +31,7 @@ struct Process {
 
   ProcessId id;
   ProcessId parent_id;
-  ProcessExecute execute;
+  ProcessExecute execute, cancel;
   QList<ProcessId> running_child_ids;
   int flags = 0;
   const char* dbg_class_name = nullptr;
