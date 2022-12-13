@@ -19,7 +19,7 @@
 
 void ExecuteProcesses(AppData& app);
 bool IsProcessValid(const AppData& app, const ProcessId& id);
-void CancelProcess(AppData& app, Process* target, Process* parent);
+void CancelProcess(AppData& app, Process* target);
 void WakeUpAndExecuteProcess(AppData& app, Process& process,
                              ProcessExecute execute = nullptr,
                              const char* dbg_execute_name = nullptr);
@@ -58,7 +58,7 @@ QPtr<P> ScheduleProcess(AppData& app, Process* parent, Args&&... args) {
 template<typename P, typename... Args>
 QPtr<P> ReScheduleProcess(AppData& app, Process* target, Process* parent,
                    Args&&... args) {
-  CancelProcess(app, target, parent);
+  CancelProcess(app, target);
   return ScheduleProcess<P>(app, parent, args...);
 }
 

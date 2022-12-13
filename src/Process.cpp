@@ -149,14 +149,13 @@ bool IsProcessValid(const AppData& app, const ProcessId& id) {
   return id && id.index < app.processes.size();
 }
 
-void CancelProcess(AppData& app, Process* target, Process* parent) {
+void CancelProcess(AppData& app, Process* target) {
   if (!target || !IsProcessAlive(app, target->id)) {
     return;
   }
-  Q_ASSERT((!target->parent_id && !parent) ||
-           (parent && parent->id == target->parent_id));
   qDebug() << "Cancelling" << *target;
-  if (parent) {
+  if (IsProcessAlive(app, target->parent_id)) {
+    QPtr<Process> parent = app.processes[target->parent_id.index];
     parent->running_child_ids.removeAll(target->id);
     // Detach target from its parent so that its parent does not get executed
     target->parent_id = ProcessId();
