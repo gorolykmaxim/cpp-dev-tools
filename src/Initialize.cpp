@@ -15,7 +15,7 @@ void Initialize::ReadUserConfig(AppData& app) {
 }
 
 void Initialize::UpdateConfigAndSelectProject(AppData& app) {
-  ScheduleProcess<SaveUserConfig>(app, this);
-  ScheduleProcess<SelectProject>(app, nullptr);
+  ScheduleProcess<SaveUserConfig>(app, nullptr);
+  ScheduleProcess<SelectProject>(app, kViewSlot);
   ScheduleProcess<ExecuteUserCommands>(app, nullptr);
 }

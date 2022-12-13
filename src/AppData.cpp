@@ -60,13 +60,19 @@ QString UserCommand::GetFormattedShortcut() const {
 template<typename P, typename... Args>
 static void RegisterUserCommand(AppData* app, const QString& event_type,
                                 const QString& group, const QString& name,
-                                const QString& shortcut, Args&&... args) {
+                                const QString& shortcut,
+                                const QString& process_name,
+                                bool cancel_other_named_processes,
+                                Args&&... args) {
   UserCommand& cmd = app->user_commands[event_type];
   cmd.group = group;
   cmd.name = name;
   cmd.shortcut = shortcut;
   cmd.callback = [=] () {
-    ScheduleProcess<P>(*app, nullptr, args...);
+    if (cancel_other_named_processes) {
+      CancelAllNamedProcesses(*app);
+    }
+    ScheduleProcess<P>(*app, process_name, args...);
   };
 }
 
@@ -79,5 +85,6 @@ AppData::AppData(int argc, char** argv)
   io_thread_pool.setMaxThreadCount(1);
   InitializeUI(*this);
   RegisterUserCommand<SearchUserCommands>(this, "searchUserCommands", "General",
-                                          "Execute Command", "Ctrl+P");
+                                          "Execute Command", "Ctrl+P",
+                                          kDialogSlot, false);
 }

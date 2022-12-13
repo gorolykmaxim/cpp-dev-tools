@@ -52,13 +52,15 @@ struct AppData {
   QGuiApplication gui_app;
   QQmlApplicationEngine gui_engine;
   UIActionRouter ui_action_router;
-  // view slot name to its view data
+  // View slot name to its view data
   QHash<QString, ViewData> view_data;
   QThreadPool io_thread_pool;
   QList<QPtr<Process>> processes;
   QStack<ProcessId> free_proc_ids;
   QSet<ProcessId> procs_to_execute;
   QSet<ProcessId> procs_to_finish;
+  // Name to process id
+  QHash<QString, ProcessId> named_processes;
   // Event at the top is the event that should be handled right now
   QQueue<Event> events;
   // Event type to list of processes to wake up

@@ -106,6 +106,9 @@ void ExecuteProcesses(AppData& app) {
           app.processes[id.index] = nullptr;
           app.procs_to_execute.remove(id);
           app.free_proc_ids.push(id);
+          app.named_processes.removeIf([id] (const auto& it) {
+            return it.value() == id;
+          });
           for (const QString& event_type: app.event_listeners.keys()) {
             QList<ProcessWakeUpCall>& calls = app.event_listeners[event_type];
             calls.removeIf([id] (const ProcessWakeUpCall& c) {
@@ -149,18 +152,35 @@ bool IsProcessValid(const AppData& app, const ProcessId& id) {
   return id && id.index < app.processes.size();
 }
 
+static void CancelProcess(AppData& app, Process& target) {
+  qDebug() << "Cancelling" << target;
+  if (IsProcessAlive(app, target.parent_id)) {
+    QPtr<Process> parent = app.processes[target.parent_id.index];
+    parent->running_child_ids.removeAll(target.id);
+    // Detach target from its parent so that its parent does not get executed
+    target.parent_id = ProcessId();
+  }
+  app.procs_to_finish.insert(target.id);
+}
+
+void CancelProcess(AppData& app, const ProcessId& target) {
+  if (!IsProcessAlive(app, target)) {
+    return;
+  }
+  CancelProcess(app, *app.processes[target.index]);
+}
+
 void CancelProcess(AppData& app, Process* target) {
   if (!target || !IsProcessAlive(app, target->id)) {
     return;
   }
-  qDebug() << "Cancelling" << *target;
-  if (IsProcessAlive(app, target->parent_id)) {
-    QPtr<Process> parent = app.processes[target->parent_id.index];
-    parent->running_child_ids.removeAll(target->id);
-    // Detach target from its parent so that its parent does not get executed
-    target->parent_id = ProcessId();
+  CancelProcess(app, *target);
+}
+
+void CancelAllNamedProcesses(AppData& app) {
+  for (const QString& name: app.named_processes.keys()) {
+    CancelProcess(app, app.named_processes[name]);
   }
-  app.procs_to_finish.insert(target->id);
 }
 
 void PrintProcesses(const AppData& app) {

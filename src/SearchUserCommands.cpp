@@ -7,4 +7,5 @@ SearchUserCommands::SearchUserCommands() {
 
 void SearchUserCommands::DisplaySearchDialog(AppData&) {
   qDebug() << "Displaying user commands search dialog";
+  EXEC_NEXT(KeepAlive);
 }
