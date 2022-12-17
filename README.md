@@ -8,6 +8,8 @@ Environment variables you need to set:
 Dependencies you need to install manually:
 - Qt 6.3 for MacOS
 
+On windows you need to have a ninja binary as well as a vcvars64.bat on your PATH.
+
 ## How to install
 ```
 mkdir build
