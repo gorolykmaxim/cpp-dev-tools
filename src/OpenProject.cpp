@@ -103,7 +103,7 @@ void OpenProject::DisplayOpenProjectView(AppData& app) {
       kViewSlot,
       "OpenProjectView.qml",
       {
-        UIDataField{kWindowTitle, "Open Project"},
+        UIDataField{"windowTitle", "Open Project"},
         UIDataField{"vPath", home + '/'},
         UIDataField{"vButtonText", "Open"},
       },

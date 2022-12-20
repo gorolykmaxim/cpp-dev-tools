@@ -6,8 +6,6 @@ const QString kViewSlot = "viewSlot";
 const QString kDialogSlot = "dialogSlot";
 const QString kStatusSlot = "statusSlot";
 const QString kHeaderSlot = "headerSlot";
-const QString kDialogVisible = "dVisible";
-const QString kWindowTitle = "windowTitle";
 
 using UserActionHandler = std::function<void(const QVariantList&)>;
 using DialogActionHandler = std::function<void()>;

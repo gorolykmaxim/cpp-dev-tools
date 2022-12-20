@@ -5,10 +5,10 @@ void InitializeUI(AppData& app) {
   QList<UIDataField> fields = {
     UIDataField{kViewSlot, ""},
     UIDataField{kDialogSlot, ""},
-    UIDataField{kDialogVisible, false},
+    UIDataField{"dVisible", false},
     UIDataField{"dFixedHeight", false},
     UIDataField{"dPadding", true},
-    UIDataField{kWindowTitle, "CPP Dev-Tools"},
+    UIDataField{"windowTitle", "CPP Dev-Tools"},
   };
 #if __APPLE__
   fields.append(UIDataField{"useNativeMenuBar", true});
@@ -80,7 +80,7 @@ void DisplayAlertDialog(AppData& app, const QString& title,
       kDialogSlot,
       "AlertDialog.qml",
       {
-        UIDataField{kDialogVisible, true},
+        UIDataField{"dVisible", true},
         UIDataField{"dFixedHeight", false},
         UIDataField{"dPadding", true},
         UIDataField{"dTitle", title},

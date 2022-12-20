@@ -61,7 +61,7 @@ void SelectProject::DisplaySelectProjectView(AppData& app) {
       kViewSlot,
       "SelectProjectView.qml",
       {
-        UIDataField{kWindowTitle, "Open Project"},
+        UIDataField{"windowTitle", "Open Project"},
         UIDataField{"vFilter", ""},
       },
       {

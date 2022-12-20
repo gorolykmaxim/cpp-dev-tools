@@ -20,7 +20,7 @@ void SearchUserCommands::DisplaySearchDialog(AppData& app) {
       kDialogSlot,
       "SearchUserCommandsDialog.qml",
       {
-        UIDataField{kDialogVisible, true},
+        UIDataField{"dVisible", true},
         UIDataField{"dFixedHeight", true},
         UIDataField{"dPadding", false},
         UIDataField{"dFilter", ""},
@@ -35,7 +35,7 @@ void SearchUserCommands::DisplaySearchDialog(AppData& app) {
 }
 
 void SearchUserCommands::Cancel(AppData& app) {
-  SetUIDataField(app, kDialogSlot, kDialogVisible, false);
+  SetUIDataField(app, kDialogSlot, "dVisible", false);
 }
 
 void SearchUserCommands::FilterCommands(AppData& app) {

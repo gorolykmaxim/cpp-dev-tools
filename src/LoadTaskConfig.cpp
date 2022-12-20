@@ -267,7 +267,7 @@ void LoadTaskConfig::Read(AppData& app) {
         kViewSlot,
         "BlankView.qml",
         {
-          UIDataField{kWindowTitle, "CPP Dev Tools"},
+          UIDataField{"windowTitle", "CPP Dev Tools"},
           UIDataField{"vText", text},
         },
         {});
