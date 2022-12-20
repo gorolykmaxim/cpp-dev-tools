@@ -6,6 +6,8 @@ void InitializeUI(AppData& app) {
     UIDataField{kViewSlot, ""},
     UIDataField{kDialogSlot, ""},
     UIDataField{kDialogVisible, false},
+    UIDataField{"dFixedHeight", false},
+    UIDataField{"dPadding", true},
     UIDataField{kWindowTitle, "CPP Dev-Tools"},
   };
 #if __APPLE__
@@ -79,6 +81,8 @@ void DisplayAlertDialog(AppData& app, const QString& title,
       "AlertDialog.qml",
       {
         UIDataField{kDialogVisible, true},
+        UIDataField{"dFixedHeight", false},
+        UIDataField{"dPadding", true},
         UIDataField{"dTitle", title},
         UIDataField{"dText", text},
         UIDataField{"dCancellable", cancellable},

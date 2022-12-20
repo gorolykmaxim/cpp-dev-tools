@@ -10,6 +10,8 @@ qt_add_executable(cpp-dev-tools
   src/Lib.hpp
   src/PerfTimer.hpp
   src/PerfTimer.cpp
+  src/Common.hpp
+  src/Common.cpp
   src/Threads.hpp
   src/Threads.cpp
   src/UI.hpp
@@ -65,6 +67,7 @@ qt_add_qml_module(cpp-dev-tools URI cdt VERSION 1.0
       qml/NativeMenuBarWidget.qml
       qml/CrossPlatformMenuBarWidget.qml
       qml/AlertDialog.qml
+      qml/SearchUserCommandsDialog.qml
       qml/BlankView.qml
       qml/SelectProjectView.qml
       qml/OpenProjectView.qml

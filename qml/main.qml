@@ -11,8 +11,8 @@ ApplicationWindow {
   property var colorText: "#efefef"
   property var colorSubText: "#6d6d6d"
   property var colorHighlight: "#9ab8ef"
-  width: 1024
-  height: 600
+  minimumWidth: 1024
+  minimumHeight: 600
   title: windowTitle
   visible: true
   FontLoader {
@@ -37,7 +37,11 @@ ApplicationWindow {
     }
     Dialog {
       id: dialog
-      width: parent.width / 2
+      width: 500
+      height: dFixedHeight ?
+              parent.height * 0.8 :
+              Math.min(contentHeight + padding * 2, parent.height * 0.8)
+      padding: dPadding ? basePadding * 2 : 0
       modal: true
       visible: dVisible ?? false
       anchors.centerIn: parent

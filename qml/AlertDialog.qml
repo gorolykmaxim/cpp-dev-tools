@@ -9,6 +9,7 @@ ColumnLayout {
     font.bold: true
   }
   RowLayout {
+    Layout.fillHeight: true
     IconWidget {
       icon: dError ? "error" : "help"
       color: dError ? "red" : colorText
@@ -16,7 +17,7 @@ ColumnLayout {
     }
     ScrollView {
       Layout.fillWidth: true
-      Layout.maximumHeight: 300
+      Layout.fillHeight: true
       ReadOnlyTextAreaWidget {
         text: dText ?? ""
         KeyNavigation.down: dialogCancel.visible ? dialogCancel : dialogOk
