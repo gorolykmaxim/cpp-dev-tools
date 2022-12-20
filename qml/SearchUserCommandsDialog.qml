@@ -3,6 +3,9 @@ import QtQuick.Controls
 import QtQuick.Layouts
 
 ColumnLayout {
+  Component.onCompleted: {
+    list.model.onModelReset.connect(() => list.currentIndex = 0);
+  }
   anchors.fill: parent
   spacing: 0
 
