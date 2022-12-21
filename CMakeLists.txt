@@ -38,6 +38,8 @@ qt_add_executable(cpp-dev-tools
   src/ExecuteUserCommands.cpp
   src/SearchUserCommands.hpp
   src/SearchUserCommands.cpp
+  src/CloseProject.hpp
+  src/CloseProject.cpp
   src/Initialize.hpp
   src/Initialize.cpp)
 if(NOT MSVC)

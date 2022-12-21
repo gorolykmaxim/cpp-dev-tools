@@ -2,6 +2,7 @@
 #include "UI.hpp"
 #include "Process.hpp"
 #include "SearchUserCommands.hpp"
+#include "CloseProject.hpp"
 
 QString& Profile::operator[](const QString& key) {
   return variables[key];
@@ -87,4 +88,6 @@ AppData::AppData(int argc, char** argv)
   RegisterUserCommand<SearchUserCommands>(this, "searchUserCommands", "General",
                                           "Execute Command", "Ctrl+P",
                                           kDialogSlot, false);
+  RegisterUserCommand<CloseProject>(this, "closeProject", "General",
+                                    "Close Project", "Ctrl+W", kViewSlot, true);
 }

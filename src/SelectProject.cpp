@@ -66,6 +66,8 @@ void SelectProject::DisplaySelectProjectView(AppData& app) {
       {
         UIListField{"vProjects", role_names, MakeFilteredListOfProjects(app)},
       });
+  DisplayMenuBar(app);
+  DisplayStatusBar(app);
   WakeUpProcessOnUIEvent(app, kViewSlot, "vaNewProject", *this,
                          EXEC(this, OpenNewProject));
   WakeUpProcessOnUIEvent(app, kViewSlot, "vaProjectSelected", *this,

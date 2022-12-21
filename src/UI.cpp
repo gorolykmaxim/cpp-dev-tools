@@ -93,7 +93,7 @@ void DisplayAlertDialog(AppData& app, const QString& title,
 
 void DisplayStatusBar(AppData& app) {
   QList<QVariantList> itemsLeft, itemsRight;
-  if (app.projects.isEmpty()) {
+  if (app.current_project_path.isEmpty() || app.projects.isEmpty()) {
     // Display empty status bar but make sure its 100% of its normal non-empty
     // height
     itemsLeft.append({" "});
