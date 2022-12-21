@@ -1,7 +1,6 @@
 #include "SearchUserCommands.hpp"
 #include "Process.hpp"
 #include "UI.hpp"
-#include "Common.hpp"
 
 SearchUserCommands::SearchUserCommands() {
   EXEC_NEXT(DisplaySearchDialog);

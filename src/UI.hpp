@@ -15,3 +15,4 @@ void DisplayAlertDialog(AppData& app, const QString& title,
                         bool cancellable = false);
 void DisplayStatusBar(AppData& app);
 void DisplayMenuBar(AppData& app);
+bool HighlighSubstring(QString& str, const QString& sub_str);

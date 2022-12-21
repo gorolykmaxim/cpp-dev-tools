@@ -3,7 +3,6 @@
 #include "Process.hpp"
 #include "SaveUserConfig.hpp"
 #include "Threads.hpp"
-#include "Common.hpp"
 
 SelectProject::SelectProject() {
   EXEC_NEXT(SanitizeProjectList);
