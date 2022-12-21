@@ -9,9 +9,9 @@ SearchUserCommands::SearchUserCommands() {
 
 void SearchUserCommands::DisplaySearchDialog(AppData& app) {
   QHash<int, QByteArray> role_names = {
-    {0, "name"},
-    {1, "group"},
-    {2, "shortcut"},
+    {0, "title"},
+    {1, "subTitle"},
+    {2, "rightText"},
     {3, "eventType"},
   };
   DisplayView(

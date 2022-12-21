@@ -3,9 +3,6 @@ import QtQuick.Controls
 import QtQuick.Layouts
 
 ColumnLayout {
-  Component.onCompleted: {
-    list.model.onModelReset.connect(() => list.currentIndex = 0);
-  }
   anchors.fill: parent
   spacing: 0
 
@@ -24,8 +21,8 @@ ColumnLayout {
       placeholderText: "Search command by name"
       focus: true
       onDisplayTextChanged: core.OnAction("daFilterChanged", [displayText])
-      Keys.onReturnPressed: execCommand(list.currentItem.itemEventType)
-      Keys.onEnterPressed: execCommand(list.currentItem.itemEventType)
+      Keys.onReturnPressed: execCommand(list.currentItem.itemModel.eventType)
+      Keys.onEnterPressed: execCommand(list.currentItem.itemModel.eventType)
       Keys.onDownPressed: list.incrementCurrentIndex()
       Keys.onUpPressed: list.decrementCurrentIndex()
     }
@@ -34,47 +31,11 @@ ColumnLayout {
     Layout.fillWidth: true
     Layout.fillHeight: true
     color: colorBgDark
-    ListView {
+    TextListWidget {
       id: list
       anchors.fill: parent
-      clip: true
-      boundsBehavior: ListView.StopAtBounds
       model: dCommands
-      delegate: Rectangle {
-        property var isSelected: ListView.isCurrentItem
-        property var itemEventType: eventType
-        width: list.width
-        height: row.height
-        color: isSelected ? colorBgMedium : "transparent"
-        RowLayout {
-          id: row
-          width: parent.width
-          Column {
-            Layout.margins: basePadding
-            TextWidget {
-              text: name
-              highlight: isSelected
-            }
-            TextWidget {
-              text: group
-              color: colorSubText
-            }
-          }
-          TextWidget {
-            Layout.alignment: Qt.AlignRight
-            Layout.margins: basePadding
-            text: shortcut
-            color: colorSubText
-          }
-        }
-        MouseArea {
-          anchors.fill: parent
-          onClicked: {
-            list.currentIndex = index;
-            execCommand(eventType);
-          }
-        }
-      }
+      onItemClicked: (item) => execCommand(item.eventType)
     }
   }
 }

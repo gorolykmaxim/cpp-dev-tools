@@ -4,9 +4,6 @@ import QtQuick.Controls
 import Qt.labs.platform
 
 ColumnLayout {
-  Component.onCompleted: {
-    list.model.onModelReset.connect(() => list.currentIndex = 0);
-  }
   anchors.fill: parent
   spacing: 0
   PaneWidget {
@@ -25,9 +22,9 @@ ColumnLayout {
         KeyNavigation.right: button
         onDisplayTextChanged: core.OnAction("vaFilterChanged", [displayText])
         Keys.onReturnPressed: core.OnAction("vaProjectSelected",
-                                            [list.currentItem.itemId])
+                                            [list.currentItem.itemModel.idx])
         Keys.onEnterPressed: core.OnAction("vaProjectSelected",
-                                           [list.currentItem.itemId])
+                                           [list.currentItem.itemModel.idx])
         Keys.onDownPressed: list.incrementCurrentIndex()
         Keys.onUpPressed: list.decrementCurrentIndex()
       }
@@ -42,43 +39,15 @@ ColumnLayout {
     Layout.fillWidth: true
     Layout.fillHeight: true
     color: colorBgDark
-    ListView {
+    TextListWidget {
       id: list
       anchors.fill: parent
-      clip: true
-      boundsBehavior: ListView.StopAtBounds
       model: vProjects
-      delegate: Rectangle {
-        property var isSelected: ListView.isCurrentItem
-        property var itemId: idx
-        width: column.width
-        height: column.height
-        color: isSelected ? colorBgMedium : "transparent"
-        Column {
-          id: column
-          padding: basePadding
-          TextWidget {
-            text: title
-            width: list.width
-            highlight: isSelected
-          }
-          TextWidget {
-            text: subTitle
-            width: list.width
-            color: colorSubText
-          }
-        }
-        MouseArea {
-          anchors.fill: parent
-          acceptedButtons: Qt.LeftButton | Qt.RightButton
-          onClicked: e => {
-            list.currentIndex = index;
-            if (e.button == Qt.LeftButton) {
-              core.OnAction("vaProjectSelected", [list.currentItem.itemId]);
-            } else if (e.button == Qt.RightButton) {
-              contextMenu.open();
-            }
-          }
+      onItemClicked: (item, event) => {
+        if (event.button == Qt.LeftButton) {
+          core.OnAction("vaProjectSelected", [item.idx])
+        } else if (event.button == Qt.RightButton) {
+          contextMenu.open();
         }
       }
     }

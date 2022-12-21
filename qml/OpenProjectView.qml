@@ -3,9 +3,6 @@ import QtQuick.Layouts
 import QtQuick.Controls
 
 ColumnLayout {
-  Component.onCompleted: {
-    list.model.onModelReset.connect(() => list.currentIndex = 0);
-  }
   anchors.fill: parent
   spacing: 0
   PaneWidget {
@@ -46,29 +43,11 @@ ColumnLayout {
     Layout.fillWidth: true
     Layout.fillHeight: true
     color: colorBgDark
-    ListView {
+    TextListWidget {
       id: list
       anchors.fill: parent
-      clip: true
-      boundsBehavior: ListView.StopAtBounds
       model: vSuggestions
-      delegate: TextWidget {
-        text: title
-        width: list.width
-        padding: basePadding
-        highlight: ListView.isCurrentItem
-        background: Rectangle {
-          anchors.fill: parent
-          color: parent.highlight ? colorBgMedium : "transparent"
-        }
-        MouseArea {
-          anchors.fill: parent
-          onClicked: {
-            list.currentIndex = index;
-            core.OnAction("vaSuggestionPicked", [list.currentIndex]);
-          }
-        }
-      }
+      onItemClicked: core.OnAction("vaSuggestionPicked", [list.currentIndex])
     }
   }
 }
