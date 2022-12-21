@@ -75,6 +75,7 @@ static void RegisterUserCommand(AppData* app, const QString& event_type,
     }
     ScheduleProcess<P>(*app, process_name, args...);
   };
+  app->user_command_events_ordered.append(event_type);
 }
 
 AppData::AppData(int argc, char** argv)

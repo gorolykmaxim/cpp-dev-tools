@@ -8,11 +8,12 @@ MenuBar {
   id: menuBar
 
   onModelChanged: {
+    for (let i = 0; i < menuBar.count; i++) {
+      const menuObj = menuBar.menuAt(i);
+      menuBar.removeMenu(menuObj);
+    }
     if (model == null) {
       return;
-    }
-    for (let i = 0; i < menuBar.count; i++) {
-      menuBar.takeAction(i);
     }
     for (let i = 0; i < model.rowCount(); i++) {
       const menuTitle = Common.getListModelValue(model, i, 0);
