@@ -47,7 +47,7 @@ void SearchUserCommands::FilterCommands(AppData& app) {
 QList<QVariantList> SearchUserCommands::MakeFilteredListOfCommands(
     AppData& app) {
   QList<QVariantList> cmds;
-  for (const QString& event_type: app.user_commands.keys()) {
+  for (const QString& event_type: app.user_command_events_ordered) {
     UserCommand& cmd = app.user_commands[event_type];
     QString name = cmd.name;
     QString group = cmd.group;

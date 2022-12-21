@@ -72,6 +72,7 @@ struct AppData {
   QList<Project> projects;
   // Event type to user command to execute
   QHash<QString, UserCommand> user_commands;
+  QList<QString> user_command_events_ordered;
 
   AppData(int argc, char** argv);
 };
