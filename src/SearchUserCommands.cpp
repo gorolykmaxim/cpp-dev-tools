@@ -51,8 +51,8 @@ QList<QVariantList> SearchUserCommands::MakeFilteredListOfCommands(
     UserCommand& cmd = app.user_commands[event_type];
     QString name = cmd.name;
     QString group = cmd.group;
-    bool name_matches = HighlighSubstring(name, filter);
-    bool group_matches = HighlighSubstring(group, filter);
+    bool name_matches = HighlightSubstring(name, filter);
+    bool group_matches = HighlightSubstring(group, filter);
     if (filter.isEmpty() || name_matches || group_matches) {
       cmds.append({name, group, cmd.GetFormattedShortcut(), event_type});
     }

@@ -124,8 +124,8 @@ QList<QVariantList> SelectProject::MakeFilteredListOfProjects(AppData& app) {
     Project& project = app.projects[i];
     QString name = project.GetFolderName();
     QString path = project.GetPathRelativeToHome();
-    bool name_matches = HighlighSubstring(name, filter);
-    bool path_matches = HighlighSubstring(path, filter);
+    bool name_matches = HighlightSubstring(name, filter);
+    bool path_matches = HighlightSubstring(path, filter);
     if (filter.isEmpty() || name_matches || path_matches) {
       projects.append({i, name, path});
     }
