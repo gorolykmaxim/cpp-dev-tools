@@ -48,6 +48,8 @@ ApplicationWindow {
       background: Rectangle {
         color: colorBgMedium
         radius: baseRadius
+        border.width: 1
+        border.color: colorBgLight
       }
       onVisibleChanged: {
         if (visible) {
@@ -61,6 +63,7 @@ ApplicationWindow {
       Loader {
         id: dialogLoader
         anchors.fill: parent
+        anchors.margins: 1
         source: dialogSlot
         onLoaded: forceActiveFocus()
       }
