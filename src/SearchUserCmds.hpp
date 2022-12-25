@@ -2,13 +2,13 @@
 
 #include "AppData.hpp"
 
-class SearchUserCommands: public Process {
+class SearchUserCmds: public Process {
 public:
-  SearchUserCommands();
+  SearchUserCmds();
   void DisplaySearchDialog(AppData& app);
   void Cancel(AppData& app);
   void FilterCommands(AppData& app);
-  QList<QVariantList> MakeFilteredListOfCommands(AppData& app);
+  QList<QVariantList> MakeFilteredListOfCmds(AppData& app);
 
   QString filter;
 };

@@ -2,9 +2,9 @@
 
 #include "AppData.hpp"
 
-class ExecuteUserCommands: public Process {
+class ExecUserCmds: public Process {
 public:
-  ExecuteUserCommands();
+  ExecUserCmds();
   void ListenToEvents(AppData& app);
   void Execute(AppData& app);
 };

@@ -34,10 +34,10 @@ qt_add_executable(cpp-dev-tools
   src/SaveUserConfig.cpp
   src/LoadTaskConfig.hpp
   src/LoadTaskConfig.cpp
-  src/ExecuteUserCommands.hpp
-  src/ExecuteUserCommands.cpp
-  src/SearchUserCommands.hpp
-  src/SearchUserCommands.cpp
+  src/ExecUserCmds.hpp
+  src/ExecUserCmds.cpp
+  src/SearchUserCmds.hpp
+  src/SearchUserCmds.cpp
   src/CloseProject.hpp
   src/CloseProject.cpp
   src/Initialize.hpp
@@ -68,7 +68,7 @@ qt_add_qml_module(cpp-dev-tools URI cdt VERSION 1.0
       qml/CrossPlatformMenuBarWidget.qml
       qml/TextListWidget.qml
       qml/AlertDialog.qml
-      qml/SearchUserCommandsDialog.qml
+      qml/SearchUserCmdsDialog.qml
       qml/BlankView.qml
       qml/SelectProjectView.qml
       qml/OpenProjectView.qml
