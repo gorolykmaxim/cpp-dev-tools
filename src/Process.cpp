@@ -78,6 +78,10 @@ void ExecuteProcesses(AppData& app) {
       app.procs_to_finish.clear();
       for (ProcessId id: finish) {
         QPtr<Process> p = app.processes[id.index];
+        if (!p || p->id != id) {
+          qDebug() << "Process" << id << "already finished";
+          continue;
+        }
         qDebug() << "Finished" << *p;
         if (p->parent_id) {
           QPtr<Process> parent = app.processes[p->parent_id.index];
