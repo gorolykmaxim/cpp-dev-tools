@@ -56,11 +56,15 @@ ColumnLayout {
     id: contextMenu
     MenuItem {
       text: "Open"
-      onTriggered: core.OnAction("vaProjectSelected", [list.currentItem.itemId])
+      shortcut: "Enter"
+      onTriggered: core.OnAction("vaProjectSelected",
+                                 [list.currentItem.itemModel.idx])
     }
     MenuItem {
       text: "Remove From List"
-      onTriggered: core.OnAction("vaRemoveProject", [list.currentItem.itemId])
+      shortcut: "Ctrl+Shift+D"
+      onTriggered: core.OnAction("vaRemoveProject",
+                                 [list.currentItem.itemModel.idx])
     }
   }
 }
