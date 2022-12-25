@@ -40,6 +40,8 @@ qt_add_executable(cpp-dev-tools
   src/SearchUserCmds.cpp
   src/CloseProject.hpp
   src/CloseProject.cpp
+  src/ExecTasks.hpp
+  src/ExecTasks.cpp
   src/Initialize.hpp
   src/Initialize.cpp)
 if(NOT MSVC)
@@ -72,5 +74,6 @@ qt_add_qml_module(cpp-dev-tools URI cdt VERSION 1.0
       qml/BlankView.qml
       qml/SelectProjectView.qml
       qml/OpenProjectView.qml
+      qml/ExecTasksView.qml
   RESOURCES
       fonts/MaterialIcons-Regular.ttf)

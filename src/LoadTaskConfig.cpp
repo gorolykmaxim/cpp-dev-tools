@@ -2,6 +2,7 @@
 #include "Process.hpp"
 #include "UI.hpp"
 #include "SaveUserConfig.hpp"
+#include "ExecTasks.hpp"
 
 LoadTaskConfig::LoadTaskConfig(const QString& path, bool create)
     : create(create), path(path) {
@@ -256,20 +257,9 @@ void LoadTaskConfig::Read(AppData& app) {
     app.projects.insert(0, project);
     app.current_project_path = project.path;
     success = true;
-    ScheduleProcess<SaveUserConfig>(app, this);
     DisplayMenuBar(app);
     DisplayStatusBar(app);
-    UserCmd& main_cmd = app.user_cmds["searchUserCmds"];
-    QString text = main_cmd.name + ": <b>" + main_cmd.GetFormattedShortcut() +
-                   "</b>";
-    DisplayView(
-        app,
-        kViewSlot,
-        "BlankView.qml",
-        {
-          UIDataField{"windowTitle", "CPP Dev Tools"},
-          UIDataField{"vText", text},
-        },
-        {});
+    ScheduleProcess<ExecTasks>(app, kViewSlot);
+    ScheduleProcess<SaveUserConfig>(app, nullptr);
   }
 }

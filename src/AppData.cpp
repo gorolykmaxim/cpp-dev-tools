@@ -3,6 +3,7 @@
 #include "Process.hpp"
 #include "SearchUserCmds.hpp"
 #include "CloseProject.hpp"
+#include "ExecTasks.hpp"
 
 QString& Profile::operator[](const QString& key) {
   return variables[key];
@@ -91,4 +92,6 @@ AppData::AppData(int argc, char** argv)
                                   false);
   RegisterUserCmd<CloseProject>(this, "closeProject", "General",
                                 "Close Project", "Ctrl+W", kViewSlot, true);
+  RegisterUserCmd<ExecTasks>(this, "execTasks", "Task", "Execute Tasks",
+                             "Ctrl+1", kViewSlot, true);
 }
