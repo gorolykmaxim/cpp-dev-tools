@@ -259,7 +259,7 @@ void LoadTaskConfig::Read(AppData& app) {
     ScheduleProcess<SaveUserConfig>(app, this);
     DisplayMenuBar(app);
     DisplayStatusBar(app);
-    UserCommand& main_cmd = app.user_commands["searchUserCommands"];
+    UserCmd& main_cmd = app.user_cmds["searchUserCmds"];
     QString text = main_cmd.name + ": <b>" + main_cmd.GetFormattedShortcut() +
                    "</b>";
     DisplayView(

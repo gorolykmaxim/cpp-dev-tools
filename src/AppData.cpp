@@ -1,7 +1,7 @@
 #include "AppData.hpp"
 #include "UI.hpp"
 #include "Process.hpp"
-#include "SearchUserCommands.hpp"
+#include "SearchUserCmds.hpp"
 #include "CloseProject.hpp"
 
 QString& Profile::operator[](const QString& key) {
@@ -50,7 +50,7 @@ bool Project::operator!=(const Project& project) const {
   return !(*this == project);
 }
 
-QString UserCommand::GetFormattedShortcut() const {
+QString UserCmd::GetFormattedShortcut() const {
   QString result = shortcut.toUpper();
 #if __APPLE__
   result.replace("CTRL", "\u2318");
@@ -59,13 +59,13 @@ QString UserCommand::GetFormattedShortcut() const {
 }
 
 template<typename P, typename... Args>
-static void RegisterUserCommand(AppData* app, const QString& event_type,
-                                const QString& group, const QString& name,
-                                const QString& shortcut,
-                                const QString& process_name,
-                                bool cancel_other_named_processes,
-                                Args&&... args) {
-  UserCommand& cmd = app->user_commands[event_type];
+static void RegisterUserCmd(AppData* app, const QString& event_type,
+                            const QString& group, const QString& name,
+                            const QString& shortcut,
+                            const QString& process_name,
+                            bool cancel_other_named_processes,
+                            Args&&... args) {
+  UserCmd& cmd = app->user_cmds[event_type];
   cmd.group = group;
   cmd.name = name;
   cmd.shortcut = shortcut;
@@ -86,9 +86,9 @@ AppData::AppData(int argc, char** argv)
   qSetMessagePattern("%{time yyyy-MM-dd h:mm:ss.zzz} %{message}");
   io_thread_pool.setMaxThreadCount(1);
   InitializeUI(*this);
-  RegisterUserCommand<SearchUserCommands>(this, "searchUserCommands", "General",
-                                          "Execute Command", "Ctrl+P",
-                                          kDialogSlot, false);
-  RegisterUserCommand<CloseProject>(this, "closeProject", "General",
-                                    "Close Project", "Ctrl+W", kViewSlot, true);
+  RegisterUserCmd<SearchUserCmds>(this, "searchUserCmds", "General",
+                                  "Execute Command", "Ctrl+P", kDialogSlot,
+                                  false);
+  RegisterUserCmd<CloseProject>(this, "closeProject", "General",
+                                "Close Project", "Ctrl+W", kViewSlot, true);
 }

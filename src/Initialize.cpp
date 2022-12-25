@@ -3,7 +3,7 @@
 #include "Process.hpp"
 #include "LoadUserConfig.hpp"
 #include "SaveUserConfig.hpp"
-#include "ExecuteUserCommands.hpp"
+#include "ExecUserCmds.hpp"
 
 Initialize::Initialize() {
   EXEC_NEXT(ReadUserConfig);
@@ -17,5 +17,5 @@ void Initialize::ReadUserConfig(AppData& app) {
 void Initialize::UpdateConfigAndSelectProject(AppData& app) {
   ScheduleProcess<SaveUserConfig>(app, nullptr);
   ScheduleProcess<SelectProject>(app, kViewSlot);
-  ScheduleProcess<ExecuteUserCommands>(app, nullptr);
+  ScheduleProcess<ExecUserCmds>(app, nullptr);
 }

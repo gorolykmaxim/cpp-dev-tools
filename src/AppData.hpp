@@ -37,7 +37,7 @@ struct Task {
   QList<QString> pre_tasks;
 };
 
-struct UserCommand {
+struct UserCmd {
   QString group;
   QString name;
   QString shortcut;
@@ -71,7 +71,7 @@ struct AppData {
   // Last opened project is always first
   QList<Project> projects;
   // Event type to user command to execute
-  QHash<QString, UserCommand> user_commands;
+  QHash<QString, UserCmd> user_cmds;
   QList<QString> user_command_events_ordered;
 
   AppData(int argc, char** argv);
