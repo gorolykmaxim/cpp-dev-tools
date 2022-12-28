@@ -7,6 +7,12 @@ ColumnLayout {
   spacing: 0
 
   function execCommand(eventType) {
+    if (!eventType && list.currentItem) {
+      eventType = list.currentItem.itemModel.eventType;
+    }
+    if (!eventType) {
+      return;
+    }
     dialog.reject();
     core.OnAction(eventType, []);
   }
@@ -21,8 +27,8 @@ ColumnLayout {
       placeholderText: "Search command"
       focus: true
       onDisplayTextChanged: core.OnAction("daFilterChanged", [displayText])
-      Keys.onReturnPressed: execCommand(list.currentItem.itemModel.eventType)
-      Keys.onEnterPressed: execCommand(list.currentItem.itemModel.eventType)
+      Keys.onReturnPressed: execCommand()
+      Keys.onEnterPressed: execCommand()
       Keys.onDownPressed: list.incrementCurrentIndex()
       Keys.onUpPressed: list.decrementCurrentIndex()
     }

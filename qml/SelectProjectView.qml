@@ -2,6 +2,7 @@ import QtQuick
 import QtQuick.Layouts
 import QtQuick.Controls
 import Qt.labs.platform
+import "Common.js" as Cmn
 
 ColumnLayout {
   anchors.fill: parent
@@ -21,10 +22,8 @@ ColumnLayout {
         Layout.fillWidth: true
         KeyNavigation.right: button
         onDisplayTextChanged: core.OnAction("vaFilterChanged", [displayText])
-        Keys.onReturnPressed: core.OnAction("vaProjectSelected",
-                                            [list.currentItem.itemModel.idx])
-        Keys.onEnterPressed: core.OnAction("vaProjectSelected",
-                                           [list.currentItem.itemModel.idx])
+        Keys.onReturnPressed: Cmn.onListAction(list, "vaProjectSelected", "idx")
+        Keys.onEnterPressed: Cmn.onListAction(list, "vaProjectSelected", "idx")
         Keys.onDownPressed: list.incrementCurrentIndex()
         Keys.onUpPressed: list.decrementCurrentIndex()
       }
@@ -57,14 +56,12 @@ ColumnLayout {
     MenuItem {
       text: "Open"
       shortcut: "Enter"
-      onTriggered: core.OnAction("vaProjectSelected",
-                                 [list.currentItem.itemModel.idx])
+      onTriggered: Cmn.onListAction(list, "vaProjectSelected", "idx")
     }
     MenuItem {
       text: "Remove From List"
       shortcut: "Ctrl+Shift+D"
-      onTriggered: core.OnAction("vaRemoveProject",
-                                 [list.currentItem.itemModel.idx])
+      onTriggered: Cmn.onListAction(list, "vaRemoveProject", "idx")
     }
   }
 }

@@ -11,3 +11,10 @@ function findMenuByTitle(menuBar, menuTitle) {
   }
   return null;
 }
+
+function onListAction(list, action, itemProp) {
+  if (!list.currentItem) {
+    return;
+  }
+  core.OnAction(action, [list.currentItem.itemModel[itemProp]]);
+}

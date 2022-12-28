@@ -1,5 +1,6 @@
 import QtQuick
 import QtQuick.Layouts
+import "Common.js" as Cmn
 
 PaneWidget {
   anchors.fill: parent
@@ -22,10 +23,10 @@ PaneWidget {
           focus: true
           onDisplayTextChanged: core.OnAction("vaTaskFilterChanged",
                                               [displayText])
-          Keys.onReturnPressed: core.OnAction(
-              "vaExecuteTask", [taskList.currentItem.itemModel.title])
-          Keys.onEnterPressed: core.OnAction(
-              "vaExecuteTask", [taskList.currentItem.itemModel.title])
+          Keys.onReturnPressed: Cmn.onListAction(taskList, "vaExecuteTask",
+                                                 "title")
+          Keys.onEnterPressed: Cmn.onListAction(taskList, "vaExecuteTask",
+                                                "title")
           Keys.onDownPressed: taskList.incrementCurrentIndex()
           Keys.onUpPressed: taskList.decrementCurrentIndex()
         }
