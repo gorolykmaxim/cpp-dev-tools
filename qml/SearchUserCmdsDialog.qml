@@ -18,7 +18,7 @@ ColumnLayout {
     TextFieldWidget {
       width: parent.width
       text: dFilter || ""
-      placeholderText: "Search command by name"
+      placeholderText: "Search command"
       focus: true
       onDisplayTextChanged: core.OnAction("daFilterChanged", [displayText])
       Keys.onReturnPressed: execCommand(list.currentItem.itemModel.eventType)

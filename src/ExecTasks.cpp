@@ -37,8 +37,11 @@ QList<QVariantList> ExecTasks::MakeFilteredListOfTasks(AppData& app) {
   QList<QVariantList> tasks;
   for (const Task& task: app.tasks) {
     QString name = task.name;
-    if (taskFilter.isEmpty() || HighlightSubstring(name, taskFilter)) {
-      tasks.append({name, task.command});
+    QString command = task.command;
+    bool name_matches = HighlightSubstring(name, taskFilter);
+    bool command_matches = HighlightSubstring(command, taskFilter);
+    if (taskFilter.isEmpty() || name_matches || command_matches) {
+      tasks.append({name, command});
     }
   }
   return tasks;

@@ -18,7 +18,7 @@ PaneWidget {
         TextFieldWidget {
           width: parent.width
           text: vTaskFilter || ""
-          placeholderText: "Search task by name"
+          placeholderText: "Search task"
           focus: true
           onDisplayTextChanged: core.OnAction("vaTaskFilterChanged",
                                               [displayText])

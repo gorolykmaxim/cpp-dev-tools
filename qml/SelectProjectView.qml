@@ -16,7 +16,7 @@ ColumnLayout {
       TextFieldWidget {
         id: input
         text: vFilter || ""
-        placeholderText: "Search project by name"
+        placeholderText: "Search project"
         focus: true
         Layout.fillWidth: true
         KeyNavigation.right: button
