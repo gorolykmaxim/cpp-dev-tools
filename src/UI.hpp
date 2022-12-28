@@ -15,4 +15,6 @@ void DisplayAlertDialog(AppData& app, const QString& title,
                         bool cancellable = false);
 void DisplayStatusBar(AppData& app);
 void DisplayMenuBar(AppData& app);
-bool HighlightSubstring(QString& str, const QString& sub_str);
+void AppendToUIListIfMatches(QList<QVariantList>& list,
+                             const QString& sub_str, QVariantList&& row,
+                             const QList<int>& columns_to_search);

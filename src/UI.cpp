@@ -140,16 +140,25 @@ void DisplayMenuBar(AppData& app) {
       });
 }
 
-bool HighlightSubstring(QString& str, const QString& sub_str) {
+void AppendToUIListIfMatches(QList<QVariantList>& list,
+                             const QString& sub_str, QVariantList&& row,
+                             const QList<int>& columns_to_search) {
   if (sub_str.isEmpty()) {
-    return false;
+    list.append(row);
+    return;
   }
-  int i = str.toLower().indexOf(sub_str.toLower());
-  if (i >= 0) {
-    str.insert(i + sub_str.size(), "</b>");
-    str.insert(i, "<b>");
-    return true;
-  } else {
-    return false;
+  bool matches = false;
+  for (int column: columns_to_search) {
+    QString str = row[column].toString();
+    int i = str.toLower().indexOf(sub_str.toLower());
+    if (i >= 0) {
+      str.insert(i + sub_str.size(), "</b>");
+      str.insert(i, "<b>");
+      row[column] = str;
+      matches = true;
+    }
+  }
+  if (matches) {
+    list.append(row);
   }
 }

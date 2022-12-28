@@ -122,13 +122,8 @@ QList<QVariantList> SelectProject::MakeFilteredListOfProjects(AppData& app) {
   QList<QVariantList> projects;
   for (int i = 0; i < app.projects.size(); i++) {
     Project& project = app.projects[i];
-    QString name = project.GetFolderName();
-    QString path = project.GetPathRelativeToHome();
-    bool name_matches = HighlightSubstring(name, filter);
-    bool path_matches = HighlightSubstring(path, filter);
-    if (filter.isEmpty() || name_matches || path_matches) {
-      projects.append({i, name, path});
-    }
+    AppendToUIListIfMatches(projects, filter, {i, project.GetFolderName(),
+                            project.GetPathRelativeToHome()}, {1, 2});
   }
   return projects;
 }

@@ -44,18 +44,12 @@ void SearchUserCmds::FilterCommands(AppData& app) {
   EXEC_NEXT(KeepAlive);
 }
 
-QList<QVariantList> SearchUserCmds::MakeFilteredListOfCmds(
-    AppData& app) {
+QList<QVariantList> SearchUserCmds::MakeFilteredListOfCmds(AppData& app) {
   QList<QVariantList> cmds;
   for (const QString& event_type: app.user_command_events_ordered) {
     UserCmd& cmd = app.user_cmds[event_type];
-    QString name = cmd.name;
-    QString group = cmd.group;
-    bool name_matches = HighlightSubstring(name, filter);
-    bool group_matches = HighlightSubstring(group, filter);
-    if (filter.isEmpty() || name_matches || group_matches) {
-      cmds.append({name, group, cmd.GetFormattedShortcut(), event_type});
-    }
+    AppendToUIListIfMatches(cmds, filter, {cmd.name, cmd.group,
+                            cmd.GetFormattedShortcut(), event_type}, {0, 1});
   }
   return cmds;
 }
