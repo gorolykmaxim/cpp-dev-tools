@@ -2,6 +2,8 @@
 #include "Process.hpp"
 #include "ExecOSCmd.hpp"
 
+#define LOG() qDebug() << "[ExecTask]"
+
 ExecTask::ExecTask(const QString& task_name) : task_name(task_name) {
   EXEC_NEXT(Schedule);
 }
@@ -25,7 +27,7 @@ static void ScheduleTask(AppData& app, const Task& task, QUuid id,
   exec.primary_exec_id = primary_exec_id;
   exec.task_name = task.name;
   exec.cmd = task.cmd;
-  qDebug() << "Scheduling" << exec;
+  LOG() << "Scheduling" << exec;
   app.execs.append(exec);
 }
 
@@ -44,7 +46,7 @@ void ExecTask::Schedule(AppData& app) {
   int new_execs_cnt = primary->pre_tasks.size() + 1;
   int old_execs_to_remove = app.execs.size() + new_execs_cnt - 100;
   if (old_execs_to_remove > 0) {
-    qDebug() << "Removing" << old_execs_to_remove << "oldest execution(s)";
+    LOG() << "Removing" << old_execs_to_remove << "oldest execution(s)";
     app.execs.remove(0, old_execs_to_remove);
   }
   for (const QString& name: primary->pre_tasks) {
@@ -69,7 +71,7 @@ void ExecTask::ExecNext(AppData& app) {
       } else {
         exec.exit_code = exec.proc->exitCode();
       }
-      qDebug() << "Finishing" << exec;
+      LOG() << "Finishing" << exec;
     }
     if (exec.exit_code) {
       // Execution is finished.
@@ -80,18 +82,18 @@ void ExecTask::ExecNext(AppData& app) {
       // Execution has not been started yet.
       exec.start_time = QDateTime::currentDateTime();
       if (pre_task_failed) {
-        qDebug() << "Aborting due to failed pre task" << exec;
+        LOG() << "Aborting due to failed pre task" << exec;
         exec.exit_code = -1;
       } else {
         exec.proc = QPtr<QProcess>::create();
-        qDebug() << "Starting" << exec;
+        LOG() << "Starting" << exec;
         QPtr<ExecOSCmd> p = ScheduleProcess<ExecOSCmd>(app, this, exec.cmd,
                                                        exec.proc);
         QUuid id = exec.id;
         p->on_output = [&app, id] (const QString& data) {
           if (Exec* exec = FindExecById(app, id)) {
             exec->output += data;
-            qDebug() << data;
+            LOG() << data;
           }
         };
         EXEC_NEXT(ExecNext);

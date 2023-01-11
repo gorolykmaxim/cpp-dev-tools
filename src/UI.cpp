@@ -1,5 +1,7 @@
 #include "UI.hpp"
 
+#define LOG() qDebug() << "[UI]"
+
 void InitializeUI(AppData& app) {
   QQmlContext* context = app.gui_engine.rootContext();
   QList<UIDataField> fields = {
@@ -29,7 +31,7 @@ void DisplayView(AppData& app, const QString& slot_name,
   QQmlContext* context = app.gui_engine.rootContext();
   ViewData& data = app.view_data[slot_name];
   for (const QString& event_type: data.event_types) {
-    qDebug() << "Removing listeners of event" << event_type;
+    LOG() << "Removing listeners of event" << event_type;
     app.event_listeners.remove(event_type);
   }
   data.event_types.clear();

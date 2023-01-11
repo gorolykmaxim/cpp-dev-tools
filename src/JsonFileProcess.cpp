@@ -2,6 +2,8 @@
 #include "Threads.hpp"
 #include "Process.hpp"
 
+#define LOG() qDebug() << "[JsonFileProcess]"
+
 JsonFileProcess::JsonFileProcess(JsonOperation operation, const QString& path,
                                  QJsonDocument json)
     : operation(operation), path(path), json(std::move(json)) {
@@ -25,7 +27,7 @@ void JsonFileProcess::Run(AppData& app) {
       return;
     }
     if (self->operation == JsonOperation::kRead) {
-      qDebug() << "Reading from JSON file" << self->path;
+      LOG() << "Reading from JSON file" << self->path;
       QJsonParseError json_error;
       self->json = QJsonDocument::fromJson(file.readAll(), &json_error);
       if (self->json.isNull()) {
@@ -33,7 +35,7 @@ void JsonFileProcess::Run(AppData& app) {
                       "': " + json_error.errorString();
       }
     } else if (self->operation == JsonOperation::kWrite) {
-      qDebug() << "Writing to JSON file" << self->path;
+      LOG() << "Writing to JSON file" << self->path;
       file.write(self->json.toJson());
     }
   }, [self, &app] () {WakeUpAndExecuteProcess(app, *self);});

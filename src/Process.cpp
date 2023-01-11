@@ -4,6 +4,8 @@
   PROC.execute = [&PROC] (AppData& app) {PROC.FUNC(app);};\
   PROC.dbg_execute_name = #FUNC
 
+#define LOG() qDebug() << "[Process]"
+
 static void WakeUpProcess(AppData& app, Process& process,
                           ProcessExecute execute = nullptr,
                           const char* dbg_execute_name = nullptr) {
@@ -23,8 +25,8 @@ void WakeUpAndExecuteProcess(AppData& app, Process& process,
                              const char* dbg_execute_name) {
   ProcessId id = process.id;
   if (!IsProcessAlive(app, id)) {
-    qDebug() << "Attempt to resume process" << id
-             << "which does not exist anymore (probably has been cancelled)";
+    LOG() << "Attempt to resume process" << id
+          << "which does not exist anymore (probably has been cancelled)";
     return;
   }
   WakeUpProcess(app, process, execute, dbg_execute_name);
@@ -40,8 +42,8 @@ void WakeUpProcessOnEvent(AppData& app, const QString& event_type,
   call.execute = execute;
   call.dbg_execute_name = dbg_execute_name;
   app.event_listeners[event_type].append(call);
-  qDebug() << "Process" << process.id << "starts to listen to" << event_type
-           << "events";
+  LOG() << "Process" << process.id << "starts to listen to" << event_type
+        << "events";
   EXEC_NEXT_OBJ(process, Noop);
 }
 
@@ -62,7 +64,7 @@ void ExecuteProcesses(AppData& app) {
   do {
     if (!app.events.isEmpty()) {
       Event& event = app.events.head();
-      qDebug() << "Handling" << event;
+      LOG() << "Handling" << event;
       QList<ProcessWakeUpCall>& calls = app.event_listeners[event.type];
       for (ProcessWakeUpCall& call: calls) {
         QPtr<Process> p = app.processes[call.id.index];
@@ -70,7 +72,7 @@ void ExecuteProcesses(AppData& app) {
           continue;
         }
         WakeUpProcess(app, *p, call.execute, call.dbg_execute_name);
-        qDebug() << "Waking up" << *p;
+        LOG() << "Waking up" << *p;
       }
     }
     while (!app.procs_to_execute.isEmpty() || !app.procs_to_finish.isEmpty()) {
@@ -79,10 +81,10 @@ void ExecuteProcesses(AppData& app) {
       for (ProcessId id: finish) {
         QPtr<Process> p = app.processes[id.index];
         if (!p || p->id != id) {
-          qDebug() << "Process" << id << "already finished";
+          LOG() << "Process" << id << "already finished";
           continue;
         }
-        qDebug() << "Finished" << *p;
+        LOG() << "Finished" << *p;
         if (p->parent_id) {
           QPtr<Process> parent = app.processes[p->parent_id.index];
           parent->running_child_ids.removeAll(p->id);
@@ -137,7 +139,7 @@ void ExecuteProcesses(AppData& app) {
         ProcessExecute exec = p->execute;
         p->execute = nullptr;
         p->flags &= ~kProcessIgnoreEventsUntilNextWakeUp;
-        qDebug() << "Executing" << *p;
+        LOG() << "Executing" << *p;
         exec(app);
         // Process did not specify new execute function and it has no new
         // unfinished child procesess - the process has finished.
@@ -165,7 +167,7 @@ bool IsProcessValid(const AppData& app, const ProcessId& id) {
 }
 
 static void CancelProcess(AppData& app, Process& target) {
-  qDebug() << "Cancelling" << target;
+  LOG() << "Cancelling" << target;
   if (IsProcessAlive(app, target.parent_id)) {
     QPtr<Process> parent = app.processes[target.parent_id.index];
     parent->running_child_ids.removeAll(target.id);
@@ -200,9 +202,9 @@ void PrintProcesses(const AppData& app) {
   for (int i = 0; i < app.processes.size(); i++) {
     const QPtr<Process>& p = app.processes[i];
     if (p) {
-      qDebug() << i << *p;
+      LOG() << i << *p;
     } else {
-      qDebug() << i << nullptr;
+      LOG() << i << nullptr;
     }
   }
 }

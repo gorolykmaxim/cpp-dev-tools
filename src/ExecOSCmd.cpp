@@ -1,6 +1,8 @@
 #include "ExecOSCmd.hpp"
 #include "Process.hpp"
 
+#define LOG() qDebug() << "[ExecOSCmd]"
+
 ExecOSCmd::ExecOSCmd(const QString& cmd, QPtr<QProcess> proc)
     : cmd(cmd), proc(proc ? proc : QPtr<QProcess>::create()) {
   EXEC_NEXT(Run);
@@ -9,7 +11,7 @@ ExecOSCmd::ExecOSCmd(const QString& cmd, QPtr<QProcess> proc)
 
 void ExecOSCmd::Run(AppData& app) {
   QPtr<ExecOSCmd> self = ProcessSharedPtr(app, this);
-  qDebug() << "Executing OS command:" << cmd;
+  LOG() << "Executing OS command:" << cmd;
   QObject::connect(proc.get(), &QProcess::readyReadStandardOutput, [self] () {
     QString data(self->proc->readAllStandardOutput());
     self->on_output(data);
@@ -19,11 +21,11 @@ void ExecOSCmd::Run(AppData& app) {
     self->on_output(data);
   });
   QObject::connect(proc.get(), &QProcess::errorOccurred, [&app, self] (QProcess::ProcessError error) {
-    qDebug() << "Failed to execute" << self->cmd << error;
+    LOG() << "Failed to execute" << self->cmd << error;
     WakeUpAndExecuteProcess(app, *self);
   });
   QObject::connect(proc.get(), &QProcess::finished, [&app, self] (int code, QProcess::ExitStatus) {
-    qDebug() << self->cmd << "finished with exit code" << code;
+    LOG() << self->cmd << "finished with exit code" << code;
     WakeUpAndExecuteProcess(app, *self);
   });
   proc->startCommand(cmd);

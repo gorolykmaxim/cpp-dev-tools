@@ -3,6 +3,8 @@
 #include "UI.hpp"
 #include "Process.hpp"
 
+#define LOG() qDebug() << "[OpenProject]"
+
 static bool IsValid(const FileSuggestion& s) {
   return s.match_start >= 0 && s.match_start < s.file.size();
 }
@@ -139,7 +141,7 @@ void OpenProject::HandleItemSelected(AppData& app) {
     QString value = folder + suggestions[selected_suggestion].file;
     SetUIDataField(app, kViewSlot, "vPath", value);
     if (!value.endsWith('/')) {
-      qDebug() << "Opening project:" << value;
+      LOG() << "Opening project:" << value;
       load_project_file = ScheduleProcess<LoadTaskConfig>(app, this, value);
       EXEC_AND_WAIT_FOR_NEXT(HandleOpeningCompletion);
     } else {
@@ -159,7 +161,7 @@ void OpenProject::HandleItemSelected(AppData& app) {
 
 void OpenProject::CreateNewProject(AppData& app) {
   QString value = folder + file_name;
-  qDebug() << "Creating project:" << value;
+  LOG() << "Creating project:" << value;
   load_project_file = ScheduleProcess<LoadTaskConfig>(app, this, value, true);
   EXEC_AND_WAIT_FOR_NEXT(HandleOpeningCompletion);
 }

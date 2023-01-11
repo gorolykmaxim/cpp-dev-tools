@@ -4,12 +4,14 @@
 #include "SaveUserConfig.hpp"
 #include "Threads.hpp"
 
+#define LOG() qDebug() << "[SelectProject]"
+
 SelectProject::SelectProject() {
   EXEC_NEXT(SanitizeProjectList);
 }
 
 void SelectProject::SanitizeProjectList(AppData& app) {
-  qDebug() << "Removing projects that no longer exist";
+  LOG() << "Removing projects that no longer exist";
   QList<Project> projects = app.projects;
   QPtr<SelectProject> self = ProcessSharedPtr(app, this);
   ScheduleIOTask<QList<Project>>(app, [projects] () {
@@ -18,7 +20,7 @@ void SelectProject::SanitizeProjectList(AppData& app) {
       if (QFile(project.path).exists()) {
         result.append(project);
       } else {
-        qDebug() << "Project" << project.path << "no longer exists - removing";
+        LOG() << "Project" << project.path << "no longer exists - removing";
       }
     }
     return result;
@@ -33,7 +35,7 @@ void SelectProject::SanitizeProjectList(AppData& app) {
 void SelectProject::LoadLastProjectOrDisplaySelectProjectView(AppData& app) {
   if (!app.projects.isEmpty() &&
       app.projects[0].path == app.current_project_path) {
-    qDebug() << "Loading current project" << app.current_project_path;
+    LOG() << "Loading current project" << app.current_project_path;
     load_project_file = ScheduleProcess<LoadTaskConfig>(
         app, this, app.current_project_path);
     EXEC_NEXT(HandleOpenLastProjectCompletion);

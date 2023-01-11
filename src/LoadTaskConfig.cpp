@@ -4,6 +4,8 @@
 #include "SaveUserConfig.hpp"
 #include "ExecTasks.hpp"
 
+#define LOG() qDebug() << "[LoadTaskConfig]"
+
 LoadTaskConfig::LoadTaskConfig(const QString& path, bool create)
     : create(create), path(path) {
   EXEC_NEXT(Load);
@@ -35,7 +37,7 @@ static void AppendError(QStringList& errors, const QString& type, int index,
 
 static void LoadProfiles(const QJsonDocument& json, QList<Profile>& profiles,
                          QStringList& errors) {
-  qDebug() << "Loading profiles";
+  LOG() << "Loading profiles";
   QSet<QString> profile_variable_names;
   QSet<QString> profile_names;
   QJsonArray json_profiles = json["cdt_profiles"].toArray();
@@ -77,7 +79,7 @@ static void LoadProfiles(const QJsonDocument& json, QList<Profile>& profiles,
 
 static void LoadTasks(const QJsonDocument& json, QList<Task>& tasks,
                       QStringList& errors) {
-  qDebug() << "Loading tasks";
+  LOG() << "Loading tasks";
   QJsonArray json_tasks = json["cdt_tasks"].toArray();
   for (int i = 0; i < json_tasks.size(); i++) {
     QJsonValue json_task = json_tasks[i];
@@ -131,7 +133,7 @@ static void ApplyProfile(QString& str, const Profile& profile) {
 }
 
 static void ApplyProfile(QList<Task>& tasks, const Profile& profile) {
-  qDebug() << "Applying profile varaibles to tasks";
+  LOG() << "Applying profile varaibles to tasks";
   for (Task& task: tasks) {
     task.name = task.src_name;
     task.cmd = task.src_cmd;
@@ -153,7 +155,7 @@ static void MigrateTaskField(Task& task, const QString& prefix, int task_flag) {
 }
 
 static void MigrateOldFormatTasks(QList<Task>& tasks) {
-  qDebug() << "Migrating tasks from the old format to the new one";
+  LOG() << "Migrating tasks from the old format to the new one";
   for (Task& task: tasks) {
     MigrateTaskField(task, "__gtest", kTaskGtest);
     MigrateTaskField(task, "__restart", kTaskRestart);
@@ -175,7 +177,7 @@ static void ValidateUniqueTaskNames(const QList<Task>& tasks,
 }
 
 static void ExpandPreTasks(QList<Task> &tasks, QStringList& errors) {
-  qDebug() << "Traversing pre task tree";
+  LOG() << "Traversing pre task tree";
   QList<QList<int>> task_to_pre_tasks(tasks.size());
   for (int i = 0; i < tasks.size(); i++) {
     const Task& task = tasks[i];
