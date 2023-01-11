@@ -41,6 +41,12 @@ static Exec* FindExecById(AppData& app, QUuid id) {
 void ExecTask::Schedule(AppData& app) {
   Task* primary = GetTaskByName(app, task_name);
   primary_exec_id = QUuid::createUuid();
+  int new_execs_cnt = primary->pre_tasks.size() + 1;
+  int old_execs_to_remove = app.execs.size() + new_execs_cnt - 100;
+  if (old_execs_to_remove > 0) {
+    qDebug() << "Removing" << old_execs_to_remove << "oldest execution(s)";
+    app.execs.remove(0, old_execs_to_remove);
+  }
   for (const QString& name: primary->pre_tasks) {
     ScheduleTask(app, *GetTaskByName(app, name), QUuid::createUuid(),
                  primary_exec_id);
