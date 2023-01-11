@@ -12,6 +12,7 @@ ColumnLayout {
     Layout.fillHeight: true
     IconWidget {
       icon: dError ? "error" : "help"
+      iconSize: 48
       color: dError ? "red" : colorText
       Layout.alignment: Qt.AlignTop
     }

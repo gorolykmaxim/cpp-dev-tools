@@ -93,7 +93,8 @@ void ExecTask::ExecNext(AppData& app) {
         p->on_output = [&app, id] (const QString& data) {
           if (Exec* exec = FindExecById(app, id)) {
             exec->output += data;
-            LOG() << data;
+            app.events.enqueue(Event("execOutputChanged", {id}));
+            ExecuteProcesses(app);
           }
         };
         EXEC_NEXT(ExecNext);
@@ -101,4 +102,5 @@ void ExecTask::ExecNext(AppData& app) {
       }
     }
   }
+  app.events.enqueue(Event("execHistoryChanged", {}));
 }

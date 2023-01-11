@@ -7,8 +7,13 @@ public:
   ExecTasks();
   void DisplayExecTasksView(AppData& app);
   void FilterTasks(AppData& app);
+  void FilterExecs(AppData& app);
   void ExecSelectedTask(AppData& app);
+  void ReDrawExecOutput(AppData& app);
+  void ReDrawExecHistory(AppData& app);
   QList<QVariantList> MakeFilteredListOfTasks(AppData& app);
+  QList<QVariantList> MakeFilteredListOfExecs(AppData& app);
 
   QString task_filter;
+  QString exec_filter;
 };
