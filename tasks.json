@@ -11,19 +11,6 @@
   ],
   "cdt_tasks": [
     {
-      "name": "out test",
-      "command": "ls /Users/maxim"
-    },
-    {
-      "name": "err test",
-      "command": "ls omegalul",
-      "pre_tasks": ["out test"]
-    },
-    {
-      "name": "err sys test",
-      "command": "kekw"
-    },
-    {
       "name": "build",
       "command": "cmake --build build --target cpp-dev-tools"
     },
