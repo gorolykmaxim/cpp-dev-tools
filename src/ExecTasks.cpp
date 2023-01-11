@@ -20,6 +20,7 @@ void ExecTasks::DisplayExecTasksView(AppData& app) {
     {3, "cmd"},
     {4, "icon"},
     {5, "iconColor"},
+    {6, "titleColor"},
   };
   DisplayView(
       app,
@@ -107,9 +108,10 @@ QList<QVariantList> ExecTasks::MakeFilteredListOfExecs(AppData& app) {
         icon_color = "red";
       }
     }
+    QString title_color = exec.id == exec.primary_exec_id ? "" : sub_text_color;
     AppendToUIListIfMatches(execs, exec_filter, {exec.task_name,
                             exec.start_time.toString(), exec.id, exec.cmd,
-                            icon, icon_color}, {0, 1, 3});
+                            icon, icon_color, title_color}, {0, 1, 3});
   }
   return execs;
 }

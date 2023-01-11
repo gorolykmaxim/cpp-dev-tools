@@ -37,6 +37,7 @@ ListView {
         TextWidget {
           text: itemModel.title || ""
           highlight: isSelected
+          textColor: itemModel.titleColor || colorText
         }
         TextWidget {
           text: itemModel.subTitle || ""
