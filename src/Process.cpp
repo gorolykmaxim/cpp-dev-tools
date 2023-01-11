@@ -62,7 +62,9 @@ QVariant GetEventArg(const AppData& app, int i) {
 
 void ExecuteProcesses(AppData& app) {
   do {
+    bool dequeue_event_later = false;
     if (!app.events.isEmpty()) {
+      dequeue_event_later = true;
       Event& event = app.events.head();
       LOG() << "Handling" << event;
       QList<ProcessWakeUpCall>& calls = app.event_listeners[event.type];
@@ -148,7 +150,7 @@ void ExecuteProcesses(AppData& app) {
         }
       }
     }
-    if (!app.events.isEmpty()) {
+    if (dequeue_event_later) {
       app.events.dequeue();
     }
   } while (!app.events.isEmpty());
