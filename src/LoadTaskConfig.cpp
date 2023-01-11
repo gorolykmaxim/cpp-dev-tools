@@ -88,13 +88,13 @@ static void LoadTasks(const QJsonDocument& json, QList<Task>& tasks,
     QJsonObject json_task_obj = json_task.toObject();
     Task task;
     bool is_valid = true;
-    task.name = json_task_obj["name"].toString();
-    if (task.name.isEmpty()) {
+    task.src_name = json_task_obj["name"].toString();
+    if (task.src_name.isEmpty()) {
       AppendError(errors, "Task", i, "must have a 'name' property set");
       is_valid = false;
     }
-    task.command = json_task_obj["command"].toString();
-    if (task.command.isEmpty()) {
+    task.src_cmd = json_task_obj["command"].toString();
+    if (task.src_cmd.isEmpty()) {
       AppendError(errors, "Task", i, "must have a 'command' property set");
       is_valid = false;
     }
@@ -116,7 +116,7 @@ static void LoadTasks(const QJsonDocument& json, QList<Task>& tasks,
         is_valid = false;
         break;
       }
-      task.pre_tasks.append(json_pre_task.toString());
+      task.src_pre_tasks.append(json_pre_task.toString());
     }
     if (is_valid) {
       tasks.append(task);
@@ -133,8 +133,11 @@ static void ApplyProfile(QString& str, const Profile& profile) {
 static void ApplyProfile(QList<Task>& tasks, const Profile& profile) {
   qDebug() << "Applying profile varaibles to tasks";
   for (Task& task: tasks) {
+    task.name = task.src_name;
+    task.cmd = task.src_cmd;
+    task.pre_tasks = task.src_pre_tasks;
     ApplyProfile(task.name, profile);
-    ApplyProfile(task.command, profile);
+    ApplyProfile(task.cmd, profile);
     for (QString& pre_task: task.pre_tasks) {
       ApplyProfile(pre_task, profile);
     }
@@ -142,10 +145,10 @@ static void ApplyProfile(QList<Task>& tasks, const Profile& profile) {
 }
 
 static void MigrateTaskField(Task& task, const QString& prefix, int task_flag) {
-  if (task.command.startsWith(prefix)) {
+  if (task.cmd.startsWith(prefix)) {
     task.flags |= task_flag;
-    task.command.remove(0, prefix.size());
-    task.command = task.command.trimmed();
+    task.cmd.remove(0, prefix.size());
+    task.cmd = task.cmd.trimmed();
   }
 }
 
@@ -235,10 +238,9 @@ void LoadTaskConfig::Read(AppData& app) {
   }
   QStringList errors;
   QList<Profile> profiles;
-  QList<Task> task_defs;
+  QList<Task> tasks;
   LoadProfiles(load_file->json, profiles, errors);
-  LoadTasks(load_file->json, task_defs, errors);
-  QList<Task> tasks = task_defs;
+  LoadTasks(load_file->json, tasks, errors);
   Project project(load_file->path);
   if (!profiles.isEmpty()) {
     project.profile = 0;
@@ -249,9 +251,9 @@ void LoadTaskConfig::Read(AppData& app) {
   ExpandPreTasks(tasks, errors);
   if (!errors.isEmpty()) {
     DisplayAlertDialog(app, "Failed to open project", errors.join('\n'));
+    app.current_project_path = "";
   } else {
     app.profiles = profiles;
-    app.task_defs = task_defs;
     app.tasks = tasks;
     app.projects.removeOne(project);
     app.projects.insert(0, project);

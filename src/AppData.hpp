@@ -31,11 +31,27 @@ enum TaskFlags {
 };
 
 struct Task {
+  QString src_name;
+  QString src_cmd;
+  QList<QString> src_pre_tasks;
   QString name;
-  QString command;
+  QString cmd;
   int flags = 0;
   QList<QString> pre_tasks;
 };
+
+struct Exec {
+  QUuid id;
+  QUuid primary_exec_id;
+  QString task_name;
+  QString cmd;
+  QDateTime start_time;
+  QPtr<QProcess> proc;
+  std::optional<int> exit_code = {};
+  QString output;
+};
+
+QDebug operator<<(QDebug debug, const Exec& exec);
 
 struct UserCmd {
   QString group;
@@ -66,8 +82,8 @@ struct AppData {
   // Event type to list of processes to wake up
   QHash<QString, QList<ProcessWakeUpCall>> event_listeners;
   QList<Profile> profiles;
-  QList<Task> task_defs;
   QList<Task> tasks;
+  QList<Exec> execs;
   // Last opened project is always first
   QList<Project> projects;
   // Event type to user command to execute

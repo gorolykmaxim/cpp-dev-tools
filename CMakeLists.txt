@@ -42,6 +42,10 @@ qt_add_executable(cpp-dev-tools
   src/CloseProject.cpp
   src/ExecTasks.hpp
   src/ExecTasks.cpp
+  src/ExecTask.hpp
+  src/ExecTask.cpp
+  src/ExecOSCmd.hpp
+  src/ExecOSCmd.cpp
   src/Initialize.hpp
   src/Initialize.cpp)
 if(NOT MSVC)

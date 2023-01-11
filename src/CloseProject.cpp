@@ -8,7 +8,6 @@ CloseProject::CloseProject() {
 
 void CloseProject::Close(AppData& app) {
   app.profiles.clear();
-  app.task_defs.clear();
   app.tasks.clear();
   app.current_project_path = "";
   ScheduleProcess<SelectProject>(app, kViewSlot);

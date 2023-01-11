@@ -5,6 +5,7 @@
 #include <limits>
 #include <utility>
 #include <algorithm>
+#include <optional>
 
 #include <QString>
 #include <QVariant>
@@ -16,6 +17,8 @@
 #include <QStack>
 #include <QUrl>
 #include <QSharedPointer>
+#include <QDateTime>
+#include <QUuid>
 
 #include <QJsonDocument>
 #include <QJsonObject>
@@ -23,6 +26,7 @@
 #include <QDir>
 #include <QStandardPaths>
 #include <QFile>
+#include <QProcess>
 
 #include <QtConcurrent>
 #include <QThreadPool>

@@ -24,9 +24,9 @@ PaneWidget {
           onDisplayTextChanged: core.OnAction("vaTaskFilterChanged",
                                               [displayText])
           Keys.onReturnPressed: Cmn.onListAction(taskList, "vaExecuteTask",
-                                                 "title")
+                                                 "taskName")
           Keys.onEnterPressed: Cmn.onListAction(taskList, "vaExecuteTask",
-                                                "title")
+                                                "taskName")
           Keys.onDownPressed: taskList.incrementCurrentIndex()
           Keys.onUpPressed: taskList.decrementCurrentIndex()
         }
@@ -36,7 +36,7 @@ PaneWidget {
         Layout.fillWidth: true
         Layout.fillHeight: true
         model: vTasks
-        onItemClicked: (item) => core.OnAction("vaExecuteTask", [item.title])
+        onItemClicked: (item) => core.OnAction("vaExecuteTask", [item.taskName])
       }
     }
   }

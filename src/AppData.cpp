@@ -51,6 +51,19 @@ bool Project::operator!=(const Project& project) const {
   return !(*this == project);
 }
 
+QDebug operator<<(QDebug debug, const Exec& exec) {
+  QDebugStateSaver saver(debug);
+  debug.nospace() << "Exec(id=" << exec.id << ",peid=" << exec.primary_exec_id
+                  << ",n=" << exec.task_name << ",c=" << exec.cmd << ",st="
+                  << exec.start_time << ",ec=";
+  if (exec.exit_code) {
+    debug << *exec.exit_code;
+  } else {
+    debug << "nullptr";
+  }
+  return debug << ",o=" << exec.output.size() << ')';
+}
+
 QString UserCmd::GetFormattedShortcut() const {
   QString result = shortcut.toUpper();
 #if __APPLE__
