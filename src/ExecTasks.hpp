@@ -11,9 +11,11 @@ public:
   void ExecSelectedTask(AppData& app);
   void ReDrawExecOutput(AppData& app);
   void ReDrawExecHistory(AppData& app);
+  void ExecSelected(AppData& app);
   QList<QVariantList> MakeFilteredListOfTasks(AppData& app);
   QList<QVariantList> MakeFilteredListOfExecs(AppData& app);
 
   QString task_filter;
   QString exec_filter;
+  QUuid selected_exec_id;
 };

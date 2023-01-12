@@ -5,11 +5,16 @@ import QtQuick.Layouts
 ListView {
   Component.onCompleted: {
     root.model.onModelReset.connect(() => {
-      root.currentIndex = root.onUpdateSelectLast ? root.count - 1: 0;
+      let toSelect = 0;
+      for (let i = 0; i < root.model.rowCount(); i++) {
+        if (root.model.GetFieldByRoleName(i, "isSelected")) {
+          toSelect = i;
+        }
+      }
+      root.currentIndex = toSelect;
     });
   }
   id: root
-  property var onUpdateSelectLast: false
   signal itemClicked(clickedItemModel: QtObject, event: QtObject);
   clip: true
   boundsBehavior: ListView.StopAtBounds
