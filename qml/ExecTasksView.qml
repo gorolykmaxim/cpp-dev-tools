@@ -52,14 +52,8 @@ PaneWidget {
           placeholderText: "Search execution"
           onDisplayTextChanged: core.OnAction("vaExecFilterChanged",
                                               [displayText])
-          Keys.onDownPressed: {
-            execList.incrementCurrentIndex();
-            core.OnAction("vaExecSelected", [execList.currentItem.itemModel.id])
-          }
-          Keys.onUpPressed: {
-            execList.decrementCurrentIndex();
-            core.OnAction("vaExecSelected", [execList.currentItem.itemModel.id])
-          }
+          Keys.onDownPressed: execList.incrementCurrentIndex()
+          Keys.onUpPressed: execList.decrementCurrentIndex()
         }
       }
       TextListWidget {
@@ -67,8 +61,9 @@ PaneWidget {
         Layout.fillWidth: true
         Layout.fillHeight: true
         model: vExecs
-        onItemClicked: core.OnAction("vaExecSelected",
-                                     [execList.currentItem.itemModel.id])
+        onCurrentIndexChanged: {
+          core.OnAction("vaExecSelected", [execList.currentItem.itemModel.id]);
+        }
       }
     }
   }

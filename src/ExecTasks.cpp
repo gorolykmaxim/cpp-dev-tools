@@ -86,6 +86,13 @@ void ExecTasks::ReDrawExecOutput(AppData& app) {
 }
 
 void ExecTasks::ReDrawExecHistory(AppData& app) {
+  if (select_new_execs) {
+    if (Exec* exec = FindLatestRunningExec(app)) {
+      selected_exec_id = exec->id;
+    } else if (!app.execs.isEmpty()) {
+      selected_exec_id = app.execs.last().id;
+    }
+  }
   QList<QVariantList> execs = MakeFilteredListOfExecs(app);
   GetUIListField(app, kViewSlot, "vExecs").SetItems(execs);
   EXEC_NEXT(KeepAlive);
@@ -94,12 +101,12 @@ void ExecTasks::ReDrawExecHistory(AppData& app) {
 void ExecTasks::ExecSelected(AppData& app) {
   selected_exec_id = GetEventArg(app, 0).toUuid();
   Exec* exec = FindLatestRunningExec(app);
-  bool is_latest_running_selected = exec && exec->id == selected_exec_id;
-  bool is_last_selected = !app.execs.isEmpty() &&
-                          app.execs.last().id == selected_exec_id;
-  if (is_latest_running_selected || is_last_selected) {
-    selected_exec_id = QUuid();
-    LOG() << "execution selection has been reset";
+  bool is_latest_running = exec && exec->id == selected_exec_id;
+  bool is_latest = !app.execs.isEmpty() &&
+                   app.execs.last().id == selected_exec_id;
+  select_new_execs = is_latest_running || is_latest;
+  if (select_new_execs) {
+    LOG() << "latest execution will get selected:" << selected_exec_id;
   } else {
     LOG() << "execution selected:" << selected_exec_id;
   }
@@ -117,14 +124,6 @@ QList<QVariantList> ExecTasks::MakeFilteredListOfTasks(AppData& app) {
 
 QList<QVariantList> ExecTasks::MakeFilteredListOfExecs(AppData& app) {
   static const QString sub_text_color = "#6d6d6d";
-  QUuid exec_to_select_id;
-  if (!selected_exec_id.isNull()) {
-    exec_to_select_id = selected_exec_id;
-  } else if (Exec* exec = FindLatestRunningExec(app)) {
-    exec_to_select_id = exec->id;
-  } else if (!app.execs.isEmpty()) {
-    exec_to_select_id = app.execs.last().id;
-  }
   QList<QVariantList> execs;
   for (Exec& exec: app.execs) {
     QString icon;
@@ -147,10 +146,10 @@ QList<QVariantList> ExecTasks::MakeFilteredListOfExecs(AppData& app) {
       }
     }
     QString title_color = exec.id == exec.primary_exec_id ? "" : sub_text_color;
-    bool is_selected = exec.id == exec_to_select_id;
+    bool is_selected = exec.id == selected_exec_id;
     AppendToUIListIfMatches(execs, exec_filter, {exec.task_name,
                             exec.start_time.toString(), exec.id, exec.cmd,
-                            icon, icon_color, title_color,is_selected}, {0, 1,
+                            icon, icon_color, title_color, is_selected}, {0, 1,
                             3});
   }
   return execs;

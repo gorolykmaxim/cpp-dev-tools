@@ -18,4 +18,5 @@ public:
   QString task_filter;
   QString exec_filter;
   QUuid selected_exec_id;
+  bool select_new_execs = true;
 };
