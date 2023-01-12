@@ -1,5 +1,6 @@
 #include "ExecTask.hpp"
 #include "Process.hpp"
+#include "Execution.hpp"
 #include "ExecOSCmd.hpp"
 
 #define LOG() qDebug() << "[ExecTask]"
@@ -29,15 +30,6 @@ static void ScheduleTask(AppData& app, const Task& task, QUuid id,
   exec.cmd = task.cmd;
   LOG() << "Scheduling" << exec;
   app.execs.append(exec);
-}
-
-static Exec* FindExecById(AppData& app, QUuid id) {
-  for (Exec& exec: app.execs) {
-    if (exec.id == id) {
-      return &exec;
-    }
-  }
-  return nullptr;
 }
 
 void ExecTask::Schedule(AppData& app) {

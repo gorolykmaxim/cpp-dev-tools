@@ -16,6 +16,8 @@ qt_add_executable(cpp-dev-tools
   src/UI.cpp
   src/Process.hpp
   src/Process.cpp
+  src/Execution.hpp
+  src/Execution.cpp
   src/UIData.hpp
   src/UIData.cpp
   src/ProcessData.hpp

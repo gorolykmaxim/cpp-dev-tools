@@ -1,18 +1,56 @@
 #include "ExecTasks.hpp"
 #include "Process.hpp"
 #include "UI.hpp"
+#include "Execution.hpp"
 #include "ExecTask.hpp"
 
 #define LOG() qDebug() << "[ExecTasks]"
 
-static Exec* FindLatestRunningExec(AppData& app) {
-  Exec* result = nullptr;
-  for (Exec& exec: app.execs) {
-    if (!exec.exit_code && exec.proc) {
-      result = &exec;
+static const QString kSubTextColor = "#6d6d6d";
+
+struct UIIcon {
+  QString icon;
+  QString color;
+};
+
+static QString MakeLabelAndValue(const QString& label, const QString& value) {
+  return label + ": <b>" + value + "<b/>";
+}
+
+static UIIcon MakeExecStatusIcon(const Exec& exec) {
+  UIIcon icon;
+  if (!exec.exit_code) {
+    if (!exec.proc) {
+      icon.icon = "access_alarm";
+      icon.color = kSubTextColor;
+    } else {
+      icon.icon = "autorenew";
+      icon.color = "green";
+    }
+  } else {
+    if (*exec.exit_code == 0) {
+      icon.icon = "check";
+      icon.color = "";
+    } else {
+      icon.icon = "error";
+      icon.color = "red";
     }
   }
-  return result;
+  return icon;
+}
+
+static void DisplayExecOutput(AppData& app, QUuid exec_id) {
+  Exec* exec = FindExecById(app, exec_id);
+  if (!exec) {
+    return;
+  }
+  UIIcon icon = MakeExecStatusIcon(*exec);
+  SetUIDataField(app, kViewSlot, "vExecName",
+                 MakeLabelAndValue("Task Name", exec->task_name));
+  SetUIDataField(app, kViewSlot, "vExecCmd",
+                 MakeLabelAndValue("Command", exec->cmd));
+  SetUIDataField(app, kViewSlot, "vExecIcon", icon.icon);
+  SetUIDataField(app, kViewSlot, "vExecIconColor", icon.color);
 }
 
 ExecTasks::ExecTasks() {
@@ -43,6 +81,10 @@ void ExecTasks::DisplayExecTasksView(AppData& app) {
         UIDataField{"windowTitle", "Execute Tasks"},
         UIDataField{"vTaskFilter", ""},
         UIDataField{"vExecFilter", ""},
+        UIDataField{"vExecName", ""},
+        UIDataField{"vExecCmd", ""},
+        UIDataField{"vExecIcon", ""},
+        UIDataField{"vExecIconColor", ""},
       },
       {
         UIListField{"vTasks", task_role_names, MakeFilteredListOfTasks(app)},
@@ -92,6 +134,7 @@ void ExecTasks::ReDrawExecHistory(AppData& app) {
     } else if (!app.execs.isEmpty()) {
       selected_exec_id = app.execs.last().id;
     }
+    DisplayExecOutput(app, selected_exec_id);
   }
   QList<QVariantList> execs = MakeFilteredListOfExecs(app);
   GetUIListField(app, kViewSlot, "vExecs").SetItems(execs);
@@ -110,6 +153,7 @@ void ExecTasks::ExecSelected(AppData& app) {
   } else {
     LOG() << "execution selected:" << selected_exec_id;
   }
+  DisplayExecOutput(app, selected_exec_id);
   EXEC_NEXT(KeepAlive);
 }
 
@@ -123,34 +167,15 @@ QList<QVariantList> ExecTasks::MakeFilteredListOfTasks(AppData& app) {
 }
 
 QList<QVariantList> ExecTasks::MakeFilteredListOfExecs(AppData& app) {
-  static const QString sub_text_color = "#6d6d6d";
   QList<QVariantList> execs;
   for (Exec& exec: app.execs) {
-    QString icon;
-    QString icon_color;
-    if (!exec.exit_code) {
-      if (!exec.proc) {
-        icon = "access_alarm";
-        icon_color = sub_text_color;
-      } else {
-        icon = "autorenew";
-        icon_color = "green";
-      }
-    } else {
-      if (*exec.exit_code == 0) {
-        icon = "check";
-        icon_color = "";
-      } else {
-        icon = "error";
-        icon_color = "red";
-      }
-    }
-    QString title_color = exec.id == exec.primary_exec_id ? "" : sub_text_color;
+    UIIcon icon = MakeExecStatusIcon(exec);
+    QString title_color = exec.id == exec.primary_exec_id ? "" : kSubTextColor;
     bool is_selected = exec.id == selected_exec_id;
     AppendToUIListIfMatches(execs, exec_filter, {exec.task_name,
                             exec.start_time.toString(), exec.id, exec.cmd,
-                            icon, icon_color, title_color, is_selected}, {0, 1,
-                            3});
+                            icon.icon, icon.color, title_color, is_selected},
+                            {0, 1, 3});
   }
   return execs;
 }

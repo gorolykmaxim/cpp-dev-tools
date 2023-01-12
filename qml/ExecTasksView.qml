@@ -8,8 +8,10 @@ PaneWidget {
   focus: true
   RowLayout {
     anchors.fill: parent
+    spacing: 0
     ColumnLayout {
       Layout.maximumWidth: 300
+      Layout.minimumWidth: 300
       spacing: 0
       PaneWidget {
         Layout.fillWidth: true
@@ -40,7 +42,34 @@ PaneWidget {
       }
     }
     ColumnLayout {
+      Layout.fillWidth: true
+      spacing: 0
+      PaneWidget {
+        Layout.fillWidth: true
+        Layout.fillHeight: true
+        color: colorBgMedium
+        padding: basePadding
+        RowLayout {
+          IconWidget {
+            icon: vExecIcon || ""
+            color: vExecIconColor || colorText
+          }
+          Column {
+            Layout.fillWidth: true
+            TextWidget {
+              text: vExecName || ""
+            }
+            TextWidget {
+              text: vExecCmd || ""
+              color: colorSubText
+            }
+          }
+        }
+      }
+    }
+    ColumnLayout {
       Layout.maximumWidth: 300
+      Layout.minimumWidth: 300
       spacing: 0
       PaneWidget {
         Layout.fillWidth: true
