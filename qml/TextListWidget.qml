@@ -27,10 +27,11 @@ ListView {
     RowLayout {
       id: row
       width: parent.width
-      spacing: basePadding
+      spacing: 0
       IconWidget {
         icon: itemModel.icon || ""
         color: itemModel.iconColor || colorText
+        visible: itemModel.icon || false
         Layout.leftMargin: basePadding
         Layout.topMargin: basePadding
         Layout.bottomMargin: basePadding
@@ -38,6 +39,7 @@ ListView {
       Column {
         Layout.topMargin: basePadding
         Layout.bottomMargin: basePadding
+        Layout.leftMargin: basePadding
         Layout.fillWidth: true
         TextWidget {
           text: itemModel.title || ""
@@ -51,9 +53,7 @@ ListView {
       }
       TextWidget {
         Layout.alignment: Qt.AlignRight
-        Layout.rightMargin: basePadding
-        Layout.topMargin: basePadding
-        Layout.bottomMargin: basePadding
+        Layout.margins: basePadding
         text: itemModel.rightText || ""
         color: colorSubText
       }
