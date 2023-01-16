@@ -1,4 +1,5 @@
 import QtQuick
+import QtQuick.Controls
 import QtQuick.Layouts
 import "Common.js" as Cmn
 
@@ -31,6 +32,7 @@ PaneWidget {
                                                 "taskName")
           Keys.onDownPressed: taskList.incrementCurrentIndex()
           Keys.onUpPressed: taskList.decrementCurrentIndex()
+          KeyNavigation.right: execOutputTextArea
         }
       }
       TextListWidget {
@@ -46,7 +48,6 @@ PaneWidget {
       spacing: 0
       PaneWidget {
         Layout.fillWidth: true
-        Layout.fillHeight: true
         color: colorBgMedium
         padding: basePadding
         RowLayout {
@@ -66,6 +67,18 @@ PaneWidget {
           }
         }
       }
+      ScrollView {
+        Layout.fillWidth: true
+        Layout.fillHeight: true
+        ReadOnlyTextAreaWidget {
+          id: execOutputTextArea
+          text: vExecOutput || ""
+          onTextChanged: {
+            cursorPosition = length;
+          }
+          KeyNavigation.right: searchExecTextField
+        }
+      }
     }
     ColumnLayout {
       Layout.maximumWidth: 300
@@ -76,6 +89,7 @@ PaneWidget {
         color: colorBgMedium
         padding: basePadding
         TextFieldWidget {
+          id: searchExecTextField
           width: parent.width
           text: vExecFilter || ""
           placeholderText: "Search execution"

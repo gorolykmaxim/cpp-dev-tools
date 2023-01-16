@@ -51,6 +51,7 @@ static void DisplayExecOutput(AppData& app, QUuid exec_id) {
                  MakeLabelAndValue("Command", exec->cmd));
   SetUIDataField(app, kViewSlot, "vExecIcon", icon.icon);
   SetUIDataField(app, kViewSlot, "vExecIconColor", icon.color);
+  SetUIDataField(app, kViewSlot, "vExecOutput", exec->output);
 }
 
 ExecTasks::ExecTasks() {
@@ -82,6 +83,7 @@ void ExecTasks::DisplayExecTasksView(AppData& app) {
         UIDataField{"vTaskFilter", ""},
         UIDataField{"vExecFilter", ""},
         UIDataField{"vExecName", ""},
+        UIDataField{"vExecOutput", ""},
         UIDataField{"vExecCmd", ""},
         UIDataField{"vExecIcon", ""},
         UIDataField{"vExecIconColor", ""},
@@ -123,7 +125,11 @@ void ExecTasks::ExecSelectedTask(AppData& app) {
 }
 
 void ExecTasks::ReDrawExecOutput(AppData& app) {
-  qDebug() << "OUTPUT OF EXEC CHANGED" << GetEventArg(app, 0).toUuid();
+  QUuid id = GetEventArg(app, 0).toUuid();
+  if (selected_exec_id != id) {
+    return;
+  }
+  DisplayExecOutput(app, selected_exec_id);
   EXEC_NEXT(KeepAlive);
 }
 
