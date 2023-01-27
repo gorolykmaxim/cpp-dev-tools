@@ -125,12 +125,12 @@ void ExecTasks::ExecSelectedTask(AppData& app) {
 }
 
 void ExecTasks::ReDrawExecOutput(AppData& app) {
+  EXEC_NEXT_DEFERRED(KeepAlive);
   QUuid id = GetEventArg(app, 0).toUuid();
   if (selected_exec_id != id) {
     return;
   }
   DisplayExecOutput(app, selected_exec_id);
-  EXEC_NEXT(KeepAlive);
 }
 
 void ExecTasks::ReDrawExecHistory(AppData& app) {
