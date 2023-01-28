@@ -22,8 +22,8 @@ static void InitDbSchema(QSqlDatabase& db) {
   DbTransaction t(db);
   QSqlQuery query(db);
   ExecDbQuery(query,
-              "CREATE TABLE IF NOT EXISTS project(path VARCHAR PRIMARY KEY, "
-              "is_opened BOOL)");
+              "CREATE TABLE IF NOT EXISTS project(id BLOB PRIMARY KEY, path "
+              "TEXT, is_opened BOOL, last_open_time DATETIME)");
 }
 
 void InitSqlDb::Run(AppData& app) {
