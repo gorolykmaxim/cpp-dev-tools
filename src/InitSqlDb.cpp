@@ -8,24 +8,30 @@
 
 InitSqlDb::InitSqlDb() { EXEC_NEXT(Run); }
 
+static void OpenDb(QSqlDatabase& db) {
+  QString home = QStandardPaths::writableLocation(QStandardPaths::HomeLocation);
+  QString db_file = home + "/.cpp-dev-tools.db";
+  db = QSqlDatabase::addDatabase("QSQLITE");
+  db.setDatabaseName(db_file);
+  bool db_opened = db.open();
+  Q_ASSERT(db_opened);
+  LOG() << "Opened database file" << db_file;
+}
+
+static void InitDbSchema(QSqlDatabase& db) {
+  DbTransaction t(db);
+  ExecDbCmd(db,
+            "CREATE TABLE IF NOT EXISTS project(path VARCHAR PRIMARY KEY, "
+            "is_opened BOOL)");
+}
+
 void InitSqlDb::Run(AppData& app) {
   QPtr<InitSqlDb> self = ProcessSharedPtr(app, this);
   ScheduleIOTask(
       app,
       [&app]() {
-        QString home =
-            QStandardPaths::writableLocation(QStandardPaths::HomeLocation);
-        QString db_file = home + "/.cpp-dev-tools.db";
-        app.db = QSqlDatabase::addDatabase("QSQLITE");
-        app.db.setDatabaseName(db_file);
-        bool db_opened = app.db.open();
-        Q_ASSERT(db_opened);
-        LOG() << "Opened database file" << db_file;
-        DbTransaction t(app.db);
-        ExecDbQuery(app.db,
-                    "CREATE TABLE IF NOT EXISTS project("
-                    "path VARCHAR PRIMARY KEY, "
-                    "is_opened BOOL)");
+        OpenDb(app.db);
+        InitDbSchema(app.db);
       },
       [&app, self]() { WakeUpAndExecuteProcess(app, *self); });
   EXEC_NEXT(Noop);

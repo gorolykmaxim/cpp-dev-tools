@@ -14,9 +14,12 @@ DbTransaction::~DbTransaction() {
   Q_ASSERT(transaction_committed);
 }
 
-void ExecDbQuery(QSqlDatabase& db, const QString& query) {
-  LOG() << "Executing query" << query;
-  QSqlQuery sql_query(db);
-  bool query_executed = sql_query.exec(query);
-  Q_ASSERT(query_executed);
+void ExecDbCmd(QSqlDatabase& db, const QString& cmd) {
+  LOG() << "Executing command:" << cmd;
+  QSqlQuery sql_cmd(db);
+  bool cmd_executed = sql_cmd.exec(cmd);
+  if (!cmd_executed) {
+    LOG() << "Last sql command failed:" << sql_cmd.lastError().text();
+  }
+  Q_ASSERT(cmd_executed);
 }

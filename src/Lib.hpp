@@ -22,6 +22,7 @@
 #include <QSet>
 #include <QSharedPointer>
 #include <QSqlDatabase>
+#include <QSqlError>
 #include <QSqlQuery>
 #include <QStack>
 #include <QStandardPaths>
