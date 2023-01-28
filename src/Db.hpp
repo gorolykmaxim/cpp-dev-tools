@@ -11,4 +11,4 @@ class DbTransaction {
   QSqlDatabase& db;
 };
 
-void ExecDbCmd(QSqlDatabase& db, const QString& cmd);
+void ExecDbQuery(QSqlQuery& sql_query, const QString& query);

@@ -20,9 +20,10 @@ static void OpenDb(QSqlDatabase& db) {
 
 static void InitDbSchema(QSqlDatabase& db) {
   DbTransaction t(db);
-  ExecDbCmd(db,
-            "CREATE TABLE IF NOT EXISTS project(path VARCHAR PRIMARY KEY, "
-            "is_opened BOOL)");
+  QSqlQuery query(db);
+  ExecDbQuery(query,
+              "CREATE TABLE IF NOT EXISTS project(path VARCHAR PRIMARY KEY, "
+              "is_opened BOOL)");
 }
 
 void InitSqlDb::Run(AppData& app) {
