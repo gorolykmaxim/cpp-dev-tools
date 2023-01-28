@@ -10,7 +10,8 @@ struct Profile {
   QString GetName() const;
   QList<QString> GetVariableNames() const;
   bool Contains(const QString& key) const;
-private:
+
+ private:
   QHash<QString, QString> variables;
 };
 
@@ -67,6 +68,7 @@ struct AppData {
   QString current_project_path;
   QGuiApplication gui_app;
   QQmlApplicationEngine gui_engine;
+  QSqlDatabase db;
   UIActionRouter ui_action_router;
   // View slot name to its view data
   QHash<QString, ViewData> view_data;

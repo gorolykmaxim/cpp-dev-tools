@@ -4,7 +4,8 @@ project(cpp-dev-tools)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_AUTOMOC ON)
 
-find_package(Qt6 6.3 COMPONENTS Quick QuickControls2 Gui Concurrent REQUIRED)
+find_package(Qt6 6.3 COMPONENTS
+  Quick QuickControls2 Gui Concurrent Sql REQUIRED)
 qt_add_executable(cpp-dev-tools
   src/main.cpp
   src/Lib.hpp
@@ -18,6 +19,8 @@ qt_add_executable(cpp-dev-tools
   src/Process.cpp
   src/Execution.hpp
   src/Execution.cpp
+  src/Db.hpp
+  src/Db.cpp
   src/UIData.hpp
   src/UIData.cpp
   src/ProcessData.hpp
@@ -48,6 +51,8 @@ qt_add_executable(cpp-dev-tools
   src/ExecTask.cpp
   src/ExecOSCmd.hpp
   src/ExecOSCmd.cpp
+  src/InitSqlDb.hpp
+  src/InitSqlDb.cpp
   src/Initialize.hpp
   src/Initialize.cpp)
 if(NOT MSVC)
@@ -58,7 +63,7 @@ if(NOT MSVC)
 endif()
 target_include_directories(cpp-dev-tools PRIVATE src)
 target_link_libraries(cpp-dev-tools PRIVATE
-  Qt6::Quick Qt6::QuickControls2 Qt6::Gui Qt6::Concurrent)
+  Qt6::Quick Qt6::QuickControls2 Qt6::Gui Qt6::Concurrent Qt6::Sql)
 qt_add_qml_module(cpp-dev-tools URI cdt VERSION 1.0
   QML_FILES
       qml/MaterialDesignIcons.js

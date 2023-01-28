@@ -1,46 +1,42 @@
 #pragma once
 
+#include <QAbstractListModel>
+#include <QByteArray>
+#include <QDateTime>
+#include <QDebug>
+#include <QDebugStateSaver>
+#include <QDir>
+#include <QFile>
+#include <QGuiApplication>
+#include <QHash>
+#include <QJsonDocument>
+#include <QJsonObject>
+#include <QList>
+#include <QMetaObject>
+#include <QModelIndex>
+#include <QProcess>
+#include <QQmlApplicationEngine>
+#include <QQmlContext>
+#include <QQueue>
+#include <QQuickStyle>
+#include <QSet>
+#include <QSharedPointer>
+#include <QSqlDatabase>
+#include <QSqlQuery>
+#include <QStack>
+#include <QStandardPaths>
+#include <QString>
+#include <QThreadPool>
+#include <QUrl>
+#include <QUuid>
+#include <QVariant>
+#include <QtConcurrent>
+#include <algorithm>
 #include <chrono>
 #include <functional>
 #include <limits>
-#include <utility>
-#include <algorithm>
 #include <optional>
+#include <utility>
 
-#include <QString>
-#include <QVariant>
-#include <QHash>
-#include <QByteArray>
-#include <QList>
-#include <QQueue>
-#include <QSet>
-#include <QStack>
-#include <QUrl>
-#include <QSharedPointer>
-#include <QDateTime>
-#include <QUuid>
-
-#include <QJsonDocument>
-#include <QJsonObject>
-
-#include <QDir>
-#include <QStandardPaths>
-#include <QFile>
-#include <QProcess>
-
-#include <QtConcurrent>
-#include <QThreadPool>
-
-#include <QDebug>
-#include <QDebugStateSaver>
-
-#include <QAbstractListModel>
-#include <QModelIndex>
-#include <QGuiApplication>
-#include <QQmlContext>
-#include <QQmlApplicationEngine>
-#include <QMetaObject>
-#include <QQuickStyle>
-
-template<typename T>
+template <typename T>
 using QPtr = QSharedPointer<T>;
