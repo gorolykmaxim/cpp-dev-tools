@@ -19,8 +19,13 @@ ColumnLayout {
         Layout.fillWidth: true
         KeyNavigation.right: openBtn
         onDisplayTextChanged: core.OnAction("vaPathChanged", [displayText])
-        Keys.onReturnPressed: core.OnAction("vaSuggestionPicked",
-                                            [list.currentIndex])
+        Keys.onReturnPressed: e => {
+          if (e.modifiers & Qt.ControlModifier) {
+            core.OnAction("vaOpenOrCreate", []);
+          } else {
+            core.OnAction("vaSuggestionPicked", [list.currentIndex]);
+          }
+        }
         Keys.onEnterPressed: core.OnAction("vaSuggestionPicked",
                                            [list.currentIndex])
         Keys.onDownPressed: list.incrementCurrentIndex()
