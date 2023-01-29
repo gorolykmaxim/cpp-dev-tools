@@ -29,16 +29,8 @@ qt_add_executable(cpp-dev-tools
   src/AppData.cpp
   src/JsonFileProcess.hpp
   src/JsonFileProcess.cpp
-  src/OpenProject.hpp
-  src/OpenProject.cpp
   src/SelectProject.hpp
   src/SelectProject.cpp
-  src/LoadUserConfig.hpp
-  src/LoadUserConfig.cpp
-  src/SaveUserConfig.hpp
-  src/SaveUserConfig.cpp
-  src/LoadTaskConfig.hpp
-  src/LoadTaskConfig.cpp
   src/ExecUserCmds.hpp
   src/ExecUserCmds.cpp
   src/SearchUserCmds.hpp
@@ -53,6 +45,8 @@ qt_add_executable(cpp-dev-tools
   src/ExecOSCmd.cpp
   src/InitSqlDb.hpp
   src/InitSqlDb.cpp
+  src/ChooseFile.hpp
+  src/ChooseFile.cpp
   src/Initialize.hpp
   src/Initialize.cpp)
 if(NOT MSVC)
@@ -84,7 +78,7 @@ qt_add_qml_module(cpp-dev-tools URI cdt VERSION 1.0
       qml/SearchUserCmdsDialog.qml
       qml/BlankView.qml
       qml/SelectProjectView.qml
-      qml/OpenProjectView.qml
+      qml/ChooseFileView.qml
       qml/ExecTasksView.qml
   RESOURCES
       fonts/MaterialIcons-Regular.ttf)

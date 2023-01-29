@@ -28,9 +28,9 @@ ColumnLayout {
       }
       ButtonWidget {
         id: openBtn
-        text: vButtonText
+        text: "Open"
         KeyNavigation.right: cancelBtn
-        onClicked: core.OnAction("vaSuggestionPicked", [list.currentIndex])
+        onClicked: core.OnAction("vaOpenOrCreate", [])
       }
       ButtonWidget {
         id: cancelBtn

@@ -1,72 +1,86 @@
 #include "SelectProject.hpp"
-#include "UI.hpp"
+
+#include "Db.hpp"
+#include "ExecTasks.hpp"
 #include "Process.hpp"
-#include "SaveUserConfig.hpp"
 #include "Threads.hpp"
+#include "UI.hpp"
 
 #define LOG() qDebug() << "[SelectProject]"
 
-SelectProject::SelectProject() {
-  EXEC_NEXT(SanitizeProjectList);
-}
+static const QString kSqlDeleteProject = "DELETE FROM project WHERE id=?";
+
+SelectProject::SelectProject() { EXEC_NEXT(SanitizeProjectList); }
 
 void SelectProject::SanitizeProjectList(AppData& app) {
   LOG() << "Removing projects that no longer exist";
-  QList<Project> projects = app.projects;
   QPtr<SelectProject> self = ProcessSharedPtr(app, this);
-  ScheduleIOTask<QList<Project>>(app, [projects] () {
-    QList<Project> result;
-    for (const Project& project: projects) {
-      if (QFile(project.path).exists()) {
-        result.append(project);
-      } else {
-        LOG() << "Project" << project.path << "no longer exists - removing";
-      }
-    }
-    return result;
-  }, [&app, self] (QList<Project> projects) {
-    app.projects = projects;
-    ScheduleProcess<SaveUserConfig>(app, nullptr);
-    WakeUpAndExecuteProcess(app, *self);
-  });
+  ScheduleIOTask<QList<Project>>(
+      app,
+      [&app]() {
+        DbTransaction t(app.db);
+        QList<Project> projects = ExecDbQueryAndRead<Project>(
+            app.db, "SELECT * FROM project ORDER BY last_open_time DESC",
+            ReadProjectFromSql);
+        QList<Project> filtered;
+        for (const Project& project : projects) {
+          if (QFile(project.path).exists()) {
+            filtered.append(project);
+            continue;
+          }
+          LOG() << "Project" << project.path << "no longer exists - removing";
+          ExecDbCmd(app.db, kSqlDeleteProject, {project.id});
+        }
+        return filtered;
+      },
+      [&app, self](QList<Project> result) {
+        self->projects = result;
+        WakeUpAndExecuteProcess(app, *self);
+      });
   EXEC_NEXT(LoadLastProjectOrDisplaySelectProjectView);
 }
 
-void SelectProject::LoadLastProjectOrDisplaySelectProjectView(AppData& app) {
-  if (!app.projects.isEmpty() &&
-      app.projects[0].path == app.current_project_path) {
-    LOG() << "Loading current project" << app.current_project_path;
-    load_project_file = ScheduleProcess<LoadTaskConfig>(
-        app, this, app.current_project_path);
-    EXEC_NEXT(HandleOpenLastProjectCompletion);
-  } else {
-    app.current_project_path = "";
-    DisplaySelectProjectView(app);
-  }
+static void OpenSpecifiedProject(AppData& app, Project project) {
+  project.last_open_time = QDateTime::currentDateTime();
+  app.current_project = QPtr<Project>::create(project);
+  QDir::setCurrent(project.path);
+  DisplayMenuBar(app);
+  DisplayStatusBar(app);
+  ScheduleProcess<ExecTasks>(app, kViewSlot);
+  ExecDbCmdOnIOThread(app, "UPDATE project SET last_open_time=? WHERE id=?",
+                      {project.last_open_time, project.id});
 }
 
-void SelectProject::HandleOpenLastProjectCompletion(AppData& app) {
-  if (!load_project_file->success) {
+void SelectProject::LoadLastProjectOrDisplaySelectProjectView(AppData& app) {
+  Project* current = nullptr;
+  for (Project& project : projects) {
+    if (project.is_opened) {
+      current = &project;
+      break;
+    }
+  }
+  if (current) {
+    LOG() << "Opening last opened project" << current->path;
+    OpenSpecifiedProject(app, *current);
+  } else {
     DisplaySelectProjectView(app);
   }
 }
 
 void SelectProject::DisplaySelectProjectView(AppData& app) {
   QHash<int, QByteArray> role_names = {
-    {0, "idx"},
-    {1, "title"},
-    {2, "subTitle"},
+      {0, "idx"},
+      {1, "title"},
+      {2, "subTitle"},
   };
   DisplayView(
-      app,
-      kViewSlot,
-      "SelectProjectView.qml",
+      app, kViewSlot, "SelectProjectView.qml",
       {
-        UIDataField{"windowTitle", "Open Project"},
-        UIDataField{"vFilter", ""},
+          UIDataField{"windowTitle", "Open Project"},
+          UIDataField{"vFilter", ""},
       },
       {
-        UIListField{"vProjects", role_names, MakeFilteredListOfProjects(app)},
+          UIListField{"vProjects", role_names, MakeFilteredListOfProjects()},
       });
   DisplayMenuBar(app);
   DisplayStatusBar(app);
@@ -81,51 +95,67 @@ void SelectProject::DisplaySelectProjectView(AppData& app) {
 }
 
 void SelectProject::OpenNewProject(AppData& app) {
-  open_project = ScheduleProcess<OpenProject>(app, this);
+  choose_project = ScheduleProcess<ChooseFile>(app, this);
+  choose_project->window_title = "Open Project";
+  choose_project->choose_directory = true;
   EXEC_NEXT(HandleOpenNewProjectCompletion);
 }
 
 void SelectProject::HandleOpenNewProjectCompletion(AppData& app) {
-  if (!open_project->opened) {
+  if (!choose_project->result.isEmpty()) {
+    Project* existing_project = nullptr;
+    for (Project& project : projects) {
+      if (project.path == choose_project->result) {
+        existing_project = &project;
+        break;
+      }
+    }
+    if (existing_project) {
+      OpenSpecifiedProject(app, *existing_project);
+    } else {
+      Project project;
+      project.id = QUuid::createUuid();
+      project.path = choose_project->result;
+      project.is_opened = true;
+      project.last_open_time = QDateTime::currentDateTime();
+      ExecDbCmdOnIOThread(app, "INSERT INTO project VALUES(?, ?, ?, ?)",
+                          {project.id, project.path, project.is_opened,
+                           project.last_open_time});
+      OpenSpecifiedProject(app, project);
+    }
+  } else {
     DisplaySelectProjectView(app);
   }
 }
 
 void SelectProject::OpenExistingProject(AppData& app) {
   int i = GetEventArg(app, 0).toInt();
-  Project& project = app.projects[i];
-  load_project_file = ScheduleProcess<LoadTaskConfig>(app, this, project.path);
-  EXEC_AND_WAIT_FOR_NEXT(HandleOpenExistingProjectCompletion);
-}
-
-void SelectProject::HandleOpenExistingProjectCompletion(AppData&) {
-  if (!load_project_file->success) {
-    EXEC_NEXT(KeepAlive);
-  }
+  OpenSpecifiedProject(app, projects[i]);
 }
 
 void SelectProject::FilterProjects(AppData& app) {
   filter = GetEventArg(app, 0).toString();
-  QList<QVariantList> projects = MakeFilteredListOfProjects(app);
+  QList<QVariantList> projects = MakeFilteredListOfProjects();
   GetUIListField(app, kViewSlot, "vProjects").SetItems(projects);
   EXEC_NEXT(KeepAlive);
 }
 
 void SelectProject::RemoveProject(AppData& app) {
   int i = GetEventArg(app, 0).toInt();
-  app.projects.remove(i);
-  ScheduleProcess<SaveUserConfig>(app, nullptr);
-  QList<QVariantList> projects = MakeFilteredListOfProjects(app);
+  ExecDbCmdOnIOThread(app, kSqlDeleteProject, {projects[i].id});
+  projects.remove(i);
+  QList<QVariantList> projects = MakeFilteredListOfProjects();
   GetUIListField(app, kViewSlot, "vProjects").SetItems(projects);
   EXEC_NEXT(KeepAlive);
 }
 
-QList<QVariantList> SelectProject::MakeFilteredListOfProjects(AppData& app) {
-  QList<QVariantList> projects;
-  for (int i = 0; i < app.projects.size(); i++) {
-    Project& project = app.projects[i];
-    AppendToUIListIfMatches(projects, filter, {i, project.GetFolderName(),
-                            project.GetPathRelativeToHome()}, {1, 2});
+QList<QVariantList> SelectProject::MakeFilteredListOfProjects() {
+  QList<QVariantList> rows;
+  for (int i = 0; i < projects.size(); i++) {
+    Project& project = projects[i];
+    AppendToUIListIfMatches(
+        rows, filter,
+        {i, project.GetFolderName(), project.GetPathRelativeToHome()}, {1, 2});
   }
-  return projects;
+  return rows;
 }

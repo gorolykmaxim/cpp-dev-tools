@@ -1,25 +1,22 @@
 #pragma once
 
 #include "AppData.hpp"
-#include "OpenProject.hpp"
-#include "LoadTaskConfig.hpp"
+#include "ChooseFile.hpp"
 
-class SelectProject: public Process {
-public:
+class SelectProject : public Process {
+ public:
   SelectProject();
   void SanitizeProjectList(AppData& app);
   void LoadLastProjectOrDisplaySelectProjectView(AppData& app);
-  void HandleOpenLastProjectCompletion(AppData& app);
   void DisplaySelectProjectView(AppData& app);
   void OpenNewProject(AppData& app);
   void HandleOpenNewProjectCompletion(AppData& app);
   void OpenExistingProject(AppData& app);
-  void HandleOpenExistingProjectCompletion(AppData& app);
   void FilterProjects(AppData& app);
   void RemoveProject(AppData& app);
-  QList<QVariantList> MakeFilteredListOfProjects(AppData& app);
+  QList<QVariantList> MakeFilteredListOfProjects();
 
   QString filter;
-  QPtr<OpenProject> open_project;
-  QPtr<LoadTaskConfig> load_project_file;
+  QList<Project> projects;
+  QPtr<ChooseFile> choose_project;
 };

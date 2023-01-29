@@ -1,5 +1,7 @@
 #include "Db.hpp"
 
+#include "Threads.hpp"
+
 #define LOG() qDebug() << "[Db]"
 
 DbTransaction::DbTransaction(QSqlDatabase& db) : db(db) {
@@ -37,4 +39,32 @@ void ExecDbQuery(QSqlQuery& sql_query, const QString& query,
     LOG() << "Last query failed:" << sql_query.lastError().text();
   }
   Q_ASSERT(query_executed);
+}
+
+void ExecDbCmd(QSqlDatabase& db, const QString& query,
+               const QVariantList& args) {
+  QSqlQuery sql(db);
+  ExecDbQuery(sql, query, args);
+}
+
+void ExecDbCmdOnIOThread(AppData& app, const QString& query,
+                         const QVariantList& args) {
+  ScheduleIOTask(
+      app, [&app, query, args]() { ExecDbCmd(app.db, query, args); }, []() {});
+}
+
+static int ReadCountFromSql(QSqlQuery& sql) { return sql.value(0).toInt(); }
+
+int ExecDbQueryCount(QSqlDatabase& db, const QString& query,
+                     const QVariantList& args) {
+  return ExecDbQueryAndRead<int>(db, query, ReadCountFromSql, args).first();
+}
+
+Project ReadProjectFromSql(QSqlQuery& sql) {
+  Project project;
+  project.id = sql.value(0).toUuid();
+  project.path = sql.value(1).toString();
+  project.is_opened = sql.value(2).toBool();
+  project.last_open_time = sql.value(3).toDateTime();
+  return project;
 }

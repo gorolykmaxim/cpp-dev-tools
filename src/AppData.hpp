@@ -4,26 +4,14 @@
 #include "ProcessData.hpp"
 #include "UIData.hpp"
 
-struct Profile {
-  QString& operator[](const QString& key);
-  QString operator[](const QString& key) const;
-  QString GetName() const;
-  QList<QString> GetVariableNames() const;
-  bool Contains(const QString& key) const;
-
- private:
-  QHash<QString, QString> variables;
-};
-
 struct Project {
-  Project(const QString& path);
+  QUuid id;
+  QString path;
+  bool is_opened = false;
+  QDateTime last_open_time;
+
   QString GetPathRelativeToHome() const;
   QString GetFolderName() const;
-  bool operator==(const Project& project) const;
-  bool operator!=(const Project& project) const;
-
-  QString path;
-  int profile;
 };
 
 enum TaskFlags {
@@ -66,6 +54,7 @@ struct UserCmd {
 struct AppData {
   QString user_config_path;
   QString current_project_path;
+  QPtr<Project> current_project;
   QGuiApplication gui_app;
   QQmlApplicationEngine gui_engine;
   QSqlDatabase db;
@@ -83,11 +72,8 @@ struct AppData {
   QQueue<Event> events;
   // Event type to list of processes to wake up
   QHash<QString, QList<ProcessWakeUpCall>> event_listeners;
-  QList<Profile> profiles;
   QList<Task> tasks;
   QList<Exec> execs;
-  // Last opened project is always first
-  QList<Project> projects;
   // Event type to user command to execute
   QHash<QString, UserCmd> user_cmds;
   QList<QString> user_command_events_ordered;
