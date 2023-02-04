@@ -52,8 +52,6 @@ struct UserCmd {
 };
 
 struct AppData {
-  QString user_config_path;
-  QString current_project_path;
   QPtr<Project> current_project;
   QGuiApplication gui_app;
   QQmlApplicationEngine gui_engine;

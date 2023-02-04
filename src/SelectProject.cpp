@@ -1,7 +1,7 @@
 #include "SelectProject.hpp"
 
 #include "Db.hpp"
-#include "ExecTasks.hpp"
+#include "DisplayTaskList.hpp"
 #include "Process.hpp"
 #include "Threads.hpp"
 #include "UI.hpp"
@@ -41,14 +41,16 @@ void SelectProject::SanitizeProjectList(AppData& app) {
 }
 
 static void OpenSpecifiedProject(AppData& app, Project project) {
+  project.is_opened = true;
   project.last_open_time = QDateTime::currentDateTime();
   app.current_project = QPtr<Project>::create(project);
   QDir::setCurrent(project.path);
   DisplayMenuBar(app);
   DisplayStatusBar(app);
-  ScheduleProcess<ExecTasks>(app, kViewSlot);
-  ExecDbCmdOnIOThread(app, "UPDATE project SET last_open_time=? WHERE id=?",
-                      {project.last_open_time, project.id});
+  ScheduleProcess<DisplayTaskList>(app, kViewSlot);
+  ExecDbCmdOnIOThread(
+      app, "UPDATE project SET is_opened=?, last_open_time=? WHERE id=?",
+      {project.is_opened, project.last_open_time, project.id});
 }
 
 void SelectProject::LoadLastProjectOrDisplaySelectProjectView(AppData& app) {

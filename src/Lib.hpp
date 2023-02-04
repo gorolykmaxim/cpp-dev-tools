@@ -6,6 +6,7 @@
 #include <QDebug>
 #include <QDebugStateSaver>
 #include <QDir>
+#include <QDirIterator>
 #include <QFile>
 #include <QGuiApplication>
 #include <QHash>

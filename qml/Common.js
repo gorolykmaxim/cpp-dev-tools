@@ -14,3 +14,12 @@ function onListAction(list, action, itemProp) {
   }
   core.OnAction(action, [list.currentItem.itemModel[itemProp]]);
 }
+
+function callListActionOrOpenContextMenu(
+    event, list, action, itemProp, contextMenu) {
+  if (event.button == Qt.LeftButton) {
+    onListAction(list, action, itemProp);
+  } else if (event.button == Qt.RightButton) {
+    contextMenu.open();
+  }
+}

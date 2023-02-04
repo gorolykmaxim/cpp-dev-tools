@@ -63,8 +63,6 @@ static void RegisterUserCmd(AppData* app, const QString& event_type,
 
 AppData::AppData(int argc, char** argv)
     : gui_app(argc, argv), ui_action_router(*this) {
-  QString home = QStandardPaths::writableLocation(QStandardPaths::HomeLocation);
-  user_config_path = home + "/.cpp-dev-tools.json";
   qSetMessagePattern("%{time yyyy-MM-dd h:mm:ss.zzz} %{message}");
   io_thread_pool.setMaxThreadCount(1);
   InitializeUI(*this);

@@ -1,63 +1,55 @@
 import QtQuick
 import QtQuick.Layouts
-import QtQuick.Controls
 import Qt.labs.platform
 import "Common.js" as Cmn
 
 ColumnLayout {
   anchors.fill: parent
   spacing: 0
+  TextWidget {
+    Layout.alignment: Qt.AlignVCenter | Qt.AlignHCenter
+    visible: vLoading
+    text: "Looking for tasks..."
+  }
   PaneWidget {
     Layout.fillWidth: true
     color: colorBgMedium
     focus: true
     padding: basePadding
-    RowLayout {
-      anchors.fill: parent
-      TextFieldWidget {
+    visible: !vLoading
+    TextFieldWidget {
         id: input
         text: vFilter || ""
-        placeholderText: "Search project"
+        placeholderText: "Search task"
         focus: true
-        Layout.fillWidth: true
-        KeyNavigation.right: button
+        anchors.fill: parent
         onDisplayTextChanged: core.OnAction("vaFilterChanged", [displayText])
-        Keys.onReturnPressed: Cmn.onListAction(list, "vaProjectSelected", "idx")
-        Keys.onEnterPressed: Cmn.onListAction(list, "vaProjectSelected", "idx")
+        Keys.onReturnPressed: Cmn.onListAction(list, "vaExecuteTask", "idx")
+        Keys.onEnterPressed: Cmn.onListAction(list, "vaExecuteTask", "idx")
         Keys.onDownPressed: list.incrementCurrentIndex()
         Keys.onUpPressed: list.decrementCurrentIndex()
       }
-      ButtonWidget {
-        id: button
-        text: "New Project"
-        onClicked: core.OnAction("vaNewProject", [])
-      }
-    }
   }
   PaneWidget {
     Layout.fillWidth: true
     Layout.fillHeight: true
     color: colorBgDark
+    visible: !vLoading
     TextListWidget {
       id: list
       anchors.fill: parent
-      model: vProjects
+      model: vTasks
       onItemClicked: Cmn.callListActionOrOpenContextMenu(event, list,
-                                                         "vaProjectSelected",
+                                                         "vaExecuteTask",
                                                          "idx", contextMenu)
     }
   }
   Menu {
     id: contextMenu
     MenuItem {
-      text: "Open"
+      text: "Execute"
       shortcut: "Enter"
-      onTriggered: Cmn.onListAction(list, "vaProjectSelected", "idx")
-    }
-    MenuItem {
-      text: "Remove From List"
-      shortcut: "Ctrl+Shift+D"
-      onTriggered: Cmn.onListAction(list, "vaRemoveProject", "idx")
+      onTriggered: Cmn.onListAction(list, "vaExecuteTask", "idx")
     }
   }
 }

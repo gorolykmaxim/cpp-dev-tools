@@ -5,6 +5,7 @@ import Qt.labs.platform
 TextField {
   id: textField
   color: colorText
+  enabled: visible
   placeholderTextColor: colorSubText
   padding: basePadding
   selectByMouse: true
