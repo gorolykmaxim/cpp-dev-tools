@@ -47,6 +47,8 @@ qt_add_executable(cpp-dev-tools
   src/ChooseFile.cpp
   src/DisplayTaskList.hpp
   src/DisplayTaskList.cpp
+  src/DisplayExec.hpp
+  src/DisplayExec.cpp
   src/Initialize.hpp
   src/Initialize.cpp)
 if(NOT MSVC)
@@ -81,5 +83,6 @@ qt_add_qml_module(cpp-dev-tools URI cdt VERSION 1.0
       qml/ChooseFileView.qml
       qml/ExecTasksView.qml
       qml/TaskListView.qml
+      qml/ExecView.qml
   RESOURCES
       fonts/MaterialIcons-Regular.ttf)

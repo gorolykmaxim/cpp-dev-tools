@@ -1,5 +1,6 @@
 #include "DisplayTaskList.hpp"
 
+#include "DisplayExec.hpp"
 #include "ExecOSCmd.hpp"
 #include "Process.hpp"
 #include "Threads.hpp"
@@ -67,6 +68,7 @@ void DisplayTaskList::ExecTask(AppData &app) {
   int i = GetEventArg(app, 0).toInt();
   QString exec = execs[i];
   ScheduleProcess<ExecOSCmd>(app, nullptr, exec);
+  ScheduleProcess<DisplayExec>(app, kViewSlot);
   EXEC_NEXT(KeepAlive);
 }
 
