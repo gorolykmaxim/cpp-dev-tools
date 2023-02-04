@@ -51,12 +51,12 @@ ColumnLayout {
     id: contextMenu
     MenuItem {
       text: "Open"
-      shortcut: "Enter"
+      shortcut: "Ctrl+O"
       onTriggered: Cmn.onListAction(list, "vaProjectSelected", "idx")
     }
     MenuItem {
       text: "Remove From List"
-      shortcut: "Ctrl+Shift+D"
+      shortcut: "Ctrl+D"
       onTriggered: Cmn.onListAction(list, "vaRemoveProject", "idx")
     }
   }

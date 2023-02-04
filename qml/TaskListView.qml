@@ -24,13 +24,7 @@ ColumnLayout {
         focus: true
         anchors.fill: parent
         onDisplayTextChanged: core.OnAction("vaFilterChanged", [displayText])
-        Keys.onReturnPressed: e => {
-          if (e.modifiers & Qt.ControlModifier) {
-            Cmn.onListAction(list, "vaExecuteTaskAndDisplay", "idx");
-          } else {
-            Cmn.onListAction(list, "vaExecuteTask", "idx");
-          }
-        }
+        Keys.onReturnPressed: Cmn.onListAction(list, "vaExecuteTask", "idx")
         Keys.onEnterPressed: Cmn.onListAction(list, "vaExecuteTask", "idx")
         Keys.onDownPressed: list.incrementCurrentIndex()
         Keys.onUpPressed: list.decrementCurrentIndex()
@@ -45,21 +39,20 @@ ColumnLayout {
       id: list
       anchors.fill: parent
       model: vTasks
-      onItemClicked: Cmn.callListActionOrOpenContextMenu(event, list,
-                                                         "vaExecuteTask",
-                                                         "idx", contextMenu)
+      onItemClicked: (i, e) => Cmn.callListActionOrOpenContextMenu(
+          e, list, "vaExecuteTask", "idx", contextMenu)
     }
   }
   Menu {
     id: contextMenu
     MenuItem {
       text: "Execute"
-      shortcut: "Enter"
+      shortcut: "Ctrl+E"
       onTriggered: Cmn.onListAction(list, "vaExecuteTask", "idx")
     }
     MenuItem {
-      text: "Execute"
-      shortcut: "Ctrl+Enter"
+      text: "Execute and Display"
+      shortcut: "Ctrl+D"
       onTriggered: Cmn.onListAction(list, "vaExecuteTaskAndDisplay", "idx")
     }
   }
