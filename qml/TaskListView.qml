@@ -24,7 +24,13 @@ ColumnLayout {
         focus: true
         anchors.fill: parent
         onDisplayTextChanged: core.OnAction("vaFilterChanged", [displayText])
-        Keys.onReturnPressed: Cmn.onListAction(list, "vaExecuteTask", "idx")
+        Keys.onReturnPressed: e => {
+          if (e.modifiers & Qt.ControlModifier) {
+            Cmn.onListAction(list, "vaExecuteTaskAndDisplay", "idx");
+          } else {
+            Cmn.onListAction(list, "vaExecuteTask", "idx");
+          }
+        }
         Keys.onEnterPressed: Cmn.onListAction(list, "vaExecuteTask", "idx")
         Keys.onDownPressed: list.incrementCurrentIndex()
         Keys.onUpPressed: list.decrementCurrentIndex()
@@ -50,6 +56,11 @@ ColumnLayout {
       text: "Execute"
       shortcut: "Enter"
       onTriggered: Cmn.onListAction(list, "vaExecuteTask", "idx")
+    }
+    MenuItem {
+      text: "Execute"
+      shortcut: "Ctrl+Enter"
+      onTriggered: Cmn.onListAction(list, "vaExecuteTaskAndDisplay", "idx")
     }
   }
 }

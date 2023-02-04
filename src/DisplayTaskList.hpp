@@ -9,6 +9,7 @@ class DisplayTaskList : public Process {
   void Display(AppData& app);
   void FilterTasks(AppData& app);
   void ExecSelectedTask(AppData& app);
+  void ExecSelectedTaskAndDisplay(AppData& app);
   QList<QVariantList> MakeFilteredListOfTasks(AppData& app);
 
   QString filter;

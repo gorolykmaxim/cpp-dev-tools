@@ -50,6 +50,8 @@ void DisplayTaskList::FindTasks(AppData &app) {
                          EXEC(this, FilterTasks));
   WakeUpProcessOnUIEvent(app, kViewSlot, "vaExecuteTask", *this,
                          EXEC(this, ExecSelectedTask));
+  WakeUpProcessOnUIEvent(app, kViewSlot, "vaExecuteTaskAndDisplay", *this,
+                         EXEC(this, ExecSelectedTaskAndDisplay));
   EXEC_NEXT(Display);
 }
 
@@ -69,8 +71,12 @@ void DisplayTaskList::ExecSelectedTask(AppData &app) {
   int i = GetEventArg(app, 0).toInt();
   QString exec = execs[i];
   ScheduleProcess<ExecTask>(app, nullptr, exec);
-  ScheduleProcess<DisplayExec>(app, kViewSlot);
   EXEC_NEXT(KeepAlive);
+}
+
+void DisplayTaskList::ExecSelectedTaskAndDisplay(AppData &app) {
+  ExecSelectedTask(app);
+  ScheduleProcess<DisplayExec>(app, kViewSlot);
 }
 
 QList<QVariantList> DisplayTaskList::MakeFilteredListOfTasks(AppData &app) {
