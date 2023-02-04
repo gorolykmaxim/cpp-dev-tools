@@ -24,8 +24,7 @@ QString Project::GetFolderName() const {
 
 QDebug operator<<(QDebug debug, const Exec& exec) {
   QDebugStateSaver saver(debug);
-  debug.nospace() << "Exec(id=" << exec.id << ",peid=" << exec.primary_exec_id
-                  << ",n=" << exec.task_name << ",c=" << exec.cmd
+  debug.nospace() << "Exec(id=" << exec.id << ",c=" << exec.cmd
                   << ",st=" << exec.start_time << ",ec=";
   if (exec.exit_code) {
     debug << *exec.exit_code;

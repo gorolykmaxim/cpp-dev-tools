@@ -14,25 +14,8 @@ struct Project {
   QString GetFolderName() const;
 };
 
-enum TaskFlags {
-  kTaskRestart = 1,
-  kTaskGtest = 2,
-};
-
-struct Task {
-  QString src_name;
-  QString src_cmd;
-  QList<QString> src_pre_tasks;
-  QString name;
-  QString cmd;
-  int flags = 0;
-  QList<QString> pre_tasks;
-};
-
 struct Exec {
   QUuid id;
-  QUuid primary_exec_id;
-  QString task_name;
   QString cmd;
   QDateTime start_time;
   QPtr<QProcess> proc;
@@ -70,7 +53,6 @@ struct AppData {
   QQueue<Event> events;
   // Event type to list of processes to wake up
   QHash<QString, QList<ProcessWakeUpCall>> event_listeners;
-  QList<Task> tasks;
   QList<Exec> execs;
   // Event type to user command to execute
   QHash<QString, UserCmd> user_cmds;

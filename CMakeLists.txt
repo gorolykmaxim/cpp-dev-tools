@@ -17,8 +17,8 @@ qt_add_executable(cpp-dev-tools
   src/UI.cpp
   src/Process.hpp
   src/Process.cpp
-  src/Execution.hpp
-  src/Execution.cpp
+  src/Task.hpp
+  src/Task.cpp
   src/Db.hpp
   src/Db.cpp
   src/UIData.hpp
@@ -35,8 +35,6 @@ qt_add_executable(cpp-dev-tools
   src/SearchUserCmds.cpp
   src/CloseProject.hpp
   src/CloseProject.cpp
-  src/ExecTasks.hpp
-  src/ExecTasks.cpp
   src/ExecTask.hpp
   src/ExecTask.cpp
   src/ExecOSCmd.hpp
@@ -81,7 +79,6 @@ qt_add_qml_module(cpp-dev-tools URI cdt VERSION 1.0
       qml/BlankView.qml
       qml/SelectProjectView.qml
       qml/ChooseFileView.qml
-      qml/ExecTasksView.qml
       qml/TaskListView.qml
       qml/ExecView.qml
   RESOURCES

@@ -1,8 +1,9 @@
 #include "DisplayTaskList.hpp"
 
 #include "DisplayExec.hpp"
-#include "ExecOSCmd.hpp"
+#include "ExecTask.hpp"
 #include "Process.hpp"
+#include "Task.hpp"
 #include "Threads.hpp"
 #include "UI.hpp"
 
@@ -48,7 +49,7 @@ void DisplayTaskList::FindTasks(AppData &app) {
   WakeUpProcessOnUIEvent(app, kViewSlot, "vaFilterChanged", *this,
                          EXEC(this, FilterTasks));
   WakeUpProcessOnUIEvent(app, kViewSlot, "vaExecuteTask", *this,
-                         EXEC(this, ExecTask));
+                         EXEC(this, ExecSelectedTask));
   EXEC_NEXT(Display);
 }
 
@@ -64,10 +65,10 @@ void DisplayTaskList::FilterTasks(AppData &app) {
   Display(app);
 }
 
-void DisplayTaskList::ExecTask(AppData &app) {
+void DisplayTaskList::ExecSelectedTask(AppData &app) {
   int i = GetEventArg(app, 0).toInt();
   QString exec = execs[i];
-  ScheduleProcess<ExecOSCmd>(app, nullptr, exec);
+  ScheduleProcess<ExecTask>(app, nullptr, exec);
   ScheduleProcess<DisplayExec>(app, kViewSlot);
   EXEC_NEXT(KeepAlive);
 }
@@ -75,10 +76,7 @@ void DisplayTaskList::ExecTask(AppData &app) {
 QList<QVariantList> DisplayTaskList::MakeFilteredListOfTasks(AppData &app) {
   QList<QVariantList> rows;
   for (int i = 0; i < execs.size(); i++) {
-    QString exec = execs[i];
-    if (exec.startsWith(app.current_project->path)) {
-      exec.replace(app.current_project->path, ".");
-    }
+    QString exec = ShortenTaskCmd(execs[i], *app.current_project);
     AppendToUIListIfMatches(rows, filter, {i, exec}, {1});
   }
   return rows;
