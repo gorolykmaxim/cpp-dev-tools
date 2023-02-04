@@ -8,8 +8,8 @@ Button {
   rightPadding: basePadding * 4
   background: Rectangle {
     color: colorBgLight
-    border.color: parent.focus ? colorHighlight : colorBgDark
-    border.width: parent.focus ? 2 : 1
+    border.color: parent.activeFocus ? colorHighlight : colorBgDark
+    border.width: parent.activeFocus ? 2 : 1
     radius: baseRadius
   }
   contentItem: TextWidget {

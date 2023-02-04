@@ -17,8 +17,8 @@ TextField {
   }
   background: Rectangle {
     color: colorBgDark
-    border.color: parent.focus ? colorHighlight : colorBgBlack
-    border.width: parent.focus ? 2 : 1
+    border.color: parent.activeFocus ? colorHighlight : colorBgBlack
+    border.width: parent.activeFocus ? 2 : 1
     radius: baseRadius
   }
   Menu {
