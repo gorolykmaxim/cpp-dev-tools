@@ -27,7 +27,7 @@ PaneWidget {
                                               [displayText])
           Keys.onDownPressed: execList.incrementCurrentIndex()
           Keys.onUpPressed: execList.decrementCurrentIndex()
-          KeyNavigation.right: execOutputTextArea
+          KeyNavigation.right: searchOutputTextField
         }
       }
       TextListWidget {
@@ -38,6 +38,11 @@ PaneWidget {
         onCurrentIndexChanged: Cmn.onListAction(execList, "vaExecSelected",
                                                 "id")
       }
+    }
+    Rectangle {
+      Layout.fillHeight: true
+      width: 1
+      color: colorBgBlack
     }
     ColumnLayout {
       Layout.fillWidth: true
@@ -59,6 +64,22 @@ PaneWidget {
           }
         }
       }
+      Rectangle {
+        Layout.fillWidth: true
+        height: 1
+        color: colorBgBlack
+      }
+      PaneWidget {
+        Layout.fillWidth: true
+        color: colorBgMedium
+        padding: basePadding
+        TextFieldWidget {
+          id: searchOutputTextField
+          anchors.fill: parent
+          placeholderText: "Search in output"
+          KeyNavigation.down: execOutputTextArea
+        }
+      }
       ScrollView {
         Layout.fillWidth: true
         Layout.fillHeight: true
@@ -72,6 +93,7 @@ PaneWidget {
           onTextChanged: {
             cursorPosition = length;
           }
+          KeyNavigation.left: searchExecTextField
         }
       }
     }
