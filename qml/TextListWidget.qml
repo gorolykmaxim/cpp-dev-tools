@@ -3,7 +3,10 @@ import QtQuick.Controls
 import QtQuick.Layouts
 
 ListView {
-  Component.onCompleted: {
+  onModelChanged: {
+    if (!root.model) {
+      return;
+    }
     root.model.onModelReset.connect(() => {
       let toSelect = 0;
       for (let i = 0; i < root.model.rowCount(); i++) {
