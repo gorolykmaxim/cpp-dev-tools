@@ -47,7 +47,7 @@ ColumnLayout {
     id: contextMenu
     MenuItem {
       text: "Execute"
-      shortcut: "Ctrl+E"
+      shortcut: "Enter"
       onTriggered: Cmn.onListAction(list, "vaExecuteTask", "idx")
     }
     MenuItem {
