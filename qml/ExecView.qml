@@ -46,20 +46,16 @@ PaneWidget {
         Layout.fillWidth: true
         color: colorBgMedium
         padding: basePadding
-        RowLayout {
-          IconWidget {
-            icon: vExecIcon || ""
-            color: vExecIconColor || colorText
-          }
-          Column {
+        ColumnLayout {
+          spacing: 0
+          TextWidget {
             Layout.fillWidth: true
-            TextWidget {
-              text: vExecName || ""
-            }
-            TextWidget {
-              text: vExecCmd || ""
-              color: colorSubText
-            }
+            text: vExecCmd || ""
+          }
+          TextWidget {
+            Layout.fillWidth: true
+            text: vExecStatus || ""
+            color: colorSubText
           }
         }
       }

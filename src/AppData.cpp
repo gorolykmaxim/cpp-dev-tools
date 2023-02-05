@@ -73,6 +73,7 @@ AppData::AppData(int argc, char** argv)
                                 "Close Project", "Ctrl+W", kViewSlot, true);
   RegisterUserCmd<RunTask>(this, "runTask", "Task", "Run Task", "Ctrl+R",
                            kViewSlot, true);
-  RegisterUserCmd<DisplayExec>(this, "displayExecution", "Task",
-                               "Display Executions", "Ctrl+E", kViewSlot, true);
+  RegisterUserCmd<DisplayExec>(this, "displayExecutionHistory", "Task",
+                               "Task Execution History", "Ctrl+E", kViewSlot,
+                               true);
 }
