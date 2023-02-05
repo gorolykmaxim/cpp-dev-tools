@@ -2,16 +2,17 @@
 
 #include "AppData.hpp"
 
-class DisplayTaskList : public Process {
+class ChooseTask : public Process {
  public:
-  DisplayTaskList();
+  ChooseTask();
   void FindTasks(AppData& app);
   void Display(AppData& app);
   void FilterTasks(AppData& app);
-  void ExecSelectedTask(AppData& app);
-  void ExecSelectedTaskAndDisplay(AppData& app);
+  void HandleChosenTask(AppData& app);
   QList<QVariantList> MakeFilteredListOfTasks(AppData& app);
 
+  QString window_title;
   QString filter;
   QList<QString> execs;
+  QString result;
 };

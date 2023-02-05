@@ -43,10 +43,12 @@ qt_add_executable(cpp-dev-tools
   src/InitSqlDb.cpp
   src/ChooseFile.hpp
   src/ChooseFile.cpp
-  src/DisplayTaskList.hpp
-  src/DisplayTaskList.cpp
   src/DisplayExec.hpp
   src/DisplayExec.cpp
+  src/RunTask.hpp
+  src/RunTask.cpp
+  src/ChooseTask.hpp
+  src/ChooseTask.cpp
   src/Initialize.hpp
   src/Initialize.cpp)
 if(NOT MSVC)
@@ -79,7 +81,7 @@ qt_add_qml_module(cpp-dev-tools URI cdt VERSION 1.0
       qml/BlankView.qml
       qml/SelectProjectView.qml
       qml/ChooseFileView.qml
-      qml/TaskListView.qml
+      qml/ChooseTaskView.qml
       qml/ExecView.qml
   RESOURCES
       fonts/MaterialIcons-Regular.ttf)

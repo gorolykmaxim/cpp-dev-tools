@@ -1,8 +1,8 @@
 #include "SelectProject.hpp"
 
 #include "Db.hpp"
-#include "DisplayTaskList.hpp"
 #include "Process.hpp"
+#include "RunTask.hpp"
 #include "Threads.hpp"
 #include "UI.hpp"
 
@@ -47,7 +47,7 @@ static void OpenSpecifiedProject(AppData& app, Project project) {
   QDir::setCurrent(project.path);
   DisplayMenuBar(app);
   DisplayStatusBar(app);
-  ScheduleProcess<DisplayTaskList>(app, kViewSlot);
+  ScheduleProcess<RunTask>(app, kViewSlot);
   ExecDbCmdOnIOThread(
       app, "UPDATE project SET is_opened=?, last_open_time=? WHERE id=?",
       {project.is_opened, project.last_open_time, project.id});

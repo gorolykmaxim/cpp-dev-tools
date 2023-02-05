@@ -2,8 +2,8 @@
 
 #include "CloseProject.hpp"
 #include "DisplayExec.hpp"
-#include "DisplayTaskList.hpp"
 #include "Process.hpp"
+#include "RunTask.hpp"
 #include "SearchUserCmds.hpp"
 #include "UI.hpp"
 
@@ -71,10 +71,8 @@ AppData::AppData(int argc, char** argv)
                                   false);
   RegisterUserCmd<CloseProject>(this, "closeProject", "General",
                                 "Close Project", "Ctrl+W", kViewSlot, true);
-  RegisterUserCmd<DisplayTaskList>(this, "displayTaskList", "Task",
-                                   "List Tasks", "Ctrl+Shift+T", kViewSlot,
-                                   true);
+  RegisterUserCmd<RunTask>(this, "runTask", "Task", "Run Task", "Ctrl+R",
+                           kViewSlot, true);
   RegisterUserCmd<DisplayExec>(this, "displayExecution", "Task",
-                               "List Executions", "Ctrl+Shift+E", kViewSlot,
-                               true);
+                               "Display Executions", "Ctrl+E", kViewSlot, true);
 }

@@ -1,15 +1,13 @@
-#include "DisplayTaskList.hpp"
+#include "ChooseTask.hpp"
 
-#include "DisplayExec.hpp"
-#include "ExecTask.hpp"
+#define LOG() qDebug() << "[ChooseTask]"
+
 #include "Process.hpp"
 #include "Task.hpp"
 #include "Threads.hpp"
 #include "UI.hpp"
 
-#define LOG() qDebug() << "[DisplayTaskList]"
-
-DisplayTaskList::DisplayTaskList() { EXEC_NEXT(FindTasks); }
+ChooseTask::ChooseTask() : window_title("Choose Task") { EXEC_NEXT(FindTasks); }
 
 static bool CompareExecs(const QString &a, const QString &b) {
   if (a.size() != b.size()) {
@@ -19,8 +17,8 @@ static bool CompareExecs(const QString &a, const QString &b) {
   }
 }
 
-void DisplayTaskList::FindTasks(AppData &app) {
-  QPtr<DisplayTaskList> self = ProcessSharedPtr(app, this);
+void ChooseTask::FindTasks(AppData &app) {
+  QPtr<ChooseTask> self = ProcessSharedPtr(app, this);
   QString path = app.current_project->path;
   ScheduleIOTask<QList<QString>>(
       app,
@@ -42,44 +40,36 @@ void DisplayTaskList::FindTasks(AppData &app) {
       });
   QHash<int, QByteArray> role_names = {{0, "idx"}, {1, "title"}};
   DisplayView(
-      app, kViewSlot, "TaskListView.qml",
-      {UIDataField{"windowTitle", "Tasks"}, UIDataField{"vFilter", ""},
+      app, kViewSlot, "ChooseTaskView.qml",
+      {UIDataField{"windowTitle", window_title}, UIDataField{"vFilter", ""},
        UIDataField{"vLoading", true}},
       {UIListField{"vTasks", role_names, MakeFilteredListOfTasks(app)}});
   WakeUpProcessOnUIEvent(app, kViewSlot, "vaFilterChanged", *this,
                          EXEC(this, FilterTasks));
-  WakeUpProcessOnUIEvent(app, kViewSlot, "vaExecuteTask", *this,
-                         EXEC(this, ExecSelectedTask));
-  WakeUpProcessOnUIEvent(app, kViewSlot, "vaExecuteTaskAndDisplay", *this,
-                         EXEC(this, ExecSelectedTaskAndDisplay));
+  WakeUpProcessOnUIEvent(app, kViewSlot, "vaTaskChosen", *this,
+                         EXEC(this, HandleChosenTask));
   EXEC_NEXT(Display);
 }
 
-void DisplayTaskList::Display(AppData &app) {
+void ChooseTask::Display(AppData &app) {
   QList<QVariantList> tasks = MakeFilteredListOfTasks(app);
   SetUIDataField(app, kViewSlot, "vLoading", false);
   GetUIListField(app, kViewSlot, "vTasks").SetItems(tasks);
   EXEC_NEXT(KeepAlive);
 }
 
-void DisplayTaskList::FilterTasks(AppData &app) {
+void ChooseTask::FilterTasks(AppData &app) {
   filter = GetEventArg(app, 0).toString();
   Display(app);
 }
 
-void DisplayTaskList::ExecSelectedTask(AppData &app) {
+void ChooseTask::HandleChosenTask(AppData &app) {
   int i = GetEventArg(app, 0).toInt();
-  QString exec = execs[i];
-  ScheduleProcess<ExecTask>(app, nullptr, exec);
-  EXEC_NEXT(KeepAlive);
+  Q_ASSERT(i >= 0 && i < execs.size());
+  result = execs[i];
 }
 
-void DisplayTaskList::ExecSelectedTaskAndDisplay(AppData &app) {
-  ExecSelectedTask(app);
-  ScheduleProcess<DisplayExec>(app, kViewSlot);
-}
-
-QList<QVariantList> DisplayTaskList::MakeFilteredListOfTasks(AppData &app) {
+QList<QVariantList> ChooseTask::MakeFilteredListOfTasks(AppData &app) {
   QList<QVariantList> rows;
   for (int i = 0; i < execs.size(); i++) {
     QString exec = ShortenTaskCmd(execs[i], *app.current_project);
