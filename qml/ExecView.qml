@@ -64,6 +64,10 @@ PaneWidget {
         Layout.fillHeight: true
         ReadOnlyTextAreaWidget {
           id: execOutputTextArea
+          leftPadding: basePadding
+          rightPadding: basePadding
+          topPadding: basePadding
+          bottomPadding: basePadding
           text: vExecOutput || ""
           onTextChanged: {
             cursorPosition = length;
