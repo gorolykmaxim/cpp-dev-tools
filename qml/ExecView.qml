@@ -35,6 +35,7 @@ PaneWidget {
         Layout.fillWidth: true
         Layout.fillHeight: true
         model: vExecs
+        elide: Text.ElideLeft
         onCurrentIndexChanged: Cmn.onListAction(execList, "vaExecSelected",
                                                 "id")
       }
@@ -48,13 +49,15 @@ PaneWidget {
       Layout.fillWidth: true
       spacing: 0
       PaneWidget {
+        id: execInfoPane
         Layout.fillWidth: true
         color: colorBgMedium
         padding: basePadding
         ColumnLayout {
           spacing: 0
           TextWidget {
-            Layout.fillWidth: true
+            Layout.preferredWidth: execInfoPane.width
+            elide: Text.ElideLeft
             text: vExecCmd || ""
           }
           TextWidget {

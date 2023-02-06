@@ -18,6 +18,7 @@ ListView {
     });
   }
   id: root
+  property var elide: Text.ElideNone
   signal itemClicked(clickedItemModel: QtObject, event: QtObject);
   clip: true
   boundsBehavior: ListView.StopAtBounds
@@ -45,11 +46,15 @@ ListView {
         Layout.leftMargin: basePadding
         Layout.fillWidth: true
         TextWidget {
+          width: text ? parent.width : null
           text: itemModel.title || ""
+          elide: root.elide
           highlight: isSelected
           textColor: itemModel.titleColor || colorText
         }
         TextWidget {
+          width: text ? parent.width : null
+          elide: root.elide
           text: itemModel.subTitle || ""
           color: colorSubText
         }
