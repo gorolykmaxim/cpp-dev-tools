@@ -39,6 +39,7 @@ ColumnLayout {
       id: list
       anchors.fill: parent
       model: vTasks
+      elide: Text.ElideLeft
       onItemClicked: Cmn.onListAction(list, "vaTaskChosen", "idx")
     }
   }
