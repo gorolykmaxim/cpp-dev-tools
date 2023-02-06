@@ -49,14 +49,14 @@ PaneWidget {
       Layout.fillWidth: true
       spacing: 0
       PaneWidget {
-        id: execInfoPane
         Layout.fillWidth: true
         color: colorBgMedium
         padding: basePadding
         ColumnLayout {
           spacing: 0
+          width: parent.width
           TextWidget {
-            Layout.preferredWidth: execInfoPane.width
+            Layout.fillWidth: true
             elide: Text.ElideLeft
             text: vExecCmd || ""
           }
