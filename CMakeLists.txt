@@ -76,6 +76,7 @@ qt_add_qml_module(cpp-dev-tools URI cdt VERSION 1.0
       qml/NativeMenuBarWidget.qml
       qml/CrossPlatformMenuBarWidget.qml
       qml/TextListWidget.qml
+      qml/ListSearchWidget.qml
       qml/AlertDialog.qml
       qml/SearchUserCmdsDialog.qml
       qml/BlankView.qml

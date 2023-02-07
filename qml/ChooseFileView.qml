@@ -12,24 +12,23 @@ ColumnLayout {
     padding: basePadding
     RowLayout {
       anchors.fill: parent
-      TextFieldWidget {
+      ListSearchWidget {
         id: input
         text: vPath || ""
         focus: true
         Layout.fillWidth: true
-        KeyNavigation.right: openBtn
-        onDisplayTextChanged: core.OnAction("vaPathChanged", [displayText])
+        list: suggestionList
+        changeEventType: "vaPathChanged"
         Keys.onReturnPressed: e => {
           if (e.modifiers & Qt.ControlModifier) {
             core.OnAction("vaOpenOrCreate", []);
           } else {
-            core.OnAction("vaSuggestionPicked", [list.currentIndex]);
+            core.OnAction("vaSuggestionPicked", [suggestionList.currentIndex]);
           }
         }
         Keys.onEnterPressed: core.OnAction("vaSuggestionPicked",
-                                           [list.currentIndex])
-        Keys.onDownPressed: list.incrementCurrentIndex()
-        Keys.onUpPressed: list.decrementCurrentIndex()
+                                           [suggestionList.currentIndex])
+        KeyNavigation.right: openBtn
       }
       ButtonWidget {
         id: openBtn
@@ -49,10 +48,11 @@ ColumnLayout {
     Layout.fillHeight: true
     color: colorBgDark
     TextListWidget {
-      id: list
+      id: suggestionList
       anchors.fill: parent
       model: vSuggestions
-      onItemClicked: core.OnAction("vaSuggestionPicked", [list.currentIndex])
+      onItemClicked: core.OnAction("vaSuggestionPicked",
+                                   [suggestionList.currentIndex])
     }
   }
 }

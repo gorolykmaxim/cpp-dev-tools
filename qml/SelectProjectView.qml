@@ -14,18 +14,17 @@ ColumnLayout {
     padding: basePadding
     RowLayout {
       anchors.fill: parent
-      TextFieldWidget {
+      ListSearchWidget {
         id: input
         text: vFilter || ""
         placeholderText: "Search project"
         focus: true
         Layout.fillWidth: true
         KeyNavigation.right: button
-        onDisplayTextChanged: core.OnAction("vaFilterChanged", [displayText])
-        Keys.onReturnPressed: Cmn.onListAction(list, "vaProjectSelected", "idx")
-        Keys.onEnterPressed: Cmn.onListAction(list, "vaProjectSelected", "idx")
-        Keys.onDownPressed: list.incrementCurrentIndex()
-        Keys.onUpPressed: list.decrementCurrentIndex()
+        list: projectList
+        changeEventType: "vaFilterChanged"
+        enterEventType: "vaProjectSelected"
+        listIdFieldName: "idx"
       }
       ButtonWidget {
         id: button
@@ -39,10 +38,10 @@ ColumnLayout {
     Layout.fillHeight: true
     color: colorBgDark
     TextListWidget {
-      id: list
+      id: projectList
       anchors.fill: parent
       model: vProjects
-      onItemClicked: Cmn.callListActionOrOpenContextMenu(event, list,
+      onItemClicked: Cmn.callListActionOrOpenContextMenu(event, projectList,
                                                          "vaProjectSelected",
                                                          "idx", contextMenu)
     }
@@ -52,12 +51,12 @@ ColumnLayout {
     MenuItem {
       text: "Open"
       shortcut: "Enter"
-      onTriggered: Cmn.onListAction(list, "vaProjectSelected", "idx")
+      onTriggered: Cmn.onListAction(projectList, "vaProjectSelected", "idx")
     }
     MenuItem {
       text: "Remove From List"
       shortcut: "Ctrl+Shift+D"
-      onTriggered: Cmn.onListAction(list, "vaRemoveProject", "idx")
+      onTriggered: Cmn.onListAction(projectList, "vaRemoveProject", "idx")
     }
   }
 }

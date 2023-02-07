@@ -18,15 +18,13 @@ PaneWidget {
         Layout.fillWidth: true
         color: colorBgMedium
         padding: basePadding
-        TextFieldWidget {
+        ListSearchWidget {
           id: searchExecTextField
           anchors.fill: parent
           text: vExecFilter || ""
           placeholderText: "Search execution"
-          onDisplayTextChanged: core.OnAction("vaExecFilterChanged",
-                                              [displayText])
-          Keys.onDownPressed: execList.incrementCurrentIndex()
-          Keys.onUpPressed: execList.decrementCurrentIndex()
+          list: execList
+          changeEventType: "vaExecFilterChanged"
           KeyNavigation.right: searchOutputTextField
         }
       }

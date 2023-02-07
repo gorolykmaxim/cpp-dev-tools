@@ -17,18 +17,17 @@ ColumnLayout {
     focus: true
     padding: basePadding
     visible: !vLoading
-    TextFieldWidget {
-        id: input
-        text: vFilter || ""
-        placeholderText: "Search task"
-        focus: true
-        anchors.fill: parent
-        onDisplayTextChanged: core.OnAction("vaFilterChanged", [displayText])
-        Keys.onReturnPressed: Cmn.onListAction(list, "vaTaskChosen", "idx")
-        Keys.onEnterPressed: Cmn.onListAction(list, "vaTaskChosen", "idx")
-        Keys.onDownPressed: list.incrementCurrentIndex()
-        Keys.onUpPressed: list.decrementCurrentIndex()
-      }
+    ListSearchWidget {
+      id: input
+      text: vFilter || ""
+      placeholderText: "Search task"
+      focus: true
+      anchors.fill: parent
+      list: taskList
+      changeEventType: "vaFilterChanged"
+      enterEventType: "vaTaskChosen"
+      listIdFieldName: "idx"
+    }
   }
   PaneWidget {
     Layout.fillWidth: true
@@ -36,11 +35,11 @@ ColumnLayout {
     color: colorBgDark
     visible: !vLoading
     TextListWidget {
-      id: list
+      id: taskList
       anchors.fill: parent
       model: vTasks
       elide: Text.ElideLeft
-      onItemClicked: Cmn.onListAction(list, "vaTaskChosen", "idx")
+      onItemClicked: Cmn.onListAction(taskList, "vaTaskChosen", "idx")
     }
   }
 }
