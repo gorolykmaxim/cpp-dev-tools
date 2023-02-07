@@ -7,8 +7,8 @@ ColumnLayout {
   spacing: 0
 
   function execCommand(eventType) {
-    if (!eventType && list.currentItem) {
-      eventType = list.currentItem.itemModel.eventType;
+    if (!eventType && cmdList.currentItem) {
+      eventType = cmdList.currentItem.itemModel.eventType;
     }
     if (!eventType) {
       return;
@@ -21,16 +21,15 @@ ColumnLayout {
     Layout.fillWidth: true
     padding: basePadding
     focus: true
-    TextFieldWidget {
+    ListSearchWidget {
       width: parent.width
       text: dFilter || ""
       placeholderText: "Search command"
       focus: true
-      onDisplayTextChanged: core.OnAction("daFilterChanged", [displayText])
+      list: cmdList
+      changeEventType: "daFilterChanged"
       Keys.onReturnPressed: execCommand()
       Keys.onEnterPressed: execCommand()
-      Keys.onDownPressed: list.incrementCurrentIndex()
-      Keys.onUpPressed: list.decrementCurrentIndex()
     }
   }
   PaneWidget {
@@ -38,7 +37,7 @@ ColumnLayout {
     Layout.fillHeight: true
     color: colorBgDark
     TextListWidget {
-      id: list
+      id: cmdList
       anchors.fill: parent
       model: dCommands
       onItemClicked: (item) => execCommand(item.eventType)
