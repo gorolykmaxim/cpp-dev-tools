@@ -5,6 +5,7 @@ TextFieldWidget {
   property var list
   property var changeEventType
   property var enterEventType
+  property var ctrlEnterEventType
   property var listIdFieldName
 
   onDisplayTextChanged: core.OnAction(changeEventType, [displayText])
@@ -28,8 +29,10 @@ TextFieldWidget {
         break;
       case Qt.Key_Enter:
       case Qt.Key_Return:
-        if (enterEventType) {
-          Cmn.onListAction(list, enterEventType, listIdFieldName)
+        if (e.modifiers & Qt.ControlModifier && ctrlEnterEventType) {
+          Cmn.onListAction(list, ctrlEnterEventType, listIdFieldName);
+        } else if (enterEventType) {
+          Cmn.onListAction(list, enterEventType, listIdFieldName);
         }
         break;
     }

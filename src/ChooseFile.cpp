@@ -41,14 +41,15 @@ static void UpdateAndDisplaySuggestions(ChooseFile& data, AppData& app) {
   }
   std::sort(data.suggestions.begin(), data.suggestions.end(), Compare);
   QList<QVariantList> items;
-  for (const FileSuggestion& suggestion : data.suggestions) {
+  for (int i = 0; i < data.suggestions.size(); i++) {
+    FileSuggestion& suggestion = data.suggestions[i];
     if (path.isEmpty() || IsValid(suggestion)) {
       QString file = suggestion.file;
       if (IsValid(suggestion)) {
         file.insert(suggestion.match_start + path.size(), "</b>");
         file.insert(suggestion.match_start, "<b>");
       }
-      items.append({file});
+      items.append({file, i});
     }
   }
   GetUIListField(app, kViewSlot, "vSuggestions").SetItems(items);
@@ -103,6 +104,7 @@ ChooseFile::ChooseFile() : window_title("Open File"), choose_directory(false) {
 }
 
 void ChooseFile::DisplayChooseFileView(AppData& app) {
+  QHash<int, QByteArray> role_names = {{0, "title"}, {1, "idx"}};
   QString home = QStandardPaths::writableLocation(QStandardPaths::HomeLocation);
   DisplayView(
       app, kViewSlot, "ChooseFileView.qml",
@@ -111,7 +113,7 @@ void ChooseFile::DisplayChooseFileView(AppData& app) {
           UIDataField{"vPath", home + '/'},
       },
       {
-          UIListField{"vSuggestions", {{0, "title"}}, QList<QVariantList>()},
+          UIListField{"vSuggestions", role_names, QList<QVariantList>()},
       });
   WakeUpProcessOnUIEvent(app, kViewSlot, "vaPathChanged", *this,
                          EXEC(this, ChangePath));

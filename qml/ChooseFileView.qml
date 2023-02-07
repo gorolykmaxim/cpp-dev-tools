@@ -1,6 +1,7 @@
 import QtQuick
 import QtQuick.Layouts
 import QtQuick.Controls
+import "Common.js" as Cmn
 
 ColumnLayout {
   anchors.fill: parent
@@ -19,15 +20,9 @@ ColumnLayout {
         Layout.fillWidth: true
         list: suggestionList
         changeEventType: "vaPathChanged"
-        Keys.onReturnPressed: e => {
-          if (e.modifiers & Qt.ControlModifier) {
-            core.OnAction("vaOpenOrCreate", []);
-          } else {
-            core.OnAction("vaSuggestionPicked", [suggestionList.currentIndex]);
-          }
-        }
-        Keys.onEnterPressed: core.OnAction("vaSuggestionPicked",
-                                           [suggestionList.currentIndex])
+        enterEventType: "vaSuggestionPicked"
+        ctrlEnterEventType: "vaOpenOrCreate"
+        listIdFieldName: "idx"
         KeyNavigation.right: openBtn
       }
       ButtonWidget {
@@ -51,8 +46,8 @@ ColumnLayout {
       id: suggestionList
       anchors.fill: parent
       model: vSuggestions
-      onItemClicked: core.OnAction("vaSuggestionPicked",
-                                   [suggestionList.currentIndex])
+      onItemClicked: Cmn.onListAction(suggestionList, "vaSuggestionPicked",
+                                      "idx")
     }
   }
 }
