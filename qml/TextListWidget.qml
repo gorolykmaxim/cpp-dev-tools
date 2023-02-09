@@ -3,19 +3,21 @@ import QtQuick.Controls
 import QtQuick.Layouts
 
 ListView {
+  function selectCurrentItem() {
+    let toSelect = 0;
+    for (let i = 0; i < root.model.rowCount(); i++) {
+      if (root.model.GetFieldByRoleName(i, "isSelected")) {
+        toSelect = i;
+      }
+    }
+    root.currentIndex = toSelect;
+  }
   onModelChanged: {
     if (!root.model) {
       return;
     }
-    root.model.onModelReset.connect(() => {
-      let toSelect = 0;
-      for (let i = 0; i < root.model.rowCount(); i++) {
-        if (root.model.GetFieldByRoleName(i, "isSelected")) {
-          toSelect = i;
-        }
-      }
-      root.currentIndex = toSelect;
-    });
+    selectCurrentItem();
+    root.model.onModelReset.connect(selectCurrentItem);
   }
   id: root
   property var elide: Text.ElideNone
