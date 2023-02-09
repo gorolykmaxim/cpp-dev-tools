@@ -33,7 +33,8 @@ void DisplayExec::Display(AppData& app) {
       app, kViewSlot, "ExecView.qml",
       {UIDataField{"windowTitle", "Task Execution History"},
        UIDataField{"vExecFilter", ""}, UIDataField{"vExecCmd", ""},
-       UIDataField{"vExecStatus", ""}, UIDataField{"vExecOutput", ""}},
+       UIDataField{"vExecStatus", ""}, UIDataField{"vExecOutput", ""},
+       UIDataField{"vExecsEmpty", app.execs.isEmpty()}},
       {UIListField{"vExecs", role_names, MakeFilteredListOfExecs(app)}});
   WakeUpProcessOnUIEvent(app, kViewSlot, "execHistoryChanged", *this,
                          EXEC(this, ReDrawExecHistory));
@@ -55,6 +56,7 @@ void DisplayExec::ReDrawExecHistory(AppData& app) {
     DisplayExecOutput(app, selected_exec_id);
   }
   QList<QVariantList> execs = MakeFilteredListOfExecs(app);
+  SetUIDataField(app, kViewSlot, "vExecsEmpty", app.execs.isEmpty());
   GetUIListField(app, kViewSlot, "vExecs").SetItems(execs);
   EXEC_NEXT(KeepAlive);
 }
