@@ -19,7 +19,9 @@ ApplicationWindow {
     id: iconFont
     source: "../fonts/MaterialIcons-Regular.ttf"
   }
-  menuBar: MenuBarWidget {}
+  menuBar: Loader {
+    source: headerSlot
+  }
   Page {
     anchors.fill: parent
     background: Rectangle {

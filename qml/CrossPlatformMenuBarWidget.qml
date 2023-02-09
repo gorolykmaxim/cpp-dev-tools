@@ -4,7 +4,7 @@ import QtQuick.Layouts
 import "Common.js" as Common
 
 MenuBar {
-  property var model
+  property var model: hActions
   id: menuBar
 
   onModelChanged: {

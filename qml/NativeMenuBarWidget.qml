@@ -3,7 +3,7 @@ import Qt.labs.platform
 import "Common.js" as Common
 
 Item {
-  property var model
+  property var model: hActions
 
   onModelChanged: {
     menuBar.clear();

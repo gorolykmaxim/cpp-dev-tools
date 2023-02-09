@@ -12,11 +12,6 @@ void InitializeUI(AppData& app) {
       UIDataField{"dPadding", true},
       UIDataField{"windowTitle", "CPP Dev-Tools"},
   };
-#if __APPLE__
-  fields.append(UIDataField{"useNativeMenuBar", true});
-#else
-  fields.append(UIDataField{"useNativeMenuBar", false});
-#endif
   DisplayMenuBar(app);
   DisplayStatusBar(app);
   context->setContextProperties(fields);
@@ -116,7 +111,12 @@ void DisplayMenuBar(AppData& app) {
       actions.append({cmd.group, cmd.name, cmd.shortcut, event_type});
     }
   }
-  DisplayView(app, kHeaderSlot, "", {},
+#if __APPLE__
+  QString widget = "NativeMenuBarWidget.qml";
+#else
+  QString widget = "CrossPlatformMenuBarWidget.qml";
+#endif
+  DisplayView(app, kHeaderSlot, widget, {},
               {
                   UIListField{"hActions", role_names, actions},
               });
