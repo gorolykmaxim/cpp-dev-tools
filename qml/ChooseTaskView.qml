@@ -8,15 +8,15 @@ ColumnLayout {
   spacing: 0
   TextWidget {
     Layout.alignment: Qt.AlignVCenter | Qt.AlignHCenter
-    visible: vLoading
-    text: "Looking for tasks..."
+    visible: vLoading || vTasksEmpty
+    text: vLoading ? "Looking for tasks..." : "No tasks found"
   }
   PaneWidget {
     Layout.fillWidth: true
     color: colorBgMedium
     focus: true
     padding: basePadding
-    visible: !vLoading
+    visible: !vLoading && !vTasksEmpty
     ListSearchWidget {
       id: input
       text: vFilter || ""
@@ -33,7 +33,7 @@ ColumnLayout {
     Layout.fillWidth: true
     Layout.fillHeight: true
     color: colorBgDark
-    visible: !vLoading
+    visible: !vLoading && !vTasksEmpty
     TextListWidget {
       id: taskList
       anchors.fill: parent

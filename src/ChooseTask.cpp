@@ -42,7 +42,7 @@ void ChooseTask::FindTasks(AppData &app) {
   DisplayView(
       app, kViewSlot, "ChooseTaskView.qml",
       {UIDataField{"windowTitle", window_title}, UIDataField{"vFilter", ""},
-       UIDataField{"vLoading", true}},
+       UIDataField{"vLoading", true}, UIDataField{"vTasksEmpty", false}},
       {UIListField{"vTasks", role_names, MakeFilteredListOfTasks(app)}});
   WakeUpProcessOnUIEvent(app, kViewSlot, "vaFilterChanged", *this,
                          EXEC(this, FilterTasks));
@@ -54,6 +54,7 @@ void ChooseTask::FindTasks(AppData &app) {
 void ChooseTask::Display(AppData &app) {
   QList<QVariantList> tasks = MakeFilteredListOfTasks(app);
   SetUIDataField(app, kViewSlot, "vLoading", false);
+  SetUIDataField(app, kViewSlot, "vTasksEmpty", execs.isEmpty());
   GetUIListField(app, kViewSlot, "vTasks").SetItems(tasks);
   EXEC_NEXT(KeepAlive);
 }
