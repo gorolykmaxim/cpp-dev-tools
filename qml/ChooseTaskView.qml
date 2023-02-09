@@ -39,7 +39,7 @@ ColumnLayout {
       anchors.fill: parent
       model: vTasks
       elide: Text.ElideLeft
-      onItemClicked: Cmn.onListAction(taskList, "vaTaskChosen", "idx")
+      onItemLeftClicked: Cmn.onListAction(taskList, "vaTaskChosen", "idx")
     }
   }
 }
