@@ -30,7 +30,7 @@ TextFieldWidget {
       case Qt.Key_Enter:
       case Qt.Key_Return:
         if (e.modifiers & Qt.ControlModifier && ctrlEnterEventType) {
-          Cmn.onListAction(list, ctrlEnterEventType, listIdFieldName);
+          core.OnAction(ctrlEnterEventType, []);
         } else if (enterEventType) {
           Cmn.onListAction(list, enterEventType, listIdFieldName);
         }
