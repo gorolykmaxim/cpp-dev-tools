@@ -4,19 +4,18 @@ import QtQuick.Controls
 import "Common.js" as Cmn
 
 ColumnLayout {
+  Component.onCompleted: input.forceActiveFocus()
   anchors.fill: parent
   spacing: 0
   PaneWidget {
     Layout.fillWidth: true
     color: colorBgMedium
-    focus: true
     padding: basePadding
     RowLayout {
       anchors.fill: parent
       ListSearchWidget {
         id: input
         text: vPath || ""
-        focus: true
         Layout.fillWidth: true
         list: suggestionList
         changeEventType: "vaPathChanged"

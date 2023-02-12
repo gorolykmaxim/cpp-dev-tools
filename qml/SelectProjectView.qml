@@ -5,12 +5,12 @@ import Qt.labs.platform
 import "Common.js" as Cmn
 
 ColumnLayout {
+  Component.onCompleted: input.forceActiveFocus()
   anchors.fill: parent
   spacing: 0
   PaneWidget {
     Layout.fillWidth: true
     color: colorBgMedium
-    focus: true
     padding: basePadding
     RowLayout {
       anchors.fill: parent
@@ -18,7 +18,6 @@ ColumnLayout {
         id: input
         text: vFilter || ""
         placeholderText: "Search project"
-        focus: true
         Layout.fillWidth: true
         KeyNavigation.right: button
         list: projectList

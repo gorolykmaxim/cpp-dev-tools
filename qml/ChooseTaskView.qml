@@ -4,6 +4,7 @@ import Qt.labs.platform
 import "Common.js" as Cmn
 
 ColumnLayout {
+  Component.onCompleted: input.forceActiveFocus()
   anchors.fill: parent
   spacing: 0
   TextWidget {
@@ -14,14 +15,12 @@ ColumnLayout {
   PaneWidget {
     Layout.fillWidth: true
     color: colorBgMedium
-    focus: true
     padding: basePadding
     visible: !vLoading && !vTasksEmpty
     ListSearchWidget {
       id: input
       text: vFilter || ""
       placeholderText: "Search task"
-      focus: true
       anchors.fill: parent
       list: taskList
       changeEventType: "vaFilterChanged"

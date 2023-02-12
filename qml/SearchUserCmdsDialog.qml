@@ -3,6 +3,7 @@ import QtQuick.Controls
 import QtQuick.Layouts
 
 ColumnLayout {
+  Component.onCompleted: input.forceActiveFocus()
   anchors.fill: parent
   spacing: 0
 
@@ -20,12 +21,11 @@ ColumnLayout {
   PaneWidget {
     Layout.fillWidth: true
     padding: basePadding
-    focus: true
     ListSearchWidget {
+      id: input
       width: parent.width
       text: dFilter || ""
       placeholderText: "Search command"
-      focus: true
       list: cmdList
       changeEventType: "daFilterChanged"
       Keys.onReturnPressed: execCommand()
