@@ -38,5 +38,11 @@ TextField {
       shortcut: StandardKey.Paste
       onTriggered: textField.paste()
     }
+    MenuSeparator {}
+    MenuItem {
+      text: "Select All"
+      shortcut: StandardKey.SelectAll
+      onTriggered: textField.selectAll()
+    }
   }
 }

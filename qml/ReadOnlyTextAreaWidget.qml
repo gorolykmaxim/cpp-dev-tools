@@ -39,5 +39,11 @@ TextArea {
       shortcut: StandardKey.Copy
       onTriggered: textArea.copy()
     }
+    MenuSeparator {}
+    MenuItem {
+      text: "Select All"
+      shortcut: StandardKey.SelectAll
+      onTriggered: textArea.selectAll()
+    }
   }
 }
