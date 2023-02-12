@@ -41,9 +41,9 @@ ColumnLayout {
       id: projectList
       anchors.fill: parent
       model: vProjects
-      onItemClicked: Cmn.callListActionOrOpenContextMenu(event, projectList,
-                                                         "vaProjectSelected",
-                                                         "idx", contextMenu)
+      onItemLeftClicked: Cmn.onListAction(projectList, "vaProjectSelected",
+                                          "idx")
+      onItemRightClicked: contextMenu.open()
     }
   }
   Menu {

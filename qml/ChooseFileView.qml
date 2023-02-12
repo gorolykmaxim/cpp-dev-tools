@@ -46,8 +46,8 @@ ColumnLayout {
       id: suggestionList
       anchors.fill: parent
       model: vSuggestions
-      onItemClicked: Cmn.onListAction(suggestionList, "vaSuggestionPicked",
-                                      "idx")
+      onItemLeftClicked: Cmn.onListAction(suggestionList, "vaSuggestionPicked",
+                                          "idx")
     }
   }
 }

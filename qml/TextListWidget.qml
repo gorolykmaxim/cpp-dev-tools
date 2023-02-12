@@ -21,7 +21,8 @@ ListView {
   }
   id: root
   property var elide: Text.ElideNone
-  signal itemClicked(clickedItemModel: QtObject, event: QtObject);
+  signal itemLeftClicked(clickedItemModel: QtObject, event: QtObject);
+  signal itemRightClicked(clickedItemModel: QtObject, event: QtObject);
   clip: true
   boundsBehavior: ListView.StopAtBounds
   delegate: Rectangle {
@@ -73,7 +74,11 @@ ListView {
       acceptedButtons: Qt.LeftButton | Qt.RightButton
       onClicked: e => {
         root.currentIndex = index;
-        root.itemClicked(itemModel, e);
+        if (e.button == Qt.LeftButton) {
+          root.itemLeftClicked(itemModel, e);
+        } else {
+          root.itemRightClicked(itemModel, e);
+        }
       }
     }
   }

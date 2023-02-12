@@ -40,7 +40,7 @@ ColumnLayout {
       id: cmdList
       anchors.fill: parent
       model: dCommands
-      onItemClicked: (item) => execCommand(item.eventType)
+      onItemLeftClicked: (item) => execCommand(item.eventType)
     }
   }
 }
