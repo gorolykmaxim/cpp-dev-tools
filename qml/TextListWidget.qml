@@ -30,7 +30,7 @@ ListView {
     property var itemModel: model
     width: root.width
     height: row.height
-    color: isSelected ? colorBgMedium : "transparent"
+    color: (isSelected || mouseArea.containsMouse) && !mouseArea.pressed ? colorBgMedium : "transparent"
     RowLayout {
       id: row
       width: parent.width
@@ -70,8 +70,10 @@ ListView {
       }
     }
     MouseArea {
+      id: mouseArea
       anchors.fill: parent
       acceptedButtons: Qt.LeftButton | Qt.RightButton
+      hoverEnabled: true
       onClicked: e => {
         root.currentIndex = index;
         if (e.button == Qt.LeftButton) {
