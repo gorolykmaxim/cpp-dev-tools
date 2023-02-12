@@ -4,6 +4,8 @@ import QtQuick.Controls
 ApplicationWindow {
   property var basePadding: 4
   property var baseRadius: 4
+  property var colorBgHighlight: "#7b7b7b"
+  property var colorBgBright: "#6a6a6a"
   property var colorBgLight: "#585859"
   property var colorBgMedium: "#383838"
   property var colorBgDark: "#282828"
