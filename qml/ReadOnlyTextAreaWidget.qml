@@ -2,6 +2,14 @@ import QtQuick
 import QtQuick.Controls
 
 TextArea {
+  property var allowedKeys: new Set([
+    Qt.Key_Left,
+    Qt.Key_Right,
+    Qt.Key_Up,
+    Qt.Key_Down,
+    Qt.Key_Home,
+    Qt.Key_End,
+  ])
   color: colorText
   background: Rectangle {
     color: "transparent"
@@ -10,8 +18,7 @@ TextArea {
   // Make text area effectively readOnly but don't hide the cursor and
   // allow navigating it using the cursor
   Keys.onPressed: event => {
-    if (event.key != Qt.Key_Left && event.key != Qt.Key_Right &&
-        event.key != Qt.Key_Up && event.key != Qt.Key_Down) {
+    if (!allowedKeys.has(event.key)) {
       event.accepted = true;
     }
   }
