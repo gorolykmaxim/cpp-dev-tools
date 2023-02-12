@@ -21,7 +21,9 @@ TextArea {
   // Make text area effectively readOnly but don't hide the cursor and
   // allow navigating it using the cursor
   Keys.onPressed: event => {
-    if (!allowedKeys.has(event.key) && !event.matches(StandardKey.Copy)) {
+    if (!allowedKeys.has(event.key) &&
+        !event.matches(StandardKey.Copy) &&
+        !event.matches(StandardKey.SelectAll)) {
       event.accepted = true;
     }
   }
