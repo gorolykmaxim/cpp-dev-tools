@@ -13,6 +13,7 @@ TextArea {
     Qt.Key_End,
   ])
   selectByMouse: true
+  selectionColor: colorHighlight
   color: colorText
   background: Rectangle {
     color: "transparent"
