@@ -20,6 +20,7 @@
 #include <QQmlContext>
 #include <QQueue>
 #include <QQuickStyle>
+#include <QQuickWindow>
 #include <QSet>
 #include <QSharedPointer>
 #include <QSqlDatabase>

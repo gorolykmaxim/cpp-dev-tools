@@ -3,6 +3,14 @@
 #define LOG() qDebug() << "[UI]"
 
 void InitializeUI(AppData& app) {
+#if defined(_WIN32) && defined(NDEBUG)
+  // This fixes laggy window movement on an external monitor on Windows and
+  // slightly slower selection in TextArea.
+  // Although we don't want to do it in a debug build because in debug software
+  // rendering is even slower.
+  LOG() << "Switching to software renderer";
+  QQuickWindow::setGraphicsApi(QSGRendererInterface::Software);
+#endif
   QQmlContext* context = app.gui_engine.rootContext();
   QList<UIDataField> fields = {
       UIDataField{kViewSlot, ""},
