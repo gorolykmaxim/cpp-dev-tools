@@ -67,6 +67,7 @@ qt_add_qml_module(cpp-dev-tools URI cdt VERSION 1.0
       qml/main.qml
       qml/ButtonWidget.qml
       qml/IconWidget.qml
+      qml/IconButtonWidget.qml
       qml/TextWidget.qml
       qml/TextFieldWidget.qml
       qml/PaneWidget.qml

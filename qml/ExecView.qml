@@ -83,11 +83,29 @@ RowLayout {
       Layout.fillWidth: true
       color: colorBgMedium
       padding: basePadding
-      TextFieldWidget {
-        id: searchOutputTextField
+      RowLayout {
         anchors.fill: parent
-        placeholderText: "Search in output"
-        KeyNavigation.down: execOutputTextArea
+        TextFieldWidget {
+          id: searchOutputTextField
+          placeholderText: "Search in output"
+          KeyNavigation.down: execOutputTextArea
+          KeyNavigation.right: searchPrevBtn
+          Layout.fillWidth: true
+        }
+        TextWidget {
+          text: "1 of 15"
+        }
+        IconButtonWidget {
+          id: searchPrevBtn
+          buttonIcon: "arrow_upward"
+          KeyNavigation.right: searchNextBtn
+          KeyNavigation.down: execOutputTextArea
+        }
+        IconButtonWidget {
+          id: searchNextBtn
+          buttonIcon: "arrow_downward"
+          KeyNavigation.down: execOutputTextArea
+        }
       }
     }
     PaneWidget {
