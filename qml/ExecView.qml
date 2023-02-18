@@ -121,6 +121,7 @@ RowLayout {
           topPadding: basePadding
           bottomPadding: basePadding
           text: vExecOutput || ""
+          textFormat: TextEdit.RichText
           onTextChanged: {
             cursorPosition = length;
           }

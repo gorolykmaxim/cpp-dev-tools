@@ -19,7 +19,8 @@ static bool GetExecUIInfo(AppData& app, const QUuid& exec_id, QString& cmd,
   if (exec->exit_code) {
     status = "Exit Code: " + QString::number(*exec->exit_code);
   }
-  output = exec->output;
+  output = exec->output.toHtmlEscaped();
+  output.replace("\n", "<br>");
   return true;
 }
 
