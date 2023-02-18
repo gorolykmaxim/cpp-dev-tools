@@ -5,7 +5,7 @@ Button {
   property var buttonIcon: ""
   padding: basePadding
   background: Rectangle {
-    color: hovered && !pressed ? colorBgLight : colorBgMedium
+    color: enabled && hovered && !pressed ? colorBgLight : "transparent"
     border.color: parent.activeFocus ? colorHighlight : "transparent"
     border.width: parent.activeFocus ? 2 : 0
     radius: baseRadius
