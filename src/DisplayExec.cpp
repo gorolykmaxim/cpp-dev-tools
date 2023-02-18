@@ -26,6 +26,8 @@ void DisplayExec::Display(AppData& app) {
        UIDataField{"vExecOutputFilter", ""},
        UIDataField{"vExecOutputSearchResults", "No Results"},
        UIDataField{"vExecOutputNoSearchResults", true},
+       UIDataField{"vExecOutputSearchResultStart", 0},
+       UIDataField{"vExecOutputSearchResultEnd", 0},
        UIDataField{"vExecsEmpty", app.execs.isEmpty()}},
       {UIListField{"vExecs", role_names, MakeFilteredListOfExecs(app)}});
   WakeUpProcessOnUIEvent(app, kViewSlot, "execHistoryChanged", *this,
@@ -117,15 +119,19 @@ void DisplayExec::SearchExecOutput(AppData& app, const QString& search_term) {
     LOG() << "Found" << search_results.size() << "search results";
   }
   QString summary;
+  ExecOutputSearchResult result;
   if (search_results.isEmpty()) {
     summary = "No Results";
   } else {
     summary = QString::number(current_search_result + 1) + " of " +
               QString::number(search_results.size());
+    result = search_results[current_search_result];
   }
   SetUIDataField(app, kViewSlot, "vExecOutputSearchResults", summary);
   SetUIDataField(app, kViewSlot, "vExecOutputNoSearchResults",
                  search_results.isEmpty());
+  SetUIDataField(app, kViewSlot, "vExecOutputSearchResultStart", result.start);
+  SetUIDataField(app, kViewSlot, "vExecOutputSearchResultEnd", result.end);
 }
 
 bool DisplayExec::AutoReSelectExec(AppData& app) {

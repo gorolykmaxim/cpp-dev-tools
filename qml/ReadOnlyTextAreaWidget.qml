@@ -12,6 +12,8 @@ TextArea {
     Qt.Key_Home,
     Qt.Key_End,
   ])
+  property int selectionStart: 0
+  property int selectionEnd: 0
   selectByMouse: true
   selectionColor: colorHighlight
   color: colorText
@@ -33,6 +35,8 @@ TextArea {
       contextMenu.open();
     }
   }
+  onSelectionStartChanged: textArea.select(selectionStart, selectionEnd);
+  onSelectionEndChanged: textArea.select(selectionStart, selectionEnd);
   Menu {
     id: contextMenu
     MenuItem {
