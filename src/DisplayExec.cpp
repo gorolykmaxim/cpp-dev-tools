@@ -8,45 +8,21 @@
 
 static const QString kSubTextColor = "#6d6d6d";
 
-static bool GetExecUIInfo(AppData& app, const QUuid& exec_id, QString& cmd,
-                          QString& status, QString& output) {
-  Exec* exec = FindExecById(app, exec_id);
-  if (!exec) {
-    return false;
-  }
-  cmd = ShortenTaskCmd(exec->cmd, *app.current_project);
-  status = "Running...";
-  if (exec->exit_code) {
-    status = "Exit Code: " + QString::number(*exec->exit_code);
-  }
-  output = exec->output.toHtmlEscaped();
-  output.replace("\n", "<br>");
-  return true;
-}
-
-static void DisplayExecOutput(AppData& app, const QUuid& exec_id) {
-  QString cmd, status, output;
-  if (GetExecUIInfo(app, exec_id, cmd, status, output)) {
-    SetUIDataField(app, kViewSlot, "vExecCmd", cmd);
-    SetUIDataField(app, kViewSlot, "vExecStatus", status);
-    SetUIDataField(app, kViewSlot, "vExecOutput", output);
-  }
-}
-
 DisplayExec::DisplayExec() { EXEC_NEXT(Display); }
 
 void DisplayExec::Display(AppData& app) {
   AutoReSelectExec(app);
+  UpdateAndDrawSelectedExec(app, true);
   QHash<int, QByteArray> role_names = {{0, "title"},     {1, "subTitle"},
                                        {2, "id"},        {3, "icon"},
                                        {4, "iconColor"}, {5, "isSelected"}};
-  QString cmd, status, output;
-  GetExecUIInfo(app, selected_exec_id, cmd, status, output);
   DisplayView(
       app, kViewSlot, "ExecView.qml",
       {UIDataField{"windowTitle", "Task Execution History"},
-       UIDataField{"vExecFilter", ""}, UIDataField{"vExecCmd", cmd},
-       UIDataField{"vExecStatus", status}, UIDataField{"vExecOutput", output},
+       UIDataField{"vExecFilter", ""},
+       UIDataField{"vExecCmd", selected_exec_cmd},
+       UIDataField{"vExecStatus", selected_exec_status},
+       UIDataField{"vExecOutput", selected_exec_output},
        UIDataField{"vExecOutputFilter", ""},
        UIDataField{"vExecsEmpty", app.execs.isEmpty()}},
       {UIListField{"vExecs", role_names, MakeFilteredListOfExecs(app)}});
@@ -65,7 +41,7 @@ void DisplayExec::ReDrawExecHistory(AppData& app) {
     if (AutoReSelectExec(app)) {
       SetUIDataField(app, kViewSlot, "vExecOutputFilter", "");
     }
-    DisplayExecOutput(app, selected_exec_id);
+    UpdateAndDrawSelectedExec(app);
   }
   QList<QVariantList> execs = MakeFilteredListOfExecs(app);
   SetUIDataField(app, kViewSlot, "vExecsEmpty", app.execs.isEmpty());
@@ -79,7 +55,7 @@ void DisplayExec::ReDrawExecOutput(AppData& app) {
   if (selected_exec_id != id) {
     return;
   }
-  DisplayExecOutput(app, selected_exec_id);
+  UpdateAndDrawSelectedExec(app);
 }
 
 void DisplayExec::FilterExecs(AppData& app) {
@@ -100,7 +76,7 @@ void DisplayExec::SelectExec(AppData& app) {
     LOG() << "execution selected:" << selected_exec_id;
   }
   SetUIDataField(app, kViewSlot, "vExecOutputFilter", "");
-  DisplayExecOutput(app, selected_exec_id);
+  UpdateAndDrawSelectedExec(app);
   EXEC_NEXT(KeepAlive);
 }
 
@@ -112,6 +88,29 @@ bool DisplayExec::AutoReSelectExec(AppData& app) {
     selected_exec_id = app.execs.last().id;
   }
   return old != selected_exec_id;
+}
+
+void DisplayExec::UpdateAndDrawSelectedExec(AppData& app, bool only_update) {
+  Exec* exec = FindExecById(app, selected_exec_id);
+  if (!exec) {
+    selected_exec_cmd.clear();
+    selected_exec_status.clear();
+    selected_exec_output.clear();
+  } else {
+    selected_exec_cmd = ShortenTaskCmd(exec->cmd, *app.current_project);
+    selected_exec_status = "Running...";
+    if (exec->exit_code) {
+      selected_exec_status = "Exit Code: " + QString::number(*exec->exit_code);
+    }
+    selected_exec_output = exec->output.toHtmlEscaped();
+    selected_exec_output.replace("\n", "<br>");
+  }
+  if (only_update) {
+    return;
+  }
+  SetUIDataField(app, kViewSlot, "vExecCmd", selected_exec_cmd);
+  SetUIDataField(app, kViewSlot, "vExecStatus", selected_exec_status);
+  SetUIDataField(app, kViewSlot, "vExecOutput", selected_exec_output);
 }
 
 QList<QVariantList> DisplayExec::MakeFilteredListOfExecs(AppData& app) {
