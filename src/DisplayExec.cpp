@@ -120,7 +120,7 @@ void DisplayExec::SearchExecOutput(AppData& app, const QString& search_term) {
   if (search_results.isEmpty()) {
     summary = "No Results";
   } else {
-    summary = QString::number(current_search_result) + " of " +
+    summary = QString::number(current_search_result + 1) + " of " +
               QString::number(search_results.size());
   }
   SetUIDataField(app, kViewSlot, "vExecOutputSearchResults", summary);
