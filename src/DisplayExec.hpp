@@ -18,6 +18,9 @@ class DisplayExec : public Process {
   void ResetSearchResults(AppData& app);
   void SearchExecOutput(AppData& app);
   void SearchExecOutput(AppData& app, const QString& search_term);
+  void NextExecOutputSearchResult(AppData& app);
+  void PrevExecOutputSearchResult(AppData& app);
+  void DrawExecOutputSearchResult(AppData& app);
   bool AutoReSelectExec(AppData& app);
   void UpdateAndDrawSelectedExec(AppData& app, bool only_update = false);
   QList<QVariantList> MakeFilteredListOfExecs(AppData& app);

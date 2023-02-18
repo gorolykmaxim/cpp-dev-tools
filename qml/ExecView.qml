@@ -93,6 +93,15 @@ RowLayout {
                                               [displayText])
           KeyNavigation.down: execOutputTextArea
           KeyNavigation.right: searchPrevBtn
+          function goToSearchResult(event) {
+            if (event.modifiers & Qt.ControlModifier) {
+              core.OnAction("vaPrevExecOutputSearchResult", [])
+            } else {
+              core.OnAction("vaNextExecOutputSearchResult", [])
+            }
+          }
+          Keys.onReturnPressed: goToSearchResult(event)
+          Keys.onEnterPressed: goToSearchResult(event)
           Layout.fillWidth: true
         }
         TextWidget {
@@ -102,6 +111,7 @@ RowLayout {
           id: searchPrevBtn
           buttonIcon: "arrow_upward"
           enabled: !vExecOutputNoSearchResults
+          onClicked: core.OnAction("vaPrevExecOutputSearchResult", [])
           KeyNavigation.right: searchNextBtn
           KeyNavigation.down: execOutputTextArea
         }
@@ -109,6 +119,7 @@ RowLayout {
           id: searchNextBtn
           buttonIcon: "arrow_downward"
           enabled: !vExecOutputNoSearchResults
+          onClicked: core.OnAction("vaNextExecOutputSearchResult", [])
           KeyNavigation.down: execOutputTextArea
         }
       }

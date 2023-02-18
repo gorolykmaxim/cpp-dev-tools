@@ -40,6 +40,10 @@ void DisplayExec::Display(AppData& app) {
                          EXEC(this, SelectExec));
   WakeUpProcessOnUIEvent(app, kViewSlot, "vaSearchExecOutput", *this,
                          EXEC(this, SearchExecOutput));
+  WakeUpProcessOnUIEvent(app, kViewSlot, "vaNextExecOutputSearchResult", *this,
+                         EXEC(this, NextExecOutputSearchResult));
+  WakeUpProcessOnUIEvent(app, kViewSlot, "vaPrevExecOutputSearchResult", *this,
+                         EXEC(this, PrevExecOutputSearchResult));
 }
 
 void DisplayExec::ReDrawExecHistory(AppData& app) {
@@ -118,6 +122,34 @@ void DisplayExec::SearchExecOutput(AppData& app, const QString& search_term) {
     }
     LOG() << "Found" << search_results.size() << "search results";
   }
+  DrawExecOutputSearchResult(app);
+}
+
+void DisplayExec::NextExecOutputSearchResult(AppData& app) {
+  if (search_results.isEmpty()) {
+    current_search_result = 0;
+  } else if (current_search_result == search_results.size() - 1) {
+    current_search_result = 0;
+  } else {
+    current_search_result++;
+  }
+  DrawExecOutputSearchResult(app);
+  EXEC_NEXT(KeepAlive);
+}
+
+void DisplayExec::PrevExecOutputSearchResult(AppData& app) {
+  if (search_results.isEmpty()) {
+    current_search_result = 0;
+  } else if (current_search_result == 0) {
+    current_search_result = search_results.size() - 1;
+  } else {
+    current_search_result--;
+  }
+  DrawExecOutputSearchResult(app);
+  EXEC_NEXT(KeepAlive);
+}
+
+void DisplayExec::DrawExecOutputSearchResult(AppData& app) {
   QString summary;
   ExecOutputSearchResult result;
   if (search_results.isEmpty()) {
