@@ -20,7 +20,7 @@ ColumnLayout {
       Layout.fillWidth: true
       Layout.fillHeight: true
       ReadOnlyTextAreaWidget {
-        text: dText ?? ""
+        textData: dText ?? ""
         KeyNavigation.down: dialogCancel.visible ? dialogCancel : dialogOk
       }
     }

@@ -14,6 +14,8 @@ TextArea {
   ])
   property int selectionStart: 0
   property int selectionEnd: 0
+  property bool cursorFollowEnd: false
+  property string textData: ""
   selectByMouse: true
   selectionColor: colorHighlight
   color: colorText
@@ -37,6 +39,14 @@ TextArea {
   }
   onSelectionStartChanged: textArea.select(selectionStart, selectionEnd);
   onSelectionEndChanged: textArea.select(selectionStart, selectionEnd);
+  onTextDataChanged: {
+    text = textData;
+    textArea.select(selectionStart, selectionEnd);
+    if (!cursorFollowEnd || selectionStart > 0 || selectionEnd > 0) {
+      return;
+    }
+    cursorPosition = length;
+  }
   Menu {
     id: contextMenu
     MenuItem {

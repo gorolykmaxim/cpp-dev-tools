@@ -136,13 +136,11 @@ RowLayout {
           rightPadding: basePadding
           topPadding: basePadding
           bottomPadding: basePadding
-          text: vExecOutput || ""
+          textData: vExecOutput || ""
           textFormat: TextEdit.RichText
           selectionStart: vExecOutputSearchResultStart
           selectionEnd: vExecOutputSearchResultEnd
-          onTextChanged: {
-            cursorPosition = length;
-          }
+          cursorFollowEnd: true
           KeyNavigation.left: searchExecTextField
         }
       }
