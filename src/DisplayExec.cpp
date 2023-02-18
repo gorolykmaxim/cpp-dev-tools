@@ -47,6 +47,7 @@ void DisplayExec::Display(AppData& app) {
       {UIDataField{"windowTitle", "Task Execution History"},
        UIDataField{"vExecFilter", ""}, UIDataField{"vExecCmd", cmd},
        UIDataField{"vExecStatus", status}, UIDataField{"vExecOutput", output},
+       UIDataField{"vExecOutputFilter", ""},
        UIDataField{"vExecsEmpty", app.execs.isEmpty()}},
       {UIListField{"vExecs", role_names, MakeFilteredListOfExecs(app)}});
   WakeUpProcessOnUIEvent(app, kViewSlot, "execHistoryChanged", *this,
@@ -61,7 +62,9 @@ void DisplayExec::Display(AppData& app) {
 
 void DisplayExec::ReDrawExecHistory(AppData& app) {
   if (select_new_execs) {
-    AutoReSelectExec(app);
+    if (AutoReSelectExec(app)) {
+      SetUIDataField(app, kViewSlot, "vExecOutputFilter", "");
+    }
     DisplayExecOutput(app, selected_exec_id);
   }
   QList<QVariantList> execs = MakeFilteredListOfExecs(app);
@@ -96,16 +99,19 @@ void DisplayExec::SelectExec(AppData& app) {
   } else {
     LOG() << "execution selected:" << selected_exec_id;
   }
+  SetUIDataField(app, kViewSlot, "vExecOutputFilter", "");
   DisplayExecOutput(app, selected_exec_id);
   EXEC_NEXT(KeepAlive);
 }
 
-void DisplayExec::AutoReSelectExec(AppData& app) {
+bool DisplayExec::AutoReSelectExec(AppData& app) {
+  QUuid old = selected_exec_id;
   if (Exec* exec = FindLatestRunningExec(app)) {
     selected_exec_id = exec->id;
   } else if (!app.execs.isEmpty()) {
     selected_exec_id = app.execs.last().id;
   }
+  return old != selected_exec_id;
 }
 
 QList<QVariantList> DisplayExec::MakeFilteredListOfExecs(AppData& app) {

@@ -87,6 +87,7 @@ RowLayout {
         anchors.fill: parent
         TextFieldWidget {
           id: searchOutputTextField
+          text: vExecOutputFilter || ""
           placeholderText: "Search in output"
           KeyNavigation.down: execOutputTextArea
           KeyNavigation.right: searchPrevBtn

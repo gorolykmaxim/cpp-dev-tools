@@ -10,7 +10,7 @@ class DisplayExec : public Process {
   void ReDrawExecOutput(AppData& app);
   void FilterExecs(AppData& app);
   void SelectExec(AppData& app);
-  void AutoReSelectExec(AppData& app);
+  bool AutoReSelectExec(AppData& app);
   QList<QVariantList> MakeFilteredListOfExecs(AppData& app);
 
   QString exec_filter;
