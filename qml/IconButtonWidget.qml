@@ -12,7 +12,7 @@ Button {
   }
   contentItem: IconWidget {
     icon: buttonIcon
-    color: colorText
+    color: parent.enabled ? colorText : colorSubText
   }
   Keys.onReturnPressed: clicked()
   Keys.onEnterPressed: clicked()

@@ -101,12 +101,14 @@ RowLayout {
         IconButtonWidget {
           id: searchPrevBtn
           buttonIcon: "arrow_upward"
+          enabled: !vExecOutputNoSearchResults
           KeyNavigation.right: searchNextBtn
           KeyNavigation.down: execOutputTextArea
         }
         IconButtonWidget {
           id: searchNextBtn
           buttonIcon: "arrow_downward"
+          enabled: !vExecOutputNoSearchResults
           KeyNavigation.down: execOutputTextArea
         }
       }
