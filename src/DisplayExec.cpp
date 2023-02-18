@@ -24,6 +24,7 @@ void DisplayExec::Display(AppData& app) {
        UIDataField{"vExecStatus", selected_exec_status},
        UIDataField{"vExecOutput", selected_exec_output},
        UIDataField{"vExecOutputFilter", ""},
+       UIDataField{"vExecOutputSearchResults", "No Results"},
        UIDataField{"vExecsEmpty", app.execs.isEmpty()}},
       {UIListField{"vExecs", role_names, MakeFilteredListOfExecs(app)}});
   WakeUpProcessOnUIEvent(app, kViewSlot, "execHistoryChanged", *this,
@@ -34,12 +35,14 @@ void DisplayExec::Display(AppData& app) {
                          EXEC(this, FilterExecs));
   WakeUpProcessOnUIEvent(app, kViewSlot, "vaExecSelected", *this,
                          EXEC(this, SelectExec));
+  WakeUpProcessOnUIEvent(app, kViewSlot, "vaSearchExecOutput", *this,
+                         EXEC(this, SearchExecOutput));
 }
 
 void DisplayExec::ReDrawExecHistory(AppData& app) {
   if (select_new_execs) {
     if (AutoReSelectExec(app)) {
-      SetUIDataField(app, kViewSlot, "vExecOutputFilter", "");
+      ResetSearchResults(app);
     }
     UpdateAndDrawSelectedExec(app);
   }
@@ -71,13 +74,55 @@ void DisplayExec::SelectExec(AppData& app) {
       !app.execs.isEmpty() && app.execs.last().id == selected_exec_id;
   select_new_execs = is_latest_running || is_latest;
   if (select_new_execs) {
-    LOG() << "latest execution will get selected:" << selected_exec_id;
+    LOG() << "Latest execution will get selected:" << selected_exec_id;
   } else {
-    LOG() << "execution selected:" << selected_exec_id;
+    LOG() << "Execution selected:" << selected_exec_id;
   }
-  SetUIDataField(app, kViewSlot, "vExecOutputFilter", "");
+  ResetSearchResults(app);
   UpdateAndDrawSelectedExec(app);
   EXEC_NEXT(KeepAlive);
+}
+
+void DisplayExec::ResetSearchResults(AppData& app) {
+  LOG() << "Resetting execution output search results";
+  SetUIDataField(app, kViewSlot, "vExecOutputFilter", "");
+  SearchExecOutput(app, "");
+}
+
+void DisplayExec::SearchExecOutput(AppData& app) {
+  EXEC_NEXT(KeepAlive);
+  QString term = GetEventArg(app, 0).toString().toHtmlEscaped();
+  SearchExecOutput(app, term);
+}
+
+void DisplayExec::SearchExecOutput(AppData& app, const QString& search_term) {
+  current_search_result = 0;
+  search_results.clear();
+  if (search_term.size() > 2) {
+    LOG() << "Searching execution output for" << search_term;
+    qsizetype pos = 0;
+    while (true) {
+      qsizetype i =
+          selected_exec_output.indexOf(search_term, pos, Qt::CaseInsensitive);
+      if (i < 0) {
+        break;
+      }
+      ExecOutputSearchResult result;
+      result.start = i;
+      result.end = i + search_term.size();
+      search_results.append(result);
+      pos = result.end + 1;
+    }
+    LOG() << "Found" << search_results.size() << "search results";
+  }
+  QString summary;
+  if (search_results.isEmpty()) {
+    summary = "No Results";
+  } else {
+    summary = QString::number(current_search_result) + " of " +
+              QString::number(search_results.size());
+  }
+  SetUIDataField(app, kViewSlot, "vExecOutputSearchResults", summary);
 }
 
 bool DisplayExec::AutoReSelectExec(AppData& app) {

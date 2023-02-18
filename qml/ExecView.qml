@@ -89,12 +89,14 @@ RowLayout {
           id: searchOutputTextField
           text: vExecOutputFilter || ""
           placeholderText: "Search in output"
+          onDisplayTextChanged: core.OnAction("vaSearchExecOutput",
+                                              [displayText])
           KeyNavigation.down: execOutputTextArea
           KeyNavigation.right: searchPrevBtn
           Layout.fillWidth: true
         }
         TextWidget {
-          text: "1 of 15"
+          text: vExecOutputSearchResults
         }
         IconButtonWidget {
           id: searchPrevBtn
