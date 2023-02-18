@@ -94,19 +94,19 @@ void DisplayExec::ResetSearchResults(AppData& app) {
 
 void DisplayExec::SearchExecOutput(AppData& app) {
   EXEC_NEXT(KeepAlive);
-  QString term = GetEventArg(app, 0).toString().toHtmlEscaped();
+  QString term = GetEventArg(app, 0).toString();
   SearchExecOutput(app, term);
 }
 
 void DisplayExec::SearchExecOutput(AppData& app, const QString& search_term) {
+  Exec* exec = FindExecById(app, selected_exec_id);
   current_search_result = 0;
   search_results.clear();
-  if (search_term.size() > 2) {
+  if (search_term.size() > 2 && exec) {
     LOG() << "Searching execution output for" << search_term;
     qsizetype pos = 0;
     while (true) {
-      qsizetype i =
-          selected_exec_output.indexOf(search_term, pos, Qt::CaseInsensitive);
+      qsizetype i = exec->output.indexOf(search_term, pos, Qt::CaseInsensitive);
       if (i < 0) {
         break;
       }
