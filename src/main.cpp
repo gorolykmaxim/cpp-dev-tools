@@ -1,10 +1,11 @@
-#include "AppData.hpp"
-#include "Initialize.hpp"
-#include "Process.hpp"
+#include <QGuiApplication>
+#include <QQmlApplicationEngine>
+#include <QQuickStyle>
 
 int main(int argc, char** argv) {
-  AppData app(argc, argv);
-  ScheduleProcess<Initialize>(app, kViewSlot);
-  ExecuteProcesses(app);
-  return app.gui_app.exec();
+  QGuiApplication app(argc, argv);
+  QQmlApplicationEngine engine;
+  QQuickStyle::setStyle("Basic");
+  engine.load(QUrl("qrc:/cdt/qml/main.qml"));
+  return app.exec();
 }
