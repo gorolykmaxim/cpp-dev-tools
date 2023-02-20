@@ -27,10 +27,8 @@ InformationProvider::InformationProvider(QObject* parent)
 InformationProvider::~InformationProvider() { qDebug() << "Destroyed"; }
 
 void InformationProvider::SetInfoOnUIThread(const QString& info) {
-  QMetaObject::invokeMethod(this, [this, info]() {
+  QMetaObject::invokeMethod(QCoreApplication::instance(), [this, info]() {
     this->info = info;
     emit infoChanged();
   });
-  // this->info = info;
-  // emit infoChanged();
 }
