@@ -1,6 +1,7 @@
 import QtQuick
 import QtQuick.Controls
 import cdt
+import "." as Cdt
 
 ApplicationWindow {
   minimumWidth: 1024
@@ -10,7 +11,7 @@ ApplicationWindow {
   InformationProvider {
     id: provider
   }
-  Text {
+  Cdt.Component {
     anchors.centerIn: parent
     text: provider.info
   }

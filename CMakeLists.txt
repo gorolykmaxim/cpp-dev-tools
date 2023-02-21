@@ -22,5 +22,6 @@ target_link_libraries(cpp-dev-tools PRIVATE
 qt_add_qml_module(cpp-dev-tools URI cdt VERSION 1.0
   QML_FILES
       qml/main.qml
+      qml/Component.qml
   RESOURCES
       fonts/MaterialIcons-Regular.ttf)
