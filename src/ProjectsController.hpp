@@ -13,5 +13,6 @@ class ProjectsController : public QObject {
   explicit ProjectsController(QObject* parent = nullptr);
   QVariantListModel* GetProjects();
 
+ private:
   QSharedPointer<QVariantListModel> projects;
 };
