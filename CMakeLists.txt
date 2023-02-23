@@ -9,6 +9,8 @@ find_package(Qt6 6.3 COMPONENTS
 qt_add_executable(cpp-dev-tools
   src/InformationProvider.hpp
   src/InformationProvider.cpp
+  src/Database.hpp
+  src/Database.cpp
   src/main.cpp)
 if(NOT MSVC)
   # TODO: figure out how to enable all warnings in MSVC without triggering
