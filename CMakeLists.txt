@@ -12,8 +12,8 @@ qt_add_executable(cpp-dev-tools
   src/Application.hpp
   src/Application.cpp
   src/Theme.hpp
-  src/ProjectsController.hpp
-  src/ProjectsController.cpp
+  src/ProjectController.hpp
+  src/ProjectController.cpp
   src/QVariantListModel.hpp
   src/QVariantListModel.cpp
   src/main.cpp)

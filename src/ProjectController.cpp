@@ -1,4 +1,4 @@
-#include "ProjectsController.hpp"
+#include "ProjectController.hpp"
 
 #include <QMetaObject>
 #include <QSqlQuery>
@@ -40,7 +40,7 @@ class Project {
   QDateTime last_open_time;
 };
 
-ProjectsController::ProjectsController(QObject* parent) : QObject(parent) {
+ProjectController::ProjectController(QObject* parent) : QObject(parent) {
   Application& app = Application::Get();
   QHash<int, QByteArray> role_names = {{0, "title"}, {1, "subTitle"}};
   projects = QSharedPointer<QVariantListModel>::create(role_names);
@@ -60,4 +60,4 @@ ProjectsController::ProjectsController(QObject* parent) : QObject(parent) {
       });
 }
 
-QVariantListModel* ProjectsController::GetProjects() { return projects.get(); }
+QVariantListModel* ProjectController::GetProjects() { return projects.get(); }

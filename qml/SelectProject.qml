@@ -12,7 +12,7 @@ ColumnLayout {
   }
   anchors.fill: parent
   spacing: 0
-  ProjectsController {
+  ProjectController {
     id: controller
   }
   Cdt.Pane {
