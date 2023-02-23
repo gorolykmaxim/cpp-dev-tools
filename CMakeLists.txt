@@ -11,6 +11,8 @@ qt_add_executable(cpp-dev-tools
   src/InformationProvider.cpp
   src/Database.hpp
   src/Database.cpp
+  src/Application.hpp
+  src/Application.cpp
   src/Theme.hpp
   src/main.cpp)
 if(NOT MSVC)
