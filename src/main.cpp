@@ -20,7 +20,7 @@ int main(int argc, char** argv) {
   // rendering is even slower.
   QQuickWindow::setGraphicsApi(QSGRendererInterface::Software);
 #endif
-  QtConcurrent::run(&Database::Initialize).waitForFinished();
+  QtConcurrent::run(&io_thread_pool, &Database::Initialize).waitForFinished();
   engine.load(QUrl("qrc:/cdt/qml/main.qml"));
   return app.exec();
 }
