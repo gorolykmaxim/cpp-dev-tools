@@ -4,6 +4,7 @@ import cdt
 import "." as Cdt
 
 ApplicationWindow {
+  id: appWindow
   minimumWidth: 1024
   minimumHeight: 600
   title: "Test"

@@ -6,7 +6,10 @@ import cdt
 import "." as Cdt
 
 ColumnLayout {
-  Component.onCompleted: input.forceActiveFocus()
+  Component.onCompleted: {
+    appWindow.title = "Open Project";
+    input.forceActiveFocus();
+  }
   anchors.fill: parent
   spacing: 0
   ProjectsController {
