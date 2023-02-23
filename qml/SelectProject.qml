@@ -23,12 +23,12 @@ ColumnLayout {
       anchors.fill: parent
       Cdt.ListSearch {
         id: input
-        text: ""
+        text: controller.projects.filter
         placeholderText: "Search project"
         Layout.fillWidth: true
         KeyNavigation.right: button
         list: projectList
-        onDisplayTextChanged: console.log(displayText)
+        onDisplayTextChanged: controller.projects.filter = displayText
         onEnterPressed: console.log("ENTER")
         onCtrlEnterPressed: console.log("CTRL ENTER")
       }

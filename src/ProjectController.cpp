@@ -43,7 +43,9 @@ class Project {
 ProjectController::ProjectController(QObject* parent) : QObject(parent) {
   Application& app = Application::Get();
   QHash<int, QByteArray> role_names = {{0, "title"}, {1, "subTitle"}};
-  projects = QSharedPointer<QVariantListModel>::create(role_names);
+  QList<int> searchable_roles = {0, 1};
+  projects =
+      QSharedPointer<QVariantListModel>::create(role_names, searchable_roles);
   app.RunIOTask<QList<Project>>(
       []() {
         return Database::ExecQueryAndRead<Project>(
