@@ -29,9 +29,9 @@ Cdt.TextField {
       case Qt.Key_Enter:
       case Qt.Key_Return:
         if (e.modifiers & Qt.ControlModifier) {
-          field.enterPressed()
-        } else if (enterEventType) {
           field.ctrlEnterPressed()
+        } else {
+          field.enterPressed()
         }
         break;
     }

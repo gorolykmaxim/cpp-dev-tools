@@ -33,7 +33,7 @@ ListView {
     property var itemModel: model
     width: root.width
     height: row.height
-    color: (isSelected || mouseArea.containsMouse) && !mouseArea.pressed ? colorBgMedium : "transparent"
+    color: (isSelected || mouseArea.containsMouse) && !mouseArea.pressed ? Theme.colorBgMedium : "transparent"
     RowLayout {
       id: row
       width: parent.width

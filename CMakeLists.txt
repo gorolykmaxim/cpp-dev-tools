@@ -12,6 +12,10 @@ qt_add_executable(cpp-dev-tools
   src/Application.hpp
   src/Application.cpp
   src/Theme.hpp
+  src/ProjectsController.hpp
+  src/ProjectsController.cpp
+  src/QVariantListModel.hpp
+  src/QVariantListModel.cpp
   src/main.cpp)
 if(NOT MSVC)
   # TODO: figure out how to enable all warnings in MSVC without triggering

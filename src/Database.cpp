@@ -1,9 +1,7 @@
 #include "Database.hpp"
 
 #include <QDebug>
-#include <QSqlDatabase>
 #include <QSqlError>
-#include <QSqlQuery>
 #include <QStandardPaths>
 #include <QUuid>
 
@@ -22,8 +20,8 @@ void Database::Initialize() {
       "is_opened BOOL, last_open_time DATETIME)");
 }
 
-void Database::ExecCmd(const QString &query, const QVariantList &args) {
-  QSqlQuery sql(QSqlDatabase::database());
+void Database::ExecQuery(QSqlQuery &sql, const QString &query,
+                         const QVariantList &args) {
   LOG() << "Executing query:" << query;
   bool query_executed = false;
   if (args.isEmpty()) {
@@ -45,4 +43,9 @@ void Database::ExecCmd(const QString &query, const QVariantList &args) {
     LOG() << "Last query failed:" << sql.lastError().text();
   }
   Q_ASSERT(query_executed);
+}
+
+void Database::ExecCmd(const QString &query, const QVariantList &args) {
+  QSqlQuery sql(QSqlDatabase::database());
+  ExecQuery(sql, query, args);
 }

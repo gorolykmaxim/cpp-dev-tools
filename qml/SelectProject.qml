@@ -9,6 +9,9 @@ ColumnLayout {
   Component.onCompleted: input.forceActiveFocus()
   anchors.fill: parent
   spacing: 0
+  ProjectsController {
+    id: controller
+  }
   Cdt.Pane {
     Layout.fillWidth: true
     color: Theme.colorBgMedium
@@ -40,6 +43,7 @@ ColumnLayout {
     Cdt.TextList {
       id: projectList
       anchors.fill: parent
+      model: controller.projects
       onItemLeftClicked: console.log("LEFT CLICK")
       onItemRightClicked: contextMenu.open()
     }
