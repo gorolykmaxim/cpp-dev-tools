@@ -1,7 +1,6 @@
 #include "Application.hpp"
 
 #include <QQuickStyle>
-#include <QtConcurrent>
 
 #include "Database.hpp"
 

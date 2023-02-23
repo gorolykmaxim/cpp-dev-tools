@@ -44,18 +44,20 @@ ProjectsController::ProjectsController(QObject* parent) : QObject(parent) {
   Application& app = Application::Get();
   QHash<int, QByteArray> role_names = {{0, "title"}, {1, "subTitle"}};
   projects = QSharedPointer<QVariantListModel>::create(role_names);
-  (void)QtConcurrent::run(&app.io_thread_pool, [this]() {
-    QList<Project> results = Database::ExecQueryAndRead<Project>(
-        "SELECT * FROM project ORDER BY last_open_time DESC",
-        &Project::ReadFromSql);
-    QMetaObject::invokeMethod(QGuiApplication::instance(), [results, this]() {
-      QList<QVariantList> rows;
-      for (const Project& project : results) {
-        rows.append({project.GetFolderName(), project.GetPathRelativeToHome()});
-      }
-      projects->SetItems(rows);
-    });
-  });
+  app.RunIOTask<QList<Project>>(
+      []() {
+        return Database::ExecQueryAndRead<Project>(
+            "SELECT * FROM project ORDER BY last_open_time DESC",
+            &Project::ReadFromSql);
+      },
+      [this](QList<Project> results) {
+        QList<QVariantList> rows;
+        for (const Project& project : results) {
+          rows.append(
+              {project.GetFolderName(), project.GetPathRelativeToHome()});
+        }
+        projects->SetItems(rows);
+      });
 }
 
 QVariantListModel* ProjectsController::GetProjects() { return projects.get(); }
