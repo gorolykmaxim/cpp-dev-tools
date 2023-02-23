@@ -1,8 +1,12 @@
 #include "QVariantListModel.hpp"
 
-QVariantListModel::QVariantListModel(const QHash<int, QByteArray>& role_names,
+QVariantListModel::QVariantListModel(const GetRow& get_row,
+                                     const GetRowCount& get_row_count,
+                                     const QHash<int, QByteArray>& role_names,
                                      const QList<int> searchable_roles)
     : QAbstractListModel(),
+      get_row(get_row),
+      get_row_count(get_row_count),
       searchable_roles(searchable_roles),
       role_names(role_names) {
   for (int role : role_names.keys()) {
@@ -12,7 +16,7 @@ QVariantListModel::QVariantListModel(const QHash<int, QByteArray>& role_names,
 }
 
 int QVariantListModel::rowCount(const QModelIndex&) const {
-  return items_filtered.size();
+  return items.size();
 }
 
 QHash<int, QByteArray> QVariantListModel::roleNames() const {
@@ -23,17 +27,40 @@ QVariant QVariantListModel::data(const QModelIndex& index, int role) const {
   if (!index.isValid()) {
     return QVariant();
   }
-  if (index.row() < 0 || index.row() >= items_filtered.size()) {
+  if (index.row() < 0 || index.row() >= items.size()) {
     return QVariant();
   }
-  const QVariantList& row = items_filtered[index.row()];
+  const QVariantList& row = items[index.row()];
   Q_ASSERT(role >= 0 && role < row.size());
   return row[role];
 }
 
-void QVariantListModel::SetItems(const QList<QVariantList>& items) {
-  this->items = items;
-  Filter();
+void QVariantListModel::LoadItems() {
+  beginResetModel();
+  items.clear();
+  int count = get_row_count();
+  for (int i = 0; i < count; i++) {
+    QVariantList row = get_row(i);
+    if (filter.isEmpty()) {
+      items.append(row);
+      continue;
+    }
+    bool matches = false;
+    for (int role : searchable_roles) {
+      QString str = row[role].toString();
+      int pos = str.indexOf(filter, Qt::CaseSensitivity::CaseInsensitive);
+      if (pos >= 0) {
+        str.insert(pos + filter.size(), "</b>");
+        str.insert(pos, "<b>");
+        row[role] = str;
+        matches = true;
+      }
+    }
+    if (matches) {
+      items.append(row);
+    }
+  }
+  endResetModel();
 }
 
 QVariant QVariantListModel::GetFieldByRoleName(int row,
@@ -45,10 +72,10 @@ QVariant QVariantListModel::GetFieldByRoleName(int row,
 }
 
 QVariant QVariantListModel::GetFieldByRole(int row, int role) const {
-  if (row < 0 || row >= items_filtered.size()) {
+  if (row < 0 || row >= items.size()) {
     return QVariant();
   }
-  const QVariantList& row_values = items_filtered[row];
+  const QVariantList& row_values = items[row];
   if (role < 0 || role >= row_values.size()) {
     return QVariant();
   }
@@ -61,33 +88,7 @@ void QVariantListModel::SetFilter(const QString& filter) {
   }
   this->filter = filter;
   emit filterChanged();
-  Filter();
+  LoadItems();
 }
 
 QString QVariantListModel::GetFilter() { return filter; }
-
-void QVariantListModel::Filter() {
-  beginResetModel();
-  items_filtered.clear();
-  for (QVariantList row : items) {
-    if (filter.isEmpty()) {
-      items_filtered.append(row);
-      continue;
-    }
-    bool matches = false;
-    for (int role : searchable_roles) {
-      QString str = row[role].toString();
-      int i = str.indexOf(filter, Qt::CaseSensitivity::CaseInsensitive);
-      if (i >= 0) {
-        str.insert(i + filter.size(), "</b>");
-        str.insert(i, "<b>");
-        row[role] = str;
-        matches = true;
-      }
-    }
-    if (matches) {
-      items_filtered.append(row);
-    }
-  }
-  endResetModel();
-}
