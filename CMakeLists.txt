@@ -7,8 +7,6 @@ set(CMAKE_AUTOMOC ON)
 find_package(Qt6 6.3 COMPONENTS
   Quick QuickControls2 Gui Concurrent Sql REQUIRED)
 qt_add_executable(cpp-dev-tools
-  src/InformationProvider.hpp
-  src/InformationProvider.cpp
   src/Database.hpp
   src/Database.cpp
   src/Application.hpp
@@ -27,6 +25,14 @@ target_link_libraries(cpp-dev-tools PRIVATE
 qt_add_qml_module(cpp-dev-tools URI cdt VERSION 1.0
   QML_FILES
       qml/main.qml
-      qml/Component.qml
+      qml/Button.qml
+      qml/Icon.qml
+      qml/ListSearch.qml
+      qml/MaterialDesignIcons.js
+      qml/Pane.qml
+      qml/SelectProject.qml
+      qml/Text.qml
+      qml/TextField.qml
+      qml/TextList.qml
   RESOURCES
       fonts/MaterialIcons-Regular.ttf)

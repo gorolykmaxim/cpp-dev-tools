@@ -8,12 +8,19 @@ ApplicationWindow {
   minimumHeight: 600
   title: "Test"
   visible: true
-  InformationProvider {
-    id: provider
+  FontLoader {
+    id: iconFont
+    source: "../fonts/MaterialIcons-Regular.ttf"
   }
-  Cdt.Component {
-    anchors.centerIn: parent
-    text: provider.info
-    color: Theme.colorSubText
+  Page {
+    anchors.fill: parent
+    background: Rectangle {
+      color: Theme.colorBgBlack
+    }
+    Loader {
+      id: currentView
+      anchors.fill: parent
+      source: "SelectProject.qml"
+    }
   }
 }
