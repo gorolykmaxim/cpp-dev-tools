@@ -14,5 +14,6 @@ ApplicationWindow {
   Cdt.Component {
     anchors.centerIn: parent
     text: provider.info
+    color: Theme.colorSubText
   }
 }
