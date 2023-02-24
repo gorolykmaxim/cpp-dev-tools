@@ -26,6 +26,7 @@ class Database {
   static void ExecQuery(QSqlQuery& sql, const QString& query,
                         const QVariantList& args = {});
   static void ExecCmd(const QString& query, const QVariantList& args = {});
+  static void ExecCmdAsync(const QString& query, const QVariantList& args = {});
 
   class Transaction {
    public:

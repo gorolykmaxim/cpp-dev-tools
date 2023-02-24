@@ -26,6 +26,9 @@ class ProjectController : public QObject {
   explicit ProjectController(QObject* parent = nullptr);
   QVariantListModel* GetProjects();
 
+ public slots:
+  void DeleteProject(int i);
+
  private:
   QVariantList GetProjectUIData(int i) const;
 

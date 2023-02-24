@@ -61,7 +61,7 @@ ColumnLayout {
     MenuItem {
       text: "Remove From List"
       shortcut: "Ctrl+Shift+D"
-      onTriggered: console.log(text)
+      onTriggered: controller.DeleteProject(projectList.currentItem.itemModel.idx)
     }
   }
 }

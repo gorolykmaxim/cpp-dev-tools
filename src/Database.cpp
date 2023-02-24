@@ -5,6 +5,8 @@
 #include <QStandardPaths>
 #include <QUuid>
 
+#include "Application.hpp"
+
 #define LOG() qDebug() << "[Database]"
 
 void Database::Initialize() {
@@ -48,6 +50,11 @@ void Database::ExecQuery(QSqlQuery &sql, const QString &query,
 void Database::ExecCmd(const QString &query, const QVariantList &args) {
   QSqlQuery sql(QSqlDatabase::database());
   ExecQuery(sql, query, args);
+}
+
+void Database::ExecCmdAsync(const QString &query, const QVariantList &args) {
+  Application &app = Application::Get();
+  app.RunIOTask([query, args] { ExecCmd(query, args); }, [] {});
 }
 
 Database::Transaction::Transaction() {

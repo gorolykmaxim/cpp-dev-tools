@@ -21,6 +21,8 @@ class Application {
                                 [t, on_ui_thread]() { on_ui_thread(t); });
     });
   }
+  void RunIOTask(const std::function<void()>& on_io_thread,
+                 const std::function<void()>& on_ui_thread);
 
   int argc_;
   char** argv_;
