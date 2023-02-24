@@ -7,6 +7,8 @@
 #include "Database.hpp"
 #include "QVariantListModel.hpp"
 
+#define LOG() qDebug() << "[ProjectController]"
+
 Project Project::ReadFromSql(QSqlQuery& sql) {
   Project project;
   project.id = sql.value(0).toUuid();
@@ -40,9 +42,20 @@ ProjectController::ProjectController(QObject* parent) : QObject(parent) {
       [this]() { return projects.size(); }, role_names, searchable_roles);
   app.RunIOTask<QList<Project>>(
       []() {
-        return Database::ExecQueryAndRead<Project>(
+        Database::Transaction t;
+        QList<Project> projects = Database::ExecQueryAndRead<Project>(
             "SELECT * FROM project ORDER BY last_open_time DESC",
             &Project::ReadFromSql);
+        QList<Project> filtered;
+        for (const Project& project : projects) {
+          if (QFile(project.path).exists()) {
+            filtered.append(project);
+            continue;
+          }
+          LOG() << "Project" << project.path << "no longer exists - removing";
+          Database::ExecCmd("DELETE FROM project WHERE id=?", {project.id});
+        }
+        return filtered;
       },
       [this](QList<Project> results) {
         projects = results;

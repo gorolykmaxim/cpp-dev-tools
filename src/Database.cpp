@@ -49,3 +49,15 @@ void Database::ExecCmd(const QString &query, const QVariantList &args) {
   QSqlQuery sql(QSqlDatabase::database());
   ExecQuery(sql, query, args);
 }
+
+Database::Transaction::Transaction() {
+  LOG() << "Begin transaction";
+  bool transaction_began = QSqlDatabase::database().transaction();
+  Q_ASSERT(transaction_began);
+}
+
+Database::Transaction::~Transaction() {
+  LOG() << "Commit transaction";
+  bool transaction_committed = QSqlDatabase::database().commit();
+  Q_ASSERT(transaction_committed);
+}
