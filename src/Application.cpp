@@ -8,7 +8,11 @@
 Application& Application::Get() { return *instance; }
 
 Application::Application(int argc, char** argv)
-    : gui_app(argc, argv), qml_engine(), io_thread_pool() {
+    : argc_(argc),
+      argv_(argv),
+      gui_app(argc_, argv_),
+      qml_engine(),
+      io_thread_pool() {
   io_thread_pool.setMaxThreadCount(1);
   qSetMessagePattern("%{time yyyy-MM-dd h:mm:ss.zzz} %{message}");
   QQuickStyle::setStyle("Basic");

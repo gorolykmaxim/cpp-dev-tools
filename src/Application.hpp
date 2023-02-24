@@ -22,6 +22,8 @@ class Application {
     });
   }
 
+  int argc_;
+  char** argv_;
   QGuiApplication gui_app;
   QQmlApplicationEngine qml_engine;
   QThreadPool io_thread_pool;
