@@ -1,9 +1,22 @@
 #pragma once
 
 #include <QObject>
+#include <QSqlQuery>
 #include <QtQmlIntegration>
 
 #include "QVariantListModel.hpp"
+
+class Project {
+ public:
+  static Project ReadFromSql(QSqlQuery& sql);
+  QString GetPathRelativeToHome() const;
+  QString GetFolderName() const;
+
+  QUuid id;
+  QString path;
+  bool is_opened = false;
+  QDateTime last_open_time;
+};
 
 class ProjectController : public QObject {
   Q_OBJECT
@@ -14,5 +27,8 @@ class ProjectController : public QObject {
   QVariantListModel* GetProjects();
 
  private:
-  QSharedPointer<QVariantListModel> projects;
+  QVariantList GetProjectUIData(int i) const;
+
+  QList<Project> projects;
+  QSharedPointer<QVariantListModel> projects_model;
 };
