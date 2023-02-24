@@ -1,6 +1,7 @@
 #include "Application.hpp"
 
 #include <QQuickStyle>
+#include <QQuickWindow>
 
 #include "Database.hpp"
 
