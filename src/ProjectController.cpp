@@ -32,7 +32,8 @@ QString Project::GetFolderName() const {
   return i < 0 ? path : path.sliced(i + 1);
 }
 
-ProjectListModel::ProjectListModel() {
+ProjectListModel::ProjectListModel(QObject* parent)
+    : QVariantListModel(parent) {
   SetRoleNames({{0, "idx"}, {1, "title"}, {2, "subTitle"}});
   searchable_roles = {1, 2};
 }
@@ -45,7 +46,7 @@ QVariantList ProjectListModel::GetRow(int i) const {
 int ProjectListModel::GetRowCount() const { return list.size(); }
 
 ProjectController::ProjectController(QObject* parent)
-    : QObject(parent), projects(new ProjectListModel()) {
+    : QObject(parent), projects(new ProjectListModel(this)) {
   Application::Get().RunIOTask<QList<Project>>(
       this,
       []() {
@@ -69,8 +70,6 @@ ProjectController::ProjectController(QObject* parent)
         projects->Load();
       });
 }
-
-ProjectController::~ProjectController() { projects->deleteLater(); }
 
 void ProjectController::DeleteProject(int i) {
   Database::ExecCmdAsync(kSqlDeleteProject, {projects->list[i].id});

@@ -20,7 +20,7 @@ class Project {
 
 class ProjectListModel : public QVariantListModel {
  public:
-  ProjectListModel();
+  explicit ProjectListModel(QObject* parent);
 
   QList<Project> list;
 
@@ -35,7 +35,6 @@ class ProjectController : public QObject {
   Q_PROPERTY(ProjectListModel* projects MEMBER projects CONSTANT)
  public:
   explicit ProjectController(QObject* parent = nullptr);
-  ~ProjectController();
 
  public slots:
   void DeleteProject(int i);

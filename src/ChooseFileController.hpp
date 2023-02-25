@@ -14,7 +14,7 @@ class FileSuggestion {
 
 class FileSuggestionListModel : public QVariantListModel {
  public:
-  FileSuggestionListModel();
+  explicit FileSuggestionListModel(QObject* parent);
 
   QList<FileSuggestion> list;
 
@@ -30,7 +30,6 @@ class ChooseFileController : public QObject {
   Q_PROPERTY(FileSuggestionListModel* suggestions MEMBER suggestions CONSTANT)
  public:
   explicit ChooseFileController(QObject* parent = nullptr);
-  ~ChooseFileController();
   void SetPath(const QString& path);
   QString GetPath() const;
 

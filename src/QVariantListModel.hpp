@@ -11,6 +11,7 @@ class QVariantListModel : public QAbstractListModel {
   Q_PROPERTY(QString filter READ GetFilter WRITE SetFilterIfChanged NOTIFY
                  filterChanged)
  public:
+  explicit QVariantListModel(QObject* parent);
   int rowCount(const QModelIndex& parent = QModelIndex()) const override;
   QHash<int, QByteArray> roleNames() const override;
   QVariant data(const QModelIndex& index, int role = 0) const override;

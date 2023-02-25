@@ -1,5 +1,8 @@
 #include "QVariantListModel.hpp"
 
+QVariantListModel::QVariantListModel(QObject* parent)
+    : QAbstractListModel(parent) {}
+
 int QVariantListModel::rowCount(const QModelIndex&) const {
   return items.size();
 }

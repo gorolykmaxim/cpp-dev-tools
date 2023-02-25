@@ -6,7 +6,8 @@
 #include "Application.hpp"
 #include "QVariantListModel.hpp"
 
-FileSuggestionListModel::FileSuggestionListModel() {
+FileSuggestionListModel::FileSuggestionListModel(QObject* parent)
+    : QVariantListModel(parent) {
   SetRoleNames({{0, "idx"}, {1, "title"}});
   searchable_roles = {1};
 }
@@ -18,11 +19,9 @@ QVariantList FileSuggestionListModel::GetRow(int i) const {
 int FileSuggestionListModel::GetRowCount() const { return list.size(); }
 
 ChooseFileController::ChooseFileController(QObject* parent)
-    : QObject(parent), suggestions(new FileSuggestionListModel()) {
+    : QObject(parent), suggestions(new FileSuggestionListModel(this)) {
   SetPath(QStandardPaths::writableLocation(QStandardPaths::HomeLocation) + '/');
 }
-
-ChooseFileController::~ChooseFileController() { suggestions->deleteLater(); }
 
 QString ChooseFileController::GetPath() const { return folder + file; }
 
