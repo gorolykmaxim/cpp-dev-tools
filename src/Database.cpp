@@ -4,6 +4,7 @@
 #include <QSqlError>
 #include <QStandardPaths>
 #include <QUuid>
+#include <QtConcurrent>
 
 #include "Application.hpp"
 
@@ -53,8 +54,8 @@ void Database::ExecCmd(const QString &query, const QVariantList &args) {
 }
 
 void Database::ExecCmdAsync(const QString &query, const QVariantList &args) {
-  Application &app = Application::Get();
-  app.RunIOTask([query, args] { ExecCmd(query, args); }, [] {});
+  (void)QtConcurrent::run(&Application::Get().io_thread_pool,
+                          [query, args] { ExecCmd(query, args); });
 }
 
 Database::Transaction::Transaction() {

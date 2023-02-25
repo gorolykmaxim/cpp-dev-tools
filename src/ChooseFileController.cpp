@@ -35,9 +35,9 @@ void ChooseFileController::SetPath(const QString& path) {
   folder = i < 0 ? "/" : path.sliced(0, i + 1);
   file = i < 0 ? path : path.sliced(i + 1);
   if (old_folder != folder) {
-    Application& app = Application::Get();
     QString path = folder;
-    app.RunIOTask<QList<FileSuggestion>>(
+    Application::Get().RunIOTask<QList<FileSuggestion>>(
+        this,
         [path]() {
           QList<FileSuggestion> result;
           for (const QFileInfo& file : QDir(path).entryInfoList()) {
@@ -67,16 +67,16 @@ void ChooseFileController::PickSuggestion(int i) {
 }
 
 void ChooseFileController::OpenOrCreateFile() {
-  Application& app = Application::Get();
   QString path = GetPath();
-  app.RunIOTask<bool>([path]() { return QFile(path).exists(); },
-                      [this](bool exists) {
-                        if (exists) {
-                          emit fileChosen();
-                        } else {
-                          emit willCreateFile();
-                        }
-                      });
+  Application::Get().RunIOTask<bool>(
+      this, [path]() { return QFile(path).exists(); },
+      [this](bool exists) {
+        if (exists) {
+          emit fileChosen();
+        } else {
+          emit willCreateFile();
+        }
+      });
 }
 
 static bool Compare(const FileSuggestion& a, const FileSuggestion& b) {

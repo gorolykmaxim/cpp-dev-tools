@@ -13,16 +13,15 @@ class Application {
   int Exec();
 
   template <typename T>
-  void RunIOTask(const std::function<T()>& on_io_thread,
+  void RunIOTask(QObject* requestor, const std::function<T()>& on_io_thread,
                  const std::function<void(T)>& on_ui_thread) {
-    (void)QtConcurrent::run(&io_thread_pool, [on_io_thread, on_ui_thread]() {
-      T t = on_io_thread();
-      QMetaObject::invokeMethod(QGuiApplication::instance(),
-                                [t, on_ui_thread]() { on_ui_thread(t); });
-    });
+    auto watcher = QSharedPointer<QFutureWatcher<T>>::create();
+    QObject::connect(
+        watcher.get(), &QFutureWatcher<T>::finished, requestor,
+        [watcher, on_ui_thread]() { on_ui_thread(watcher->result()); });
+    QFuture<T> future = QtConcurrent::run(&io_thread_pool, on_io_thread);
+    watcher->setFuture(future);
   }
-  void RunIOTask(const std::function<void()>& on_io_thread,
-                 const std::function<void()>& on_ui_thread);
 
   int argc_;
   char** argv_;

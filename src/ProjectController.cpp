@@ -1,8 +1,5 @@
 #include "ProjectController.hpp"
 
-#include <QMetaObject>
-#include <QtConcurrent>
-
 #include "Application.hpp"
 #include "Database.hpp"
 #include "QVariantListModel.hpp"
@@ -49,8 +46,8 @@ int ProjectListModel::GetRowCount() const { return list.size(); }
 
 ProjectController::ProjectController(QObject* parent)
     : QObject(parent), projects(new ProjectListModel()) {
-  Application& app = Application::Get();
-  app.RunIOTask<QList<Project>>(
+  Application::Get().RunIOTask<QList<Project>>(
+      this,
       []() {
         Database::Transaction t;
         QList<Project> projects = Database::ExecQueryAndRead<Project>(
@@ -67,8 +64,8 @@ ProjectController::ProjectController(QObject* parent)
         }
         return filtered;
       },
-      [this](QList<Project> results) {
-        projects->list = results;
+      [this](QList<Project> result) {
+        projects->list = result;
         projects->Load();
       });
 }

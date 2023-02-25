@@ -31,13 +31,4 @@ int Application::Exec() {
   return gui_app.exec();
 }
 
-void Application::RunIOTask(const std::function<void()>& on_io_thread,
-                            const std::function<void()>& on_ui_thread) {
-  (void)QtConcurrent::run(&io_thread_pool, [on_io_thread, on_ui_thread]() {
-    on_io_thread();
-    QMetaObject::invokeMethod(QGuiApplication::instance(),
-                              [on_ui_thread]() { on_ui_thread(); });
-  });
-}
-
 Application* Application::instance;
