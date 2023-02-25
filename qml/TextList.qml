@@ -21,6 +21,7 @@ ListView {
     selectCurrentItem();
     root.model.onModelReset.connect(selectCurrentItem);
   }
+  Component.onDestruction: root.model.onModelReset.disconnect(selectCurrentItem)
   id: root
   property var elide: Text.ElideNone
   signal itemLeftClicked(clickedItemModel: QtObject, event: QtObject);
