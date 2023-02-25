@@ -18,20 +18,28 @@ class Project {
   QDateTime last_open_time;
 };
 
+class ProjectListModel : public QVariantListModel {
+ public:
+  ProjectListModel();
+
+  QList<Project> list;
+
+ protected:
+  QVariantList GetRow(int i) const override;
+  int GetRowCount() const override;
+};
+
 class ProjectController : public QObject {
   Q_OBJECT
   QML_ELEMENT
-  Q_PROPERTY(QVariantListModel* projects READ GetProjects CONSTANT)
+  Q_PROPERTY(ProjectListModel* projects MEMBER projects CONSTANT)
  public:
   explicit ProjectController(QObject* parent = nullptr);
-  QVariantListModel* GetProjects();
+  ~ProjectController();
 
  public slots:
   void DeleteProject(int i);
 
  private:
-  QVariantList GetProjectUIData(int i) const;
-
-  QList<Project> projects;
-  QSharedPointer<QVariantListModel> projects_model;
+  ProjectListModel* projects;
 };

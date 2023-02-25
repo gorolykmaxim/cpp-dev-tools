@@ -14,6 +14,8 @@ qt_add_executable(cpp-dev-tools
   src/Theme.hpp
   src/ProjectController.hpp
   src/ProjectController.cpp
+  src/ChooseFileController.hpp
+  src/ChooseFileController.cpp
   src/QVariantListModel.hpp
   src/QVariantListModel.cpp
   src/PerfTimer.hpp
@@ -40,5 +42,6 @@ qt_add_qml_module(cpp-dev-tools URI cdt VERSION 1.0
       qml/Text.qml
       qml/TextField.qml
       qml/TextList.qml
+      qml/ChooseFile.qml
   RESOURCES
       fonts/MaterialIcons-Regular.ttf)

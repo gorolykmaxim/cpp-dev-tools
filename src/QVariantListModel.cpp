@@ -1,20 +1,5 @@
 #include "QVariantListModel.hpp"
 
-QVariantListModel::QVariantListModel(const GetRow& get_row,
-                                     const GetRowCount& get_row_count,
-                                     const QHash<int, QByteArray>& role_names,
-                                     const QList<int> searchable_roles)
-    : QAbstractListModel(),
-      get_row(get_row),
-      get_row_count(get_row_count),
-      searchable_roles(searchable_roles),
-      role_names(role_names) {
-  for (int role : role_names.keys()) {
-    QString name(role_names[role]);
-    name_to_role[name] = role;
-  }
-}
-
 int QVariantListModel::rowCount(const QModelIndex&) const {
   return items.size();
 }
@@ -35,13 +20,13 @@ QVariant QVariantListModel::data(const QModelIndex& index, int role) const {
   return row[role];
 }
 
-void QVariantListModel::LoadItems() {
+void QVariantListModel::Load() {
   beginResetModel();
   items.clear();
-  int count = get_row_count();
+  int count = GetRowCount();
   for (int i = 0; i < count; i++) {
-    QVariantList row = get_row(i);
-    if (filter.isEmpty()) {
+    QVariantList row = GetRow(i);
+    if (filter.isEmpty() || searchable_roles.isEmpty()) {
       items.append(row);
       continue;
     }
@@ -82,13 +67,29 @@ QVariant QVariantListModel::GetFieldByRole(int row, int role) const {
   return row_values[role];
 }
 
-void QVariantListModel::SetFilter(const QString& filter) {
+void QVariantListModel::SetFilterIfChanged(const QString& filter) {
   if (filter == this->filter) {
     return;
   }
+  SetFilter(filter);
+}
+
+void QVariantListModel::SetFilter(const QString& filter) {
   this->filter = filter;
   emit filterChanged();
-  LoadItems();
+  Load();
 }
 
 QString QVariantListModel::GetFilter() { return filter; }
+
+QVariantList QVariantListModel::GetRow(int) const { return {}; }
+
+int QVariantListModel::GetRowCount() const { return 0; }
+
+void QVariantListModel::SetRoleNames(const QHash<int, QByteArray>& role_names) {
+  this->role_names = role_names;
+  for (int role : role_names.keys()) {
+    QString name(role_names[role]);
+    name_to_role[name] = role;
+  }
+}

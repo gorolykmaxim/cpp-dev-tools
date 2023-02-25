@@ -35,14 +35,21 @@ QString Project::GetFolderName() const {
   return i < 0 ? path : path.sliced(i + 1);
 }
 
-ProjectController::ProjectController(QObject* parent) : QObject(parent) {
+ProjectListModel::ProjectListModel() {
+  SetRoleNames({{0, "idx"}, {1, "title"}, {2, "subTitle"}});
+  searchable_roles = {1, 2};
+}
+
+QVariantList ProjectListModel::GetRow(int i) const {
+  const Project& project = list[i];
+  return {i, project.GetFolderName(), project.GetPathRelativeToHome()};
+}
+
+int ProjectListModel::GetRowCount() const { return list.size(); }
+
+ProjectController::ProjectController(QObject* parent)
+    : QObject(parent), projects(new ProjectListModel()) {
   Application& app = Application::Get();
-  QHash<int, QByteArray> role_names = {
-      {0, "idx"}, {1, "title"}, {2, "subTitle"}};
-  QList<int> searchable_roles = {1, 2};
-  projects_model = QSharedPointer<QVariantListModel>::create(
-      [this](int i) { return GetProjectUIData(i); },
-      [this]() { return projects.size(); }, role_names, searchable_roles);
   app.RunIOTask<QList<Project>>(
       []() {
         Database::Transaction t;
@@ -61,22 +68,15 @@ ProjectController::ProjectController(QObject* parent) : QObject(parent) {
         return filtered;
       },
       [this](QList<Project> results) {
-        projects = results;
-        projects_model->LoadItems();
+        projects->list = results;
+        projects->Load();
       });
 }
 
-QVariantListModel* ProjectController::GetProjects() {
-  return projects_model.get();
-}
+ProjectController::~ProjectController() { projects->deleteLater(); }
 
 void ProjectController::DeleteProject(int i) {
-  Database::ExecCmdAsync(kSqlDeleteProject, {projects[i].id});
-  projects.remove(i);
-  projects_model->LoadItems();
-}
-
-QVariantList ProjectController::GetProjectUIData(int i) const {
-  const Project& project = projects[i];
-  return {i, project.GetFolderName(), project.GetPathRelativeToHome()};
+  Database::ExecCmdAsync(kSqlDeleteProject, {projects->list[i].id});
+  projects->list.remove(i);
+  projects->Load();
 }
