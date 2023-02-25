@@ -16,7 +16,7 @@ ColumnLayout {
   ChooseFileController {
     id: controller
     onWillCreateFile: console.log("OPEN ALERT DIALOG")
-    onFileChosen: root.fileChosen(controller.path)
+    onFileChosen: (result) => root.fileChosen(result)
   }
   anchors.fill: parent
   spacing: 0

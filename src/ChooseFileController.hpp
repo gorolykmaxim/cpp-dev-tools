@@ -41,10 +41,11 @@ class ChooseFileController : public QObject {
  signals:
   void pathChanged();
   void willCreateFile();
-  void fileChosen();
+  void fileChosen(const QString& path);
 
  private:
   void SortAndFilterSuggestions();
+  QString GetResultPath() const;
 
   QString folder, file;
   FileSuggestionListModel* suggestions;

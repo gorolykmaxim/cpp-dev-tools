@@ -67,12 +67,12 @@ void ChooseFileController::PickSuggestion(int i) {
 }
 
 void ChooseFileController::OpenOrCreateFile() {
-  QString path = GetPath();
+  QString path = GetResultPath();
   Application::Get().RunIOTask<bool>(
       this, [path]() { return QFile(path).exists(); },
-      [this](bool exists) {
+      [path, this](bool exists) {
         if (exists) {
-          emit fileChosen();
+          emit fileChosen(path);
         } else {
           emit willCreateFile();
         }
@@ -104,4 +104,12 @@ void ChooseFileController::SortAndFilterSuggestions() {
   }
   std::sort(suggestions->list.begin(), suggestions->list.end(), Compare);
   suggestions->SetFilter(file);
+}
+
+QString ChooseFileController::GetResultPath() const {
+  QString path = GetPath();
+  if (path.endsWith('/')) {
+    path = path.sliced(0, path.length() - 1);
+  }
+  return path;
 }
