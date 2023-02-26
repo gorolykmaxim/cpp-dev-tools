@@ -50,10 +50,12 @@ ProjectController::ProjectController(QObject* parent)
   Application::Get().RunIOTask<QList<Project>>(
       this,
       []() {
+        LOG() << "Loading projects from datbaase";
         Database::Transaction t;
         QList<Project> projects = Database::ExecQueryAndRead<Project>(
             "SELECT * FROM project ORDER BY last_open_time DESC",
             &Project::ReadFromSql);
+        LOG() << projects.size() << "projects found";
         QList<Project> filtered;
         for (const Project& project : projects) {
           if (QFile(project.path).exists()) {
@@ -63,6 +65,7 @@ ProjectController::ProjectController(QObject* parent)
           LOG() << "Project" << project.path << "no longer exists - removing";
           Database::ExecCmd(kSqlDeleteProject, {project.id});
         }
+        LOG() << filtered.size() << "projects still exist";
         return filtered;
       },
       [this](QList<Project> result) {
@@ -72,7 +75,9 @@ ProjectController::ProjectController(QObject* parent)
 }
 
 void ProjectController::DeleteProject(int i) {
-  Database::ExecCmdAsync(kSqlDeleteProject, {projects->list[i].id});
+  QUuid id = projects->list[i].id;
+  LOG() << "Deleting project" << id;
+  Database::ExecCmdAsync(kSqlDeleteProject, {id});
   projects->list.remove(i);
   projects->Load();
 }
