@@ -20,6 +20,8 @@ qt_add_executable(cpp-dev-tools
   src/QVariantListModel.cpp
   src/PerfTimer.hpp
   src/PerfTimer.cpp
+  src/Project.hpp
+  src/Project.cpp
   src/main.cpp)
 if(NOT MSVC)
   # TODO: figure out how to enable all warnings in MSVC without triggering

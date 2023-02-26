@@ -2,35 +2,12 @@
 
 #include "Application.hpp"
 #include "Database.hpp"
+#include "Project.hpp"
 #include "QVariantListModel.hpp"
 
 #define LOG() qDebug() << "[ProjectController]"
 
 const QString kSqlDeleteProject = "DELETE FROM project WHERE id=?";
-
-Project Project::ReadFromSql(QSqlQuery& sql) {
-  Project project;
-  project.id = sql.value(0).toUuid();
-  project.path = sql.value(1).toString();
-  project.is_opened = sql.value(2).toBool();
-  project.last_open_time = sql.value(3).toDateTime();
-  return project;
-}
-
-QString Project::GetPathRelativeToHome() const {
-  QString home_str =
-      QStandardPaths::writableLocation(QStandardPaths::HomeLocation);
-  if (path.startsWith(home_str)) {
-    return "~/" + QDir(home_str).relativeFilePath(path);
-  } else {
-    return path;
-  }
-}
-
-QString Project::GetFolderName() const {
-  qsizetype i = path.lastIndexOf('/');
-  return i < 0 ? path : path.sliced(i + 1);
-}
 
 ProjectListModel::ProjectListModel(QObject* parent)
     : QVariantListModel(parent) {
@@ -80,4 +57,45 @@ void ProjectController::DeleteProject(int i) {
   Database::ExecCmdAsync(kSqlDeleteProject, {id});
   projects->list.remove(i);
   projects->Load();
+}
+
+void ProjectController::OpenProject(int i) {
+  Project& project = projects->list[i];
+  LOG() << "Opening project" << project.id;
+  OpenProject(project);
+}
+
+void ProjectController::OpenNewProject(const QString& path) {
+  LOG() << "Creating new project" << path;
+  Project* existing = nullptr;
+  for (Project& project : projects->list) {
+    if (project.path == path) {
+      LOG() << "Attempting to re-open an existing project" << project.id;
+      existing = &project;
+      break;
+    }
+  }
+  if (existing) {
+    OpenProject(*existing);
+  } else {
+    Project project;
+    project.id = QUuid::createUuid();
+    project.path = path;
+    project.is_opened = true;
+    project.last_open_time = QDateTime::currentDateTime();
+    Database::ExecCmdAsync(
+        "INSERT INTO project VALUES(?, ?, ?, ?)",
+        {project.id, project.path, project.is_opened, project.last_open_time});
+    OpenProject(project);
+  }
+}
+
+void ProjectController::OpenProject(Project& project) {
+  project.is_opened = true;
+  project.last_open_time = QDateTime::currentDateTime();
+  Application::Get().current_project = QSharedPointer<Project>::create(project);
+  QDir::setCurrent(project.path);
+  Database::ExecCmdAsync(
+      "UPDATE project SET is_opened=?, last_open_time=? WHERE id=?",
+      {project.is_opened, project.last_open_time, project.id});
 }

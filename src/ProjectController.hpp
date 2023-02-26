@@ -4,19 +4,8 @@
 #include <QSqlQuery>
 #include <QtQmlIntegration>
 
+#include "Project.hpp"
 #include "QVariantListModel.hpp"
-
-class Project {
- public:
-  static Project ReadFromSql(QSqlQuery& sql);
-  QString GetPathRelativeToHome() const;
-  QString GetFolderName() const;
-
-  QUuid id;
-  QString path;
-  bool is_opened = false;
-  QDateTime last_open_time;
-};
 
 class ProjectListModel : public QVariantListModel {
  public:
@@ -38,7 +27,11 @@ class ProjectController : public QObject {
 
  public slots:
   void DeleteProject(int i);
+  void OpenProject(int i);
+  void OpenNewProject(const QString& path);
 
  private:
+  void OpenProject(Project& project);
+
   ProjectListModel* projects;
 };

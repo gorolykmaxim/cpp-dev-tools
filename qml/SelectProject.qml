@@ -35,8 +35,7 @@ Loader {
             KeyNavigation.right: button
             list: projectList
             onDisplayTextChanged: controller.projects.filter = displayText
-            onEnterPressed: console.log("ENTER")
-            onCtrlEnterPressed: console.log("CTRL ENTER")
+            onEnterPressed: projectList.ifCurrentItem('idx', controller.OpenProject)
           }
           Cdt.Button {
             id: button
@@ -53,7 +52,7 @@ Loader {
           id: projectList
           anchors.fill: parent
           model: controller.projects
-          onItemLeftClicked: console.log("LEFT CLICK")
+          onItemLeftClicked: projectList.ifCurrentItem('idx', controller.OpenProject)
           onItemRightClicked: contextMenu.open()
         }
       }
@@ -62,7 +61,7 @@ Loader {
         MenuItem {
           text: "Open"
           shortcut: "Enter"
-          onTriggered: console.log(text)
+          onTriggered: projectList.ifCurrentItem('idx', controller.OpenProject)
         }
         MenuItem {
           text: "Remove From List"
@@ -76,7 +75,7 @@ Loader {
     id: chooseProjectView
     Cdt.ChooseFile {
       title: "Open Project"
-      onFileChosen: (file) => console.log("FILE CHOSEN " + file)
+      onFileChosen: (file) => controller.OpenNewProject(file)
       onCancelled: root.sourceComponent = selectProjectView
     }
   }
