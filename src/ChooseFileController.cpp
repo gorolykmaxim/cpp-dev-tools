@@ -69,13 +69,19 @@ void ChooseFileController::OpenOrCreateFile() {
   QString path = GetResultPath();
   Application::Get().RunIOTask<bool>(
       this, [path]() { return QFile(path).exists(); },
-      [path, this](bool exists) {
+      [this](bool exists) {
         if (exists) {
-          emit fileChosen(path);
+          emit fileChosen();
         } else {
           emit willCreateFile();
         }
       });
+}
+
+void ChooseFileController::CreateFile() {
+  QString path = GetResultPath();
+  Application::Get().RunIOTask(
+      this, [path] { QDir().mkpath(path); }, [this] { emit fileChosen(); });
 }
 
 static bool Compare(const FileSuggestion& a, const FileSuggestion& b) {

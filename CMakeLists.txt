@@ -43,5 +43,7 @@ qt_add_qml_module(cpp-dev-tools URI cdt VERSION 1.0
       qml/TextField.qml
       qml/TextList.qml
       qml/ChooseFile.qml
+      qml/AlertDialog.qml
+      qml/ReadOnlyTextArea.qml
   RESOURCES
       fonts/MaterialIcons-Regular.ttf)

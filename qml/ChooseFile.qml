@@ -15,8 +15,8 @@ ColumnLayout {
   }
   ChooseFileController {
     id: controller
-    onWillCreateFile: console.log("OPEN ALERT DIALOG")
-    onFileChosen: (result) => root.fileChosen(result)
+    onWillCreateFile: createNewFileDialog.visible = true
+    onFileChosen: root.fileChosen(controller.resultPath)
   }
   anchors.fill: parent
   spacing: 0
@@ -59,5 +59,11 @@ ColumnLayout {
       model: controller.suggestions
       onItemLeftClicked: suggestionList.ifCurrentItem('idx', controller.PickSuggestion)
     }
+  }
+  Cdt.AlertDialog {
+    id: createNewFileDialog
+    dialogTitle: "Create new folder?"
+    dialogText: "Do you want to create a new folder: " + controller.resultPath + "?"
+    onAccepted: controller.CreateFile()
   }
 }
