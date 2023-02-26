@@ -38,12 +38,3 @@ class QVariantListModel : public QAbstractListModel {
   QHash<int, QByteArray> role_names;
   QHash<QString, int> name_to_role;
 };
-
-class SimpleQVariantListModel : public QVariantListModel {
- public:
-  explicit SimpleQVariantListModel(QObject* parent);
-  QVariantList GetRow(int i) const override;
-  int GetRowCount() const override;
-
-  QList<QVariantList> list;
-};

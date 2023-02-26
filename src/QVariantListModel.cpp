@@ -96,10 +96,3 @@ void QVariantListModel::SetRoleNames(const QHash<int, QByteArray>& role_names) {
     name_to_role[name] = role;
   }
 }
-
-SimpleQVariantListModel::SimpleQVariantListModel(QObject* parent)
-    : QVariantListModel(parent) {}
-
-QVariantList SimpleQVariantListModel::GetRow(int i) const { return list[i]; }
-
-int SimpleQVariantListModel::GetRowCount() const { return list.size(); }

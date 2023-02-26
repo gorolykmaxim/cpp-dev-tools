@@ -17,6 +17,10 @@ ApplicationWindow {
   Cdt.UserCommands {
     id: userCommands
   }
+  menuBar: Cdt.NativeMenuBar {
+    project: currentProject
+    model: userCommands.userCommands
+  }
   Page {
     anchors.fill: parent
     background: Rectangle {

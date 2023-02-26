@@ -51,5 +51,7 @@ qt_add_qml_module(cpp-dev-tools URI cdt VERSION 1.0
       qml/ReadOnlyTextArea.qml
       qml/StatusBar.qml
       qml/UserCommands.qml
+      qml/Common.js
+      qml/NativeMenuBar.qml
   RESOURCES
       fonts/MaterialIcons-Regular.ttf)

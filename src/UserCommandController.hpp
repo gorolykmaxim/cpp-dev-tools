@@ -5,11 +5,19 @@
 
 #include "QVariantListModel.hpp"
 
+class UserCommandListModel : public QVariantListModel {
+ public:
+  explicit UserCommandListModel(QObject* parent);
+  QVariantList GetRow(int i) const override;
+  int GetRowCount() const override;
+
+  QList<QVariantList> list;
+};
+
 class UserCommandController : public QObject {
   Q_OBJECT
   QML_ELEMENT
-  Q_PROPERTY(
-      SimpleQVariantListModel* userCommands MEMBER user_commands CONSTANT)
+  Q_PROPERTY(UserCommandListModel* userCommands MEMBER user_commands CONSTANT)
  public:
   explicit UserCommandController(QObject* parent = nullptr);
  public slots:
@@ -18,5 +26,5 @@ class UserCommandController : public QObject {
   void Commit();
 
  private:
-  SimpleQVariantListModel* user_commands;
+  UserCommandListModel* user_commands;
 };
