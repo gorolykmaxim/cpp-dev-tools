@@ -1,5 +1,6 @@
 #include "Application.hpp"
 
+#include <QQmlContext>
 #include <QQuickStyle>
 #include <QQuickWindow>
 
@@ -22,6 +23,11 @@ Application::Application(int argc, char** argv)
   // Although we don't want to do it in a debug build because in debug software
   // rendering is even slower.
   QQuickWindow::setGraphicsApi(QSGRendererInterface::Software);
+#endif
+#if __APPLE__
+  qml_engine.rootContext()->setContextProperty("isMacOS", true);
+#else
+  qml_engine.rootContext()->setContextProperty("isMacOS", false);
 #endif
 }
 

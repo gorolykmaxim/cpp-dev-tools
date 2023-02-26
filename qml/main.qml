@@ -17,9 +17,22 @@ ApplicationWindow {
   Cdt.UserCommands {
     id: userCommands
   }
-  menuBar: Cdt.NativeMenuBar {
-    project: currentProject
-    model: userCommands.userCommands
+  Component {
+    id: nativeMenuBar
+    Cdt.NativeMenuBar {
+      project: currentProject
+      model: userCommands.userCommands
+    }
+  }
+  Component {
+    id: crossPlatformMenuBar
+    Cdt.CrossPlatformMenuBar {
+      project: currentProject
+      model: userCommands.userCommands
+    }
+  }
+  menuBar: Loader {
+    sourceComponent: isMacOS ? nativeMenuBar : crossPlatformMenuBar
   }
   Page {
     anchors.fill: parent
