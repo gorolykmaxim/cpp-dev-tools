@@ -14,6 +14,11 @@ ListView {
     }
     root.currentIndex = toSelect;
   }
+  function ifCurrentItem(field, fn) {
+    if (currentItem) {
+      fn(currentItem.itemModel[field]);
+    }
+  }
   onModelChanged: {
     if (!root.model) {
       return;

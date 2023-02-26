@@ -67,7 +67,7 @@ Loader {
         MenuItem {
           text: "Remove From List"
           shortcut: "Ctrl+Shift+D"
-          onTriggered: controller.DeleteProject(projectList.currentItem.itemModel.idx)
+          onTriggered: projectList.ifCurrentItem('idx', controller.DeleteProject)
         }
       }
     }
