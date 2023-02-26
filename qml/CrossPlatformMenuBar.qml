@@ -1,11 +1,11 @@
 import QtQuick
-import QtQuick.Controls
+import QtQuick.Controls as Qml
 import QtQuick.Layouts
 import "Common.js" as Common
 import cdt
 import "." as Cdt
 
-MenuBar {
+Qml.MenuBar {
   property var project: null
   property var model: null
   id: menuBar
@@ -40,7 +40,7 @@ MenuBar {
     implicitHeight: 1
     color: Theme.colorBgDark
   }
-  delegate: MenuBarItem {
+  delegate: Qml.MenuBarItem {
     padding: Theme.basePadding
     contentItem: Cdt.Text {
       highlight: parent.highlighted
@@ -55,7 +55,7 @@ MenuBar {
 
   Component {
     id: menu
-    Menu {
+    Qml.Menu {
       background: Rectangle {
         implicitWidth: 200
         implicitHeight: 1
@@ -63,7 +63,7 @@ MenuBar {
         border.color: Theme.colorBgMedium
         color: Theme.colorBgDark
       }
-      delegate: MenuItem {
+      delegate: Qml.MenuItem {
         horizontalPadding: Theme.basePadding * 3
         contentItem: RowLayout {
           Cdt.Text {
@@ -86,7 +86,7 @@ MenuBar {
 
   Component {
     id: action
-    Action {
+    Qml.Action {
       property var callback
       onTriggered: callback()
     }

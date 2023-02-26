@@ -54,5 +54,6 @@ qt_add_qml_module(cpp-dev-tools URI cdt VERSION 1.0
       qml/Common.js
       qml/NativeMenuBar.qml
       qml/CrossPlatformMenuBar.qml
+      qml/MenuBar.qml
   RESOURCES
       fonts/MaterialIcons-Regular.ttf)
