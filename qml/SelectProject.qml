@@ -11,6 +11,7 @@ Loader {
   ProjectController {
     id: controller
     onSelectProject: root.sourceComponent = selectProjectView
+    onProjectSelected: (project) => appWindow.currentProject = project
   }
   Component {
     id: selectProjectView

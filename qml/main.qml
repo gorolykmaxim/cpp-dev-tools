@@ -5,6 +5,7 @@ import "." as Cdt
 
 ApplicationWindow {
   id: appWindow
+  property var currentProject: null
   minimumWidth: 1024
   minimumHeight: 600
   title: "Test"
@@ -22,6 +23,9 @@ ApplicationWindow {
       id: currentView
       anchors.fill: parent
       source: "SelectProject.qml"
+    }
+    footer: Cdt.StatusBar {
+      project: currentProject
     }
   }
 }

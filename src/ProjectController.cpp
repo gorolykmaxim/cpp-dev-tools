@@ -105,9 +105,9 @@ void ProjectController::OpenNewProject(const QString& path) {
 void ProjectController::OpenProject(Project& project) {
   project.is_opened = true;
   project.last_open_time = QDateTime::currentDateTime();
-  Application::Get().current_project = QSharedPointer<Project>::create(project);
   QDir::setCurrent(project.path);
   Database::ExecCmdAsync(
       "UPDATE project SET is_opened=?, last_open_time=? WHERE id=?",
       {project.is_opened, project.last_open_time, project.id});
+  emit projectSelected(project);
 }

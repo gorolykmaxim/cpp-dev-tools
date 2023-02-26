@@ -33,10 +33,6 @@ class Application {
   QGuiApplication gui_app;
   QQmlApplicationEngine qml_engine;
   QThreadPool io_thread_pool;
-  // TODO: Create an ApplicationController in main.qml and move this there, so
-  // that when it gets changed - such dependant components as footer and menubar
-  // can get updated automatically.
-  QSharedPointer<Project> current_project;
 
   static Application* instance;
 };
