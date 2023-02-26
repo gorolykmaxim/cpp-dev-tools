@@ -47,21 +47,33 @@ ProjectController::ProjectController(QObject* parent)
       },
       [this](QList<Project> result) {
         projects->list = result;
-        projects->Load();
+        Project* current = nullptr;
+        for (Project& project : projects->list) {
+          if (project.is_opened) {
+            current = &project;
+          }
+        }
+        if (current) {
+          LOG() << "Opening last opened project" << current->path;
+          OpenProject(*current);
+        } else {
+          projects->Load();
+          emit selectProject();
+        }
       });
 }
 
 void ProjectController::DeleteProject(int i) {
-  QUuid id = projects->list[i].id;
-  LOG() << "Deleting project" << id;
-  Database::ExecCmdAsync(kSqlDeleteProject, {id});
+  const Project& project = projects->list[i];
+  LOG() << "Deleting project" << project.path;
+  Database::ExecCmdAsync(kSqlDeleteProject, {project.id});
   projects->list.remove(i);
   projects->Load();
 }
 
 void ProjectController::OpenProject(int i) {
   Project& project = projects->list[i];
-  LOG() << "Opening project" << project.id;
+  LOG() << "Opening project" << project.path;
   OpenProject(project);
 }
 
@@ -70,7 +82,7 @@ void ProjectController::OpenNewProject(const QString& path) {
   Project* existing = nullptr;
   for (Project& project : projects->list) {
     if (project.path == path) {
-      LOG() << "Attempting to re-open an existing project" << project.id;
+      LOG() << "Attempting to re-open an existing project" << project.path;
       existing = &project;
       break;
     }

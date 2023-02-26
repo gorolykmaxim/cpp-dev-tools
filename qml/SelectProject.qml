@@ -8,9 +8,9 @@ import "." as Cdt
 Loader {
   id: root
   anchors.fill: parent
-  sourceComponent: selectProjectView
   ProjectController {
     id: controller
+    onSelectProject: root.sourceComponent = selectProjectView
   }
   Component {
     id: selectProjectView

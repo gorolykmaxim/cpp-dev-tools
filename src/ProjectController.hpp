@@ -30,6 +30,9 @@ class ProjectController : public QObject {
   void OpenProject(int i);
   void OpenNewProject(const QString& path);
 
+ signals:
+  void selectProject();
+
  private:
   void OpenProject(Project& project);
 
