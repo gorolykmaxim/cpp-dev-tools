@@ -6,6 +6,8 @@
 #include "Application.hpp"
 #include "QVariantListModel.hpp"
 
+#define LOG() qDebug() << "[ChooseFileController]"
+
 FileSuggestionListModel::FileSuggestionListModel(QObject* parent)
     : QVariantListModel(parent) {
   SetRoleNames({{0, "idx"}, {1, "title"}});
@@ -33,7 +35,9 @@ void ChooseFileController::SetPath(const QString& path) {
   qsizetype i = path.lastIndexOf('/');
   folder = i < 0 ? "/" : path.sliced(0, i + 1);
   file = i < 0 ? path : path.sliced(i + 1);
+  LOG() << "Chaning path to" << path << "folder:" << folder << "file:" << file;
   if (old_folder != folder) {
+    LOG() << "Will refresh list of file suggestions";
     QString path = folder;
     Application::Get().RunIOTask<QList<FileSuggestion>>(
         this,
@@ -68,7 +72,11 @@ void ChooseFileController::PickSuggestion(int i) {
 void ChooseFileController::OpenOrCreateFile() {
   QString path = GetResultPath();
   Application::Get().RunIOTask<bool>(
-      this, [path]() { return QFile(path).exists(); },
+      this,
+      [path]() {
+        LOG() << "Checking if" << path << "exists";
+        return QFile(path).exists();
+      },
       [this](bool exists) {
         if (exists) {
           emit fileChosen();
@@ -80,6 +88,7 @@ void ChooseFileController::OpenOrCreateFile() {
 
 void ChooseFileController::CreateFile() {
   QString path = GetResultPath();
+  LOG() << "Creating" << path;
   Application::Get().RunIOTask(
       this, [path] { QDir().mkpath(path); }, [this] { emit fileChosen(); });
 }
