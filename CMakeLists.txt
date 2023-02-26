@@ -22,6 +22,8 @@ qt_add_executable(cpp-dev-tools
   src/PerfTimer.cpp
   src/Project.hpp
   src/Project.cpp
+  src/UserCommandController.hpp
+  src/UserCommandController.cpp
   src/main.cpp)
 if(NOT MSVC)
   # TODO: figure out how to enable all warnings in MSVC without triggering
@@ -48,5 +50,6 @@ qt_add_qml_module(cpp-dev-tools URI cdt VERSION 1.0
       qml/AlertDialog.qml
       qml/ReadOnlyTextArea.qml
       qml/StatusBar.qml
+      qml/UserCommands.qml
   RESOURCES
       fonts/MaterialIcons-Regular.ttf)

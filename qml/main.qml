@@ -14,6 +14,9 @@ ApplicationWindow {
     id: iconFont
     source: "../fonts/MaterialIcons-Regular.ttf"
   }
+  Cdt.UserCommands {
+    id: userCommands
+  }
   Page {
     anchors.fill: parent
     background: Rectangle {
