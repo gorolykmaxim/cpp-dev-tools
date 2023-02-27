@@ -11,9 +11,8 @@ Qml.MenuBar {
   id: menuBar
 
   function initialize() {
-    for (let i = 0; i < menuBar.count; i++) {
-      const menuObj = menuBar.menuAt(i);
-      menuBar.removeMenu(menuObj);
+    while (menuBar.count > 0) {
+      menuBar.removeMenu(menuBar.menuAt(0));
     }
     if (project.isNull) {
       return;
