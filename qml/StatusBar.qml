@@ -4,12 +4,12 @@ import cdt
 import "." as Cdt
 
 RowLayout {
-  property var project: null
+  property var project
   Row {
     padding: Theme.basePadding
     spacing: Theme.basePadding * 2
     Cdt.Text {
-      text: project ? project.pathRelativeToHome : " "
+      text: !project.isNull ? project.pathRelativeToHome : " "
     }
   }
   Row {

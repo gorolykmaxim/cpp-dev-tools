@@ -16,6 +16,7 @@ ColumnLayout {
   spacing: 0
   Cdt.Pane {
     Layout.fillWidth: true
+    color: Theme.colorBgMedium
     padding: Theme.basePadding
     Cdt.ListSearch {
       id: input

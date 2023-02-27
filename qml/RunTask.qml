@@ -12,12 +12,14 @@ Loader {
   sourceComponent: controller.showPlaceholder ? placeholderComponent : taskListComponent
   ChooseTaskController {
     id: controller
-    project: appWindow.currentProject
+    project: projectContext.currentProject
   }
   Component {
     id: placeholderComponent
     Cdt.Text {
-      anchors.centerIn: parent
+      anchors.fill: parent
+      horizontalAlignment: Text.AlignHCenter
+      verticalAlignment: Text.AlignVCenter
       text: controller.isLoading ? "Looking for tasks..." : "No tasks found"
     }
   }

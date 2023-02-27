@@ -30,6 +30,8 @@ qt_add_executable(cpp-dev-tools
   src/SearchUserCommandController.cpp
   src/ChooseTaskController.hpp
   src/ChooseTaskController.cpp
+  src/ProjectContext.hpp
+  src/ProjectContext.cpp
   src/main.cpp)
 if(NOT MSVC)
   # TODO: figure out how to enable all warnings in MSVC without triggering

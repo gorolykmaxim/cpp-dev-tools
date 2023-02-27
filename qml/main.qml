@@ -5,7 +5,6 @@ import "." as Cdt
 
 ApplicationWindow {
   id: appWindow
-  property var currentProject: null
   minimumWidth: 1024
   minimumHeight: 600
   title: "Test"
@@ -17,8 +16,11 @@ ApplicationWindow {
   Cdt.UserCommands {
     id: userCommands
   }
+  ProjectContext {
+    id: projectContext
+  }
   menuBar: Cdt.MenuBar {
-    project: currentProject
+    project: projectContext.currentProject
     model: userCommands.userCommands
   }
   Page {
@@ -33,7 +35,7 @@ ApplicationWindow {
       onSourceChanged: searchUserCommandDialog.reject()
     }
     footer: Cdt.StatusBar {
-      project: currentProject
+      project: projectContext.currentProject
     }
   }
   Cdt.SearchUserCommandDialog {

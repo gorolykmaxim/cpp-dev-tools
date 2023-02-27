@@ -3,8 +3,8 @@ import "." as Cdt
 
 Loader {
   id: root
-  property var project: null
-  property var model: null
+  property var project
+  property var model
   Component {
     id: nativeMenuBar
     Cdt.NativeMenuBar {

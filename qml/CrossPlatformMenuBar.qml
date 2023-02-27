@@ -6,8 +6,8 @@ import cdt
 import "." as Cdt
 
 Qml.MenuBar {
-  property var project: null
-  property var model: null
+  property var project
+  property var model
   id: menuBar
 
   function initialize() {
@@ -15,7 +15,7 @@ Qml.MenuBar {
       const menuObj = menuBar.menuAt(i);
       menuBar.removeMenu(menuObj);
     }
-    if (model == null) {
+    if (project.isNull) {
       return;
     }
     for (let i = 0; i < model.rowCount(); i++) {

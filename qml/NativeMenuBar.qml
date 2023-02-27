@@ -3,12 +3,12 @@ import Qt.labs.platform
 import "Common.js" as Common
 
 Item {
-  property var project: null
-  property var model: null
+  property var project
+  property var model
 
   function initialize() {
     menuBar.clear();
-    if (model == null || project == null) {
+    if (project.isNull) {
       return;
     }
     for (let i = 0; i < model.rowCount(); i++) {
@@ -29,6 +29,12 @@ Item {
 
   onProjectChanged: initialize()
   onModelChanged: initialize()
+  Timer {
+    id: delay
+    property var callback
+    interval: 0
+    onTriggered: callback()
+  }
   MenuBar {
     id: menuBar
 
@@ -42,7 +48,13 @@ Item {
 
       MenuItem {
         property var callback
-        onTriggered: callback()
+        onTriggered: {
+          // Calling callback synchronously from here can crash the app
+          // if the callback causes this menubar to change it's structure
+          // and delete current menu item.
+          delay.callback = callback;
+          delay.running = true;
+        }
       }
     }
   }

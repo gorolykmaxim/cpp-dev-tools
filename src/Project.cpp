@@ -27,6 +27,8 @@ QString Project::GetFolderName() const {
   return i < 0 ? path : path.sliced(i + 1);
 }
 
+bool Project::IsNull() const { return id.isNull(); }
+
 bool Project::operator==(const Project& other) const { return id == other.id; }
 
 bool Project::operator!=(const Project& other) const {
