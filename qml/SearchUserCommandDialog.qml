@@ -31,7 +31,7 @@ Dialog {
     id: textList
     anchors.fill: parent
     anchors.margins: 1
-    placeholderText: "Search command"
+    searchPlaceholderText: "Search command"
     searchableModel: controller.userCommands
     onItemSelected: ifCurrentItem('callback', (cb) => {
       dialog.accept();
