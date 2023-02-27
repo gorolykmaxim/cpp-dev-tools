@@ -3,6 +3,8 @@
 #include "QVariantListModel.hpp"
 #include "UserCommandListModel.hpp"
 
+#define LOG() qDebug() << "[SearchUserCommandController"
+
 SearchUserCommandController::SearchUserCommandController(QObject* parent)
     : QObject(parent),
       user_commands(new SimpleQVariantListModel(
@@ -12,6 +14,7 @@ SearchUserCommandController::SearchUserCommandController(QObject* parent)
 
 void SearchUserCommandController::LoadUserCommands(
     UserCommandListModel* user_commands) {
+  LOG() << "Loadnig user commands";
   this->user_commands->list.clear();
   if (user_commands) {
     for (const UserCommand& cmd : user_commands->list) {
