@@ -6,12 +6,11 @@ import "." as Cdt
 Dialog {
   property var userCommands: null
   id: dialog
-  Component.onCompleted: textList.forceActiveFocus()
-  onVisibleChanged: {
-    if (visible) {
-      controller.userCommands.filter = "";
-      controller.LoadUserCommands(userCommands);
-    }
+  function display() {
+    controller.userCommands.filter = "";
+    controller.LoadUserCommands(userCommands);
+    visible = true;
+    textList.forceActiveFocus()
   }
   width: 500
   height: parent.height * 0.8
