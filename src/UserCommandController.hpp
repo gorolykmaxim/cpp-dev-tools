@@ -3,16 +3,7 @@
 #include <QObject>
 #include <QtQmlIntegration>
 
-#include "QVariantListModel.hpp"
-
-class UserCommandListModel : public QVariantListModel {
- public:
-  explicit UserCommandListModel(QObject* parent);
-  QVariantList GetRow(int i) const override;
-  int GetRowCount() const override;
-
-  QList<QVariantList> list;
-};
+#include "UserCommandListModel.hpp"
 
 class UserCommandController : public QObject {
   Q_OBJECT

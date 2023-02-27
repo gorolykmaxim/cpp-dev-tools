@@ -36,7 +36,7 @@ void QVariantListModel::Load() {
     bool matches = false;
     for (int role : searchable_roles) {
       QString str = row[role].toString();
-      int pos = str.indexOf(filter, Qt::CaseSensitivity::CaseInsensitive);
+      int pos = str.indexOf(filter, 0, Qt::CaseSensitivity::CaseInsensitive);
       if (pos >= 0) {
         str.insert(pos + filter.size(), "</b>");
         str.insert(pos, "<b>");
@@ -96,3 +96,15 @@ void QVariantListModel::SetRoleNames(const QHash<int, QByteArray>& role_names) {
     name_to_role[name] = role;
   }
 }
+
+SimpleQVariantListModel::SimpleQVariantListModel(
+    QObject* parent, const QHash<int, QByteArray>& role_names,
+    const QList<int>& searchable_roles)
+    : QVariantListModel(parent) {
+  SetRoleNames(role_names);
+  this->searchable_roles = searchable_roles;
+}
+
+QVariantList SimpleQVariantListModel::GetRow(int i) const { return list[i]; }
+
+int SimpleQVariantListModel::GetRowCount() const { return list.size(); }

@@ -35,4 +35,8 @@ ApplicationWindow {
       project: currentProject
     }
   }
+  Cdt.SearchUserCommandDialog {
+    id: searchUserCommandDialog
+    userCommands: userCommands.userCommands
+  }
 }
