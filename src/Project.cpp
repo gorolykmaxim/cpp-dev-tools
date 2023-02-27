@@ -26,3 +26,9 @@ QString Project::GetFolderName() const {
   qsizetype i = path.lastIndexOf('/');
   return i < 0 ? path : path.sliced(i + 1);
 }
+
+bool Project::operator==(const Project& other) const { return id == other.id; }
+
+bool Project::operator!=(const Project& other) const {
+  return !(*this == other);
+}

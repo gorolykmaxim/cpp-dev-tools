@@ -11,6 +11,8 @@ class Project {
   static Project ReadFromSql(QSqlQuery& sql);
   QString GetPathRelativeToHome() const;
   QString GetFolderName() const;
+  bool operator==(const Project& other) const;
+  bool operator!=(const Project& other) const;
 
   QUuid id;
   QString path;

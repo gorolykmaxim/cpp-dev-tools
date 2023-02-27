@@ -30,6 +30,7 @@ ApplicationWindow {
       id: currentView
       anchors.fill: parent
       source: "SelectProject.qml"
+      onSourceChanged: searchUserCommandDialog.reject()
     }
     footer: Cdt.StatusBar {
       project: currentProject

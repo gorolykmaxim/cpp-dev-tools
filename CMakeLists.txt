@@ -28,6 +28,8 @@ qt_add_executable(cpp-dev-tools
   src/UserCommandListModel.cpp
   src/SearchUserCommandController.hpp
   src/SearchUserCommandController.cpp
+  src/ChooseTaskController.hpp
+  src/ChooseTaskController.cpp
   src/main.cpp)
 if(NOT MSVC)
   # TODO: figure out how to enable all warnings in MSVC without triggering
@@ -61,5 +63,6 @@ qt_add_qml_module(cpp-dev-tools URI cdt VERSION 1.0
       qml/MenuBar.qml
       qml/SearchUserCommandDialog.qml
       qml/SearchableTextList.qml
+      qml/RunTask.qml
   RESOURCES
       fonts/MaterialIcons-Regular.ttf)
