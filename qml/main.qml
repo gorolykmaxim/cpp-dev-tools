@@ -32,6 +32,10 @@ ApplicationWindow {
       id: currentView
       anchors.fill: parent
       source: "SelectProject.qml"
+      function display(url) {
+        source = "";
+        source = url;
+      }
       onSourceChanged: searchUserCommandDialog.reject()
     }
     footer: Cdt.StatusBar {
