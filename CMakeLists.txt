@@ -5,7 +5,7 @@ set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_AUTOMOC ON)
 
 find_package(Qt6 6.3 COMPONENTS
-  Quick QuickControls2 Gui Concurrent Sql REQUIRED)
+  Quick QuickControls2 Gui Concurrent Sql Test REQUIRED)
 qt_add_executable(cpp-dev-tools
   src/Database.hpp
   src/Database.cpp
@@ -68,3 +68,7 @@ qt_add_qml_module(cpp-dev-tools URI cdt VERSION 1.0
       qml/RunTask.qml
   RESOURCES
       fonts/MaterialIcons-Regular.ttf)
+
+qt_add_executable(example-test test/ExampleTest.cpp)
+target_include_directories(example-test PRIVATE test)
+target_link_libraries(example-test PRIVATE Qt6::Core Qt6::Test Qt6::Concurrent)
