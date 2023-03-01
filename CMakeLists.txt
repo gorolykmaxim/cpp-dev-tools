@@ -69,6 +69,8 @@ qt_add_qml_module(cpp-dev-tools URI cdt VERSION 1.0
   RESOURCES
       fonts/MaterialIcons-Regular.ttf)
 
-qt_add_executable(example-test test/ExampleTest.cpp)
+qt_add_executable(example-test test/main.cpp test/ExampleTest.hpp
+  test/AnotherExampleTest.hpp)
 target_include_directories(example-test PRIVATE test)
-target_link_libraries(example-test PRIVATE Qt6::Core Qt6::Test Qt6::Concurrent)
+target_link_libraries(example-test PRIVATE Qt6::Core Qt6::Test Qt6::Concurrent
+  Qt6::Gui)

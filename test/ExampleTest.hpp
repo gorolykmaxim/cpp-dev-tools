@@ -59,6 +59,3 @@ class ExampleTest : public QObject {
     qDebug("Called after myFirstTest and mySecondTest.");
   }
 };
-
-QTEST_MAIN(ExampleTest)
-#include "ExampleTest.moc"
