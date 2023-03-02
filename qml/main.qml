@@ -37,9 +37,7 @@ ApplicationWindow {
       source: viewController.currentView
       onSourceChanged: searchUserCommandDialog.reject()
     }
-    footer: Cdt.StatusBar {
-      project: projectContext.currentProject
-    }
+    footer: Cdt.StatusBar {}
   }
   Cdt.SearchUserCommandDialog {
     id: searchUserCommandDialog

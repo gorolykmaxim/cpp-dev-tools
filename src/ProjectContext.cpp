@@ -11,6 +11,10 @@ void ProjectContext::SetCurrentProject(const Project &project) {
   emit currentProjectChanged();
 }
 
+QString ProjectContext::GetCurrentProjectPathRelativeToHome() const {
+  return current_project.GetPathRelativeToHome();
+}
+
 void ProjectContext::CloseProject() {
   LOG() << "Closing project" << current_project.path;
   current_project = Project();
