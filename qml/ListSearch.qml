@@ -5,9 +5,16 @@ import "." as Cdt
 Cdt.TextField {
   id: field
   property var list
+  property var listModel: null
+  text: listModel ? listModel.filter : ""
   signal enterPressed()
   signal ctrlEnterPressed()
 
+  onDisplayTextChanged: {
+    if (listModel) {
+      listModel.filter = displayText;
+    }
+  }
   Keys.onPressed: e => {
     switch (e.key) {
       case Qt.Key_Down:

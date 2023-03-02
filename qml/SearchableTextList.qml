@@ -29,10 +29,9 @@ ColumnLayout {
     Cdt.ListSearch {
       id: input
       width: parent.width
-      text: searchableModel.filter
       placeholderText: root.searchPlaceholderText
       list: textList
-      onDisplayTextChanged: searchableModel.filter = displayText
+      listModel: searchableModel
       onEnterPressed: itemSelected()
     }
   }

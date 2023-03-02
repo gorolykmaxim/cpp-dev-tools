@@ -33,12 +33,11 @@ Loader {
           anchors.fill: parent
           Cdt.ListSearch {
             id: input
-            text: controller.projects.filter
             placeholderText: "Search project"
             Layout.fillWidth: true
             KeyNavigation.right: button
             list: projectList
-            onDisplayTextChanged: controller.projects.filter = displayText
+            listModel: controller.projects
             onEnterPressed: projectList.ifCurrentItem('idx', controller.OpenProject)
           }
           Cdt.Button {
