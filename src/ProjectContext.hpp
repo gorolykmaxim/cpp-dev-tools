@@ -11,7 +11,7 @@ class ProjectContext : public QObject {
   Q_PROPERTY(Project currentProject MEMBER current_project NOTIFY
                  currentProjectChanged)
  public:
-  void OpenProject(const Project& project);
+  void SetCurrentProject(const Project& project);
  public slots:
   void CloseProject();
  signals:
