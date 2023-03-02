@@ -1,13 +1,13 @@
 #include "ChooseTaskController.hpp"
 
 #include "Application.hpp"
+#include "Project.hpp"
 #include "QVariantListModel.hpp"
 
 ChooseTaskController::ChooseTaskController(QObject *parent)
     : QObject(parent),
-      is_loading(true),
-      tasks(
-          new SimpleQVariantListModel(this, {{0, "idx"}, {1, "title"}}, {1})) {}
+      tasks(new SimpleQVariantListModel(this, {{0, "idx"}, {1, "title"}}, {1})),
+      is_loading(true) {}
 
 bool ChooseTaskController::ShouldShowPlaceholder() const {
   return is_loading || tasks->list.isEmpty();
@@ -32,6 +32,7 @@ static QString ShortenTaskCmd(QString cmd, const Project &project) {
 
 void ChooseTaskController::FindTasks() {
   SetIsLoading(true);
+  Project project = project_context->GetCurrentProject();
   QString path = project.path;
   Application::Get().RunIOTask<QList<QString>>(
       this,
@@ -45,7 +46,7 @@ void ChooseTaskController::FindTasks() {
         std::sort(results.begin(), results.end(), CompareExecs);
         return results;
       },
-      [this](QList<QString> execs) {
+      [this, project](QList<QString> execs) {
         tasks->list.clear();
         for (int i = 0; i < execs.size(); i++) {
           tasks->list.append({i, ShortenTaskCmd(execs[i], project)});

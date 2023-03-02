@@ -34,6 +34,7 @@ class ProjectController : public QObject {
   ViewController* view_controller;
   ProjectContext* project_context;
   ProjectListModel* projects;
+
  public slots:
   void LoadProjects();
   void DeleteProject(int i);

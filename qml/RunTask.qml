@@ -16,6 +16,6 @@ Cdt.SearchableTextList {
   onItemSelected: console.log("EXECUTING TASK")
   ChooseTaskController {
     id: controller
-    project: projectContext.currentProject
+    mProjectContext: projectContext
   }
 }

@@ -11,6 +11,8 @@ void ProjectContext::SetCurrentProject(const Project &project) {
   emit currentProjectChanged();
 }
 
+Project ProjectContext::GetCurrentProject() const { return current_project; }
+
 QString ProjectContext::GetCurrentProjectPathRelativeToHome() const {
   return current_project.GetPathRelativeToHome();
 }

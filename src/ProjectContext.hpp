@@ -17,6 +17,7 @@ class ProjectContext : public QObject {
       bool isProjectOpened READ IsProjectOpened NOTIFY currentProjectChanged)
  public:
   void SetCurrentProject(const Project& project);
+  Project GetCurrentProject() const;
   QString GetCurrentProjectPathRelativeToHome() const;
   bool IsProjectOpened() const;
  public slots:

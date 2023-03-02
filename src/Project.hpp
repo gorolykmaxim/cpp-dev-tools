@@ -5,9 +5,6 @@
 #include <QUuid>
 
 class Project {
-  Q_GADGET
-  Q_PROPERTY(QString pathRelativeToHome READ GetPathRelativeToHome CONSTANT)
-  Q_PROPERTY(bool isNull READ IsNull CONSTANT)
  public:
   static Project ReadFromSql(QSqlQuery& sql);
   QString GetPathRelativeToHome() const;
