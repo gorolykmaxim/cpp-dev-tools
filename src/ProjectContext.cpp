@@ -5,6 +5,12 @@
 
 #define LOG() qDebug() << "[ProjectContext]"
 
+void ProjectContext::OpenProject(const Project &project) {
+  LOG() << "Opening project" << project.path;
+  current_project = project;
+  emit currentProjectChanged();
+}
+
 void ProjectContext::CloseProject() {
   LOG() << "Closing project" << current_project.path;
   current_project = Project();

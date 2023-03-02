@@ -11,11 +11,9 @@ Loader {
   Component.onCompleted: controller.LoadProjects()
   ProjectController {
     id: controller
+    mProjectContext: projectContext
+    mViewController: viewController
     onSelectProject: root.sourceComponent = selectProjectView
-    onProjectSelected: (project) => {
-      projectContext.currentProject = project;
-      viewController.currentView = "RunTask.qml";
-    }
   }
   Component {
     id: selectProjectView

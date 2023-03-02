@@ -111,5 +111,6 @@ void ProjectController::OpenProject(Project& project) {
   Database::ExecCmdAsync(
       "UPDATE project SET is_opened=?, last_open_time=? WHERE id=?",
       {project.is_opened, project.last_open_time, project.id});
-  emit projectSelected(project);
+  project_context->OpenProject(project);
+  view_controller->SetCurrentView("RunTask.qml");
 }
