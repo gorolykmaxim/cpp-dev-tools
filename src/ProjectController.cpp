@@ -23,7 +23,9 @@ QVariantList ProjectListModel::GetRow(int i) const {
 int ProjectListModel::GetRowCount() const { return list.size(); }
 
 ProjectController::ProjectController(QObject* parent)
-    : QObject(parent), projects(new ProjectListModel(this)) {
+    : QObject(parent), projects(new ProjectListModel(this)) {}
+
+void ProjectController::LoadProjects() {
   Application::Get().RunIOTask<QList<Project>>(
       this,
       []() {

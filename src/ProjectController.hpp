@@ -26,6 +26,7 @@ class ProjectController : public QObject {
   explicit ProjectController(QObject* parent = nullptr);
 
  public slots:
+  void LoadProjects();
   void DeleteProject(int i);
   void OpenProject(int i);
   void OpenNewProject(const QString& path);
