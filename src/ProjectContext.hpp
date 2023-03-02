@@ -13,9 +13,12 @@ class ProjectContext : public QObject {
   Q_PROPERTY(
       QString currentProjectShortPath READ GetCurrentProjectPathRelativeToHome
           NOTIFY currentProjectChanged)
+  Q_PROPERTY(
+      bool isProjectOpened READ IsProjectOpened NOTIFY currentProjectChanged)
  public:
   void SetCurrentProject(const Project& project);
   QString GetCurrentProjectPathRelativeToHome() const;
+  bool IsProjectOpened() const;
  public slots:
   void CloseProject();
  signals:

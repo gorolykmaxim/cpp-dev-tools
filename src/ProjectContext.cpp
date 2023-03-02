@@ -15,6 +15,10 @@ QString ProjectContext::GetCurrentProjectPathRelativeToHome() const {
   return current_project.GetPathRelativeToHome();
 }
 
+bool ProjectContext::IsProjectOpened() const {
+  return !current_project.IsNull();
+}
+
 void ProjectContext::CloseProject() {
   LOG() << "Closing project" << current_project.path;
   current_project = Project();

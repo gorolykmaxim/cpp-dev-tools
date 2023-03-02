@@ -6,7 +6,7 @@ import cdt
 import "." as Cdt
 
 Qml.MenuBar {
-  property var project
+  property bool isProjectOpened: false
   property var model
   id: menuBar
 
@@ -14,7 +14,7 @@ Qml.MenuBar {
     while (menuBar.count > 0) {
       menuBar.removeMenu(menuBar.menuAt(0));
     }
-    if (project.isNull) {
+    if (!isProjectOpened) {
       return;
     }
     for (let i = 0; i < model.rowCount(); i++) {
@@ -33,7 +33,7 @@ Qml.MenuBar {
     }
   }
 
-  onProjectChanged: initialize()
+  onIsProjectOpenedChanged: initialize()
   onModelChanged: initialize()
   background: Rectangle {
     implicitHeight: 1

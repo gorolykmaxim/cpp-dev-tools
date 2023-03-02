@@ -3,12 +3,12 @@ import Qt.labs.platform
 import "Common.js" as Common
 
 Item {
-  property var project
+  property bool isProjectOpened: false
   property var model
 
   function initialize() {
     menuBar.clear();
-    if (project.isNull) {
+    if (!isProjectOpened) {
       return;
     }
     for (let i = 0; i < model.rowCount(); i++) {
@@ -27,7 +27,7 @@ Item {
     }
   }
 
-  onProjectChanged: initialize()
+  onIsProjectOpenedChanged: initialize()
   onModelChanged: initialize()
   Timer {
     id: delay

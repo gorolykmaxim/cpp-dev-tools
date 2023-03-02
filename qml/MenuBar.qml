@@ -3,19 +3,19 @@ import "." as Cdt
 
 Loader {
   id: root
-  property var project
+  property bool isProjectOpened: false
   property var model
   Component {
     id: nativeMenuBar
     Cdt.NativeMenuBar {
-      project: root.project
+      isProjectOpened: root.isProjectOpened
       model: root.model
     }
   }
   Component {
     id: crossPlatformMenuBar
     Cdt.CrossPlatformMenuBar {
-      project: root.project
+      isProjectOpened: root.isProjectOpened
       model: root.model
     }
   }

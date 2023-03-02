@@ -24,7 +24,7 @@ ApplicationWindow {
     currentView: "SelectProject.qml"
   }
   menuBar: Cdt.MenuBar {
-    project: projectContext.currentProject
+    isProjectOpened: projectContext.isProjectOpened
     model: userCommands.userCommands
   }
   Page {
