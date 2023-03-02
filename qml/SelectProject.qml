@@ -13,7 +13,7 @@ Loader {
     onSelectProject: root.sourceComponent = selectProjectView
     onProjectSelected: (project) => {
       projectContext.currentProject = project;
-      currentView.display("RunTask.qml");
+      viewController.currentView = "RunTask.qml";
     }
   }
   Component {

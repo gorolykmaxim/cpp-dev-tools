@@ -8,10 +8,10 @@ UserCommandController {
     RegisterCommand("General", "Close Project", "Ctrl+W",
                     () => {
                       projectContext.CloseProject();
-                      currentView.display("SelectProject.qml");
+                      viewController.currentView = "SelectProject.qml";
                     });
     RegisterCommand("Task", "Run Task", "Ctrl+R",
-                    () => currentView.display("RunTask.qml"));
+                    () => viewController.currentView = "RunTask.qml");
     Commit();
   }
 }

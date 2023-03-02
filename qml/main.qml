@@ -19,6 +19,10 @@ ApplicationWindow {
   ProjectContext {
     id: projectContext
   }
+  ViewController {
+    id: viewController
+    currentView: "SelectProject.qml"
+  }
   menuBar: Cdt.MenuBar {
     project: projectContext.currentProject
     model: userCommands.userCommands
@@ -29,13 +33,8 @@ ApplicationWindow {
       color: Theme.colorBgBlack
     }
     Loader {
-      id: currentView
       anchors.fill: parent
-      source: "SelectProject.qml"
-      function display(url) {
-        source = "";
-        source = url;
-      }
+      source: viewController.currentView
       onSourceChanged: searchUserCommandDialog.reject()
     }
     footer: Cdt.StatusBar {
