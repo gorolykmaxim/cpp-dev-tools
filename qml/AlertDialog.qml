@@ -10,6 +10,11 @@ Dialog {
   property string dialogText: ""
   property bool isError: false
   property bool isCancellable: true
+  function display(title, text) {
+    dialogTitle = title;
+    dialogText = text;
+    visible = true;
+  }
   width: 500
   height: Math.min(contentHeight + padding * 2, parent.height * 0.8)
   padding: Theme.basePadding * 2

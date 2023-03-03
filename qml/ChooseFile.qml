@@ -13,9 +13,16 @@ ColumnLayout {
     input.forceActiveFocus();
     appWindow.title = title;
   }
+  Connections {
+      target: alertDialog
+      function onAccepted() {
+          controller.CreateFile();
+      }
+  }
   ChooseFileController {
     id: controller
-    onWillCreateFile: createNewFileDialog.visible = true
+    onWillCreateFile: alertDialog.display("Create new folder?",
+      "Do you want to create a new folder: " + controller.resultPath + "?")
     onFileChosen: root.fileChosen(controller.resultPath)
   }
   anchors.fill: parent
@@ -59,11 +66,5 @@ ColumnLayout {
       model: controller.suggestions
       onItemLeftClicked: suggestionList.ifCurrentItem('idx', controller.PickSuggestion)
     }
-  }
-  Cdt.AlertDialog {
-    id: createNewFileDialog
-    dialogTitle: "Create new folder?"
-    dialogText: "Do you want to create a new folder: " + controller.resultPath + "?"
-    onAccepted: controller.CreateFile()
   }
 }

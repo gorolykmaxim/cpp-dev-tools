@@ -36,4 +36,7 @@ ApplicationWindow {
     id: searchUserCommandDialog
     userCommands: userCommands.userCommands
   }
+  Cdt.AlertDialog {
+    id: alertDialog
+  }
 }
