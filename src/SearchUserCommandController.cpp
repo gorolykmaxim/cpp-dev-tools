@@ -3,7 +3,6 @@
 #include "Application.hpp"
 #include "QVariantListModel.hpp"
 #include "UserCommandController.hpp"
-#include "UserCommandListModel.hpp"
 
 #define LOG() qDebug() << "[SearchUserCommandController"
 
@@ -15,17 +14,17 @@ SearchUserCommandController::SearchUserCommandController(QObject* parent)
 
 void SearchUserCommandController::LoadUserCommands() {
   LOG() << "Loadnig user commands";
-  this->user_commands->SetFilterIfChanged("");
-  this->user_commands->list.clear();
+  user_commands->SetFilterIfChanged("");
+  user_commands->list.clear();
   Application& app = Application::Get();
   UserCommandController& controller = app.user_command_controller;
   const QList<UserCommand>& commands = controller.GetUserCommands();
   for (int i = 0; i < commands.size(); i++) {
     const UserCommand& cmd = commands[i];
-    this->user_commands->list.append(
+    user_commands->list.append(
         {cmd.name, cmd.group, cmd.GetFormattedShortcut(), i});
   }
-  this->user_commands->Load();
+  user_commands->Load();
 }
 
 void SearchUserCommandController::ExecuteCommand(int i) {

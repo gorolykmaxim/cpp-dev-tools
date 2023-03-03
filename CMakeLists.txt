@@ -24,8 +24,8 @@ qt_add_executable(cpp-dev-tools
   src/Project.cpp
   src/UserCommandController.hpp
   src/UserCommandController.cpp
-  src/UserCommandListModel.hpp
-  src/UserCommandListModel.cpp
+  src/UserCommand.hpp
+  src/UserCommand.cpp
   src/SearchUserCommandController.hpp
   src/SearchUserCommandController.cpp
   src/ChooseTaskController.hpp

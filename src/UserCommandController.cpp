@@ -1,9 +1,20 @@
 #include "UserCommandController.hpp"
 
 #include "Application.hpp"
-#include "UserCommandListModel.hpp"
 
 #define LOG() qDebug() << "[UserCommandController]"
+
+UserCommandListModel::UserCommandListModel(QObject* parent)
+    : QVariantListModel(parent) {
+  SetRoleNames({{0, "group"}, {1, "name"}, {2, "shortcut"}, {3, "index"}});
+}
+
+QVariantList UserCommandListModel::GetRow(int i) const {
+  const UserCommand& cmd = list[i];
+  return {cmd.group, cmd.name, cmd.shortcut, i};
+}
+
+int UserCommandListModel::GetRowCount() const { return list.size(); }
 
 UserCommandController::UserCommandController()
     : user_commands(new UserCommandListModel(this)) {}
