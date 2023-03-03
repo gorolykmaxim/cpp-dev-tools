@@ -24,6 +24,8 @@ Application::Application(int argc, char** argv)
   // rendering is even slower.
   QQuickWindow::setGraphicsApi(QSGRendererInterface::Software);
 #endif
+  qml_engine.rootContext()->setContextProperty("projectContext",
+                                               &project_context);
 #if __APPLE__
   qml_engine.rootContext()->setContextProperty("isMacOS", true);
 #else

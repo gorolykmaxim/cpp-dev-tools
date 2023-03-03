@@ -11,7 +11,6 @@ Loader {
   Component.onCompleted: controller.LoadProjects()
   ProjectController {
     id: controller
-    mProjectContext: projectContext
     mViewController: viewController
     onSelectProject: root.sourceComponent = selectProjectView
   }

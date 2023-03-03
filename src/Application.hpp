@@ -7,6 +7,7 @@
 #include <functional>
 
 #include "Project.hpp"
+#include "ProjectContext.hpp"
 
 class Application {
  public:
@@ -30,6 +31,7 @@ class Application {
 
   int argc_;
   char** argv_;
+  ProjectContext project_context;
   QGuiApplication gui_app;
   QQmlApplicationEngine qml_engine;
   QThreadPool io_thread_pool;

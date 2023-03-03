@@ -31,10 +31,11 @@ static QString ShortenTaskCmd(QString cmd, const Project &project) {
 }
 
 void ChooseTaskController::FindTasks() {
+  Application &app = Application::Get();
   SetIsLoading(true);
-  Project project = project_context->GetCurrentProject();
+  Project project = app.project_context.GetCurrentProject();
   QString path = project.path;
-  Application::Get().RunIOTask<QList<QString>>(
+  app.RunIOTask<QList<QString>>(
       this,
       [path] {
         QList<QString> results;

@@ -16,9 +16,6 @@ ApplicationWindow {
   Cdt.UserCommands {
     id: userCommands
   }
-  ProjectContext {
-    id: projectContext
-  }
   ViewController {
     id: viewController
     currentView: "SelectProject.qml"
