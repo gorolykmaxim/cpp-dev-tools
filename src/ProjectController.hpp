@@ -28,7 +28,6 @@ class ProjectController : public QObject {
   ProjectListModel* projects;
 
  public slots:
-  void LoadProjects();
   void DeleteProject(int i);
   void OpenProject(int i);
   void OpenNewProject(const QString& path);
