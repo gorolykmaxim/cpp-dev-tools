@@ -21,7 +21,7 @@ Item {
       const menuItemObj = menuItem.createObject(menuObj, {
         text: model.GetFieldByRoleName(i, "name"),
         shortcut: model.GetFieldByRoleName(i, "shortcut"),
-        callback: model.GetFieldByRoleName(i, "callback"),
+        index: model.GetFieldByRoleName(i, "index"),
       });
       menuObj.addItem(menuItemObj);
     }
@@ -31,9 +31,9 @@ Item {
   onModelChanged: initialize()
   Timer {
     id: delay
-    property var callback
+    property var index
     interval: 0
-    onTriggered: callback()
+    onTriggered: userCommands.ExecuteCommand(index)
   }
   MenuBar {
     id: menuBar
@@ -47,12 +47,12 @@ Item {
       id: menuItem
 
       MenuItem {
-        property var callback
+        property var index
         onTriggered: {
           // Calling callback synchronously from here can crash the app
           // if the callback causes this menubar to change it's structure
           // and delete current menu item.
-          delay.callback = callback;
+          delay.index = index;
           delay.running = true;
         }
       }

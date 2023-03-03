@@ -4,12 +4,11 @@ import cdt
 import "." as Cdt
 
 Dialog {
-  property var userCommands: null
   id: dialog
   Connections {
       target: viewController
       function onSearchUserCommandDialogDisplayed() {
-        controller.LoadUserCommands(userCommands);
+        controller.LoadUserCommands();
         visible = true;
         textList.forceActiveFocus()
       }
@@ -31,6 +30,7 @@ Dialog {
   }
   SearchUserCommandController {
     id: controller
+    onCommandExecuted: dialog.accept()
   }
   Cdt.SearchableTextList {
     id: textList
@@ -38,9 +38,6 @@ Dialog {
     anchors.margins: 1
     searchPlaceholderText: "Search command"
     searchableModel: controller.userCommands
-    onItemSelected: ifCurrentItem('callback', (cb) => {
-      dialog.accept();
-      cb();
-    })
+    onItemSelected: ifCurrentItem('index', controller.ExecuteCommand)
   }
 }

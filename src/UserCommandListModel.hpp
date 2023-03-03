@@ -1,5 +1,7 @@
 #pragma once
 
+#include <functional>
+
 #include "QVariantListModel.hpp"
 
 class UserCommand {
@@ -9,7 +11,7 @@ class UserCommand {
   QString group;
   QString name;
   QString shortcut;
-  QVariant callback;
+  std::function<void()> callback;
 };
 
 class UserCommandListModel : public QVariantListModel {

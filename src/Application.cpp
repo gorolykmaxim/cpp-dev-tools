@@ -28,6 +28,8 @@ Application::Application(int argc, char** argv)
                                                &project_context);
   qml_engine.rootContext()->setContextProperty("viewController",
                                                &view_controller);
+  qml_engine.rootContext()->setContextProperty("userCommands",
+                                               &user_command_controller);
 #if __APPLE__
   qml_engine.rootContext()->setContextProperty("isMacOS", true);
 #else
@@ -37,6 +39,7 @@ Application::Application(int argc, char** argv)
 
 int Application::Exec() {
   QtConcurrent::run(&io_thread_pool, &Database::Initialize).waitForFinished();
+  user_command_controller.RegisterCommands();
   qml_engine.load(QUrl("qrc:/cdt/qml/main.qml"));
   return gui_app.exec();
 }

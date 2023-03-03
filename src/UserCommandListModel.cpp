@@ -10,12 +10,12 @@ QString UserCommand::GetFormattedShortcut() const {
 
 UserCommandListModel::UserCommandListModel(QObject* parent)
     : QVariantListModel(parent) {
-  SetRoleNames({{0, "group"}, {1, "name"}, {2, "shortcut"}, {3, "callback"}});
+  SetRoleNames({{0, "group"}, {1, "name"}, {2, "shortcut"}, {3, "index"}});
 }
 
 QVariantList UserCommandListModel::GetRow(int i) const {
   const UserCommand& cmd = list[i];
-  return {cmd.group, cmd.name, cmd.shortcut, cmd.callback};
+  return {cmd.group, cmd.name, cmd.shortcut, i};
 }
 
 int UserCommandListModel::GetRowCount() const { return list.size(); }

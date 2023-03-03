@@ -1,21 +1,24 @@
 #pragma once
 
 #include <QObject>
-#include <QtQmlIntegration>
+#include <functional>
 
 #include "UserCommandListModel.hpp"
 
 class UserCommandController : public QObject {
   Q_OBJECT
-  QML_ELEMENT
   Q_PROPERTY(UserCommandListModel* userCommands MEMBER user_commands CONSTANT)
  public:
-  explicit UserCommandController(QObject* parent = nullptr);
+  UserCommandController();
+  void RegisterCommands();
+  const QList<UserCommand>& GetUserCommands() const;
+
  public slots:
-  void RegisterCommand(const QString& group, const QString& name,
-                       const QString& shortcut, QVariant callback);
-  void Commit();
+  void ExecuteCommand(int i);
 
  private:
+  void RegisterCommand(const QString& group, const QString& name,
+                       const QString& shortcut,
+                       const std::function<void()>& callback);
   UserCommandListModel* user_commands;
 };

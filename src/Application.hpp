@@ -8,6 +8,7 @@
 
 #include "Project.hpp"
 #include "ProjectContext.hpp"
+#include "UserCommandController.hpp"
 #include "ViewController.hpp"
 
 class Application {
@@ -34,6 +35,7 @@ class Application {
   char** argv_;
   ProjectContext project_context;
   ViewController view_controller;
+  UserCommandController user_command_controller;
   QGuiApplication gui_app;
   QQmlApplicationEngine qml_engine;
   QThreadPool io_thread_pool;

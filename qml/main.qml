@@ -13,9 +13,6 @@ ApplicationWindow {
     id: iconFont
     source: "../fonts/MaterialIcons-Regular.ttf"
   }
-  Cdt.UserCommands {
-    id: userCommands
-  }
   menuBar: Cdt.MenuBar {
     isProjectOpened: projectContext.isProjectOpened
     model: userCommands.userCommands
@@ -33,7 +30,6 @@ ApplicationWindow {
   }
   Cdt.SearchUserCommandDialog {
     id: searchUserCommandDialog
-    userCommands: userCommands.userCommands
   }
   Cdt.AlertDialog {
     id: alertDialog

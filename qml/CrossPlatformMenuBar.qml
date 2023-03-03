@@ -27,7 +27,7 @@ Qml.MenuBar {
       const menuItemObj = action.createObject(menuObj, {
         text: model.GetFieldByRoleName(i, "name"),
         shortcut: model.GetFieldByRoleName(i, "shortcut"),
-        callback: model.GetFieldByRoleName(i, "callback"),
+        index: model.GetFieldByRoleName(i, "index"),
       });
       menuObj.addAction(menuItemObj);
     }
@@ -86,8 +86,8 @@ Qml.MenuBar {
   Component {
     id: action
     Qml.Action {
-      property var callback
-      onTriggered: callback()
+      property var index
+      onTriggered: userCommands.ExecuteCommand(index)
     }
   }
 }

@@ -4,7 +4,6 @@
 #include <QtQmlIntegration>
 
 #include "QVariantListModel.hpp"
-#include "UserCommandListModel.hpp"
 
 class SearchUserCommandController : public QObject {
   Q_OBJECT
@@ -14,7 +13,11 @@ class SearchUserCommandController : public QObject {
  public:
   explicit SearchUserCommandController(QObject* parent = nullptr);
  public slots:
-  void LoadUserCommands(UserCommandListModel* user_commands);
+  void LoadUserCommands();
+  void ExecuteCommand(int i);
+
+ signals:
+  void commandExecuted();
 
  private:
   SimpleQVariantListModel* user_commands;
