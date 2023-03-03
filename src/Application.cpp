@@ -26,6 +26,8 @@ Application::Application(int argc, char** argv)
 #endif
   qml_engine.rootContext()->setContextProperty("projectContext",
                                                &project_context);
+  qml_engine.rootContext()->setContextProperty("viewController",
+                                               &view_controller);
 #if __APPLE__
   qml_engine.rootContext()->setContextProperty("isMacOS", true);
 #else

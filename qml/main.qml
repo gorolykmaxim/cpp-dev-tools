@@ -16,10 +16,6 @@ ApplicationWindow {
   Cdt.UserCommands {
     id: userCommands
   }
-  ViewController {
-    id: viewController
-    currentView: "SelectProject.qml"
-  }
   menuBar: Cdt.MenuBar {
     isProjectOpened: projectContext.isProjectOpened
     model: userCommands.userCommands

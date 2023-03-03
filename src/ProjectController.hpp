@@ -6,7 +6,6 @@
 
 #include "Project.hpp"
 #include "QVariantListModel.hpp"
-#include "ViewController.hpp"
 
 class ProjectListModel : public QVariantListModel {
  public:
@@ -22,13 +21,10 @@ class ProjectListModel : public QVariantListModel {
 class ProjectController : public QObject {
   Q_OBJECT
   QML_ELEMENT
-  Q_PROPERTY(ViewController* mViewController MEMBER view_controller NOTIFY
-                 viewControllerChanged)
   Q_PROPERTY(ProjectListModel* projects MEMBER projects CONSTANT)
  public:
   explicit ProjectController(QObject* parent = nullptr);
 
-  ViewController* view_controller;
   ProjectListModel* projects;
 
  public slots:
@@ -38,7 +34,6 @@ class ProjectController : public QObject {
   void OpenNewProject(const QString& path);
 
  signals:
-  void viewControllerChanged();
   void selectProject();
 
  private:

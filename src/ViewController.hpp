@@ -1,11 +1,9 @@
 #pragma once
 
 #include <QObject>
-#include <QtQmlIntegration>
 
 class ViewController : public QObject {
   Q_OBJECT
-  QML_ELEMENT
   Q_PROPERTY(QString currentView READ GetCurrentView WRITE SetCurrentView NOTIFY
                  currentViewChanged)
  public:
@@ -16,5 +14,5 @@ class ViewController : public QObject {
   void currentViewChanged();
 
  private:
-  QString current_view;
+  QString current_view = "SelectProject.qml";
 };

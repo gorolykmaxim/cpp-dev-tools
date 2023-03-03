@@ -105,12 +105,13 @@ void ProjectController::OpenNewProject(const QString& path) {
 }
 
 void ProjectController::OpenProject(Project& project) {
+  Application& app = Application::Get();
   project.is_opened = true;
   project.last_open_time = QDateTime::currentDateTime();
   QDir::setCurrent(project.path);
   Database::ExecCmdAsync(
       "UPDATE project SET is_opened=?, last_open_time=? WHERE id=?",
       {project.is_opened, project.last_open_time, project.id});
-  Application::Get().project_context.SetCurrentProject(project);
-  view_controller->SetCurrentView("RunTask.qml");
+  app.project_context.SetCurrentProject(project);
+  app.view_controller.SetCurrentView("RunTask.qml");
 }
