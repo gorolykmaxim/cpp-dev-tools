@@ -6,11 +6,13 @@ import "." as Cdt
 Dialog {
   property var userCommands: null
   id: dialog
-  function display() {
-    controller.userCommands.filter = "";
-    controller.LoadUserCommands(userCommands);
-    visible = true;
-    textList.forceActiveFocus()
+  Connections {
+      target: viewController
+      function onSearchUserCommandDialogDisplayed() {
+        controller.LoadUserCommands(userCommands);
+        visible = true;
+        textList.forceActiveFocus()
+      }
   }
   width: 500
   height: parent.height * 0.8

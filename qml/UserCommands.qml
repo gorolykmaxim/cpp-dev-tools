@@ -4,7 +4,7 @@ import cdt
 UserCommandController {
   Component.onCompleted: {
     RegisterCommand("General", "Execute Command", "Ctrl+P",
-                    () => searchUserCommandDialog.display());
+                    () => viewController.DisplaySearchUserCommandDialog());
     RegisterCommand("General", "Close Project", "Ctrl+W",
                     () => {
                       projectContext.CloseProject();

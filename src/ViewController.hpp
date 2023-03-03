@@ -11,11 +11,15 @@ class ViewController : public QObject {
   QString GetCurrentView() const;
   void DisplayAlertDialog(const QString& title, const QString& text);
 
+ public slots:
+  void DisplaySearchUserCommandDialog();
+
  signals:
   void currentViewChanged();
   void alertDialogDisplayed(const QString& title, const QString& text);
   void alertDialogAccepted();
   void alertDialogRejected();
+  void searchUserCommandDialogDisplayed();
 
  private:
   QString current_view = "SelectProject.qml";

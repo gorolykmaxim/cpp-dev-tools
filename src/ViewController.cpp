@@ -23,3 +23,8 @@ void ViewController::DisplayAlertDialog(const QString &title,
                       nullptr);
   emit alertDialogDisplayed(title, text);
 }
+
+void ViewController::DisplaySearchUserCommandDialog() {
+  LOG() << "Displaying search user command dialog";
+  emit searchUserCommandDialogDisplayed();
+}
