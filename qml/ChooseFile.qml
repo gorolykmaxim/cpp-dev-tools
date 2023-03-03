@@ -13,17 +13,9 @@ ColumnLayout {
     input.forceActiveFocus();
     appWindow.title = title;
   }
-  Connections {
-      target: alertDialog
-      function onAccepted() {
-          controller.CreateFile();
-      }
-  }
   ChooseFileController {
     id: controller
-    onWillCreateFile: alertDialog.display("Create new folder?",
-      "Do you want to create a new folder: " + controller.resultPath + "?")
-    onFileChosen: root.fileChosen(controller.resultPath)
+    onFileChosen: (path) => root.fileChosen(path)
   }
   anchors.fill: parent
   spacing: 0

@@ -27,13 +27,11 @@ class ChooseFileController : public QObject {
   Q_OBJECT
   QML_ELEMENT
   Q_PROPERTY(QString path READ GetPath WRITE SetPath NOTIFY pathChanged)
-  Q_PROPERTY(QString resultPath READ GetResultPath NOTIFY pathChanged)
   Q_PROPERTY(FileSuggestionListModel* suggestions MEMBER suggestions CONSTANT)
  public:
   explicit ChooseFileController(QObject* parent = nullptr);
   void SetPath(const QString& path);
   QString GetPath() const;
-  QString GetResultPath() const;
 
  public slots:
   void PickSuggestion(int i);
@@ -42,11 +40,11 @@ class ChooseFileController : public QObject {
 
  signals:
   void pathChanged();
-  void willCreateFile();
-  void fileChosen();
+  void fileChosen(const QString& path);
 
  private:
   void SortAndFilterSuggestions();
+  QString GetResultPath() const;
 
   QString folder, file;
   FileSuggestionListModel* suggestions;

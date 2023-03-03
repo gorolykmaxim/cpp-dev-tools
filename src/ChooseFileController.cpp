@@ -5,6 +5,7 @@
 
 #include "Application.hpp"
 #include "QVariantListModel.hpp"
+#include "ViewController.hpp"
 
 #define LOG() qDebug() << "[ChooseFileController]"
 
@@ -70,18 +71,24 @@ void ChooseFileController::PickSuggestion(int i) {
 }
 
 void ChooseFileController::OpenOrCreateFile() {
+  Application& app = Application::Get();
   QString path = GetResultPath();
-  Application::Get().RunIOTask<bool>(
+  app.RunIOTask<bool>(
       this,
       [path]() {
         LOG() << "Checking if" << path << "exists";
         return QFile(path).exists();
       },
-      [this](bool exists) {
+      [this, &app, path](bool exists) {
         if (exists) {
-          emit fileChosen();
+          emit fileChosen(path);
         } else {
-          emit willCreateFile();
+          app.view_controller.DisplayAlertDialog(
+              "Create new folder?",
+              "Do you want to create a new folder: " + path + "?");
+          QObject::connect(&app.view_controller,
+                           &ViewController::alertDialogAccepted, this,
+                           &ChooseFileController::CreateFile);
         }
       });
 }
@@ -90,7 +97,8 @@ void ChooseFileController::CreateFile() {
   QString path = GetResultPath();
   LOG() << "Creating" << path;
   Application::Get().RunIOTask(
-      this, [path] { QDir().mkpath(path); }, [this] { emit fileChosen(); });
+      this, [path] { QDir().mkpath(path); },
+      [this, path] { emit fileChosen(path); });
 }
 
 static bool Compare(const FileSuggestion& a, const FileSuggestion& b) {

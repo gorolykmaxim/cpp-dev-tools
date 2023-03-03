@@ -10,10 +10,15 @@ Dialog {
   property string dialogText: ""
   property bool isError: false
   property bool isCancellable: true
-  function display(title, text) {
-    dialogTitle = title;
-    dialogText = text;
-    visible = true;
+  onAccepted: viewController.alertDialogAccepted()
+  onRejected: viewController.alertDialogRejected()
+  Connections {
+      target: viewController
+      function onAlertDialogDisplayed(title, text) {
+          dialogTitle = title;
+          dialogText = text;
+          dialog.visible = true;
+      }
   }
   width: 500
   height: Math.min(contentHeight + padding * 2, parent.height * 0.8)

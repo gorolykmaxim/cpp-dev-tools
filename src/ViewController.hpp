@@ -9,9 +9,13 @@ class ViewController : public QObject {
  public:
   void SetCurrentView(const QString& current_view);
   QString GetCurrentView() const;
+  void DisplayAlertDialog(const QString& title, const QString& text);
 
  signals:
   void currentViewChanged();
+  void alertDialogDisplayed(const QString& title, const QString& text);
+  void alertDialogAccepted();
+  void alertDialogRejected();
 
  private:
   QString current_view = "SelectProject.qml";
