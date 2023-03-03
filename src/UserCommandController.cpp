@@ -13,7 +13,7 @@ void UserCommandController::RegisterCommands() {
     Application::Get().view_controller.DisplaySearchUserCommandDialog();
   });
   RegisterCommand("General", "Close Project", "Ctrl+W", [] {
-    Application::Get().project_context.CloseProject();
+    Application::Get().project_context.SetCurrentProject(Project());
     Application::Get().view_controller.SetCurrentView("SelectProject.qml");
   });
   RegisterCommand("Task", "Run Task", "Ctrl+R", [] {

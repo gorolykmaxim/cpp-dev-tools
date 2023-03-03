@@ -6,9 +6,16 @@
 #define LOG() qDebug() << "[ProjectContext]"
 
 void ProjectContext::SetCurrentProject(const Project &project) {
-  LOG() << "Changing current project to" << project.path;
-  current_project = project;
-  emit currentProjectChanged();
+  if (project.IsNull()) {
+    LOG() << "Closing project" << current_project.path;
+    current_project = Project();
+    Database::ExecCmdAsync("UPDATE project SET is_opened=false");
+    emit currentProjectChanged();
+  } else {
+    LOG() << "Changing current project to" << project.path;
+    current_project = project;
+    emit currentProjectChanged();
+  }
 }
 
 Project ProjectContext::GetCurrentProject() const { return current_project; }
@@ -19,11 +26,4 @@ QString ProjectContext::GetCurrentProjectPathRelativeToHome() const {
 
 bool ProjectContext::IsProjectOpened() const {
   return !current_project.IsNull();
-}
-
-void ProjectContext::CloseProject() {
-  LOG() << "Closing project" << current_project.path;
-  current_project = Project();
-  Database::ExecCmdAsync("UPDATE project SET is_opened=false");
-  emit currentProjectChanged();
 }

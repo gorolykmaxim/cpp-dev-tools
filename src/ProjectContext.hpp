@@ -16,8 +16,6 @@ class ProjectContext : public QObject {
   Project GetCurrentProject() const;
   QString GetCurrentProjectPathRelativeToHome() const;
   bool IsProjectOpened() const;
- public slots:
-  void CloseProject();
  signals:
   void currentProjectChanged();
 
