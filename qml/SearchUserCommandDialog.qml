@@ -13,6 +13,9 @@ Dialog {
         visible = true;
         textList.forceActiveFocus()
       }
+      function onDialogClosed() {
+        dialog.reject();
+      }
   }
   width: 500
   height: parent.height * 0.8

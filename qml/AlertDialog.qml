@@ -19,6 +19,9 @@ Dialog {
           dialogText = text;
           dialog.visible = true;
       }
+      function onDialogClosed() {
+        dialog.reject();
+      }
   }
   width: 500
   height: Math.min(contentHeight + padding * 2, parent.height * 0.8)

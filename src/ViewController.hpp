@@ -20,6 +20,7 @@ class ViewController : public QObject {
   void alertDialogAccepted();
   void alertDialogRejected();
   void searchUserCommandDialogDisplayed();
+  void dialogClosed();
 
  private:
   QString current_view = "SelectProject.qml";

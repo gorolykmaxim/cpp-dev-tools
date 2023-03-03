@@ -28,7 +28,6 @@ ApplicationWindow {
     Loader {
       anchors.fill: parent
       source: viewController.currentView
-      onSourceChanged: searchUserCommandDialog.reject()
     }
     footer: Cdt.StatusBar {}
   }
