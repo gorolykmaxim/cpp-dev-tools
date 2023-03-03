@@ -14,7 +14,6 @@ void UserCommandController::RegisterCommands() {
   });
   RegisterCommand("General", "Close Project", "Ctrl+W", [] {
     Application::Get().project_context.SetCurrentProject(Project());
-    Application::Get().view_controller.SetCurrentView("SelectProject.qml");
   });
   RegisterCommand("Task", "Run Task", "Ctrl+R", [] {
     Application::Get().view_controller.SetCurrentView("RunTask.qml");

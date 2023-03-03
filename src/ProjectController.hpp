@@ -35,7 +35,4 @@ class ProjectController : public QObject {
 
  signals:
   void selectProject();
-
- private:
-  void OpenProject(Project& project);
 };

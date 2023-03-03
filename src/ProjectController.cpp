@@ -57,7 +57,7 @@ void ProjectController::LoadProjects() {
         }
         if (current) {
           LOG() << "Opening last opened project" << current->path;
-          OpenProject(*current);
+          Application::Get().project_context.SetCurrentProject(*current);
         } else {
           projects->Load();
           emit selectProject();
@@ -76,7 +76,7 @@ void ProjectController::DeleteProject(int i) {
 void ProjectController::OpenProject(int i) {
   Project& project = projects->list[i];
   LOG() << "Opening project" << project.path;
-  OpenProject(project);
+  Application::Get().project_context.SetCurrentProject(project);
 }
 
 void ProjectController::OpenNewProject(const QString& path) {
@@ -90,7 +90,7 @@ void ProjectController::OpenNewProject(const QString& path) {
     }
   }
   if (existing) {
-    OpenProject(*existing);
+    Application::Get().project_context.SetCurrentProject(*existing);
   } else {
     Project project;
     project.id = QUuid::createUuid();
@@ -100,18 +100,6 @@ void ProjectController::OpenNewProject(const QString& path) {
     Database::ExecCmdAsync(
         "INSERT INTO project VALUES(?, ?, ?, ?)",
         {project.id, project.path, project.is_opened, project.last_open_time});
-    OpenProject(project);
+    Application::Get().project_context.SetCurrentProject(project);
   }
-}
-
-void ProjectController::OpenProject(Project& project) {
-  Application& app = Application::Get();
-  project.is_opened = true;
-  project.last_open_time = QDateTime::currentDateTime();
-  QDir::setCurrent(project.path);
-  Database::ExecCmdAsync(
-      "UPDATE project SET is_opened=?, last_open_time=? WHERE id=?",
-      {project.is_opened, project.last_open_time, project.id});
-  app.project_context.SetCurrentProject(project);
-  app.view_controller.SetCurrentView("RunTask.qml");
 }
