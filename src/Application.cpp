@@ -14,6 +14,7 @@ Application::Application(int argc, char** argv)
       gui_app(argc_, argv_),
       qml_engine(),
       io_thread_pool() {
+  Application::instance = this;
   io_thread_pool.setMaxThreadCount(1);
   qSetMessagePattern("%{time yyyy-MM-dd h:mm:ss.zzz} %{message}");
   QQuickStyle::setStyle("Basic");
