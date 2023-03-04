@@ -21,10 +21,12 @@ class Application {
   template <typename T>
   void RunIOTask(QObject* requestor, const std::function<T()>& on_io_thread,
                  const std::function<void(T)>& on_ui_thread) {
-    auto watcher = QSharedPointer<QFutureWatcher<T>>::create();
-    QObject::connect(
-        watcher.get(), &QFutureWatcher<T>::finished, requestor,
-        [watcher, on_ui_thread]() { on_ui_thread(watcher->result()); });
+    auto watcher = new QFutureWatcher<T>();
+    QObject::connect(watcher, &QFutureWatcher<T>::finished, requestor,
+                     [watcher, on_ui_thread]() {
+                       on_ui_thread(watcher->result());
+                       watcher->deleteLater();
+                     });
     QFuture<T> future = QtConcurrent::run(&io_thread_pool, on_io_thread);
     watcher->setFuture(future);
   }

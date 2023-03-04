@@ -47,9 +47,12 @@ int Application::Exec() {
 void Application::RunIOTask(QObject* requestor,
                             const std::function<void()>& on_io_thread,
                             const std::function<void()>& on_ui_thread) {
-  auto watcher = QSharedPointer<QFutureWatcher<void>>::create();
-  QObject::connect(watcher.get(), &QFutureWatcher<void>::finished, requestor,
-                   [watcher, on_ui_thread]() { on_ui_thread(); });
+  auto watcher = new QFutureWatcher<void>();
+  QObject::connect(watcher, &QFutureWatcher<void>::finished, requestor,
+                   [watcher, on_ui_thread]() {
+                     on_ui_thread();
+                     watcher->deleteLater();
+                   });
   QFuture<void> future = QtConcurrent::run(&io_thread_pool, on_io_thread);
   watcher->setFuture(future);
 }
