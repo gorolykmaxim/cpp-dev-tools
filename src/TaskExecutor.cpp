@@ -1,8 +1,5 @@
 #include "TaskExecutor.hpp"
 
-#include <QProcess>
-#include <QSharedPointer>
-
 #define LOG() qDebug() << "[TaskExecutor]"
 
 void TaskExecutor::ExecuteTask(const QString& command) {
@@ -12,24 +9,24 @@ void TaskExecutor::ExecuteTask(const QString& command) {
   exec.start_time = QDateTime::currentDateTime();
   exec.command = command;
   executions.append(exec);
-  QSharedPointer<QProcess> process = QSharedPointer<QProcess>::create();
-  QObject::connect(process.get(), &QProcess::readyReadStandardOutput, this,
+  QProcess* process = new QProcess();
+  QObject::connect(process, &QProcess::readyReadStandardOutput, this,
                    [this, process, exec_id] {
                      AppendToExecutionOutput(exec_id,
                                              process->readAllStandardOutput());
                    });
-  QObject::connect(process.get(), &QProcess::readyReadStandardError, this,
+  QObject::connect(process, &QProcess::readyReadStandardError, this,
                    [this, process, exec_id] {
                      AppendToExecutionOutput(exec_id,
                                              process->readAllStandardError());
                    });
-  QObject::connect(process.get(), &QProcess::errorOccurred, this,
+  QObject::connect(process, &QProcess::errorOccurred, this,
                    [this, process, exec_id](QProcess::ProcessError) {
-                     SetExecutionExitCode(exec_id, -1);
+                     FinishExecution(exec_id, process);
                    });
-  QObject::connect(process.get(), &QProcess::finished, this,
-                   [this, process, exec_id](int code, QProcess::ExitStatus) {
-                     SetExecutionExitCode(exec_id, code);
+  QObject::connect(process, &QProcess::finished, this,
+                   [this, process, exec_id](int, QProcess::ExitStatus) {
+                     FinishExecution(exec_id, process);
                    });
   process->startCommand(command);
 }
@@ -41,12 +38,18 @@ void TaskExecutor::AppendToExecutionOutput(QUuid id, const QByteArray& data) {
   }
 }
 
-void TaskExecutor::SetExecutionExitCode(QUuid id, int code) {
+void TaskExecutor::FinishExecution(QUuid id, QProcess* process) {
   if (TaskExecution* exec = FindExecutionById(id)) {
-    LOG() << "Task" << id << "finished with code" << code;
-    exec->exit_code = code;
+    if (process->error() == QProcess::FailedToStart ||
+        process->exitStatus() == QProcess::CrashExit) {
+      exec->exit_code = -1;
+    } else {
+      exec->exit_code = process->exitCode();
+    }
+    LOG() << "Task" << id << "finished with code" << *exec->exit_code;
     emit executionFinished(id);
   }
+  process->deleteLater();
 }
 
 TaskExecution* TaskExecutor::FindExecutionById(QUuid id) {

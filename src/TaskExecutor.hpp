@@ -4,6 +4,7 @@
 #include <QDateTime>
 #include <QList>
 #include <QObject>
+#include <QProcess>
 #include <QString>
 #include <QUuid>
 #include <optional>
@@ -28,7 +29,7 @@ class TaskExecutor : public QObject {
 
  private:
   void AppendToExecutionOutput(QUuid id, const QByteArray& data);
-  void SetExecutionExitCode(QUuid id, int code);
+  void FinishExecution(QUuid id, QProcess* process);
 
   QList<TaskExecution> executions;
 };
