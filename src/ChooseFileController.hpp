@@ -5,8 +5,7 @@
 
 #include "QVariantListModel.hpp"
 
-class FileSuggestion {
- public:
+struct FileSuggestion {
   QString file;
   int match_start;
   int distance;

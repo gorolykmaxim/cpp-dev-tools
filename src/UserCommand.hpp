@@ -3,8 +3,7 @@
 #include <QString>
 #include <functional>
 
-class UserCommand {
- public:
+struct UserCommand {
   QString GetFormattedShortcut() const;
 
   QString group;

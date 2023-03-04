@@ -4,8 +4,7 @@
 #include <QSqlQuery>
 #include <QUuid>
 
-class Project {
- public:
+struct Project {
   static Project ReadFromSql(QSqlQuery& sql);
   QString GetPathRelativeToHome() const;
   QString GetFolderName() const;
