@@ -13,7 +13,7 @@ Cdt.SearchableTextList {
   showPlaceholder: controller.showPlaceholder
   placeholderText: controller.isLoading ? "Looking for tasks..." : "No tasks found"
   searchableModel: controller.tasks
-  onItemSelected: console.log("EXECUTING TASK")
+  onItemSelected: ifCurrentItem('idx', controller.ExecTask)
   ChooseTaskController {
     id: controller
   }

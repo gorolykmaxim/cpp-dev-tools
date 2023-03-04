@@ -22,6 +22,7 @@ class ChooseTaskController : public QObject {
 
  public slots:
   void FindTasks();
+  void ExecTask(int i);
 
  signals:
   void isLoadingChanged();
