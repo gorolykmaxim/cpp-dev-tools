@@ -1,7 +1,6 @@
 #include "ChooseTaskController.hpp"
 
 #include "Application.hpp"
-#include "Process.hpp"
 #include "Project.hpp"
 #include "QVariantListModel.hpp"
 
@@ -62,15 +61,7 @@ void ChooseTaskController::FindTasks() {
 
 void ChooseTaskController::ExecTask(int i) {
   const QString cmd = tasks->list[i][1].toString();
-  LOG() << "Executing task" << cmd;
-  Process *process = new Process(cmd, this);
-  QObject::connect(process, &Process::outputChanged, this,
-                   [] { LOG() << "One of the processes printed output"; });
-  QObject::connect(process, &Process::finished, this, [process] {
-    LOG() << process->GetOutput();
-    LOG() << process->GetCommand() << "finished with" << process->GetExitCode();
-  });
-  process->Start();
+  Application::Get().task_executor.ExecuteTask(cmd);
 }
 
 void ChooseTaskController::SetIsLoading(bool value) {
