@@ -16,7 +16,6 @@ Loader {
     id: selectProjectView
     ColumnLayout {
       Component.onCompleted: {
-        appWindow.title = "Open Project";
         input.forceActiveFocus();
       }
       anchors.fill: parent
@@ -73,7 +72,6 @@ Loader {
   Component {
     id: chooseProjectView
     Cdt.ChooseFile {
-      title: "Open Project"
       onFileChosen: (file) => controller.OpenNewProject(file)
       onCancelled: root.sourceComponent = selectProjectView
     }

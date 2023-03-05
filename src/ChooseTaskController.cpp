@@ -9,7 +9,9 @@
 ChooseTaskController::ChooseTaskController(QObject *parent)
     : QObject(parent),
       tasks(new SimpleQVariantListModel(this, {{0, "idx"}, {1, "title"}}, {1})),
-      is_loading(true) {}
+      is_loading(true) {
+  Application::Get().view_controller.SetWindowTitle("Run Task");
+}
 
 bool ChooseTaskController::ShouldShowPlaceholder() const {
   return is_loading || tasks->list.isEmpty();

@@ -24,7 +24,9 @@ int ProjectListModel::GetRowCount() const { return list.size(); }
 
 ProjectController::ProjectController(QObject* parent)
     : QObject(parent), projects(new ProjectListModel(this)) {
-  Application::Get().RunIOTask<QList<Project>>(
+  Application& app = Application::Get();
+  app.view_controller.SetWindowTitle("Open Project");
+  app.RunIOTask<QList<Project>>(
       this,
       []() {
         LOG() << "Loading projects from datbaase";

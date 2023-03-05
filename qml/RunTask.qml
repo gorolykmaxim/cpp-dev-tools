@@ -4,7 +4,6 @@ import cdt
 
 Cdt.SearchableTextList {
   Component.onCompleted: {
-    appWindow.title = "Run Task";
     forceActiveFocus();
     controller.FindTasks()
   }

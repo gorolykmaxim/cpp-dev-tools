@@ -6,12 +6,10 @@ import "." as Cdt
 
 ColumnLayout {
   id: root
-  property string title: "Choose File"
   signal fileChosen(string path)
   signal cancelled()
   Component.onCompleted: {
     input.forceActiveFocus();
-    appWindow.title = title;
   }
   ChooseFileController {
     id: controller

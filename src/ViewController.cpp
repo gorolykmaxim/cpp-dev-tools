@@ -26,6 +26,14 @@ void ViewController::DisplayAlertDialog(const QString &title,
   emit alertDialogDisplayed(title, text);
 }
 
+void ViewController::SetWindowTitle(const QString &title) {
+  LOG() << "Changing window title to" << title;
+  window_title = title;
+  emit windowTitleChanged();
+}
+
+QString ViewController::GetWindowTitle() const { return window_title; }
+
 void ViewController::DisplaySearchUserCommandDialog() {
   emit dialogClosed();
   LOG() << "Displaying search user command dialog";
