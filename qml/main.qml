@@ -4,10 +4,9 @@ import cdt
 import "." as Cdt
 
 ApplicationWindow {
-  id: appWindow
+  title: viewController.windowTitle
   minimumWidth: 1024
   minimumHeight: 600
-  title: "Test"
   visible: true
   FontLoader {
     id: iconFont

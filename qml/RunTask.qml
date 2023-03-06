@@ -3,10 +3,7 @@ import "." as Cdt
 import cdt
 
 Cdt.SearchableTextList {
-  Component.onCompleted: {
-    appWindow.title = "Run Task";
-    forceActiveFocus();
-  }
+  Component.onCompleted: forceActiveFocus()
   anchors.fill: parent
   searchPlaceholderText: "Search task"
   showPlaceholder: controller.showPlaceholder

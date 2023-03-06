@@ -26,6 +26,7 @@ ChooseTaskController::ChooseTaskController(QObject *parent)
       tasks(new SimpleQVariantListModel(this, {{0, "idx"}, {1, "title"}}, {1})),
       is_loading(true) {
   Application &app = Application::Get();
+  app.view_controller.SetWindowTitle("Run Task");
   SetIsLoading(true);
   Project project = app.project_context.GetCurrentProject();
   QString path = project.path;
