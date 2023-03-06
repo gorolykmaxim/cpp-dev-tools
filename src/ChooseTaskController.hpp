@@ -21,7 +21,6 @@ class ChooseTaskController : public QObject {
   SimpleQVariantListModel* tasks;
 
  public slots:
-  void FindTasks();
   void ExecTask(int i);
 
  signals:

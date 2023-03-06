@@ -6,7 +6,6 @@ Cdt.SearchableTextList {
   Component.onCompleted: {
     appWindow.title = "Run Task";
     forceActiveFocus();
-    controller.FindTasks()
   }
   anchors.fill: parent
   searchPlaceholderText: "Search task"
