@@ -1,5 +1,7 @@
 #include "QVariantListModel.hpp"
 
+#include <algorithm>
+
 QVariantListModel::QVariantListModel(QObject* parent)
     : QAbstractListModel(parent) {}
 
@@ -23,6 +25,105 @@ QVariant QVariantListModel::data(const QModelIndex& index, int role) const {
   return row[role];
 }
 
+static const QString kHighlightOpen = "<b>";
+static const QString kHighlightClose = "</b>";
+
+struct SearchResult {
+  bool matches = false;
+  QString value;
+};
+
+static SearchResult FindFuzzySubString(const QString& source,
+                                       const QString& term) {
+  SearchResult result;
+  QTextStream stream(&result.value);
+  qsizetype last_char_index = -1;
+  bool highlighting = false;
+  for (QChar c : term) {
+    qsizetype pos = source.indexOf(c, last_char_index + 1,
+                                   Qt::CaseSensitivity::CaseInsensitive);
+    if (pos < 0) {
+      result.matches = false;
+      break;
+    }
+    qsizetype distance = pos - last_char_index;
+    if (distance > 1) {
+      if (highlighting) {
+        highlighting = false;
+        stream << kHighlightClose;
+      }
+      stream << source.sliced(last_char_index + 1, distance - 1);
+    }
+    if (!highlighting) {
+      highlighting = true;
+      result.matches = true;
+      stream << kHighlightOpen;
+    }
+    stream << source[pos];
+    last_char_index = pos;
+  }
+  if (result.matches && last_char_index < source.length() - 1) {
+    if (highlighting) {
+      highlighting = false;
+      stream << kHighlightClose;
+    }
+    stream << source.sliced(last_char_index + 1,
+                            source.length() - last_char_index - 1);
+  }
+  if (result.matches) {
+    stream.flush();
+  } else {
+    result.value = source;
+  }
+  return result;
+}
+
+struct SortableProps {
+  int not_matching_chars = 0;
+  qsizetype first_match_pos = -1;
+};
+
+static SortableProps GetSortableProps(const QString& str) {
+  SortableProps result;
+  qsizetype last_end = 0;
+  while (true) {
+    qsizetype start = str.indexOf(kHighlightOpen, last_end);
+    if (start < 0) {
+      break;
+    }
+    if (result.first_match_pos < 0) {
+      result.first_match_pos = start;
+    }
+    result.not_matching_chars += start - last_end;
+    qsizetype end =
+        str.indexOf(kHighlightClose, start + kHighlightOpen.length());
+    if (end < 0) {
+      break;
+    }
+    last_end = end + kHighlightClose.length();
+  }
+  if (last_end < str.length() - 1) {
+    result.not_matching_chars += str.length() - last_end - 1;
+  }
+  return result;
+}
+
+static bool CompareRows(const QVariantList& row1, const QVariantList& row2,
+                        const QList<int>& searchable_roles) {
+  for (int role : searchable_roles) {
+    QString a = row1[role].toString();
+    QString b = row2[role].toString();
+    SortableProps props1 = GetSortableProps(a);
+    SortableProps props2 = GetSortableProps(b);
+    if (props1.first_match_pos != props2.first_match_pos) {
+      return props1.first_match_pos < props2.first_match_pos;
+    } else if (props1.not_matching_chars != props2.not_matching_chars) {
+      return props1.not_matching_chars < props2.not_matching_chars;
+    }
+  }
+  return false;
+}
+
 void QVariantListModel::Load() {
   beginResetModel();
   items.clear();
@@ -36,17 +137,23 @@ void QVariantListModel::Load() {
     bool matches = false;
     for (int role : searchable_roles) {
       QString str = row[role].toString();
-      int pos = str.indexOf(filter, 0, Qt::CaseSensitivity::CaseInsensitive);
-      if (pos >= 0) {
-        str.insert(pos + filter.size(), "</b>");
-        str.insert(pos, "<b>");
-        row[role] = str;
+      SearchResult result = FindFuzzySubString(str, filter);
+      if (result.matches) {
+        row[role] = result.value;
         matches = true;
       }
     }
     if (matches) {
       items.append(row);
     }
+  }
+  if (!filter.isEmpty()) {
+    // Only sort when actual filter is applied. Otherwise - preserve original
+    // order, supplied by the client code.
+    std::sort(items.begin(), items.end(),
+              [this](const QVariantList& row1, const QVariantList& row2) {
+                return CompareRows(row1, row2, searchable_roles);
+              });
   }
   endResetModel();
 }

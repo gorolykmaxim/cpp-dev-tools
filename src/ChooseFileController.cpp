@@ -1,28 +1,15 @@
 #include "ChooseFileController.hpp"
 
-#include <algorithm>
-#include <limits>
-
 #include "Application.hpp"
 #include "QVariantListModel.hpp"
 #include "ViewController.hpp"
 
 #define LOG() qDebug() << "[ChooseFileController]"
 
-FileSuggestionListModel::FileSuggestionListModel(QObject* parent)
-    : QVariantListModel(parent) {
-  SetRoleNames({{0, "idx"}, {1, "title"}});
-  searchable_roles = {1};
-}
-
-QVariantList FileSuggestionListModel::GetRow(int i) const {
-  return {i, list[i].file};
-}
-
-int FileSuggestionListModel::GetRowCount() const { return list.size(); }
-
 ChooseFileController::ChooseFileController(QObject* parent)
-    : QObject(parent), suggestions(new FileSuggestionListModel(this)) {
+    : QObject(parent),
+      suggestions(
+          new SimpleQVariantListModel(this, {{0, "idx"}, {1, "title"}}, {1})) {
   SetPath(QStandardPaths::writableLocation(QStandardPaths::HomeLocation) + '/');
 }
 
@@ -40,34 +27,35 @@ void ChooseFileController::SetPath(const QString& path) {
   if (old_folder != folder) {
     LOG() << "Will refresh list of file suggestions";
     QString path = folder;
-    Application::Get().RunIOTask<QList<FileSuggestion>>(
+    Application::Get().RunIOTask<QStringList>(
         this,
         [path]() {
-          QList<FileSuggestion> result;
+          QStringList results;
           for (const QFileInfo& file : QDir(path).entryInfoList()) {
-            FileSuggestion suggestion;
-            suggestion.file = file.fileName();
-            if (suggestion.file == "." || suggestion.file == ".." ||
+            if (file.fileName() == "." || file.fileName() == ".." ||
                 !file.isDir()) {
               continue;
             }
-            suggestion.file += '/';
-            result.append(suggestion);
+            results.append(file.fileName() + '/');
           }
-          return result;
+          results.sort();
+          return results;
         },
-        [this](QList<FileSuggestion> result) {
-          suggestions->list = result;
-          SortAndFilterSuggestions();
+        [this](QStringList results) {
+          suggestions->list.clear();
+          for (int i = 0; i < results.size(); i++) {
+            suggestions->list.append({i, results[i]});
+          }
+          suggestions->SetFilter(file);
         });
   } else {
-    SortAndFilterSuggestions();
+    suggestions->SetFilter(file);
   }
   emit pathChanged();
 }
 
 void ChooseFileController::PickSuggestion(int i) {
-  SetPath(folder + suggestions->list[i].file);
+  SetPath(folder + suggestions->list[i][1].toString());
 }
 
 void ChooseFileController::OpenOrCreateFile() {
@@ -99,33 +87,6 @@ void ChooseFileController::CreateFile() {
   Application::Get().RunIOTask(
       this, [path] { QDir().mkpath(path); },
       [this, path] { emit fileChosen(path); });
-}
-
-static bool Compare(const FileSuggestion& a, const FileSuggestion& b) {
-  if (a.match_start != b.match_start) {
-    return a.match_start < b.match_start;
-  } else if (a.distance != b.distance) {
-    return a.distance < b.distance;
-  } else {
-    return a.file < b.file;
-  }
-}
-
-void ChooseFileController::SortAndFilterSuggestions() {
-  for (FileSuggestion& suggestion : suggestions->list) {
-    suggestion.match_start =
-        suggestion.file.indexOf(file, Qt::CaseSensitivity::CaseInsensitive);
-    if (suggestion.match_start < 0) {
-      suggestion.match_start = std::numeric_limits<int>::max();
-    }
-    if (file.isEmpty()) {
-      suggestion.distance = std::numeric_limits<int>::max();
-    } else {
-      suggestion.distance = suggestion.file.size() - file.size();
-    }
-  }
-  std::sort(suggestions->list.begin(), suggestions->list.end(), Compare);
-  suggestions->SetFilter(file);
 }
 
 QString ChooseFileController::GetResultPath() const {
