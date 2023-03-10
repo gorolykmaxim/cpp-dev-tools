@@ -28,22 +28,18 @@ QVariant QVariantListModel::data(const QModelIndex& index, int role) const {
 static const QString kHighlightOpen = "<b>";
 static const QString kHighlightClose = "</b>";
 
-struct SearchResult {
-  bool matches = false;
-  QString value;
-};
-
-static SearchResult FindFuzzySubString(const QString& source,
+static QString HighlightFuzzySubString(const QString& source,
                                        const QString& term) {
-  SearchResult result;
-  QTextStream stream(&result.value);
+  QString result;
+  QTextStream stream(&result);
   qsizetype last_char_index = -1;
+  bool matches = false;
   bool highlighting = false;
   for (QChar c : term) {
     qsizetype pos = source.indexOf(c, last_char_index + 1,
                                    Qt::CaseSensitivity::CaseInsensitive);
     if (pos < 0) {
-      result.matches = false;
+      matches = false;
       break;
     }
     qsizetype distance = pos - last_char_index;
@@ -56,13 +52,13 @@ static SearchResult FindFuzzySubString(const QString& source,
     }
     if (!highlighting) {
       highlighting = true;
-      result.matches = true;
+      matches = true;
       stream << kHighlightOpen;
     }
     stream << source[pos];
     last_char_index = pos;
   }
-  if (result.matches && last_char_index < source.length() - 1) {
+  if (matches && last_char_index < source.length() - 1) {
     if (highlighting) {
       highlighting = false;
       stream << kHighlightClose;
@@ -70,10 +66,10 @@ static SearchResult FindFuzzySubString(const QString& source,
     stream << source.sliced(last_char_index + 1,
                             source.length() - last_char_index - 1);
   }
-  if (result.matches) {
+  if (matches) {
     stream.flush();
   } else {
-    result.value = source;
+    result = source;
   }
   return result;
 }
@@ -137,9 +133,9 @@ void QVariantListModel::Load() {
     bool matches = false;
     for (int role : searchable_roles) {
       QString str = row[role].toString();
-      SearchResult result = FindFuzzySubString(str, filter);
-      if (result.matches) {
-        row[role] = result.value;
+      QString result = HighlightFuzzySubString(str, filter);
+      if (result != str) {
+        row[role] = result;
         matches = true;
       }
     }
