@@ -40,7 +40,7 @@ ChooseTaskController::ChooseTaskController(QObject *parent)
         tasks->list.clear();
         for (int i = 0; i < execs.size(); i++) {
           tasks->list.append(
-              {i, TaskExecution::ShortenTaskCmd(execs[i], project)});
+              {i, TaskExecution::ShortenCommand(execs[i], project)});
         }
         tasks->Load();
         SetIsLoading(false);

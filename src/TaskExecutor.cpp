@@ -2,7 +2,7 @@
 
 #define LOG() qDebug() << "[TaskExecutor]"
 
-QString TaskExecution::ShortenTaskCmd(QString cmd, const Project& project) {
+QString TaskExecution::ShortenCommand(QString cmd, const Project& project) {
   if (cmd.startsWith(project.path)) {
     cmd.replace(project.path, ".");
   }

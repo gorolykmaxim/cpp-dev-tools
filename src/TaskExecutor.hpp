@@ -17,7 +17,7 @@ struct TaskExecution {
   QString command;
   std::optional<int> exit_code;
 
-  static QString ShortenTaskCmd(QString cmd, const Project& project);
+  static QString ShortenCommand(QString cmd, const Project& project);
 };
 
 class TaskExecutor : public QObject {
