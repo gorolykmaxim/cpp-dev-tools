@@ -12,6 +12,7 @@ QString TaskExecution::ShortenCommand(QString cmd, const Project& project) {
 void TaskExecutor::ExecuteTask(const QString& command) {
   LOG() << "Executing task" << command;
   QUuid exec_id = QUuid::createUuid();
+  active_execution_outputs[exec_id] = "";
   TaskExecution& exec = active_executions[exec_id];
   exec.id = exec_id;
   exec.start_time = QDateTime::currentDateTime();

@@ -8,11 +8,13 @@
 
 class TaskExecutionListModel : public QVariantListModel {
  public:
-  explicit TaskExecutionListModel(QObject* parent);
+  TaskExecutionListModel(QObject* parent, QUuid& selected_execution_id);
   QVariantList GetRow(int i) const override;
   int GetRowCount() const override;
+  const TaskExecution* FindById(QUuid id) const;
 
   QList<TaskExecution> list;
+  QUuid& selected_execution_id;
 };
 
 class TaskExecutionHistoryController : public QObject {
@@ -31,12 +33,6 @@ class TaskExecutionHistoryController : public QObject {
   explicit TaskExecutionHistoryController(QObject* parent = nullptr);
   bool AreExecutionsEmpty() const;
 
-  TaskExecutionListModel* executions;
-  QString execution_command;
-  QString execution_status;
-  QString execution_output;
-  QUuid execution_id;
-
  public slots:
   void SelectExecution(QUuid id);
   void HandleExecutionFinished(QUuid id);
@@ -47,5 +43,14 @@ class TaskExecutionHistoryController : public QObject {
   void executionChanged();
 
  private:
-  void LoadExecutions();
+  void LoadExecutions(bool update_selected_execution);
+  void LoadSelectedExecutionOutput();
+  void DisplaySelectedExecution();
+
+  QString execution_command;
+  QString execution_status;
+  QString execution_output;
+  QUuid execution_id;
+  bool follow_new_executions;
+  TaskExecutionListModel* executions;
 };
