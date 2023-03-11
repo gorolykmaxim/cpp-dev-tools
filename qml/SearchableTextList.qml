@@ -9,6 +9,7 @@ ColumnLayout {
   property string placeholderText: ""
   property bool showPlaceholder: false
   signal itemSelected()
+  signal currentItemChanged()
   function ifCurrentItem(field, callback) {
     textList.ifCurrentItem(field, callback);
   }
@@ -16,6 +17,11 @@ ColumnLayout {
     input.forceActiveFocus();
   }
   spacing: 0
+  onActiveFocusChanged: {
+    if (activeFocus) {
+      forceActiveFocus();
+    }
+  }
   Cdt.Text {
     Layout.alignment: Qt.AlignVCenter | Qt.AlignHCenter
     visible: showPlaceholder
@@ -44,7 +50,9 @@ ColumnLayout {
       id: textList
       anchors.fill: parent
       model: searchableModel
+      elide: Text.ElideLeft
       onItemLeftClicked: itemSelected()
+      onCurrentIndexChanged: root.currentItemChanged()
     }
   }
 }

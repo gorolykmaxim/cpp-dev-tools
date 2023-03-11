@@ -2,6 +2,13 @@
 
 #define LOG() qDebug() << "[TaskExecutor]"
 
+QString TaskExecution::ShortenTaskCmd(QString cmd, const Project& project) {
+  if (cmd.startsWith(project.path)) {
+    cmd.replace(project.path, ".");
+  }
+  return cmd;
+}
+
 void TaskExecutor::ExecuteTask(const QString& command) {
   LOG() << "Executing task" << command;
   TaskExecution exec;
@@ -50,6 +57,10 @@ void TaskExecutor::FinishExecution(QUuid id, QProcess* process) {
     emit executionFinished(id);
   }
   process->deleteLater();
+}
+
+const QList<TaskExecution>& TaskExecutor::GetExecutions() const {
+  return executions;
 }
 
 TaskExecution* TaskExecutor::FindExecutionById(QUuid id) {

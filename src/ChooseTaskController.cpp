@@ -3,6 +3,7 @@
 #include "Application.hpp"
 #include "Project.hpp"
 #include "QVariantListModel.hpp"
+#include "TaskExecutor.hpp"
 
 #define LOG() qDebug() << "[ChooseTaskController]"
 
@@ -12,13 +13,6 @@ static bool CompareExecs(const QString &a, const QString &b) {
   } else {
     return a < b;
   }
-}
-
-static QString ShortenTaskCmd(QString cmd, const Project &project) {
-  if (cmd.startsWith(project.path)) {
-    cmd.replace(project.path, ".");
-  }
-  return cmd;
 }
 
 ChooseTaskController::ChooseTaskController(QObject *parent)
@@ -45,7 +39,8 @@ ChooseTaskController::ChooseTaskController(QObject *parent)
       [this, project](QList<QString> execs) {
         tasks->list.clear();
         for (int i = 0; i < execs.size(); i++) {
-          tasks->list.append({i, ShortenTaskCmd(execs[i], project)});
+          tasks->list.append(
+              {i, TaskExecution::ShortenTaskCmd(execs[i], project)});
         }
         tasks->Load();
         SetIsLoading(false);

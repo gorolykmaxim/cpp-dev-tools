@@ -13,8 +13,8 @@ TextArea {
     Qt.Key_Home,
     Qt.Key_End,
   ])
-  property int selectionStart: 0
-  property int selectionEnd: 0
+  property int selectionStart: 0 // TODO: remove
+  property int selectionEnd: 0 // TODO: remove
   property bool cursorFollowEnd: false
   property string textData: ""
   selectByMouse: true
