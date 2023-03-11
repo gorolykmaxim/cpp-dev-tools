@@ -11,11 +11,11 @@ QString TaskExecution::ShortenTaskCmd(QString cmd, const Project& project) {
 
 void TaskExecutor::ExecuteTask(const QString& command) {
   LOG() << "Executing task" << command;
-  TaskExecution exec;
-  QUuid exec_id = exec.id = QUuid::createUuid();
+  QUuid exec_id = QUuid::createUuid();
+  TaskExecution& exec = active_executions[exec_id];
+  exec.id = exec_id;
   exec.start_time = QDateTime::currentDateTime();
   exec.command = command;
-  executions.append(exec);
   QProcess* process = new QProcess();
   QObject::connect(process, &QProcess::readyReadStandardOutput, this,
                    [this, process, exec_id] {
@@ -39,35 +39,49 @@ void TaskExecutor::ExecuteTask(const QString& command) {
 }
 
 void TaskExecutor::AppendToExecutionOutput(QUuid id, const QByteArray& data) {
-  if (TaskExecution* exec = FindExecutionById(id)) {
-    exec->output += data;
-    emit executionOutputChanged(id);
+  if (!active_execution_outputs.contains(id)) {
+    return;
   }
+  active_execution_outputs[id] += data;
+  emit executionOutputChanged(id);
 }
 
 void TaskExecutor::FinishExecution(QUuid id, QProcess* process) {
-  if (TaskExecution* exec = FindExecutionById(id)) {
+  if (active_executions.contains(id)) {
+    TaskExecution& exec = active_executions[id];
     if (process->error() == QProcess::FailedToStart ||
         process->exitStatus() == QProcess::CrashExit) {
-      exec->exit_code = -1;
+      exec.exit_code = -1;
     } else {
-      exec->exit_code = process->exitCode();
+      exec.exit_code = process->exitCode();
     }
-    LOG() << "Task" << id << "finished with code" << *exec->exit_code;
+    LOG() << "Task" << id << "finished with code" << *exec.exit_code;
     emit executionFinished(id);
   }
   process->deleteLater();
 }
 
-const QList<TaskExecution>& TaskExecutor::GetExecutions() const {
-  return executions;
+void TaskExecutor::FetchExecutions(
+    QObject*, QUuid project_id,
+    const std::function<void(const QList<TaskExecution>&)>& callback) const {
+  LOG() << "Fetching executions for project" << project_id;
+  QList<TaskExecution> execs;
+  for (QUuid id : active_executions.keys()) {
+    execs.append(active_executions[id]);
+  }
+  std::sort(execs.begin(), execs.end(),
+            [](const TaskExecution& a, const TaskExecution& b) {
+              return a.start_time < b.start_time;
+            });
+  callback(execs);
 }
 
-TaskExecution* TaskExecutor::FindExecutionById(QUuid id) {
-  for (TaskExecution& exec : executions) {
-    if (exec.id == id) {
-      return &exec;
-    }
+void TaskExecutor::FetchExecutionOutput(
+    QObject*, QUuid execution_id,
+    const std::function<void(const QString&)>& callback) const {
+  if (!active_execution_outputs.contains(execution_id)) {
+    return;
   }
-  return nullptr;
+  LOG() << "Fetching output of execution" << execution_id;
+  callback(active_execution_outputs[execution_id]);
 }

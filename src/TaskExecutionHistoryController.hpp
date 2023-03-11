@@ -11,6 +11,8 @@ class TaskExecutionListModel : public QVariantListModel {
   explicit TaskExecutionListModel(QObject* parent);
   QVariantList GetRow(int i) const override;
   int GetRowCount() const override;
+
+  QList<TaskExecution> list;
 };
 
 class TaskExecutionHistoryController : public QObject {
@@ -43,4 +45,7 @@ class TaskExecutionHistoryController : public QObject {
  signals:
   void executionsChanged();
   void executionChanged();
+
+ private:
+  void LoadExecutions();
 };

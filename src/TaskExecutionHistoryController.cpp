@@ -16,8 +16,7 @@ TaskExecutionListModel::TaskExecutionListModel(QObject* parent)
 }
 
 QVariantList TaskExecutionListModel::GetRow(int i) const {
-  Application& app = Application::Get();
-  const TaskExecution& exec = app.task_executor.GetExecutions()[i];
+  const TaskExecution& exec = list[i];
   QString icon, iconColor;
   if (!exec.exit_code) {
     icon = "autorenew";
@@ -31,25 +30,24 @@ QVariantList TaskExecutionListModel::GetRow(int i) const {
       iconColor = "red";
     }
   }
+  Application& app = Application::Get();
   const Project& current_project = app.project_context.GetCurrentProject();
   QString cmd = TaskExecution::ShortenTaskCmd(exec.command, current_project);
   return {exec.id, cmd, exec.start_time.toString(), icon, iconColor, false};
 }
 
-int TaskExecutionListModel::GetRowCount() const {
-  return Application::Get().task_executor.GetExecutions().size();
-}
+int TaskExecutionListModel::GetRowCount() const { return list.size(); }
 
 TaskExecutionHistoryController::TaskExecutionHistoryController(QObject* parent)
     : QObject(parent), executions(new TaskExecutionListModel(this)) {
-  TaskExecutor& task_executor = Application::Get().task_executor;
-  QObject::connect(&task_executor, &TaskExecutor::executionFinished, this,
+  QObject::connect(&Application::Get().task_executor,
+                   &TaskExecutor::executionFinished, this,
                    &TaskExecutionHistoryController::HandleExecutionFinished);
-  executions->Load();
+  LoadExecutions();
 }
 
 bool TaskExecutionHistoryController::AreExecutionsEmpty() const {
-  return executions->GetRowCount() == 0;
+  return executions->list.size() == 0;
 }
 
 void TaskExecutionHistoryController::SelectExecution(QUuid id) {
@@ -58,8 +56,7 @@ void TaskExecutionHistoryController::SelectExecution(QUuid id) {
 }
 
 void TaskExecutionHistoryController::HandleExecutionFinished(QUuid id) {
-  executions->Load();
-  emit executionsChanged();
+  LoadExecutions();
   if (execution_id == id) {
     emit executionChanged();
   }
@@ -69,4 +66,16 @@ void TaskExecutionHistoryController::HandleExecutionOutputChanged(QUuid id) {
   if (execution_id == id) {
     emit executionChanged();
   }
+}
+
+void TaskExecutionHistoryController::LoadExecutions() {
+  LOG() << "Refreshing history of executions";
+  Application& app = Application::Get();
+  const Project& current_project = app.project_context.GetCurrentProject();
+  app.task_executor.FetchExecutions(this, current_project.id,
+                                    [this](const QList<TaskExecution>& result) {
+                                      executions->list = result;
+                                      executions->Load();
+                                      emit executionsChanged();
+                                    });
 }
