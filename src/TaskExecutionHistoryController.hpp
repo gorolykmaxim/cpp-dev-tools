@@ -51,6 +51,5 @@ class TaskExecutionHistoryController : public QObject {
   QString execution_status;
   QString execution_output;
   QUuid execution_id;
-  bool follow_new_executions;
   TaskExecutionListModel* executions;
 };

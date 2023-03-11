@@ -54,7 +54,6 @@ const TaskExecution* TaskExecutionListModel::FindById(QUuid id) const {
 
 TaskExecutionHistoryController::TaskExecutionHistoryController(QObject* parent)
     : QObject(parent),
-      follow_new_executions(true),
       executions(new TaskExecutionListModel(this, execution_id)) {
   Application& app = Application::Get();
   app.view_controller.SetWindowTitle("Task Execution History");
@@ -72,13 +71,7 @@ bool TaskExecutionHistoryController::AreExecutionsEmpty() const {
 
 void TaskExecutionHistoryController::SelectExecution(QUuid id) {
   execution_id = id;
-  QList<TaskExecution>& execs = executions->list;
-  follow_new_executions = !execs.isEmpty() && execs.last().id == execution_id;
-  if (follow_new_executions) {
-    LOG() << "Latest execution will get selected:" << execution_id;
-  } else {
-    LOG() << "Execution selected:" << execution_id;
-  }
+  LOG() << "Execution selected:" << execution_id;
   DisplaySelectedExecution();
   LoadSelectedExecutionOutput();
 }
@@ -103,7 +96,7 @@ void TaskExecutionHistoryController::LoadExecutions(
       [this, update_selected_execution](const QList<TaskExecution>& result) {
         executions->list = result;
         if (update_selected_execution) {
-          if (follow_new_executions && !executions->list.isEmpty()) {
+          if (execution_id.isNull() && !executions->list.isEmpty()) {
             execution_id = executions->list.last().id;
           }
           DisplaySelectedExecution();
