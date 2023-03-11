@@ -30,7 +30,9 @@ void ProjectContext::SetCurrentProject(Project project) {
   }
 }
 
-Project ProjectContext::GetCurrentProject() const { return current_project; }
+const Project& ProjectContext::GetCurrentProject() const {
+  return current_project;
+}
 
 QString ProjectContext::GetCurrentProjectPathRelativeToHome() const {
   return current_project.GetPathRelativeToHome();

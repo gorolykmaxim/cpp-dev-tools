@@ -22,7 +22,7 @@ ChooseTaskController::ChooseTaskController(QObject *parent)
   Application &app = Application::Get();
   app.view_controller.SetWindowTitle("Run Task");
   SetIsLoading(true);
-  Project project = app.project_context.GetCurrentProject();
+  const Project &project = app.project_context.GetCurrentProject();
   QString path = project.path;
   app.RunIOTask<QList<QString>>(
       this,

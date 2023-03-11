@@ -31,7 +31,7 @@ QVariantList TaskExecutionListModel::GetRow(int i) const {
       iconColor = "red";
     }
   }
-  Project current_project = app.project_context.GetCurrentProject();
+  const Project& current_project = app.project_context.GetCurrentProject();
   QString cmd = TaskExecution::ShortenTaskCmd(exec.command, current_project);
   return {exec.id, cmd, exec.start_time.toString(), icon, iconColor, false};
 }
