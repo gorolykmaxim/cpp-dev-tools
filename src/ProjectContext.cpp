@@ -15,6 +15,7 @@ void ProjectContext::SetCurrentProject(Project project) {
     current_project = Project();
     Database::ExecCmdAsync("UPDATE project SET is_opened=false");
     emit currentProjectChanged();
+    app.task_executor.KillAllTasks();
     app.view_controller.SetCurrentView("SelectProject.qml");
   } else {
     LOG() << "Changing current project to" << project.path;

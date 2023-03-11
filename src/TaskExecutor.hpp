@@ -24,6 +24,7 @@ class TaskExecutor : public QObject {
   Q_OBJECT
  public:
   void ExecuteTask(const QString& command);
+  void KillAllTasks();
   void FetchExecutions(
       QObject* requestor, QUuid project_id,
       const std::function<void(const QList<TaskExecution>&)>& callback) const;
@@ -41,4 +42,5 @@ class TaskExecutor : public QObject {
 
   QHash<QUuid, TaskExecution> active_executions;
   QHash<QUuid, QString> active_execution_outputs;
+  QHash<QUuid, QProcess*> active_processes;
 };

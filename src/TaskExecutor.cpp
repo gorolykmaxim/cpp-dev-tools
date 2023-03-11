@@ -18,6 +18,7 @@ void TaskExecutor::ExecuteTask(const QString& command) {
   exec.start_time = QDateTime::currentDateTime();
   exec.command = command;
   QProcess* process = new QProcess();
+  active_processes[exec_id] = process;
   QObject::connect(process, &QProcess::readyReadStandardOutput, this,
                    [this, process, exec_id] {
                      AppendToExecutionOutput(exec_id,
@@ -37,6 +38,16 @@ void TaskExecutor::ExecuteTask(const QString& command) {
                      FinishExecution(exec_id, process);
                    });
   process->startCommand(command);
+}
+
+void TaskExecutor::KillAllTasks() {
+  LOG() << "Killing all tasks";
+  for (QProcess* process : active_processes.values()) {
+    process->kill();
+  }
+  active_executions.clear();
+  active_execution_outputs.clear();
+  active_processes.clear();
 }
 
 void TaskExecutor::AppendToExecutionOutput(QUuid id, const QByteArray& data) {
@@ -60,6 +71,7 @@ void TaskExecutor::FinishExecution(QUuid id, QProcess* process) {
     emit executionFinished(id);
   }
   process->deleteLater();
+  active_processes.remove(id);
 }
 
 void TaskExecutor::FetchExecutions(
