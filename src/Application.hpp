@@ -16,6 +16,7 @@ class Application {
  public:
   static Application& Get();
   Application(int argc, char** argv);
+  ~Application();
   int Exec();
 
   template <typename T>
