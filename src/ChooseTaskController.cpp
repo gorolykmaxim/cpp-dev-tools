@@ -2,8 +2,6 @@
 
 #include "Application.hpp"
 #include "Project.hpp"
-#include "QVariantListModel.hpp"
-#include "TaskExecutor.hpp"
 
 #define LOG() qDebug() << "[ChooseTaskController]"
 
@@ -17,10 +15,10 @@ static bool CompareExecs(const QString &a, const QString &b) {
 
 ChooseTaskController::ChooseTaskController(QObject *parent)
     : QObject(parent),
-      tasks(new SimpleQVariantListModel(this, {{0, "idx"}, {1, "title"}}, {1})),
+      tasks(new SimpleQVariantListModel(this, {{0, "title"}, {1, "command"}},
+                                        {0})),
       is_loading(true) {
   Application &app = Application::Get();
-  app.view_controller.SetWindowTitle("Run Task");
   SetIsLoading(true);
   const Project &project = app.project_context.GetCurrentProject();
   QString path = project.path;
@@ -38,9 +36,9 @@ ChooseTaskController::ChooseTaskController(QObject *parent)
       },
       [this, project](QList<QString> execs) {
         tasks->list.clear();
-        for (int i = 0; i < execs.size(); i++) {
-          tasks->list.append(
-              {i, TaskExecution::ShortenCommand(execs[i], project)});
+        for (const QString &exec : execs) {
+          QString short_cmd = TaskExecution::ShortenCommand(exec, project);
+          tasks->list.append({short_cmd, exec});
         }
         tasks->Load();
         SetIsLoading(false);
@@ -52,11 +50,6 @@ bool ChooseTaskController::ShouldShowPlaceholder() const {
 }
 
 bool ChooseTaskController::IsLoading() const { return is_loading; }
-
-void ChooseTaskController::ExecTask(int i) {
-  const QString cmd = tasks->list[i][1].toString();
-  Application::Get().task_executor.ExecuteTask(cmd);
-}
 
 void ChooseTaskController::SetIsLoading(bool value) {
   is_loading = value;

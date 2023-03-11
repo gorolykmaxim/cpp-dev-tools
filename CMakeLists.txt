@@ -38,6 +38,8 @@ qt_add_executable(cpp-dev-tools
   src/TaskExecutor.cpp
   src/TaskExecutionHistoryController.hpp
   src/TaskExecutionHistoryController.cpp
+  src/RunTaskController.hpp
+  src/RunTaskController.cpp
   src/main.cpp)
 if(NOT MSVC)
   # TODO: figure out how to enable all warnings in MSVC without triggering
@@ -71,6 +73,7 @@ qt_add_qml_module(cpp-dev-tools URI cdt VERSION 1.0
       qml/SearchUserCommandDialog.qml
       qml/SearchableTextList.qml
       qml/RunTask.qml
+      qml/ChooseTask.qml
       qml/TaskExecutionHistory.qml
   RESOURCES
       fonts/MaterialIcons-Regular.ttf)

@@ -2,15 +2,9 @@ import QtQuick
 import "." as Cdt
 import cdt
 
-Cdt.SearchableTextList {
-  Component.onCompleted: forceActiveFocus()
-  anchors.fill: parent
-  searchPlaceholderText: "Search task"
-  showPlaceholder: controller.showPlaceholder
-  placeholderText: controller.isLoading ? "Looking for tasks..." : "No tasks found"
-  searchableModel: controller.tasks
-  onItemSelected: ifCurrentItem('idx', controller.ExecTask)
-  ChooseTaskController {
+Cdt.ChooseTask {
+  onTaskSelected: (cmd) => controller.ExecuteTask(cmd)
+  RunTaskController {
     id: controller
   }
 }

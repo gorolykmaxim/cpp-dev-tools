@@ -3,7 +3,6 @@
 #include <QObject>
 #include <QtQmlIntegration>
 
-#include "Project.hpp"
 #include "QVariantListModel.hpp"
 
 class ChooseTaskController : public QObject {
@@ -19,9 +18,6 @@ class ChooseTaskController : public QObject {
   bool IsLoading() const;
 
   SimpleQVariantListModel* tasks;
-
- public slots:
-  void ExecTask(int i);
 
  signals:
   void isLoadingChanged();
