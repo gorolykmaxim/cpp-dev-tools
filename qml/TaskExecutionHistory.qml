@@ -55,19 +55,22 @@ RowLayout {
         }
       }
     }
-    Cdt.Pane {
+    Rectangle {
+      Layout.fillWidth: true
+      height: 1
+      color: Theme.colorBgBlack
+    }
+    Cdt.ReadOnlyTextArea {
+      id: execOutputTextArea
       Layout.fillWidth: true
       Layout.fillHeight: true
+      innerPadding: Theme.basePadding
       color: Theme.colorBgDark
-      Cdt.ReadOnlyTextArea {
-        id: execOutputTextArea
-        anchors.fill: parent
-        innerPadding: Theme.basePadding
-        textData: controller.executionOutput
-        textFormat: TextEdit.RichText
-        cursorFollowEnd: true
-        navigationLeft: execList
-      }
+      textData: controller.executionOutput
+      textFormat: TextEdit.RichText
+      cursorFollowEnd: true
+      searchable: true
+      navigationLeft: execList
     }
   }
 }
