@@ -50,13 +50,11 @@ Dialog {
         color: dialog.isError ? "red" : Theme.colorText
         Layout.alignment: Qt.AlignTop
       }
-      ScrollView {
+      Cdt.ReadOnlyTextArea {
         Layout.fillWidth: true
         Layout.fillHeight: true
-        Cdt.ReadOnlyTextArea {
-          textData: dialogText
-          KeyNavigation.down: dialogCancel.visible ? dialogCancel : dialogOk
-        }
+        textData: dialogText
+        navigationDown: dialogCancel.visible ? dialogCancel : dialogOk
       }
     }
     Row {

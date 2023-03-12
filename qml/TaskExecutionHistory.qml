@@ -59,18 +59,14 @@ RowLayout {
       Layout.fillWidth: true
       Layout.fillHeight: true
       color: Theme.colorBgDark
-      ScrollView {
+      Cdt.ReadOnlyTextArea {
+        id: execOutputTextArea
         anchors.fill: parent
-        Cdt.ReadOnlyTextArea {
-          id: execOutputTextArea
-          leftPadding: Theme.basePadding
-          rightPadding: Theme.basePadding
-          topPadding: Theme.basePadding
-          bottomPadding: Theme.basePadding
-          textData: controller.executionOutput
-          textFormat: TextEdit.RichText
-          cursorFollowEnd: true
-        }
+        innerPadding: Theme.basePadding
+        textData: controller.executionOutput
+        textFormat: TextEdit.RichText
+        cursorFollowEnd: true
+        navigationLeft: execList
       }
     }
   }
