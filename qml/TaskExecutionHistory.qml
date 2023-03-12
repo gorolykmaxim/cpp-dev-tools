@@ -24,7 +24,7 @@ RowLayout {
     searchPlaceholderText: "Search execution"
     searchableModel: controller.executions
     onCurrentItemChanged: ifCurrentItem('id', controller.SelectExecution)
-    KeyNavigation.right: execOutputTextArea
+    navigationRight: execOutputTextArea
   }
   Rectangle {
     visible: !controller.executionsEmpty

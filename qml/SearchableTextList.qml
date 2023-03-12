@@ -1,3 +1,4 @@
+import QtQuick
 import QtQuick.Layouts
 import cdt
 import "." as Cdt
@@ -8,6 +9,10 @@ ColumnLayout {
   property string searchPlaceholderText: ""
   property string placeholderText: ""
   property bool showPlaceholder: false
+  property var navigationUp: null
+  property var navigationDown: null
+  property var navigationLeft: null
+  property var navigationRight: null
   signal itemSelected()
   signal currentItemChanged()
   function ifCurrentItem(field, callback) {
@@ -16,12 +21,12 @@ ColumnLayout {
   function forceActiveFocus() {
     input.forceActiveFocus();
   }
-  spacing: 0
   onActiveFocusChanged: {
     if (activeFocus) {
       forceActiveFocus();
     }
   }
+  spacing: 0
   Cdt.Text {
     Layout.alignment: Qt.AlignVCenter | Qt.AlignHCenter
     visible: showPlaceholder
@@ -39,6 +44,10 @@ ColumnLayout {
       list: textList
       listModel: searchableModel
       onEnterPressed: itemSelected()
+      KeyNavigation.up: navigationUp
+      KeyNavigation.down: navigationDown
+      KeyNavigation.left: navigationLeft
+      KeyNavigation.right: navigationRight
     }
   }
   Cdt.Pane {
