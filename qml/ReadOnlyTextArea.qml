@@ -17,6 +17,7 @@ ColumnLayout {
   property var navigationDown: null
   property var navigationLeft: null
   property var navigationRight: null
+  spacing: 0
   onTextDataChanged: {
     textArea.text = textData;
     if (!cursorFollowEnd) {
