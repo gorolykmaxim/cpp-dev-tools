@@ -26,7 +26,7 @@ Application::Application(int argc, char** argv)
   QQuickWindow::setGraphicsApi(QSGRendererInterface::Software);
 #endif
   qml_engine.rootContext()->setContextProperty("projectSystem", &project);
-  qml_engine.rootContext()->setContextProperty("viewSystem", &view_controller);
+  qml_engine.rootContext()->setContextProperty("viewSystem", &view);
   qml_engine.rootContext()->setContextProperty("userCommandSystem",
                                                &user_command_controller);
 #if __APPLE__

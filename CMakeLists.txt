@@ -32,8 +32,8 @@ qt_add_executable(cpp-dev-tools
   src/ChooseTaskController.cpp
   src/ProjectSystem.hpp
   src/ProjectSystem.cpp
-  src/ViewController.hpp
-  src/ViewController.cpp
+  src/ViewSystem.hpp
+  src/ViewSystem.cpp
   src/TaskSystem.hpp
   src/TaskSystem.cpp
   src/TaskExecutionHistoryController.hpp

@@ -2,7 +2,7 @@
 
 #include "Application.hpp"
 #include "QVariantListModel.hpp"
-#include "ViewController.hpp"
+#include "ViewSystem.hpp"
 
 #define LOG() qDebug() << "[ChooseFileController]"
 
@@ -71,11 +71,10 @@ void ChooseFileController::OpenOrCreateFile() {
         if (exists) {
           emit fileChosen(path);
         } else {
-          app.view_controller.DisplayAlertDialog(
+          app.view.DisplayAlertDialog(
               "Create new folder?",
               "Do you want to create a new folder: " + path + "?");
-          QObject::connect(&app.view_controller,
-                           &ViewController::alertDialogAccepted, this,
+          QObject::connect(&app.view, &ViewSystem::alertDialogAccepted, this,
                            &ChooseFileController::CreateFile);
         }
       });

@@ -2,7 +2,7 @@
 
 #include <QObject>
 
-class ViewController : public QObject {
+class ViewSystem : public QObject {
   Q_OBJECT
   Q_PROPERTY(QString currentView READ GetCurrentView WRITE SetCurrentView NOTIFY
                  currentViewChanged)

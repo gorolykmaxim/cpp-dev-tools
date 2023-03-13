@@ -10,7 +10,7 @@
 #include "ProjectSystem.hpp"
 #include "TaskSystem.hpp"
 #include "UserCommandController.hpp"
-#include "ViewController.hpp"
+#include "ViewSystem.hpp"
 
 class Application {
  public:
@@ -38,7 +38,7 @@ class Application {
   int argc_;
   char** argv_;
   ProjectSystem project;
-  ViewController view_controller;
+  ViewSystem view;
   UserCommandController user_command_controller;
   TaskSystem task;
   QGuiApplication gui_app;

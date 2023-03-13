@@ -56,7 +56,7 @@ TaskExecutionHistoryController::TaskExecutionHistoryController(QObject* parent)
     : QObject(parent),
       executions(new TaskExecutionListModel(this, execution_id)) {
   Application& app = Application::Get();
-  app.view_controller.SetWindowTitle("Task Execution History");
+  app.view.SetWindowTitle("Task Execution History");
   QObject::connect(&app.task, &TaskSystem::executionFinished, this,
                    &TaskExecutionHistoryController::HandleExecutionFinished);
   QObject::connect(

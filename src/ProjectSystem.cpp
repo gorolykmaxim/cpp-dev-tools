@@ -16,7 +16,7 @@ void ProjectSystem::SetCurrentProject(Project project) {
     Database::ExecCmdAsync("UPDATE project SET is_opened=false");
     emit currentProjectChanged();
     app.task.KillAllTasks();
-    app.view_controller.SetCurrentView("SelectProject.qml");
+    app.view.SetCurrentView("SelectProject.qml");
   } else {
     LOG() << "Changing current project to" << project.path;
     project.is_opened = true;
@@ -27,7 +27,7 @@ void ProjectSystem::SetCurrentProject(Project project) {
         {project.is_opened, project.last_open_time, project.id});
     current_project = project;
     emit currentProjectChanged();
-    app.view_controller.SetCurrentView("RunTask.qml");
+    app.view.SetCurrentView("RunTask.qml");
   }
 }
 

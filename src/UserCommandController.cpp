@@ -21,17 +21,16 @@ UserCommandController::UserCommandController()
 
 void UserCommandController::RegisterCommands() {
   RegisterCommand("General", "Execute Command", "Ctrl+P", [] {
-    Application::Get().view_controller.DisplaySearchUserCommandDialog();
+    Application::Get().view.DisplaySearchUserCommandDialog();
   });
   RegisterCommand("General", "Close Project", "Ctrl+W", [] {
     Application::Get().project.SetCurrentProject(Project());
   });
   RegisterCommand("Task", "Run Task", "Ctrl+R", [] {
-    Application::Get().view_controller.SetCurrentView("RunTask.qml");
+    Application::Get().view.SetCurrentView("RunTask.qml");
   });
   RegisterCommand("Task", "Task Execution History", "Ctrl+E", [] {
-    Application::Get().view_controller.SetCurrentView(
-        "TaskExecutionHistory.qml");
+    Application::Get().view.SetCurrentView("TaskExecutionHistory.qml");
   });
   LOG() << "Comitting changes to user command list";
   user_commands->Load();
