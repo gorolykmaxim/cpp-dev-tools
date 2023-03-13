@@ -30,12 +30,24 @@ ColumnLayout {
       textArea.forceActiveFocus();
     }
   }
+  function openSearchBar() {
+    if (!searchable) {
+      return;
+    }
+    searchBar.visible = true;
+    searchOutputTextField.forceActiveFocus();
+  }
+  function closeSearchBar() {
+    searchBar.visible = false;
+    textArea.forceActiveFocus();
+  }
   Cdt.Pane {
     id: searchBar
     Layout.fillWidth: true
     color: Theme.colorBgMedium
     padding: Theme.basePadding
-    visible: searchable
+    visible: false
+    Keys.onEscapePressed: closeSearchBar()
     RowLayout {
       anchors.fill: parent
       Cdt.TextField {
@@ -99,6 +111,7 @@ ColumnLayout {
           Qt.Key_Down,
           Qt.Key_Home,
           Qt.Key_End,
+          Qt.Key_Escape,
         ])
         selectByMouse: true
         selectionColor: Theme.colorHighlight
@@ -120,6 +133,9 @@ ColumnLayout {
               !event.matches(StandardKey.SelectAll)) {
             event.accepted = true;
           }
+          if (event.key === Qt.Key_Escape) {
+            closeSearchBar();
+          }
         }
         onPressed: event => {
           if (event.button == Qt.RightButton) {
@@ -136,6 +152,13 @@ ColumnLayout {
             text: "Copy"
             shortcut: StandardKey.Copy
             onTriggered: textArea.copy()
+          }
+          MenuSeparator {}
+          MenuItem {
+            text: "Find"
+            enabled: searchable
+            shortcut: StandardKey.Find
+            onTriggered: openSearchBar()
           }
           MenuSeparator {}
           MenuItem {
