@@ -66,7 +66,7 @@ RowLayout {
       Layout.fillHeight: true
       innerPadding: Theme.basePadding
       color: Theme.colorBgDark
-      textData: controller.executionOutput
+      text: controller.executionOutput
       textFormat: TextEdit.RichText
       cursorFollowEnd: true
       searchable: true

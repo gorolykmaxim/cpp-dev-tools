@@ -9,7 +9,7 @@ ColumnLayout {
   id: root
   property bool cursorFollowEnd: false
   property bool searchable: false
-  property string textData: ""
+  property string text: ""
   property string color: "transparent"
   property var textFormat: TextEdit.PlainText
   property real innerPadding: 0
@@ -18,8 +18,8 @@ ColumnLayout {
   property var navigationLeft: null
   property var navigationRight: null
   spacing: 0
-  onTextDataChanged: {
-    textArea.text = textData;
+  onTextChanged: {
+    textArea.text = text;
     if (!cursorFollowEnd) {
       return;
     }

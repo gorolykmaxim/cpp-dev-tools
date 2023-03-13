@@ -53,7 +53,7 @@ Dialog {
       Cdt.ReadOnlyTextArea {
         Layout.fillWidth: true
         Layout.fillHeight: true
-        textData: dialogText
+        text: dialogText
         innerPadding: Theme.basePadding * 2
         navigationDown: dialogCancel.visible ? dialogCancel : dialogOk
       }
