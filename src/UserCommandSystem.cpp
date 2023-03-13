@@ -4,6 +4,14 @@
 
 #define LOG() qDebug() << "[UserCommandSystem]"
 
+QString UserCommand::GetFormattedShortcut() const {
+  QString result = shortcut.toUpper();
+#if __APPLE__
+  result.replace("CTRL", "\u2318");
+#endif
+  return result;
+}
+
 UserCommandListModel::UserCommandListModel(QObject* parent)
     : QVariantListModel(parent) {
   SetRoleNames({{0, "group"}, {1, "name"}, {2, "shortcut"}, {3, "index"}});

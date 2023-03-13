@@ -4,7 +4,15 @@
 #include <functional>
 
 #include "QVariantListModel.hpp"
-#include "UserCommand.hpp"
+
+struct UserCommand {
+  QString GetFormattedShortcut() const;
+
+  QString group;
+  QString name;
+  QString shortcut;
+  std::function<void()> callback;
+};
 
 class UserCommandListModel : public QVariantListModel {
  public:
