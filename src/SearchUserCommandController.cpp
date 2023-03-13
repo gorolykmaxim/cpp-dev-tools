@@ -2,7 +2,7 @@
 
 #include "Application.hpp"
 #include "QVariantListModel.hpp"
-#include "UserCommandController.hpp"
+#include "UserCommandSystem.hpp"
 
 #define LOG() qDebug() << "[SearchUserCommandController"
 
@@ -17,8 +17,7 @@ void SearchUserCommandController::LoadUserCommands() {
   user_commands->SetFilterIfChanged("");
   user_commands->list.clear();
   Application& app = Application::Get();
-  UserCommandController& controller = app.user_command_controller;
-  const QList<UserCommand>& commands = controller.GetUserCommands();
+  const QList<UserCommand>& commands = app.user_command.GetUserCommands();
   for (int i = 0; i < commands.size(); i++) {
     const UserCommand& cmd = commands[i];
     user_commands->list.append(
@@ -29,5 +28,5 @@ void SearchUserCommandController::LoadUserCommands() {
 
 void SearchUserCommandController::ExecuteCommand(int i) {
   emit commandExecuted();
-  Application::Get().user_command_controller.ExecuteCommand(i);
+  Application::Get().user_command.ExecuteCommand(i);
 }

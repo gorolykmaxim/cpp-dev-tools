@@ -9,7 +9,7 @@
 #include "Project.hpp"
 #include "ProjectSystem.hpp"
 #include "TaskSystem.hpp"
-#include "UserCommandController.hpp"
+#include "UserCommandSystem.hpp"
 #include "ViewSystem.hpp"
 
 class Application {
@@ -39,7 +39,7 @@ class Application {
   char** argv_;
   ProjectSystem project;
   ViewSystem view;
-  UserCommandController user_command_controller;
+  UserCommandSystem user_command;
   TaskSystem task;
   QGuiApplication gui_app;
   QQmlApplicationEngine qml_engine;

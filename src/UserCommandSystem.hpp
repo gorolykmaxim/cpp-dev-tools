@@ -15,11 +15,11 @@ class UserCommandListModel : public QVariantListModel {
   QList<UserCommand> list;
 };
 
-class UserCommandController : public QObject {
+class UserCommandSystem : public QObject {
   Q_OBJECT
   Q_PROPERTY(UserCommandListModel* userCommands MEMBER user_commands CONSTANT)
  public:
-  UserCommandController();
+  UserCommandSystem();
   void RegisterCommands();
   const QList<UserCommand>& GetUserCommands() const;
 

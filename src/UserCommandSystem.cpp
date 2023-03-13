@@ -1,8 +1,8 @@
-#include "UserCommandController.hpp"
+#include "UserCommandSystem.hpp"
 
 #include "Application.hpp"
 
-#define LOG() qDebug() << "[UserCommandController]"
+#define LOG() qDebug() << "[UserCommandSystem]"
 
 UserCommandListModel::UserCommandListModel(QObject* parent)
     : QVariantListModel(parent) {
@@ -16,10 +16,10 @@ QVariantList UserCommandListModel::GetRow(int i) const {
 
 int UserCommandListModel::GetRowCount() const { return list.size(); }
 
-UserCommandController::UserCommandController()
+UserCommandSystem::UserCommandSystem()
     : user_commands(new UserCommandListModel(this)) {}
 
-void UserCommandController::RegisterCommands() {
+void UserCommandSystem::RegisterCommands() {
   RegisterCommand("General", "Execute Command", "Ctrl+P", [] {
     Application::Get().view.DisplaySearchUserCommandDialog();
   });
@@ -36,19 +36,20 @@ void UserCommandController::RegisterCommands() {
   user_commands->Load();
 }
 
-const QList<UserCommand>& UserCommandController::GetUserCommands() const {
+const QList<UserCommand>& UserCommandSystem::GetUserCommands() const {
   return user_commands->list;
 }
 
-void UserCommandController::ExecuteCommand(int i) {
+void UserCommandSystem::ExecuteCommand(int i) {
   UserCommand& cmd = user_commands->list[i];
   LOG() << "Executing user command" << cmd.group << cmd.name;
   cmd.callback();
 }
 
-void UserCommandController::RegisterCommand(
-    const QString& group, const QString& name, const QString& shortcut,
-    const std::function<void()>& callback) {
+void UserCommandSystem::RegisterCommand(const QString& group,
+                                        const QString& name,
+                                        const QString& shortcut,
+                                        const std::function<void()>& callback) {
   LOG() << "Registering user command" << group << name;
   user_commands->list.append(UserCommand{group, name, shortcut, callback});
 }

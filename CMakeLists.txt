@@ -22,8 +22,8 @@ qt_add_executable(cpp-dev-tools
   src/PerfTimer.cpp
   src/Project.hpp
   src/Project.cpp
-  src/UserCommandController.hpp
-  src/UserCommandController.cpp
+  src/UserCommandSystem.hpp
+  src/UserCommandSystem.cpp
   src/UserCommand.hpp
   src/UserCommand.cpp
   src/SearchUserCommandController.hpp
