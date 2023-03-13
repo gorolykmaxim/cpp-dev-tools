@@ -4,7 +4,7 @@
 #include "QVariantListModel.hpp"
 #include "UserCommandSystem.hpp"
 
-#define LOG() qDebug() << "[SearchUserCommandController"
+#define LOG() qDebug() << "[SearchUserCommandController]"
 
 SearchUserCommandController::SearchUserCommandController(QObject* parent)
     : QObject(parent),
