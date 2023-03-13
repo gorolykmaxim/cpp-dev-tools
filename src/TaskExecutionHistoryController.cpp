@@ -57,10 +57,10 @@ TaskExecutionHistoryController::TaskExecutionHistoryController(QObject* parent)
       executions(new TaskExecutionListModel(this, execution_id)) {
   Application& app = Application::Get();
   app.view_controller.SetWindowTitle("Task Execution History");
-  QObject::connect(&app.task_executor, &TaskExecutor::executionFinished, this,
+  QObject::connect(&app.task, &TaskSystem::executionFinished, this,
                    &TaskExecutionHistoryController::HandleExecutionFinished);
   QObject::connect(
-      &app.task_executor, &TaskExecutor::executionOutputChanged, this,
+      &app.task, &TaskSystem::executionOutputChanged, this,
       &TaskExecutionHistoryController::HandleExecutionOutputChanged);
   LoadExecutions(true);
 }
@@ -91,7 +91,7 @@ void TaskExecutionHistoryController::LoadExecutions(
   LOG() << "Refreshing history of executions";
   Application& app = Application::Get();
   const Project& current_project = app.project.GetCurrentProject();
-  app.task_executor.FetchExecutions(
+  app.task.FetchExecutions(
       this, current_project.id,
       [this, update_selected_execution](const QList<TaskExecution>& result) {
         executions->list = result;
@@ -109,7 +109,7 @@ void TaskExecutionHistoryController::LoadExecutions(
 
 void TaskExecutionHistoryController::LoadSelectedExecutionOutput() {
   LOG() << "Reloading selected execution's output";
-  Application::Get().task_executor.FetchExecutionOutput(
+  Application::Get().task.FetchExecutionOutput(
       this, execution_id, [this](const QString& output) {
         execution_output = output.toHtmlEscaped();
         execution_output.replace("\n", "<br>");

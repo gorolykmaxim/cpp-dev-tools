@@ -8,7 +8,7 @@
 
 #include "Project.hpp"
 #include "ProjectSystem.hpp"
-#include "TaskExecutor.hpp"
+#include "TaskSystem.hpp"
 #include "UserCommandController.hpp"
 #include "ViewController.hpp"
 
@@ -40,7 +40,7 @@ class Application {
   ProjectSystem project;
   ViewController view_controller;
   UserCommandController user_command_controller;
-  TaskExecutor task_executor;
+  TaskSystem task;
   QGuiApplication gui_app;
   QQmlApplicationEngine qml_engine;
   QThreadPool io_thread_pool;

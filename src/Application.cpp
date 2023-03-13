@@ -36,7 +36,7 @@ Application::Application(int argc, char** argv)
 #endif
 }
 
-Application::~Application() { task_executor.KillAllTasks(); }
+Application::~Application() { task.KillAllTasks(); }
 
 int Application::Exec() {
   QtConcurrent::run(&io_thread_pool, &Database::Initialize).waitForFinished();

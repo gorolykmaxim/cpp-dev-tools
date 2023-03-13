@@ -8,6 +8,6 @@ RunTaskController::RunTaskController(QObject* parent) : QObject(parent) {
 
 void RunTaskController::ExecuteTask(const QString& command) const {
   Application& app = Application::Get();
-  app.task_executor.ExecuteTask(command);
+  app.task.ExecuteTask(command);
   app.view_controller.SetCurrentView("TaskExecutionHistory.qml");
 }

@@ -1,6 +1,6 @@
-#include "TaskExecutor.hpp"
+#include "TaskSystem.hpp"
 
-#define LOG() qDebug() << "[TaskExecutor]"
+#define LOG() qDebug() << "[TaskSystem]"
 
 QString TaskExecution::ShortenCommand(QString cmd, const Project& project) {
   if (cmd.startsWith(project.path)) {
@@ -9,7 +9,7 @@ QString TaskExecution::ShortenCommand(QString cmd, const Project& project) {
   return cmd;
 }
 
-void TaskExecutor::ExecuteTask(const QString& command) {
+void TaskSystem::ExecuteTask(const QString& command) {
   LOG() << "Executing task" << command;
   QUuid exec_id = QUuid::createUuid();
   active_execution_outputs[exec_id] = "";
@@ -40,7 +40,7 @@ void TaskExecutor::ExecuteTask(const QString& command) {
   process->startCommand(command);
 }
 
-void TaskExecutor::KillAllTasks() {
+void TaskSystem::KillAllTasks() {
   LOG() << "Killing all tasks";
   for (QProcess* process : active_processes.values()) {
     process->kill();
@@ -50,7 +50,7 @@ void TaskExecutor::KillAllTasks() {
   active_processes.clear();
 }
 
-void TaskExecutor::AppendToExecutionOutput(QUuid id, const QByteArray& data) {
+void TaskSystem::AppendToExecutionOutput(QUuid id, const QByteArray& data) {
   if (!active_execution_outputs.contains(id)) {
     return;
   }
@@ -58,7 +58,7 @@ void TaskExecutor::AppendToExecutionOutput(QUuid id, const QByteArray& data) {
   emit executionOutputChanged(id);
 }
 
-void TaskExecutor::FinishExecution(QUuid id, QProcess* process) {
+void TaskSystem::FinishExecution(QUuid id, QProcess* process) {
   if (active_executions.contains(id)) {
     TaskExecution& exec = active_executions[id];
     if (process->error() == QProcess::FailedToStart ||
@@ -74,7 +74,7 @@ void TaskExecutor::FinishExecution(QUuid id, QProcess* process) {
   active_processes.remove(id);
 }
 
-void TaskExecutor::FetchExecutions(
+void TaskSystem::FetchExecutions(
     QObject*, QUuid project_id,
     const std::function<void(const QList<TaskExecution>&)>& callback) const {
   LOG() << "Fetching executions for project" << project_id;
@@ -89,7 +89,7 @@ void TaskExecutor::FetchExecutions(
   callback(execs);
 }
 
-void TaskExecutor::FetchExecutionOutput(
+void TaskSystem::FetchExecutionOutput(
     QObject*, QUuid execution_id,
     const std::function<void(const QString&)>& callback) const {
   if (!active_execution_outputs.contains(execution_id)) {

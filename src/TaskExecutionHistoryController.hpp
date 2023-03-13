@@ -4,7 +4,7 @@
 #include <QtQmlIntegration>
 
 #include "QVariantListModel.hpp"
-#include "TaskExecutor.hpp"
+#include "TaskSystem.hpp"
 
 class TaskExecutionListModel : public QVariantListModel {
  public:

@@ -20,7 +20,7 @@ struct TaskExecution {
   static QString ShortenCommand(QString cmd, const Project& project);
 };
 
-class TaskExecutor : public QObject {
+class TaskSystem : public QObject {
   Q_OBJECT
  public:
   void ExecuteTask(const QString& command);
