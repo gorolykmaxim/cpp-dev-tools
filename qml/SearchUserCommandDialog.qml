@@ -6,7 +6,7 @@ import "." as Cdt
 Dialog {
   id: dialog
   Connections {
-      target: viewController
+      target: viewSystem
       function onSearchUserCommandDialogDisplayed() {
         controller.LoadUserCommands();
         visible = true;

@@ -8,7 +8,7 @@ RowLayout {
     padding: Theme.basePadding
     spacing: Theme.basePadding * 2
     Cdt.Text {
-      text: projectContext.currentProjectShortPath || " "
+      text: projectSystem.currentProjectShortPath || " "
     }
   }
   Row {

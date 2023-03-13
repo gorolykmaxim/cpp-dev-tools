@@ -10,10 +10,10 @@ Dialog {
   property string dialogText: ""
   property bool isError: false
   property bool isCancellable: true
-  onAccepted: viewController.alertDialogAccepted()
-  onRejected: viewController.alertDialogRejected()
+  onAccepted: viewSystem.alertDialogAccepted()
+  onRejected: viewSystem.alertDialogRejected()
   Connections {
-      target: viewController
+      target: viewSystem
       function onAlertDialogDisplayed(title, text) {
           dialogTitle = title;
           dialogText = text;

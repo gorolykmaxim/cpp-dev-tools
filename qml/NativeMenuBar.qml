@@ -33,7 +33,7 @@ Item {
     id: delay
     property var index
     interval: 0
-    onTriggered: userCommands.ExecuteCommand(index)
+    onTriggered: userCommandSystem.ExecuteCommand(index)
   }
   MenuBar {
     id: menuBar

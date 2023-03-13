@@ -87,7 +87,7 @@ Qml.MenuBar {
     id: action
     Qml.Action {
       property var index
-      onTriggered: userCommands.ExecuteCommand(index)
+      onTriggered: userCommandSystem.ExecuteCommand(index)
     }
   }
 }
