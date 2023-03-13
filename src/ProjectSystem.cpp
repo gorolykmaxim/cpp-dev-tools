@@ -1,4 +1,4 @@
-#include "ProjectContext.hpp"
+#include "ProjectSystem.hpp"
 
 #include <QDir>
 
@@ -6,9 +6,9 @@
 #include "Database.hpp"
 #include "Project.hpp"
 
-#define LOG() qDebug() << "[ProjectContext]"
+#define LOG() qDebug() << "[ProjectSystem]"
 
-void ProjectContext::SetCurrentProject(Project project) {
+void ProjectSystem::SetCurrentProject(Project project) {
   Application& app = Application::Get();
   if (project.IsNull()) {
     LOG() << "Closing project" << current_project.path;
@@ -31,14 +31,14 @@ void ProjectContext::SetCurrentProject(Project project) {
   }
 }
 
-const Project& ProjectContext::GetCurrentProject() const {
+const Project& ProjectSystem::GetCurrentProject() const {
   return current_project;
 }
 
-QString ProjectContext::GetCurrentProjectPathRelativeToHome() const {
+QString ProjectSystem::GetCurrentProjectPathRelativeToHome() const {
   return current_project.GetPathRelativeToHome();
 }
 
-bool ProjectContext::IsProjectOpened() const {
+bool ProjectSystem::IsProjectOpened() const {
   return !current_project.IsNull();
 }

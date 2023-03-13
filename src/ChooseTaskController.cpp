@@ -20,7 +20,7 @@ ChooseTaskController::ChooseTaskController(QObject *parent)
       is_loading(true) {
   Application &app = Application::Get();
   SetIsLoading(true);
-  const Project &project = app.project_context.GetCurrentProject();
+  const Project &project = app.project.GetCurrentProject();
   QString path = project.path;
   app.RunIOTask<QList<QString>>(
       this,

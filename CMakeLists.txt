@@ -30,8 +30,8 @@ qt_add_executable(cpp-dev-tools
   src/SearchUserCommandController.cpp
   src/ChooseTaskController.hpp
   src/ChooseTaskController.cpp
-  src/ProjectContext.hpp
-  src/ProjectContext.cpp
+  src/ProjectSystem.hpp
+  src/ProjectSystem.cpp
   src/ViewController.hpp
   src/ViewController.cpp
   src/TaskExecutor.hpp

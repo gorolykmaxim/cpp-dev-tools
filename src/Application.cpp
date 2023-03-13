@@ -25,8 +25,7 @@ Application::Application(int argc, char** argv)
   // rendering is even slower.
   QQuickWindow::setGraphicsApi(QSGRendererInterface::Software);
 #endif
-  qml_engine.rootContext()->setContextProperty("projectSystem",
-                                               &project_context);
+  qml_engine.rootContext()->setContextProperty("projectSystem", &project);
   qml_engine.rootContext()->setContextProperty("viewSystem", &view_controller);
   qml_engine.rootContext()->setContextProperty("userCommandSystem",
                                                &user_command_controller);

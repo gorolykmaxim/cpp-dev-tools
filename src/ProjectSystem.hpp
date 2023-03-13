@@ -4,7 +4,7 @@
 
 #include "Project.hpp"
 
-class ProjectContext : public QObject {
+class ProjectSystem : public QObject {
   Q_OBJECT
   Q_PROPERTY(
       QString currentProjectShortPath READ GetCurrentProjectPathRelativeToHome

@@ -32,7 +32,7 @@ QVariantList TaskExecutionListModel::GetRow(int i) const {
     }
   }
   Application& app = Application::Get();
-  const Project& current_project = app.project_context.GetCurrentProject();
+  const Project& current_project = app.project.GetCurrentProject();
   QString cmd = TaskExecution::ShortenCommand(exec.command, current_project);
   bool is_selected = selected_execution_id == exec.id;
   return {exec.id, cmd,       exec.start_time.toString(),
@@ -90,7 +90,7 @@ void TaskExecutionHistoryController::LoadExecutions(
     bool update_selected_execution) {
   LOG() << "Refreshing history of executions";
   Application& app = Application::Get();
-  const Project& current_project = app.project_context.GetCurrentProject();
+  const Project& current_project = app.project.GetCurrentProject();
   app.task_executor.FetchExecutions(
       this, current_project.id,
       [this, update_selected_execution](const QList<TaskExecution>& result) {
@@ -124,7 +124,7 @@ void TaskExecutionHistoryController::DisplaySelectedExecution() {
   }
   LOG() << "Updaing selected execution's status";
   Application& app = Application::Get();
-  const Project& current_project = app.project_context.GetCurrentProject();
+  const Project& current_project = app.project.GetCurrentProject();
   execution_command =
       TaskExecution::ShortenCommand(exec->command, current_project);
   execution_status = "Running...";

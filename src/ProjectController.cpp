@@ -57,7 +57,7 @@ ProjectController::ProjectController(QObject* parent)
         }
         if (current) {
           LOG() << "Opening last opened project" << current->path;
-          Application::Get().project_context.SetCurrentProject(*current);
+          Application::Get().project.SetCurrentProject(*current);
         } else {
           projects->Load();
           emit selectProject();
@@ -76,7 +76,7 @@ void ProjectController::DeleteProject(int i) {
 void ProjectController::OpenProject(int i) {
   Project& project = projects->list[i];
   LOG() << "Opening project" << project.path;
-  Application::Get().project_context.SetCurrentProject(project);
+  Application::Get().project.SetCurrentProject(project);
 }
 
 void ProjectController::OpenNewProject(const QString& path) {
@@ -90,7 +90,7 @@ void ProjectController::OpenNewProject(const QString& path) {
     }
   }
   if (existing) {
-    Application::Get().project_context.SetCurrentProject(*existing);
+    Application::Get().project.SetCurrentProject(*existing);
   } else {
     Project project;
     project.id = QUuid::createUuid();
@@ -100,6 +100,6 @@ void ProjectController::OpenNewProject(const QString& path) {
     Database::ExecCmdAsync(
         "INSERT INTO project VALUES(?, ?, ?, ?)",
         {project.id, project.path, project.is_opened, project.last_open_time});
-    Application::Get().project_context.SetCurrentProject(project);
+    Application::Get().project.SetCurrentProject(project);
   }
 }

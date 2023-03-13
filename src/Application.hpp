@@ -7,7 +7,7 @@
 #include <functional>
 
 #include "Project.hpp"
-#include "ProjectContext.hpp"
+#include "ProjectSystem.hpp"
 #include "TaskExecutor.hpp"
 #include "UserCommandController.hpp"
 #include "ViewController.hpp"
@@ -37,7 +37,7 @@ class Application {
 
   int argc_;
   char** argv_;
-  ProjectContext project_context;
+  ProjectSystem project;
   ViewController view_controller;
   UserCommandController user_command_controller;
   TaskExecutor task_executor;
