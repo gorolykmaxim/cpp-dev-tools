@@ -18,12 +18,17 @@ ColumnLayout {
   property var navigationLeft: null
   property var navigationRight: null
   spacing: 0
+  TextAreaController {
+    id: controller
+    onSelectText: (start, end) => textArea.select(start, end)
+  }
   onTextChanged: {
     textArea.text = text;
-    if (!cursorFollowEnd) {
-      return;
+    if (cursorFollowEnd) {
+      textArea.cursorPosition = textArea.length;
     }
-    textArea.cursorPosition = textArea.length;
+    controller.Search(searchOutputTextField.displayText,
+                      textArea.getText(0, textArea.length))
   }
   onActiveFocusChanged: {
     if (activeFocus) {
@@ -39,6 +44,7 @@ ColumnLayout {
   }
   function closeSearchBar() {
     searchBar.visible = false;
+    searchOutputTextField.text = "";
     textArea.forceActiveFocus();
   }
   Cdt.Pane {
@@ -53,32 +59,31 @@ ColumnLayout {
       Cdt.TextField {
         id: searchOutputTextField
         Layout.fillWidth: true
-        text: ""
-        placeholderText: "REPLACE ME PLACEHOLDER"
-        // onDisplayTextChanged: core.OnAction("vaSearchExecOutput",
-        //                                     [displayText])
+        placeholderText: "Search text"
+        onDisplayTextChanged: controller.Search(displayText,
+                                                textArea.getText(0, textArea.length))
         KeyNavigation.up: navigationUp
         KeyNavigation.down: textArea
         KeyNavigation.left: navigationLeft
         KeyNavigation.right: searchPrevBtn
         function goToSearchResult(event) {
-          if (event.modifiers & Qt.ControlModifier) {
-            // core.OnAction("vaPrevExecOutputSearchResult", [])
+          if (event.modifiers & Qt.ShiftModifier) {
+            controller.PreviousResult();
           } else {
-            // core.OnAction("vaNextExecOutputSearchResult", [])
+            controller.NextResult();
           }
         }
-        Keys.onReturnPressed: goToSearchResult(event)
-        Keys.onEnterPressed: goToSearchResult(event)
+        Keys.onReturnPressed: (event) => goToSearchResult(event)
+        Keys.onEnterPressed: (event) => goToSearchResult(event)
       }
       Cdt.Text {
-        text: "NO RESULTS"
+        text: controller.searchResultsCount
       }
       Cdt.IconButton {
         id: searchPrevBtn
         buttonIcon: "arrow_upward"
-        // enabled: !vExecOutputNoSearchResults
-        // onClicked: core.OnAction("vaPrevExecOutputSearchResult", [])
+        enabled: !controller.searchResultsEmpty
+        onClicked: controller.PreviousResult()
         KeyNavigation.up: navigationUp
         KeyNavigation.down: textArea
         KeyNavigation.left: searchOutputTextField
@@ -87,8 +92,8 @@ ColumnLayout {
       Cdt.IconButton {
         id: searchNextBtn
         buttonIcon: "arrow_downward"
-        // enabled: !vExecOutputNoSearchResults
-        // onClicked: core.OnAction("vaNextExecOutputSearchResult", [])
+        enabled: !controller.searchResultsEmpty
+        onClicked: controller.NextResult()
         KeyNavigation.up: navigationUp
         KeyNavigation.down: textArea
         KeyNavigation.left: searchPrevBtn
