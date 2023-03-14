@@ -135,6 +135,18 @@ ColumnLayout {
           color: "transparent"
         }
         wrapMode: TextArea.WordWrap
+        Shortcut {
+          id: shortcutFind
+          sequence: StandardKey.Find
+          enabled: textArea.activeFocus && searchable
+          onActivated: openSearchBar()
+        }
+        Shortcut {
+          id: shortcutSelectWord
+          sequence: "Ctrl+D"
+          enabled: textArea.activeFocus
+          onActivated: textArea.selectWord()
+        }
         // Make text area effectively readOnly but don't hide the cursor and
         // allow navigating it using the cursor
         Keys.onPressed: event => {
@@ -164,21 +176,22 @@ ColumnLayout {
           id: contextMenu
           MenuItem {
             text: "Copy"
-            shortcut: StandardKey.Copy
             onTriggered: textArea.copy()
           }
           MenuSeparator {}
           MenuItem {
             text: "Find"
             enabled: searchable
-            shortcut: StandardKey.Find
-            onTriggered: openSearchBar()
+            onTriggered: shortcutFind.activated()
           }
           MenuSeparator {}
           MenuItem {
             text: "Select All"
-            shortcut: StandardKey.SelectAll
             onTriggered: textArea.selectAll()
+          }
+          MenuItem {
+            text: "Select Word"
+            onTriggered: shortcutSelectWord.activated()
           }
         }
       }

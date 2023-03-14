@@ -26,23 +26,19 @@ TextField {
     id: contextMenu
     MenuItem {
       text: "Cut"
-      shortcut: StandardKey.Cut
       onTriggered: textField.cut()
     }
     MenuItem {
       text: "Copy"
-      shortcut: StandardKey.Copy
       onTriggered: textField.copy()
     }
     MenuItem {
       text: "Paste"
-      shortcut: StandardKey.Paste
       onTriggered: textField.paste()
     }
     MenuSeparator {}
     MenuItem {
       text: "Select All"
-      shortcut: StandardKey.SelectAll
       onTriggered: textField.selectAll()
     }
   }
