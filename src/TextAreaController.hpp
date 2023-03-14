@@ -34,5 +34,4 @@ class TextAreaController : public QObject {
   int selected_result = 0;
   QList<SearchResult> search_results;
   QString search_results_count = "0 Results";
-  QString search_term;
 };

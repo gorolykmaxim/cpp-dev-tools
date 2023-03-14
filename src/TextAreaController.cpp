@@ -5,6 +5,10 @@ TextAreaController::TextAreaController(QObject* parent) : QObject(parent) {
 }
 
 void TextAreaController::Search(const QString& term, const QString& text) {
+  int prev_start = -1;
+  if (selected_result < search_results.size()) {
+    prev_start = search_results[selected_result].start;
+  }
   search_results.clear();
   if (term.size() > 2) {
     int pos = 0;
@@ -20,13 +24,15 @@ void TextAreaController::Search(const QString& term, const QString& text) {
       pos = result.end + 1;
     }
   }
-  // If the search_term didn't change and text just got bigger - we don't want
-  // to reset selected_result: TextArea might be displaying an active log and
-  // when new lines are added to it - we want to preserve selected_result.
-  if (search_term != term || selected_result >= search_results.size()) {
-    selected_result = 0;
+  if (selected_result >= search_results.size() ||
+      search_results[selected_result].start != prev_start) {
+    for (int i = 0; i < search_results.size(); i++) {
+      if (search_results[i].start >= prev_start) {
+        selected_result = i;
+        break;
+      }
+    }
   }
-  search_term = term;
   if (!search_results.isEmpty()) {
     DisplaySelectedSearchResult();
   } else {
