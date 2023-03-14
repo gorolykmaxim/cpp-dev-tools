@@ -12,7 +12,7 @@ QString TaskExecution::ShortenCommand(QString cmd, const Project& project) {
 void TaskSystem::ExecuteTask(const QString& command) {
   LOG() << "Executing task" << command;
   QUuid exec_id = QUuid::createUuid();
-  active_execution_outputs[exec_id] = "";
+  active_execution_outputs[exec_id] = TaskExecutionOutput();
   TaskExecution& exec = active_executions[exec_id];
   exec.id = exec_id;
   exec.start_time = QDateTime::currentDateTime();
@@ -21,13 +21,13 @@ void TaskSystem::ExecuteTask(const QString& command) {
   active_processes[exec_id] = process;
   QObject::connect(process, &QProcess::readyReadStandardOutput, this,
                    [this, process, exec_id] {
-                     AppendToExecutionOutput(exec_id,
-                                             process->readAllStandardOutput());
+                     AppendToExecutionOutput(
+                         exec_id, process->readAllStandardOutput(), false);
                    });
   QObject::connect(process, &QProcess::readyReadStandardError, this,
                    [this, process, exec_id] {
-                     AppendToExecutionOutput(exec_id,
-                                             process->readAllStandardError());
+                     AppendToExecutionOutput(
+                         exec_id, process->readAllStandardError(), true);
                    });
   QObject::connect(process, &QProcess::errorOccurred, this,
                    [this, process, exec_id](QProcess::ProcessError) {
@@ -50,11 +50,20 @@ void TaskSystem::KillAllTasks() {
   active_processes.clear();
 }
 
-void TaskSystem::AppendToExecutionOutput(QUuid id, const QByteArray& data) {
+void TaskSystem::AppendToExecutionOutput(QUuid id, const QByteArray& data,
+                                         bool is_stderr) {
   if (!active_execution_outputs.contains(id)) {
     return;
   }
-  active_execution_outputs[id] += data;
+  TaskExecutionOutput& exec_output = active_execution_outputs[id];
+  QString data_str(data);
+  if (is_stderr) {
+    int lines_before = exec_output.output.count('\n');
+    for (int i = 0; i < data_str.count('\n'); i++) {
+      exec_output.stderr_line_indices.insert(i + lines_before);
+    }
+  }
+  exec_output.output += data_str;
   emit executionOutputChanged(id);
 }
 
@@ -91,7 +100,7 @@ void TaskSystem::FetchExecutions(
 
 void TaskSystem::FetchExecutionOutput(
     QObject*, QUuid execution_id,
-    const std::function<void(const QString&)>& callback) const {
+    const std::function<void(const TaskExecutionOutput&)>& callback) const {
   if (!active_execution_outputs.contains(execution_id)) {
     return;
   }

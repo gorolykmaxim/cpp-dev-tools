@@ -20,6 +20,11 @@ struct TaskExecution {
   static QString ShortenCommand(QString cmd, const Project& project);
 };
 
+struct TaskExecutionOutput {
+  QSet<int> stderr_line_indices;
+  QString output;
+};
+
 class TaskSystem : public QObject {
   Q_OBJECT
  public:
@@ -30,17 +35,18 @@ class TaskSystem : public QObject {
       const std::function<void(const QList<TaskExecution>&)>& callback) const;
   void FetchExecutionOutput(
       QObject* requestor, QUuid execution_id,
-      const std::function<void(const QString&)>& callback) const;
+      const std::function<void(const TaskExecutionOutput&)>& callback) const;
 
  signals:
   void executionOutputChanged(QUuid exec_id);
   void executionFinished(QUuid exec_id);
 
  private:
-  void AppendToExecutionOutput(QUuid id, const QByteArray& data);
+  void AppendToExecutionOutput(QUuid id, const QByteArray& data,
+                               bool is_stderr);
   void FinishExecution(QUuid id, QProcess* process);
 
   QHash<QUuid, TaskExecution> active_executions;
-  QHash<QUuid, QString> active_execution_outputs;
+  QHash<QUuid, TaskExecutionOutput> active_execution_outputs;
   QHash<QUuid, QProcess*> active_processes;
 };
