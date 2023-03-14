@@ -23,7 +23,10 @@ RowLayout {
     Layout.minimumWidth: 300
     searchPlaceholderText: "Search execution"
     searchableModel: controller.executions
-    onCurrentItemChanged: ifCurrentItem('id', controller.SelectExecution)
+    onCurrentItemChanged: ifCurrentItem('id', (id) => {
+      controller.SelectExecution(id);
+      execOutputTextArea.closeSearchBar();
+    })
     navigationRight: execOutputTextArea
   }
   Rectangle {
