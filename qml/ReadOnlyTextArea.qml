@@ -122,7 +122,6 @@ ColumnLayout {
           Qt.Key_Down,
           Qt.Key_Home,
           Qt.Key_End,
-          Qt.Key_Escape,
         ])
         selectByMouse: true
         selectionColor: Theme.colorHighlight
@@ -139,13 +138,17 @@ ColumnLayout {
         // Make text area effectively readOnly but don't hide the cursor and
         // allow navigating it using the cursor
         Keys.onPressed: event => {
+          if (event.key === Qt.Key_Escape) {
+            if (searchBar.visible) {
+              closeSearchBar(true);
+            } else {
+              textArea.deselect();
+            }
+          }
           if (!allowedKeys.has(event.key) &&
               !event.matches(StandardKey.Copy) &&
               !event.matches(StandardKey.SelectAll)) {
             event.accepted = true;
-          }
-          if (event.key === Qt.Key_Escape) {
-            closeSearchBar(true);
           }
         }
         onPressed: event => {
