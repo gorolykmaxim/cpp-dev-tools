@@ -47,10 +47,12 @@ ColumnLayout {
     searchOutputTextField.forceActiveFocus();
     controller.GoToResultWithStartAt(position);
   }
-  function closeSearchBar() {
+  function closeSearchBar(focusTextArea) {
     searchBar.visible = false;
     searchOutputTextField.text = "";
-    textArea.forceActiveFocus();
+    if (focusTextArea) {
+      textArea.forceActiveFocus();
+    }
   }
   Cdt.Pane {
     id: searchBar
@@ -58,7 +60,7 @@ ColumnLayout {
     color: Theme.colorBgMedium
     padding: Theme.basePadding
     visible: false
-    Keys.onEscapePressed: closeSearchBar()
+    Keys.onEscapePressed: closeSearchBar(true)
     RowLayout {
       anchors.fill: parent
       Cdt.TextField {
@@ -144,7 +146,7 @@ ColumnLayout {
             event.accepted = true;
           }
           if (event.key === Qt.Key_Escape) {
-            closeSearchBar();
+            closeSearchBar(true);
           }
         }
         onPressed: event => {
