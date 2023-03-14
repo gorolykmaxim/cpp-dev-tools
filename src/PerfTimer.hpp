@@ -1,6 +1,7 @@
 #pragma once
 
-#include "Lib.hpp"
+#include <QString>
+#include <chrono>
 
 class PerfTimer {
  public:

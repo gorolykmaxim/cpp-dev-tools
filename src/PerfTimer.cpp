@@ -1,5 +1,7 @@
 #include "PerfTimer.hpp"
 
+#include <QDebug>
+
 #define LOG() qDebug() << "[PerfTimer]"
 
 using namespace std::chrono;

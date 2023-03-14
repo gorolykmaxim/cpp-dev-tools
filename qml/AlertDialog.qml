@@ -1,46 +1,80 @@
 import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
+import cdt
+import "." as Cdt
 
-ColumnLayout {
-  anchors.fill: parent
-  TextWidget {
-    text: dTitle ?? ""
-    font.bold: true
+Dialog {
+  id: dialog
+  property string dialogTitle: ""
+  property string dialogText: ""
+  property bool isError: false
+  property bool isCancellable: true
+  onAccepted: viewSystem.alertDialogAccepted()
+  onRejected: viewSystem.alertDialogRejected()
+  Connections {
+      target: viewSystem
+      function onAlertDialogDisplayed(title, text) {
+          dialogTitle = title;
+          dialogText = text;
+          dialog.visible = true;
+      }
+      function onDialogClosed() {
+        dialog.reject();
+      }
   }
-  RowLayout {
-    Layout.fillHeight: true
-    IconWidget {
-      icon: dError ? "error" : "help"
-      iconSize: 48
-      color: dError ? "red" : colorText
-      Layout.alignment: Qt.AlignTop
+  width: 500
+  height: Math.min(contentHeight + padding * 2, parent.height * 0.8)
+  padding: Theme.basePadding * 2
+  modal: true
+  visible: false
+  anchors.centerIn: parent
+  background: Rectangle {
+    color: Theme.colorBgMedium
+    radius: Theme.baseRadius
+    border.width: 1
+    border.color: Theme.colorBgLight
+  }
+  ColumnLayout {
+    anchors.fill: parent
+    anchors.margins: 1
+    Cdt.Text {
+      text: dialogTitle
+      font.bold: true
     }
-    ScrollView {
-      Layout.fillWidth: true
+    RowLayout {
       Layout.fillHeight: true
-      ReadOnlyTextAreaWidget {
-        textData: dText ?? ""
-        KeyNavigation.down: dialogCancel.visible ? dialogCancel : dialogOk
+      Cdt.Icon {
+        icon: dialog.isError ? "error" : "help"
+        iconSize: 48
+        color: dialog.isError ? "red" : Theme.colorText
+        Layout.alignment: Qt.AlignTop
+      }
+      Cdt.ReadOnlyTextArea {
+        Layout.fillWidth: true
+        Layout.fillHeight: true
+        text: dialogText
+        innerPadding: Theme.basePadding * 2
+        navigationDown: dialogCancel.visible ? dialogCancel : dialogOk
       }
     }
-  }
-  Row {
-    spacing: basePadding
-    Layout.alignment: Qt.AlignRight
-    ButtonWidget {
-      id: dialogCancel
-      text: "Cancel"
-      focus: visible
-      visible: dCancellable ?? false
-      KeyNavigation.right: dialogOk
-      onClicked: dialog.reject()
-    }
-    ButtonWidget {
-      id: dialogOk
-      text: "OK"
-      focus: !dialogCancel.visible
-      onClicked: dialog.accept()
+    Row {
+      spacing: Theme.basePadding
+      Layout.alignment: Qt.AlignRight
+      Cdt.Button {
+        id: dialogCancel
+        text: "Cancel"
+        focus: visible
+        visible: dialog.isCancellable
+        KeyNavigation.right: dialogOk
+        onClicked: dialog.reject()
+      }
+      Cdt.Button {
+        id: dialogOk
+        text: "OK"
+        focus: !dialogCancel.visible
+        onClicked: dialog.accept()
+      }
     }
   }
 }
