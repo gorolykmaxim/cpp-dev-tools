@@ -26,6 +26,7 @@ void TextAreaController::Search(const QString& term, const QString& text) {
   }
   if (selected_result >= search_results.size() ||
       search_results[selected_result].start != prev_start) {
+    selected_result = 0;
     for (int i = 0; i < search_results.size(); i++) {
       if (search_results[i].start >= prev_start) {
         selected_result = i;

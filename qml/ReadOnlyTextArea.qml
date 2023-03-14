@@ -49,7 +49,6 @@ ColumnLayout {
   }
   function closeSearchBar(focusTextArea) {
     searchBar.visible = false;
-    searchOutputTextField.text = "";
     if (focusTextArea) {
       textArea.forceActiveFocus();
     }
