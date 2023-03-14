@@ -35,6 +35,17 @@ void TextAreaController::Search(const QString& term, const QString& text) {
   UpdateSearchResultsCount();
 }
 
+void TextAreaController::GoToResultWithStartAt(int text_position) {
+  for (int i = 0; i < search_results.size(); i++) {
+    if (search_results[i].start == text_position) {
+      selected_result = i;
+      DisplaySelectedSearchResult();
+      UpdateSearchResultsCount();
+      break;
+    }
+  }
+}
+
 void TextAreaController::NextResult() {
   if (search_results.isEmpty()) {
     return;

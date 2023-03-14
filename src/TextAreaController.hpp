@@ -19,6 +19,7 @@ class TextAreaController : public QObject {
   explicit TextAreaController(QObject* parent = nullptr);
  public slots:
   void Search(const QString& term, const QString& text);
+  void GoToResultWithStartAt(int text_position);
   void NextResult();
   void PreviousResult();
   bool AreSearchResultsEmpty() const;

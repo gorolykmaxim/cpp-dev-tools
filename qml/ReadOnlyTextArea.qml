@@ -27,8 +27,10 @@ ColumnLayout {
     if (cursorFollowEnd) {
       textArea.cursorPosition = textArea.length;
     }
-    controller.Search(searchOutputTextField.displayText,
-                      textArea.getText(0, textArea.length))
+    if (searchBar.visible) {
+      controller.Search(searchOutputTextField.displayText,
+                        textArea.getText(0, textArea.length))
+    }
   }
   onActiveFocusChanged: {
     if (activeFocus) {
@@ -40,7 +42,10 @@ ColumnLayout {
       return;
     }
     searchBar.visible = true;
+    const position = textArea.selectionStart;
+    searchOutputTextField.text = textArea.selectedText;
     searchOutputTextField.forceActiveFocus();
+    controller.GoToResultWithStartAt(position);
   }
   function closeSearchBar() {
     searchBar.visible = false;
