@@ -4,6 +4,11 @@ import cdt
 import "." as Cdt
 
 ApplicationWindow {
+  Component.onCompleted: {
+    if (viewSystem.dimensions.isMaximized) {
+      showMaximized();
+    }
+  }
   title: viewSystem.windowTitle
   width: viewSystem.dimensions.width
   height: viewSystem.dimensions.height
@@ -19,7 +24,8 @@ ApplicationWindow {
   Timer {
     id: windowDimensionsDebounce
     interval: 500
-    onTriggered: viewSystem.SaveWindowDimensions(width, height, x, y)
+    onTriggered: viewSystem.SaveWindowDimensions(width, height, x, y,
+                                                 visibility == Window.Maximized)
   }
   FontLoader {
     id: iconFont

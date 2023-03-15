@@ -13,6 +13,7 @@ struct WindowDimensions {
   Q_PROPERTY(int height MEMBER height CONSTANT)
   Q_PROPERTY(int x MEMBER x CONSTANT)
   Q_PROPERTY(int y MEMBER y CONSTANT)
+  Q_PROPERTY(bool isMaximized MEMBER is_maximized CONSTANT)
  public:
   int minimum_width = 1024;
   int minimum_height = 600;
@@ -20,6 +21,7 @@ struct WindowDimensions {
   int height = minimum_height;
   int x = 0;
   int y = 0;
+  bool is_maximized = false;
 
   static WindowDimensions ReadFromSql(QSqlQuery& query);
   bool operator==(const WindowDimensions& another) const;
@@ -47,7 +49,8 @@ class ViewSystem : public QObject {
 
  public slots:
   void DisplaySearchUserCommandDialog();
-  void SaveWindowDimensions(int width, int height, int x, int y) const;
+  void SaveWindowDimensions(int width, int height, int x, int y,
+                            bool is_maximized) const;
 
  signals:
   void currentViewChanged();

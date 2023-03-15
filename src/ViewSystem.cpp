@@ -14,12 +14,13 @@ WindowDimensions WindowDimensions::ReadFromSql(QSqlQuery &query) {
   dimensions.height = query.value(1).toInt();
   dimensions.x = query.value(2).toInt();
   dimensions.y = query.value(3).toInt();
+  dimensions.is_maximized = query.value(4).toBool();
   return dimensions;
 }
 
 bool WindowDimensions::operator==(const WindowDimensions &another) const {
   return width == another.width && height == another.height && x == another.x &&
-         y == another.y;
+         y == another.y && is_maximized == another.is_maximized;
 }
 
 bool WindowDimensions::operator!=(const WindowDimensions &another) const {
@@ -31,7 +32,7 @@ QDebug operator<<(QDebug debug, const WindowDimensions &dimensions) {
   return debug.nospace() << "WindowDimensions(width=" << dimensions.width
                          << ",height=" << dimensions.height
                          << ",x=" << dimensions.x << ",y=" << dimensions.y
-                         << ')';
+                         << ",is_maximized=" << dimensions.is_maximized << ')';
 }
 
 void ViewSystem::SetCurrentView(const QString &current_view) {
@@ -74,8 +75,8 @@ void ViewSystem::DetermineWindowDimensions() {
   QFuture<QList<WindowDimensions>> future =
       QtConcurrent::run(&Application::Get().io_thread_pool, [this] {
         return Database::ExecQueryAndRead<WindowDimensions>(
-            "SELECT width, height, x, y FROM window_dimensions WHERE "
-            "screen_width=? AND screen_height=?",
+            "SELECT width, height, x, y, is_maximized FROM window_dimensions "
+            "WHERE screen_width=? AND screen_height=?",
             &WindowDimensions::ReadFromSql,
             {screen_size.width(), screen_size.height()});
       });
@@ -104,16 +105,18 @@ void ViewSystem::SetDefaultWindowSize() {
   emit windowDimensionsChanaged();
 }
 
-void ViewSystem::SaveWindowDimensions(int width, int height, int x,
-                                      int y) const {
+void ViewSystem::SaveWindowDimensions(int width, int height, int x, int y,
+                                      bool is_maximized) const {
   if (x < 0) {
     x = 0;
   }
   if (y < 0) {
     y = 0;
   }
-  LOG() << "Saving new window dimensions:" << width << height << x << y;
+  LOG() << "Saving new window dimensions:" << width << height << x << y
+        << is_maximized;
   Database::ExecCmdAsync(
-      "INSERT OR REPLACE INTO window_dimensions VALUES(?, ?, ?, ?, ?, ?)",
-      {screen_size.width(), screen_size.height(), width, height, x, y});
+      "INSERT OR REPLACE INTO window_dimensions VALUES(?, ?, ?, ?, ?, ?, ?)",
+      {screen_size.width(), screen_size.height(), width, height, x, y,
+       is_maximized});
 }
