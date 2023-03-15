@@ -21,6 +21,10 @@ void Database::Initialize() {
   ExecCmd(
       "CREATE TABLE IF NOT EXISTS project(id BLOB PRIMARY KEY, path TEXT, "
       "is_opened BOOL, last_open_time DATETIME)");
+  ExecCmd(
+      "CREATE TABLE IF NOT EXISTS window_dimensions(screen_width INT, "
+      "screen_height INT, width INT, height INT, x INT, y INT, PRIMARY "
+      "KEY(screen_width, screen_height))");
 }
 
 void Database::ExecQuery(QSqlQuery &sql, const QString &query,

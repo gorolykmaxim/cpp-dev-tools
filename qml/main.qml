@@ -5,9 +5,22 @@ import "." as Cdt
 
 ApplicationWindow {
   title: viewSystem.windowTitle
-  minimumWidth: 1024
-  minimumHeight: 600
+  width: viewSystem.dimensions.width
+  height: viewSystem.dimensions.height
+  x: viewSystem.dimensions.x
+  y: viewSystem.dimensions.y
+  minimumWidth: viewSystem.dimensions.minimumWidth
+  minimumHeight: viewSystem.dimensions.minimumHeight
+  onWidthChanged: windowDimensionsDebounce.restart()
+  onHeightChanged: windowDimensionsDebounce.restart()
+  onXChanged: windowDimensionsDebounce.restart()
+  onYChanged: windowDimensionsDebounce.restart()
   visible: true
+  Timer {
+    id: windowDimensionsDebounce
+    interval: 500
+    onTriggered: viewSystem.SaveWindowDimensions(width, height, x, y)
+  }
   FontLoader {
     id: iconFont
     source: "../fonts/MaterialIcons-Regular.ttf"

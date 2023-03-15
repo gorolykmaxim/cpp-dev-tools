@@ -1,6 +1,30 @@
 #pragma once
 
+#include <QDebug>
 #include <QObject>
+#include <QSize>
+#include <QSqlQuery>
+
+struct WindowDimensions {
+  Q_GADGET
+  Q_PROPERTY(int minimumWidth MEMBER minimum_width CONSTANT)
+  Q_PROPERTY(int minimumHeight MEMBER minimum_height CONSTANT)
+  Q_PROPERTY(int width MEMBER width CONSTANT)
+  Q_PROPERTY(int height MEMBER height CONSTANT)
+  Q_PROPERTY(int x MEMBER x CONSTANT)
+  Q_PROPERTY(int y MEMBER y CONSTANT)
+ public:
+  int minimum_width = 1024;
+  int minimum_height = 600;
+  int width = minimum_width;
+  int height = minimum_height;
+  int x = 0;
+  int y = 0;
+
+  static WindowDimensions ReadFromSql(QSqlQuery& query);
+};
+
+QDebug operator<<(QDebug debug, const WindowDimensions& dimensions);
 
 class ViewSystem : public QObject {
   Q_OBJECT
@@ -8,15 +32,18 @@ class ViewSystem : public QObject {
                  currentViewChanged)
   Q_PROPERTY(QString windowTitle READ GetWindowTitle WRITE SetWindowTitle NOTIFY
                  windowTitleChanged)
+  Q_PROPERTY(WindowDimensions dimensions MEMBER dimensions CONSTANT)
  public:
   void SetCurrentView(const QString& current_view);
   QString GetCurrentView() const;
   void DisplayAlertDialog(const QString& title, const QString& text);
   void SetWindowTitle(const QString& title);
   QString GetWindowTitle() const;
+  void DetermineWindowDimensions();
 
  public slots:
   void DisplaySearchUserCommandDialog();
+  void SaveWindowDimensions(int width, int height, int x, int y) const;
 
  signals:
   void currentViewChanged();
@@ -30,4 +57,6 @@ class ViewSystem : public QObject {
  private:
   QString current_view = "SelectProject.qml";
   QString window_title = "CPP Dev Tools";
+  WindowDimensions dimensions;
+  QSize screen_size;
 };
