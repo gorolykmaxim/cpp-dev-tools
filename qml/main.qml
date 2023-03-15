@@ -23,7 +23,7 @@ ApplicationWindow {
   visible: true
   Timer {
     id: windowDimensionsDebounce
-    interval: 500
+    interval: 100
     onTriggered: viewSystem.SaveWindowDimensions(width, height, x, y,
                                                  visibility == Window.Maximized)
   }
