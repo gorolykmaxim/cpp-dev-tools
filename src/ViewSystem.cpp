@@ -69,16 +69,18 @@ void ViewSystem::DisplaySearchUserCommandDialog() {
 }
 
 void ViewSystem::DetermineWindowDimensions() {
-  screen_size = QGuiApplication::primaryScreen()->availableSize();
+  QRect virtual_desktop = QGuiApplication::primaryScreen()->virtualGeometry();
   SetDefaultWindowSize();
   LOG() << "Loading window dimensions from database";
   QFuture<QList<WindowDimensions>> future =
-      QtConcurrent::run(&Application::Get().io_thread_pool, [this] {
+      QtConcurrent::run(&Application::Get().io_thread_pool, [virtual_desktop] {
         return Database::ExecQueryAndRead<WindowDimensions>(
             "SELECT width, height, x, y, is_maximized FROM window_dimensions "
-            "WHERE screen_width=? AND screen_height=?",
+            "WHERE virtual_width=? AND virtual_height=? AND virtual_x=? AND "
+            "virtual_y=?",
             &WindowDimensions::ReadFromSql,
-            {screen_size.width(), screen_size.height()});
+            {virtual_desktop.width(), virtual_desktop.height(),
+             virtual_desktop.x(), virtual_desktop.y()});
       });
   while (!future.isResultReadyAt(0)) {
     // If we just call result() - Qt will not just block current thread waiting
@@ -99,6 +101,7 @@ void ViewSystem::DetermineWindowDimensions() {
 }
 
 void ViewSystem::SetDefaultWindowSize() {
+  QSize screen_size = QGuiApplication::primaryScreen()->availableSize();
   dimensions = WindowDimensions();
   dimensions.x = screen_size.width() / 2 - dimensions.width / 2;
   dimensions.y = screen_size.height() / 2 - dimensions.height / 2;
@@ -107,16 +110,12 @@ void ViewSystem::SetDefaultWindowSize() {
 
 void ViewSystem::SaveWindowDimensions(int width, int height, int x, int y,
                                       bool is_maximized) const {
-  if (x < 0) {
-    x = 0;
-  }
-  if (y < 0) {
-    y = 0;
-  }
+  QRect virtual_desktop = QGuiApplication::primaryScreen()->virtualGeometry();
   LOG() << "Saving new window dimensions:" << width << height << x << y
         << is_maximized;
   Database::ExecCmdAsync(
-      "INSERT OR REPLACE INTO window_dimensions VALUES(?, ?, ?, ?, ?, ?, ?)",
-      {screen_size.width(), screen_size.height(), width, height, x, y,
-       is_maximized});
+      "INSERT OR REPLACE INTO window_dimensions VALUES(?, ?, ?, ?, ?, ?, ?, ?, "
+      "?)",
+      {virtual_desktop.width(), virtual_desktop.height(), virtual_desktop.x(),
+       virtual_desktop.y(), width, height, x, y, is_maximized});
 }

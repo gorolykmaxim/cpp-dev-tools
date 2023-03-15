@@ -2,7 +2,6 @@
 
 #include <QDebug>
 #include <QObject>
-#include <QSize>
 #include <QSqlQuery>
 
 struct WindowDimensions {
@@ -66,5 +65,4 @@ class ViewSystem : public QObject {
   QString current_view = "SelectProject.qml";
   QString window_title = "CPP Dev Tools";
   WindowDimensions dimensions;
-  QSize screen_size;
 };
