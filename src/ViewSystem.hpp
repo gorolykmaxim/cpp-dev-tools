@@ -22,6 +22,8 @@ struct WindowDimensions {
   int y = 0;
 
   static WindowDimensions ReadFromSql(QSqlQuery& query);
+  bool operator==(const WindowDimensions& another) const;
+  bool operator!=(const WindowDimensions& another) const;
 };
 
 QDebug operator<<(QDebug debug, const WindowDimensions& dimensions);
@@ -32,7 +34,8 @@ class ViewSystem : public QObject {
                  currentViewChanged)
   Q_PROPERTY(QString windowTitle READ GetWindowTitle WRITE SetWindowTitle NOTIFY
                  windowTitleChanged)
-  Q_PROPERTY(WindowDimensions dimensions MEMBER dimensions CONSTANT)
+  Q_PROPERTY(WindowDimensions dimensions MEMBER dimensions NOTIFY
+                 windowDimensionsChanaged)
  public:
   void SetCurrentView(const QString& current_view);
   QString GetCurrentView() const;
@@ -40,6 +43,7 @@ class ViewSystem : public QObject {
   void SetWindowTitle(const QString& title);
   QString GetWindowTitle() const;
   void DetermineWindowDimensions();
+  void SetDefaultWindowSize();
 
  public slots:
   void DisplaySearchUserCommandDialog();
@@ -53,6 +57,7 @@ class ViewSystem : public QObject {
   void searchUserCommandDialogDisplayed();
   void dialogClosed();
   void windowTitleChanged();
+  void windowDimensionsChanaged();
 
  private:
   QString current_view = "SelectProject.qml";

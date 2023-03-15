@@ -17,6 +17,15 @@ WindowDimensions WindowDimensions::ReadFromSql(QSqlQuery &query) {
   return dimensions;
 }
 
+bool WindowDimensions::operator==(const WindowDimensions &another) const {
+  return width == another.width && height == another.height && x == another.x &&
+         y == another.y;
+}
+
+bool WindowDimensions::operator!=(const WindowDimensions &another) const {
+  return !(*this == another);
+}
+
 QDebug operator<<(QDebug debug, const WindowDimensions &dimensions) {
   QDebugStateSaver saver(debug);
   return debug.nospace() << "WindowDimensions(width=" << dimensions.width
@@ -60,8 +69,7 @@ void ViewSystem::DisplaySearchUserCommandDialog() {
 
 void ViewSystem::DetermineWindowDimensions() {
   screen_size = QGuiApplication::primaryScreen()->availableSize();
-  dimensions.x = screen_size.width() / 2 - dimensions.width / 2;
-  dimensions.y = screen_size.height() / 2 - dimensions.height / 2;
+  SetDefaultWindowSize();
   LOG() << "Loading window dimensions from database";
   QFuture<QList<WindowDimensions>> future =
       QtConcurrent::run(&Application::Get().io_thread_pool, [this] {
@@ -87,6 +95,13 @@ void ViewSystem::DetermineWindowDimensions() {
     LOG() << "No existing window dimensions found - will fallback to the "
              "default one";
   }
+}
+
+void ViewSystem::SetDefaultWindowSize() {
+  dimensions = WindowDimensions();
+  dimensions.x = screen_size.width() / 2 - dimensions.width / 2;
+  dimensions.y = screen_size.height() / 2 - dimensions.height / 2;
+  emit windowDimensionsChanaged();
 }
 
 void ViewSystem::SaveWindowDimensions(int width, int height, int x,
