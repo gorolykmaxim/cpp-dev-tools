@@ -105,6 +105,7 @@ void ViewSystem::SetDefaultWindowSize() {
   dimensions = WindowDimensions();
   dimensions.x = screen_size.width() / 2 - dimensions.width / 2;
   dimensions.y = screen_size.height() / 2 - dimensions.height / 2;
+  LOG() << "Reseting to default" << dimensions;
   emit windowDimensionsChanaged();
 }
 
