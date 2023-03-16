@@ -6,7 +6,6 @@ import "." as Cdt
 import cdt
 
 RowLayout {
-  Component.onCompleted: execList.forceActiveFocus()
   anchors.fill: parent
   spacing: 0
   TaskExecutionHistoryController {
@@ -22,8 +21,10 @@ RowLayout {
     visible: !controller.executionsEmpty
     Layout.maximumWidth: 300
     Layout.minimumWidth: 300
+    Layout.fillHeight: true
     searchPlaceholderText: "Search execution"
     searchableModel: controller.executions
+    focus: true
     onCurrentItemChanged: ifCurrentItem('id', (id) => {
       controller.SelectExecution(id);
       execOutputTextArea.closeSearchBar();
@@ -32,7 +33,7 @@ RowLayout {
     navigationRight: execOutputTextArea
     Shortcut {
       id: shortcutRemoveFinished
-      enabled: execList.hasFocus
+      enabled: execList.activeFocus
       sequence: "Ctrl+Shift+D"
       onActivated: controller.RemoveFinishedExecutions()
     }

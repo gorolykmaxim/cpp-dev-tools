@@ -10,7 +10,6 @@ Dialog {
       function onSearchUserCommandDialogDisplayed() {
         controller.LoadUserCommands();
         visible = true;
-        textList.forceActiveFocus()
       }
       function onDialogClosed() {
         dialog.reject();
@@ -37,6 +36,7 @@ Dialog {
     anchors.fill: parent
     anchors.margins: 1
     searchPlaceholderText: "Search command"
+    focus: true
     searchableModel: controller.userCommands
     onItemSelected: ifCurrentItem('index', controller.ExecuteCommand)
   }

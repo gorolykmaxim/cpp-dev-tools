@@ -37,12 +37,14 @@ ApplicationWindow {
   }
   Page {
     anchors.fill: parent
+    focus: !searchUserCommandDialog.visible && !alertDialog.visible
     background: Rectangle {
       color: Theme.colorBgBlack
     }
     Loader {
       anchors.fill: parent
       source: viewSystem.currentView
+      focus: true
     }
     footer: Cdt.StatusBar {}
   }

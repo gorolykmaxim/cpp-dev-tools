@@ -5,7 +5,7 @@ import Qt.labs.platform
 import cdt
 import "." as Cdt
 
-ColumnLayout {
+FocusScope {
   id: root
   property bool cursorFollowEnd: false
   property bool searchable: false
@@ -17,11 +17,6 @@ ColumnLayout {
   property var navigationDown: null
   property var navigationLeft: null
   property var navigationRight: null
-  spacing: 0
-  TextAreaController {
-    id: controller
-    onSelectText: (start, end) => textArea.select(start, end)
-  }
   onTextChanged: {
     textArea.text = text;
     if (cursorFollowEnd) {
@@ -32,166 +27,176 @@ ColumnLayout {
                         textArea.getText(0, textArea.length))
     }
   }
-  onActiveFocusChanged: {
-    if (activeFocus) {
-      textArea.forceActiveFocus();
-    }
-  }
   function openSearchBar() {
     if (!searchable) {
       return;
     }
-    searchBar.visible = true;
     const position = textArea.selectionStart;
     searchOutputTextField.text = textArea.selectedText;
-    searchOutputTextField.forceActiveFocus();
+    searchBar.visible = true;
     controller.GoToResultWithStartAt(position);
   }
-  function closeSearchBar(focusTextArea) {
+  function closeSearchBar() {
     searchBar.visible = false;
-    if (focusTextArea) {
-      textArea.forceActiveFocus();
-    }
   }
-  Cdt.Pane {
-    id: searchBar
-    Layout.fillWidth: true
-    color: Theme.colorBgMedium
-    padding: Theme.basePadding
-    visible: false
-    Keys.onEscapePressed: closeSearchBar(true)
-    RowLayout {
-      anchors.fill: parent
-      Cdt.TextField {
-        id: searchOutputTextField
-        Layout.fillWidth: true
-        placeholderText: "Search text"
-        onDisplayTextChanged: controller.Search(displayText,
-                                                textArea.getText(0, textArea.length))
-        KeyNavigation.up: navigationUp
-        KeyNavigation.down: textArea
-        KeyNavigation.left: navigationLeft
-        KeyNavigation.right: searchPrevBtn
-        function goToSearchResult(event) {
-          if (event.modifiers & Qt.ShiftModifier) {
-            controller.PreviousResult();
-          } else {
-            controller.NextResult();
-          }
-        }
-        Keys.onReturnPressed: (event) => goToSearchResult(event)
-        Keys.onEnterPressed: (event) => goToSearchResult(event)
-      }
-      Cdt.Text {
-        text: controller.searchResultsCount
-      }
-      Cdt.IconButton {
-        id: searchPrevBtn
-        buttonIcon: "arrow_upward"
-        enabled: !controller.searchResultsEmpty
-        onClicked: controller.PreviousResult()
-        KeyNavigation.up: navigationUp
-        KeyNavigation.down: textArea
-        KeyNavigation.left: searchOutputTextField
-        KeyNavigation.right: searchNextBtn
-      }
-      Cdt.IconButton {
-        id: searchNextBtn
-        buttonIcon: "arrow_downward"
-        enabled: !controller.searchResultsEmpty
-        onClicked: controller.NextResult()
-        KeyNavigation.up: navigationUp
-        KeyNavigation.down: textArea
-        KeyNavigation.left: searchPrevBtn
-        KeyNavigation.right: navigationRight
-      }
-    }
+  TextAreaController {
+    id: controller
+    onSelectText: (start, end) => textArea.select(start, end)
   }
-  Cdt.Pane {
-    Layout.fillWidth: true
-    Layout.fillHeight: true
-    color: root.color
-    ScrollView {
-      anchors.fill: parent
-      TextArea {
-        id: textArea
-        property var allowedKeys: new Set([
-          Qt.Key_Left,
-          Qt.Key_Right,
-          Qt.Key_Up,
-          Qt.Key_Down,
-          Qt.Key_Home,
-          Qt.Key_End,
-        ])
-        selectByMouse: true
-        selectionColor: Theme.colorHighlight
-        color: Theme.colorText
-        leftPadding: root.innerPadding
-        rightPadding: root.innerPadding
-        topPadding: root.innerPadding
-        bottomPadding: root.innerPadding
-        textFormat: root.textFormat
-        background: Rectangle {
-          color: "transparent"
-        }
-        wrapMode: TextArea.WordWrap
-        Shortcut {
-          id: shortcutFind
-          sequence: StandardKey.Find
-          enabled: textArea.activeFocus && searchable
-          onActivated: openSearchBar()
-        }
-        Shortcut {
-          id: shortcutSelectWord
-          sequence: "Ctrl+D"
-          enabled: textArea.activeFocus
-          onActivated: textArea.selectWord()
-        }
-        // Make text area effectively readOnly but don't hide the cursor and
-        // allow navigating it using the cursor
-        Keys.onPressed: event => {
-          if (event.key === Qt.Key_Escape) {
-            if (searchBar.visible) {
-              closeSearchBar(true);
+  ColumnLayout {
+    anchors.fill: parent
+    spacing: 0
+    Cdt.Pane {
+      id: searchBar
+      Layout.fillWidth: true
+      color: Theme.colorBgMedium
+      padding: Theme.basePadding
+      visible: false
+      focus: visible
+      Keys.onEscapePressed: closeSearchBar(true)
+      RowLayout {
+        anchors.fill: parent
+        Cdt.TextField {
+          id: searchOutputTextField
+          Layout.fillWidth: true
+          placeholderText: "Search text"
+          onDisplayTextChanged: controller.Search(displayText,
+                                                  textArea.getText(0, textArea.length))
+          // This is bound to "visible" and not just set to true in order to
+          // trigger its re-evaluation when searchBar becomes visible.
+          // Otheriwse if the last time when a searchBar got hidden one of its
+          // arrow buttons had focus - when the next time searchBar gets
+          // displayed that button would still have focus (even in case if it
+          // is now disabled and can't be interacted with, which will trap focus)
+          focus: visible
+          KeyNavigation.up: navigationUp
+          KeyNavigation.down: textArea
+          KeyNavigation.left: navigationLeft
+          KeyNavigation.right: searchPrevBtn
+          function goToSearchResult(event) {
+            if (event.modifiers & Qt.ShiftModifier) {
+              controller.PreviousResult();
             } else {
-              textArea.deselect();
+              controller.NextResult();
             }
           }
-          if (!allowedKeys.has(event.key) &&
-              !event.matches(StandardKey.Copy) &&
-              !event.matches(StandardKey.SelectAll)) {
-            event.accepted = true;
-          }
+          Keys.onReturnPressed: (event) => goToSearchResult(event)
+          Keys.onEnterPressed: (event) => goToSearchResult(event)
         }
-        onPressed: event => {
-          if (event.button == Qt.RightButton) {
-            contextMenu.open();
-          }
+        Cdt.Text {
+          text: controller.searchResultsCount
         }
-        KeyNavigation.up: searchBar.visible ? searchOutputTextField : navigationUp
-        KeyNavigation.down: navigationDown
-        KeyNavigation.left: navigationLeft
-        KeyNavigation.right: navigationRight
-        Menu {
-          id: contextMenu
-          MenuItem {
-            text: "Copy"
-            onTriggered: textArea.copy()
+        Cdt.IconButton {
+          id: searchPrevBtn
+          buttonIcon: "arrow_upward"
+          enabled: !controller.searchResultsEmpty
+          onClicked: controller.PreviousResult()
+          KeyNavigation.up: navigationUp
+          KeyNavigation.down: textArea
+          KeyNavigation.left: searchOutputTextField
+          KeyNavigation.right: searchNextBtn
+        }
+        Cdt.IconButton {
+          id: searchNextBtn
+          buttonIcon: "arrow_downward"
+          enabled: !controller.searchResultsEmpty
+          onClicked: controller.NextResult()
+          KeyNavigation.up: navigationUp
+          KeyNavigation.down: textArea
+          KeyNavigation.left: searchPrevBtn
+          KeyNavigation.right: navigationRight
+        }
+      }
+    }
+    Cdt.Pane {
+      Layout.fillWidth: true
+      Layout.fillHeight: true
+      color: root.color
+      focus: !searchBar.visible
+      ScrollView {
+        anchors.fill: parent
+        focus: true
+        TextArea {
+          id: textArea
+          property var allowedKeys: new Set([
+            Qt.Key_Left,
+            Qt.Key_Right,
+            Qt.Key_Up,
+            Qt.Key_Down,
+            Qt.Key_Home,
+            Qt.Key_End,
+          ])
+          selectByMouse: true
+          selectionColor: Theme.colorHighlight
+          color: Theme.colorText
+          leftPadding: root.innerPadding
+          rightPadding: root.innerPadding
+          topPadding: root.innerPadding
+          bottomPadding: root.innerPadding
+          textFormat: root.textFormat
+          focus: true
+          background: Rectangle {
+            color: "transparent"
           }
-          MenuSeparator {}
-          MenuItem {
-            text: "Find"
-            enabled: searchable
-            onTriggered: shortcutFind.activated()
+          wrapMode: TextArea.WordWrap
+          Shortcut {
+            id: shortcutFind
+            sequence: StandardKey.Find
+            enabled: textArea.activeFocus && searchable
+            onActivated: openSearchBar()
           }
-          MenuSeparator {}
-          MenuItem {
-            text: "Select All"
-            onTriggered: textArea.selectAll()
+          Shortcut {
+            id: shortcutSelectWord
+            sequence: "Ctrl+D"
+            enabled: textArea.activeFocus
+            onActivated: textArea.selectWord()
           }
-          MenuItem {
-            text: "Select Word"
-            onTriggered: shortcutSelectWord.activated()
+          // Make text area effectively readOnly but don't hide the cursor and
+          // allow navigating it using the cursor
+          Keys.onPressed: event => {
+            if (event.key === Qt.Key_Escape) {
+              if (searchBar.visible) {
+                closeSearchBar(true);
+              } else {
+                textArea.deselect();
+              }
+            }
+            if (!allowedKeys.has(event.key) &&
+                !event.matches(StandardKey.Copy) &&
+                !event.matches(StandardKey.SelectAll)) {
+              event.accepted = true;
+            }
+          }
+          onPressed: event => {
+            if (event.button == Qt.RightButton) {
+              contextMenu.open();
+            }
+          }
+          KeyNavigation.up: searchBar.visible ? searchOutputTextField : navigationUp
+          KeyNavigation.down: navigationDown
+          KeyNavigation.left: navigationLeft
+          KeyNavigation.right: navigationRight
+          Menu {
+            id: contextMenu
+            MenuItem {
+              text: "Copy"
+              onTriggered: textArea.copy()
+            }
+            MenuSeparator {}
+            MenuItem {
+              text: "Find"
+              enabled: searchable
+              onTriggered: shortcutFind.activated()
+            }
+            MenuSeparator {}
+            MenuItem {
+              text: "Select All"
+              onTriggered: textArea.selectAll()
+            }
+            MenuItem {
+              text: "Select Word"
+              onTriggered: shortcutSelectWord.activated()
+            }
           }
         }
       }

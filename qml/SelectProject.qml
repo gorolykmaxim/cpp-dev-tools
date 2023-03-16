@@ -8,6 +8,7 @@ import "." as Cdt
 Loader {
   id: root
   anchors.fill: parent
+  focus: true
   ProjectController {
     id: controller
     onSelectProject: root.sourceComponent = selectProjectView
@@ -15,15 +16,13 @@ Loader {
   Component {
     id: selectProjectView
     ColumnLayout {
-      Component.onCompleted: {
-        input.forceActiveFocus();
-      }
       anchors.fill: parent
       spacing: 0
       Cdt.Pane {
         Layout.fillWidth: true
         color: Theme.colorBgMedium
         padding: Theme.basePadding
+        focus: true
         RowLayout {
           anchors.fill: parent
           Cdt.ListSearch {
@@ -33,6 +32,7 @@ Loader {
             KeyNavigation.right: button
             list: projectList
             listModel: controller.projects
+            focus: true
             onEnterPressed: projectList.ifCurrentItem('idx', controller.OpenProject)
             Shortcut {
               id: shortcutRemoveFromList

@@ -8,9 +8,6 @@ ColumnLayout {
   id: root
   signal fileChosen(string path)
   signal cancelled()
-  Component.onCompleted: {
-    input.forceActiveFocus();
-  }
   ChooseFileController {
     id: controller
     onFileChosen: (path) => root.fileChosen(path)
@@ -21,6 +18,7 @@ ColumnLayout {
     Layout.fillWidth: true
     color: Theme.colorBgMedium
     padding: Theme.basePadding
+    focus: true
     RowLayout {
       anchors.fill: parent
       Cdt.ListSearch {
@@ -28,6 +26,7 @@ ColumnLayout {
         text: controller.path
         Layout.fillWidth: true
         list: suggestionList
+        focus: true
         KeyNavigation.right: openBtn
         onDisplayTextChanged: controller.path = displayText
         onEnterPressed: suggestionList.ifCurrentItem('idx', controller.PickSuggestion)
