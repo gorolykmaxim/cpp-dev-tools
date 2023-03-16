@@ -1,6 +1,7 @@
 #include "TaskExecutionHistoryController.hpp"
 
 #include "Application.hpp"
+#include "Database.hpp"
 
 #define LOG() qDebug() << "[TaskExecutionHistoryController]"
 
@@ -84,6 +85,19 @@ void TaskExecutionHistoryController::HandleExecutionOutputChanged(QUuid id) {
   if (execution_id == id) {
     LoadSelectedExecutionOutput();
   }
+}
+
+void TaskExecutionHistoryController::RemoveFinishedExecutions() {
+  Application& app = Application::Get();
+  QUuid project_id = app.project.GetCurrentProject().id;
+  LOG() << "Clearing task execution history of project" << project_id;
+  app.RunIOTask(
+      this,
+      [project_id] {
+        Database::ExecCmd("DELETE FROM task_execution WHERE project_id=?",
+                          {project_id});
+      },
+      [this] { LoadExecutions(false); });
 }
 
 void TaskExecutionHistoryController::LoadExecutions(

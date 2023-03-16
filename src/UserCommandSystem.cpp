@@ -40,8 +40,6 @@ void UserCommandSystem::RegisterCommands() {
   RegisterCommand("Task", "Task Execution History", "Ctrl+E", [] {
     Application::Get().view.SetCurrentView("TaskExecutionHistory.qml");
   });
-  RegisterCommand("Task", "Clear Task Execution History", "",
-                  [] { Application::Get().task.ClearExecutionHistory(); });
   RegisterCommand("Window", "Set Default Window Size", "Ctrl+Shift+M",
                   [] { Application::Get().view.SetDefaultWindowSize(); });
   LOG() << "Comitting changes to user command list";

@@ -179,16 +179,3 @@ void TaskSystem::FetchExecutionOutput(
         callback(result.isEmpty() ? TaskExecutionOutput() : result[0]);
       });
 }
-
-void TaskSystem::ClearExecutionHistory() {
-  Application& app = Application::Get();
-  QUuid project_id = app.project.GetCurrentProject().id;
-  LOG() << "Clearing task execution history of project" << project_id;
-  app.RunIOTask(
-      this,
-      [project_id] {
-        Database::ExecCmd("DELETE FROM task_execution WHERE project_id=?",
-                          {project_id});
-      },
-      [this] { emit executionFinished(QUuid()); });
-}

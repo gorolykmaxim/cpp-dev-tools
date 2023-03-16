@@ -37,6 +37,7 @@ class TaskExecutionHistoryController : public QObject {
   void SelectExecution(QUuid id);
   void HandleExecutionFinished(QUuid id);
   void HandleExecutionOutputChanged(QUuid id);
+  void RemoveFinishedExecutions();
 
  signals:
   void executionsChanged();

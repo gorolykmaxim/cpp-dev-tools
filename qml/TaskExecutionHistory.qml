@@ -1,6 +1,7 @@
 import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
+import Qt.labs.platform
 import "." as Cdt
 import cdt
 
@@ -27,7 +28,21 @@ RowLayout {
       controller.SelectExecution(id);
       execOutputTextArea.closeSearchBar();
     })
+    onItemRightClicked: contextMenu.open()
     navigationRight: execOutputTextArea
+    Shortcut {
+      id: shortcutRemoveFinished
+      enabled: execList.hasFocus
+      sequence: "Ctrl+Shift+D"
+      onActivated: controller.RemoveFinishedExecutions()
+    }
+  }
+  Menu {
+    id: contextMenu
+    MenuItem {
+      text: "Remove Finished Executions"
+      onTriggered: shortcutRemoveFinished.activated()
+    }
   }
   Rectangle {
     visible: !controller.executionsEmpty

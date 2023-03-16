@@ -9,21 +9,20 @@ ColumnLayout {
   property string searchPlaceholderText: ""
   property string placeholderText: ""
   property bool showPlaceholder: false
+  property alias hasFocus: input.activeFocus
   property var navigationUp: null
   property var navigationDown: null
   property var navigationLeft: null
   property var navigationRight: null
   signal itemSelected()
+  signal itemRightClicked()
   signal currentItemChanged()
   function ifCurrentItem(field, callback) {
     textList.ifCurrentItem(field, callback);
   }
-  function forceActiveFocus() {
-    input.forceActiveFocus();
-  }
   onActiveFocusChanged: {
     if (activeFocus) {
-      forceActiveFocus();
+      input.forceActiveFocus();
     }
   }
   spacing: 0
@@ -61,6 +60,7 @@ ColumnLayout {
       model: searchableModel
       elide: Text.ElideLeft
       onItemLeftClicked: itemSelected()
+      onItemRightClicked: root.itemRightClicked()
       onCurrentIndexChanged: root.currentItemChanged()
     }
   }
