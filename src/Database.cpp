@@ -19,13 +19,36 @@ void Database::Initialize() {
   bool db_opened = db.open();
   Q_ASSERT(db_opened);
   ExecCmd(
-      "CREATE TABLE IF NOT EXISTS project(id BLOB PRIMARY KEY, path TEXT, "
-      "is_opened BOOL, last_open_time DATETIME)");
+      "CREATE TABLE IF NOT EXISTS project("
+      "id BLOB PRIMARY KEY, "
+      "path TEXT, "
+      "is_opened BOOL, "
+      "last_open_time DATETIME)");
   ExecCmd(
-      "CREATE TABLE IF NOT EXISTS window_dimensions(virtual_width INT, "
-      "virtual_height INT, virtual_x INT, virtual_y INT, width INT, height "
-      "INT, x INT, y INT, is_maximized BOOL, PRIMARY KEY(virtual_width, "
-      "virtual_height, virtual_x, virtual_y))");
+      "CREATE TABLE IF NOT EXISTS window_dimensions("
+      "virtual_width INT, "
+      "virtual_height INT, "
+      "virtual_x INT, "
+      "virtual_y INT, "
+      "width INT, "
+      "height INT, "
+      "x INT, "
+      "y INT, "
+      "is_maximized BOOL, "
+      "PRIMARY KEY(virtual_width, virtual_height, virtual_x, virtual_y))");
+  ExecCmd(
+      "CREATE TABLE IF NOT EXISTS task_execution("
+      "id BLOB PRIMARY KEY, "
+      "primary_execution_id BLOB, "
+      "project_id BLOB, "
+      "start_time DATETIME, "
+      "command TEXT, "
+      "exit_code INT, "
+      "stderr_line_indices TEXT, "
+      "output TEXT, "
+      "FOREIGN KEY(project_id) REFERENCES project(id) ON DELETE CASCADE, "
+      "FOREIGN KEY(primary_execution_id) REFERENCES task_execution(id) ON "
+      "DELETE CASCADE)");
 }
 
 void Database::ExecQuery(QSqlQuery &sql, const QString &query,
