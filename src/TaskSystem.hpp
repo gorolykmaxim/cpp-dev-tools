@@ -42,6 +42,7 @@ class TaskSystem : public QObject {
   void FetchExecutionOutput(
       QObject* requestor, QUuid execution_id,
       const std::function<void(const TaskExecutionOutput&)>& callback) const;
+  void ClearExecutionHistory();
 
  signals:
   void executionOutputChanged(QUuid exec_id);
