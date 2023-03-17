@@ -110,6 +110,11 @@ void TextAreaController::GoToNextCursorPosition() {
   emit changeCursorPosition(pos);
 }
 
+void TextAreaController::ResetCursorPositionHistory() {
+  cursor_history.clear();
+  cursor_history_index = -1;
+}
+
 bool TextAreaController::AreSearchResultsEmpty() const {
   return search_results.isEmpty();
 }

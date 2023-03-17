@@ -26,6 +26,7 @@ class TextAreaController : public QObject {
   void SaveCursorPosition(int position);
   void GoToPreviousCursorPosition();
   void GoToNextCursorPosition();
+  void ResetCursorPositionHistory();
 
  signals:
   void selectText(int start, int end);

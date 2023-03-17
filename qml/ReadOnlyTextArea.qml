@@ -15,6 +15,7 @@ FocusScope {
   property real innerPadding: 0
   onTextChanged: {
     textArea.text = text;
+    controller.ResetCursorPositionHistory();
     if (cursorFollowEnd) {
       textArea.cursorPosition = textArea.length;
     }
