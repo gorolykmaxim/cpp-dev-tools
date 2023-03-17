@@ -34,7 +34,7 @@ QVariantList TaskExecutionListModel::GetRow(int i) const {
   }
   Application& app = Application::Get();
   const Project& current_project = app.project.GetCurrentProject();
-  QString cmd = TaskExecution::ShortenCommand(exec.command, current_project);
+  QString cmd = TaskSystem::ShortenCommand(exec.command, current_project);
   bool is_selected = selected_execution_id == exec.id;
   return {exec.id, cmd,       exec.start_time.toString(),
           icon,    iconColor, is_selected};
@@ -162,7 +162,7 @@ void TaskExecutionHistoryController::DisplaySelectedExecution() {
   Application& app = Application::Get();
   const Project& current_project = app.project.GetCurrentProject();
   execution_command =
-      TaskExecution::ShortenCommand(exec->command, current_project);
+      TaskSystem::ShortenCommand(exec->command, current_project);
   execution_status = "Running...";
   if (exec->exit_code) {
     execution_status = "Exit Code: " + QString::number(*exec->exit_code);

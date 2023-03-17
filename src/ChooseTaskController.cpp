@@ -37,7 +37,7 @@ ChooseTaskController::ChooseTaskController(QObject *parent)
       [this, project](QList<QString> execs) {
         tasks->list.clear();
         for (const QString &exec : execs) {
-          QString short_cmd = TaskExecution::ShortenCommand(exec, project);
+          QString short_cmd = TaskSystem::ShortenCommand(exec, project);
           tasks->list.append({short_cmd, exec});
         }
         tasks->Load();

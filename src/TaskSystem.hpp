@@ -18,8 +18,6 @@ struct TaskExecution {
   QString command;
   std::optional<int> exit_code;
 
-  static QString ShortenCommand(QString cmd, const Project& project);
-  static TaskExecution ReadFromSql(QSqlQuery& query);
   bool operator==(const TaskExecution& another) const;
   bool operator!=(const TaskExecution& another) const;
 };
@@ -27,13 +25,12 @@ struct TaskExecution {
 struct TaskExecutionOutput {
   QSet<int> stderr_line_indices;
   QString output;
-
-  static TaskExecutionOutput ReadFromSql(QSqlQuery& query);
 };
 
 class TaskSystem : public QObject {
   Q_OBJECT
  public:
+  static QString ShortenCommand(QString cmd, const Project& project);
   void ExecuteTask(const QString& command);
   void KillAllTasks();
   void FetchExecutions(
@@ -48,6 +45,8 @@ class TaskSystem : public QObject {
   void executionFinished(QUuid exec_id);
 
  private:
+  static TaskExecution ReadExecutionFromSql(QSqlQuery& query);
+  static TaskExecutionOutput ReadExecutionOutputFromSql(QSqlQuery& query);
   void AppendToExecutionOutput(QUuid id, const QByteArray& data,
                                bool is_stderr);
   void FinishExecution(QUuid id, QProcess* process);

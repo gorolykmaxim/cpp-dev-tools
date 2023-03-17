@@ -5,22 +5,6 @@
 
 #define LOG() qDebug() << "[TaskSystem]"
 
-QString TaskExecution::ShortenCommand(QString cmd, const Project& project) {
-  if (cmd.startsWith(project.path)) {
-    cmd.replace(project.path, ".");
-  }
-  return cmd;
-}
-
-TaskExecution TaskExecution::ReadFromSql(QSqlQuery& query) {
-  TaskExecution exec;
-  exec.id = query.value(0).toUuid();
-  exec.start_time = query.value(1).toDateTime();
-  exec.command = query.value(2).toString();
-  exec.exit_code = query.value(3).toInt();
-  return exec;
-}
-
 bool TaskExecution::operator==(const TaskExecution& another) const {
   return id == another.id;
 }
@@ -29,15 +13,11 @@ bool TaskExecution::operator!=(const TaskExecution& another) const {
   return !(*this == another);
 }
 
-TaskExecutionOutput TaskExecutionOutput::ReadFromSql(QSqlQuery& query) {
-  TaskExecutionOutput exec_output;
-  QJsonDocument doc = QJsonDocument::fromJson(query.value(0).toByteArray());
-  QJsonArray indices = doc.array();
-  for (int i = 0; i < indices.size(); i++) {
-    exec_output.stderr_line_indices.insert(indices[i].toInt());
+QString TaskSystem::ShortenCommand(QString cmd, const Project& project) {
+  if (cmd.startsWith(project.path)) {
+    cmd.replace(project.path, ".");
   }
-  exec_output.output = query.value(1).toString();
-  return exec_output;
+  return cmd;
 }
 
 void TaskSystem::ExecuteTask(const QString& command) {
@@ -79,6 +59,26 @@ void TaskSystem::KillAllTasks() {
   active_executions.clear();
   active_execution_outputs.clear();
   active_processes.clear();
+}
+
+TaskExecution TaskSystem::ReadExecutionFromSql(QSqlQuery& query) {
+  TaskExecution exec;
+  exec.id = query.value(0).toUuid();
+  exec.start_time = query.value(1).toDateTime();
+  exec.command = query.value(2).toString();
+  exec.exit_code = query.value(3).toInt();
+  return exec;
+}
+
+TaskExecutionOutput TaskSystem::ReadExecutionOutputFromSql(QSqlQuery& query) {
+  TaskExecutionOutput exec_output;
+  QJsonDocument doc = QJsonDocument::fromJson(query.value(0).toByteArray());
+  QJsonArray indices = doc.array();
+  for (int i = 0; i < indices.size(); i++) {
+    exec_output.stderr_line_indices.insert(indices[i].toInt());
+  }
+  exec_output.output = query.value(1).toString();
+  return exec_output;
 }
 
 void TaskSystem::AppendToExecutionOutput(QUuid id, const QByteArray& data,
@@ -145,7 +145,7 @@ void TaskSystem::FetchExecutions(
         return Database::ExecQueryAndRead<TaskExecution>(
             "SELECT id, start_time, command, exit_code FROM task_execution "
             "WHERE project_id=? ORDER BY start_time",
-            &TaskExecution::ReadFromSql, {project_id});
+            &TaskSystem::ReadExecutionFromSql, {project_id});
       },
       [execs, callback](QList<TaskExecution> result) {
         for (const TaskExecution& exec : execs) {
@@ -173,7 +173,7 @@ void TaskSystem::FetchExecutionOutput(
       [execution_id] {
         return Database::ExecQueryAndRead<TaskExecutionOutput>(
             "SELECT stderr_line_indices, output FROM task_execution WHERE id=?",
-            &TaskExecutionOutput::ReadFromSql, {execution_id});
+            &TaskSystem::ReadExecutionOutputFromSql, {execution_id});
       },
       [callback](QList<TaskExecutionOutput> result) {
         callback(result.isEmpty() ? TaskExecutionOutput() : result[0]);
