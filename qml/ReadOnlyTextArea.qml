@@ -38,6 +38,7 @@ FocusScope {
   TextAreaController {
     id: controller
     onSelectText: (start, end) => textArea.select(start, end)
+    onChangeCursorPosition: pos => textArea.cursorPosition = pos
   }
   ColumnLayout {
     anchors.fill: parent
@@ -142,6 +143,17 @@ FocusScope {
             enabled: textArea.activeFocus
             onActivated: textArea.selectWord()
           }
+          Shortcut {
+            sequence: "Ctrl+Alt+Left"
+            enabled: textArea.activeFocus
+            onActivated: controller.GoToPreviousCursorPosition()
+          }
+          Shortcut {
+            sequence: "Ctrl+Alt+Right"
+            enabled: textArea.activeFocus
+            onActivated: controller.GoToNextCursorPosition()
+          }
+          onCursorPositionChanged: controller.SaveCursorPosition(cursorPosition)
           // Make text area effectively readOnly but don't hide the cursor and
           // allow navigating it using the cursor
           Keys.onPressed: event => {

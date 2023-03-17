@@ -1,6 +1,9 @@
 #include "TextAreaController.hpp"
 
+static const int kCursorHistoryLimit = 100;
+
 TextAreaController::TextAreaController(QObject* parent) : QObject(parent) {
+  cursor_history.reserve(kCursorHistoryLimit);
   UpdateSearchResultsCount();
 }
 
@@ -73,6 +76,38 @@ void TextAreaController::PreviousResult() {
   }
   DisplaySelectedSearchResult();
   UpdateSearchResultsCount();
+}
+
+void TextAreaController::SaveCursorPosition(int position) {
+  if (!cursor_history.isEmpty() &&
+      cursor_history[cursor_history_index] == position) {
+    return;
+  }
+  if (cursor_history_index != cursor_history.size() - 1) {
+    int cnt_to_remove = cursor_history.size() - cursor_history_index - 1;
+    cursor_history.remove(cursor_history_index + 1, cnt_to_remove);
+  }
+  cursor_history.append(position);
+  if (cursor_history.size() > kCursorHistoryLimit) {
+    cursor_history.removeFirst();
+  }
+  cursor_history_index = cursor_history.size() - 1;
+}
+
+void TextAreaController::GoToPreviousCursorPosition() {
+  if (cursor_history_index == 0) {
+    return;
+  }
+  int pos = cursor_history[--cursor_history_index];
+  emit changeCursorPosition(pos);
+}
+
+void TextAreaController::GoToNextCursorPosition() {
+  if (cursor_history_index == cursor_history.size() - 1) {
+    return;
+  }
+  int pos = cursor_history[++cursor_history_index];
+  emit changeCursorPosition(pos);
 }
 
 bool TextAreaController::AreSearchResultsEmpty() const {

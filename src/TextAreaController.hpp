@@ -17,15 +17,20 @@ class TextAreaController : public QObject {
                  searchResultsCountChanged)
  public:
   explicit TextAreaController(QObject* parent = nullptr);
+  bool AreSearchResultsEmpty() const;
  public slots:
   void Search(const QString& term, const QString& text);
   void GoToResultWithStartAt(int text_position);
   void NextResult();
   void PreviousResult();
-  bool AreSearchResultsEmpty() const;
+  void SaveCursorPosition(int position);
+  void GoToPreviousCursorPosition();
+  void GoToNextCursorPosition();
+
  signals:
   void selectText(int start, int end);
   void searchResultsCountChanged();
+  void changeCursorPosition(int position);
 
  private:
   void UpdateSearchResultsCount();
@@ -34,4 +39,6 @@ class TextAreaController : public QObject {
   int selected_result = 0;
   QList<SearchResult> search_results;
   QString search_results_count = "0 Results";
+  QList<int> cursor_history;
+  int cursor_history_index = -1;
 };
