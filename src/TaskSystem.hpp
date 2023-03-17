@@ -10,8 +10,6 @@
 #include <QUuid>
 #include <optional>
 
-#include "ProjectSystem.hpp"
-
 struct TaskExecution {
   QUuid id;
   QDateTime start_time;
@@ -30,7 +28,6 @@ struct TaskExecutionOutput {
 class TaskSystem : public QObject {
   Q_OBJECT
  public:
-  static QString ShortenCommand(QString cmd, const Project& project);
   void ExecuteTask(const QString& command);
   void KillAllTasks();
   void FetchExecutions(

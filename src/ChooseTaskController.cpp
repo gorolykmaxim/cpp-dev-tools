@@ -19,25 +19,25 @@ ChooseTaskController::ChooseTaskController(QObject *parent)
       is_loading(true) {
   Application &app = Application::Get();
   SetIsLoading(true);
-  const Project &project = app.project.GetCurrentProject();
-  QString path = project.path;
+  QString project_path = app.project.GetCurrentProject().path;
   app.RunIOTask<QList<QString>>(
       this,
-      [path] {
+      [project_path] {
         QList<QString> results;
-        QDirIterator it(path, QDir::Files | QDir::Executable,
+        QDirIterator it(project_path, QDir::Files | QDir::Executable,
                         QDirIterator::Subdirectories);
         while (it.hasNext()) {
-          results.append(it.next());
+          QString exec_path = it.next();
+          exec_path.replace(project_path, ".");
+          results.append(exec_path);
         }
         std::sort(results.begin(), results.end(), CompareExecs);
         return results;
       },
-      [this, project](QList<QString> execs) {
+      [this](QList<QString> execs) {
         tasks->list.clear();
         for (const QString &exec : execs) {
-          QString short_cmd = TaskSystem::ShortenCommand(exec, project);
-          tasks->list.append({short_cmd, exec});
+          tasks->list.append({exec, exec});
         }
         tasks->Load();
         SetIsLoading(false);

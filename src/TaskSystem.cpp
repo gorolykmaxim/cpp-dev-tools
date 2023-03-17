@@ -13,13 +13,6 @@ bool TaskExecution::operator!=(const TaskExecution& another) const {
   return !(*this == another);
 }
 
-QString TaskSystem::ShortenCommand(QString cmd, const Project& project) {
-  if (cmd.startsWith(project.path)) {
-    cmd.replace(project.path, ".");
-  }
-  return cmd;
-}
-
 void TaskSystem::ExecuteTask(const QString& command) {
   LOG() << "Executing task" << command;
   QUuid exec_id = QUuid::createUuid();
