@@ -20,8 +20,6 @@ qt_add_executable(cpp-dev-tools
   src/QVariantListModel.cpp
   src/PerfTimer.hpp
   src/PerfTimer.cpp
-  src/Project.hpp
-  src/Project.cpp
   src/UserCommandSystem.hpp
   src/UserCommandSystem.cpp
   src/SearchUserCommandController.hpp

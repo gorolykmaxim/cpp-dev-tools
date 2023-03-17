@@ -6,7 +6,6 @@
 #include <QtConcurrent>
 #include <functional>
 
-#include "Project.hpp"
 #include "ProjectSystem.hpp"
 #include "TaskSystem.hpp"
 #include "UserCommandSystem.hpp"

@@ -10,7 +10,7 @@
 #include <QUuid>
 #include <optional>
 
-#include "Project.hpp"
+#include "ProjectSystem.hpp"
 
 struct TaskExecution {
   QUuid id;

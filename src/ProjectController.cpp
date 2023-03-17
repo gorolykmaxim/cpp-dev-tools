@@ -2,7 +2,6 @@
 
 #include "Application.hpp"
 #include "Database.hpp"
-#include "Project.hpp"
 #include "QVariantListModel.hpp"
 
 #define LOG() qDebug() << "[ProjectController]"
@@ -33,7 +32,7 @@ ProjectController::ProjectController(QObject* parent)
         Database::Transaction t;
         QList<Project> projects = Database::ExecQueryAndRead<Project>(
             "SELECT * FROM project ORDER BY last_open_time DESC",
-            &Project::ReadFromSql);
+            &ProjectSystem::ReadProjectFromSql);
         LOG() << projects.size() << "projects found";
         QList<Project> filtered;
         for (const Project& project : projects) {

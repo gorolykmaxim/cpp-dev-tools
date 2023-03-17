@@ -1,7 +1,6 @@
 #include "ChooseTaskController.hpp"
 
 #include "Application.hpp"
-#include "Project.hpp"
 
 #define LOG() qDebug() << "[ChooseTaskController]"
 
