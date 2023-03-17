@@ -13,10 +13,6 @@ FocusScope {
   property string color: "transparent"
   property var textFormat: TextEdit.PlainText
   property real innerPadding: 0
-  property var navigationUp: null
-  property var navigationDown: null
-  property var navigationLeft: null
-  property var navigationRight: null
   onTextChanged: {
     textArea.text = text;
     if (cursorFollowEnd) {
@@ -69,9 +65,7 @@ FocusScope {
           // displayed that button would still have focus (even in case if it
           // is now disabled and can't be interacted with, which will trap focus)
           focus: visible
-          KeyNavigation.up: navigationUp
           KeyNavigation.down: textArea
-          KeyNavigation.left: navigationLeft
           KeyNavigation.right: searchPrevBtn
           function goToSearchResult(event) {
             if (event.modifiers & Qt.ShiftModifier) {
@@ -91,9 +85,7 @@ FocusScope {
           buttonIcon: "arrow_upward"
           enabled: !controller.searchResultsEmpty
           onClicked: controller.PreviousResult()
-          KeyNavigation.up: navigationUp
           KeyNavigation.down: textArea
-          KeyNavigation.left: searchOutputTextField
           KeyNavigation.right: searchNextBtn
         }
         Cdt.IconButton {
@@ -101,10 +93,7 @@ FocusScope {
           buttonIcon: "arrow_downward"
           enabled: !controller.searchResultsEmpty
           onClicked: controller.NextResult()
-          KeyNavigation.up: navigationUp
           KeyNavigation.down: textArea
-          KeyNavigation.left: searchPrevBtn
-          KeyNavigation.right: navigationRight
         }
       }
     }
@@ -116,6 +105,7 @@ FocusScope {
       ScrollView {
         anchors.fill: parent
         focus: true
+        Keys.forwardTo: [root]
         TextArea {
           id: textArea
           property var allowedKeys: new Set([
@@ -126,6 +116,7 @@ FocusScope {
             Qt.Key_Home,
             Qt.Key_End,
           ])
+
           selectByMouse: true
           selectionColor: Theme.colorHighlight
           color: Theme.colorText
@@ -172,10 +163,6 @@ FocusScope {
               contextMenu.open();
             }
           }
-          KeyNavigation.up: searchBar.visible ? searchOutputTextField : navigationUp
-          KeyNavigation.down: navigationDown
-          KeyNavigation.left: navigationLeft
-          KeyNavigation.right: navigationRight
           Menu {
             id: contextMenu
             MenuItem {

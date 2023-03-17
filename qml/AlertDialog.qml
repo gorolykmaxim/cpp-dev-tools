@@ -55,7 +55,7 @@ Dialog {
         Layout.fillHeight: true
         text: dialogText
         innerPadding: Theme.basePadding * 2
-        navigationDown: dialogCancel.visible ? dialogCancel : dialogOk
+        KeyNavigation.down: dialogCancel.visible ? dialogCancel : dialogOk
       }
     }
     Row {

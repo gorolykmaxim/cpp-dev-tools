@@ -9,10 +9,6 @@ FocusScope {
   property string searchPlaceholderText: ""
   property string placeholderText: ""
   property bool showPlaceholder: false
-  property var navigationUp: null
-  property var navigationDown: null
-  property var navigationLeft: null
-  property var navigationRight: null
   signal itemSelected()
   signal itemRightClicked()
   signal currentItemChanged()
@@ -41,10 +37,6 @@ FocusScope {
         listModel: searchableModel
         focus: true
         onEnterPressed: itemSelected()
-        KeyNavigation.up: navigationUp
-        KeyNavigation.down: navigationDown
-        KeyNavigation.left: navigationLeft
-        KeyNavigation.right: navigationRight
       }
     }
     Cdt.Pane {

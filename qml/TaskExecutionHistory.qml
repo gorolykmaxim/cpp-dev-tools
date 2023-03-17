@@ -30,7 +30,7 @@ RowLayout {
       execOutputTextArea.closeSearchBar();
     })
     onItemRightClicked: contextMenu.open()
-    navigationRight: execOutputTextArea
+    KeyNavigation.right: execOutputTextArea
     Shortcut {
       id: shortcutRemoveFinished
       enabled: execList.activeFocus
@@ -89,7 +89,6 @@ RowLayout {
       textFormat: TextEdit.RichText
       cursorFollowEnd: true
       searchable: true
-      navigationLeft: execList
     }
   }
 }
