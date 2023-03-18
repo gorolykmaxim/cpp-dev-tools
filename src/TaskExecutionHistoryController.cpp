@@ -155,7 +155,7 @@ void TaskExecutionHistoryController::DisplaySelectedExecution() {
   if (!exec) {
     return;
   }
-  LOG() << "Updaing selected execution's status";
+  LOG() << "Updating selected execution's status";
   execution_command = exec->command;
   execution_status = "Running...";
   if (exec->exit_code) {

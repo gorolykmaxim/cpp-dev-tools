@@ -13,7 +13,7 @@ SearchUserCommandController::SearchUserCommandController(QObject* parent)
           {0, 1})) {}
 
 void SearchUserCommandController::LoadUserCommands() {
-  LOG() << "Loadnig user commands";
+  LOG() << "Loading user commands";
   user_commands->SetFilterIfChanged("");
   user_commands->list.clear();
   Application& app = Application::Get();
