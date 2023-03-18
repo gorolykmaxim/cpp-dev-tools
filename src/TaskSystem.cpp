@@ -65,10 +65,9 @@ TaskExecution TaskSystem::ReadExecutionFromSql(QSqlQuery& query) {
 
 TaskExecutionOutput TaskSystem::ReadExecutionOutputFromSql(QSqlQuery& query) {
   TaskExecutionOutput exec_output;
-  QJsonDocument doc = QJsonDocument::fromJson(query.value(0).toByteArray());
-  QJsonArray indices = doc.array();
-  for (int i = 0; i < indices.size(); i++) {
-    exec_output.stderr_line_indices.insert(indices[i].toInt());
+  QString indices = query.value(0).toString();
+  for (const QString& i : indices.split(',', Qt::SkipEmptyParts)) {
+    exec_output.stderr_line_indices.insert(i.toInt());
   }
   exec_output.output = query.value(1).toString();
   return exec_output;
@@ -103,15 +102,14 @@ void TaskSystem::FinishExecution(QUuid id, QProcess* process) {
     LOG() << "Task" << id << "finished with code" << *exec.exit_code;
     TaskExecutionOutput& exec_output = active_execution_outputs[id];
     const Project& project = Application::Get().project.GetCurrentProject();
-    QJsonArray indices;
+    QStringList indices;
     for (int i : exec_output.stderr_line_indices) {
-      indices.append(i);
+      indices.append(QString::number(i));
     }
     Database::ExecCmdAsync(
         "INSERT INTO task_execution VALUES(?,?,?,?,?,?,?,?)",
         {exec.id, exec.id, project.id, exec.start_time, exec.command,
-         *exec.exit_code, QJsonDocument(indices).toJson(QJsonDocument::Compact),
-         exec_output.output});
+         *exec.exit_code, indices.join(','), exec_output.output});
     active_executions.remove(id);
     active_execution_outputs.remove(id);
     active_processes.remove(id);
