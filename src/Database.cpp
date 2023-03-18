@@ -39,16 +39,13 @@ void Database::Initialize() {
   ExecCmd(
       "CREATE TABLE IF NOT EXISTS task_execution("
       "id BLOB PRIMARY KEY, "
-      "primary_execution_id BLOB, "
       "project_id BLOB, "
       "start_time DATETIME, "
       "command TEXT, "
       "exit_code INT, "
       "stderr_line_indices TEXT, "
       "output TEXT, "
-      "FOREIGN KEY(project_id) REFERENCES project(id) ON DELETE CASCADE, "
-      "FOREIGN KEY(primary_execution_id) REFERENCES task_execution(id) ON "
-      "DELETE CASCADE)");
+      "FOREIGN KEY(project_id) REFERENCES project(id) ON DELETE CASCADE)");
 }
 
 void Database::ExecQuery(QSqlQuery &sql, const QString &query,

@@ -107,9 +107,9 @@ void TaskSystem::FinishExecution(QUuid id, QProcess* process) {
       indices.append(QString::number(i));
     }
     Database::ExecCmdAsync(
-        "INSERT INTO task_execution VALUES(?,?,?,?,?,?,?,?)",
-        {exec.id, exec.id, project.id, exec.start_time, exec.command,
-         *exec.exit_code, indices.join(','), exec_output.output});
+        "INSERT INTO task_execution VALUES(?,?,?,?,?,?,?)",
+        {exec.id, project.id, exec.start_time, exec.command, *exec.exit_code,
+         indices.join(','), exec_output.output});
     active_executions.remove(id);
     active_execution_outputs.remove(id);
     active_processes.remove(id);
