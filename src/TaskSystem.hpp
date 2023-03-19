@@ -43,6 +43,12 @@ struct TaskExecutionOutput {
   QString output;
 };
 
+struct RunningTaskExecution {
+  TaskExecution task_execution;
+  TaskExecutionOutput task_execution_output;
+  QProcess* process;
+};
+
 class TaskSystem : public QObject {
   Q_OBJECT
  public:
@@ -67,7 +73,5 @@ class TaskSystem : public QObject {
                                bool is_stderr);
   void FinishExecution(QUuid id, QProcess* process);
 
-  QHash<QUuid, TaskExecution> active_executions;
-  QHash<QUuid, TaskExecutionOutput> active_execution_outputs;
-  QHash<QUuid, QProcess*> active_processes;
+  QHash<QUuid, RunningTaskExecution> task_executions;
 };
