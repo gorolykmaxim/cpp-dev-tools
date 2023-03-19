@@ -38,6 +38,6 @@ Dialog {
     searchPlaceholderText: "Search command"
     focus: true
     searchableModel: controller.userCommands
-    onItemSelected: ifCurrentItem('index', controller.ExecuteCommand)
+    onItemSelected: item => controller.ExecuteCommand(item.index)
   }
 }

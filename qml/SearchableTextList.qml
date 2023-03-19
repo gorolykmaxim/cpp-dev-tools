@@ -9,11 +9,16 @@ FocusScope {
   property string searchPlaceholderText: ""
   property string placeholderText: ""
   property bool showPlaceholder: false
-  signal itemSelected()
+  signal itemSelected(selectedItemModel: QtObject)
   signal itemRightClicked()
   signal currentItemChanged()
   function ifCurrentItem(field, callback) {
     textList.ifCurrentItem(field, callback);
+  }
+  function selectCurrentItemIfPresent() {
+    if (textList.currentItem) {
+      itemSelected(textList.currentItem.itemModel);
+    }
   }
   ColumnLayout {
     spacing: 0
@@ -36,7 +41,7 @@ FocusScope {
         list: textList
         listModel: searchableModel
         focus: true
-        onEnterPressed: itemSelected()
+        onEnterPressed: selectCurrentItemIfPresent()
       }
     }
     Cdt.Pane {
@@ -49,7 +54,7 @@ FocusScope {
         anchors.fill: parent
         model: searchableModel
         elide: Text.ElideLeft
-        onItemLeftClicked: itemSelected()
+        onItemLeftClicked: selectCurrentItemIfPresent()
         onItemRightClicked: root.itemRightClicked()
         onCurrentIndexChanged: root.currentItemChanged()
       }

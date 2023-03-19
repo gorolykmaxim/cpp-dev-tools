@@ -12,7 +12,7 @@ Cdt.SearchableTextList {
   searchableModel: controller.tasks
   focus: true
   onItemRightClicked: contextMenu.open()
-  onItemSelected: ifCurrentItem('command', controller.ExecuteTask)
+  onItemSelected: item => controller.ExecuteTask(item.command)
   TaskListController {
     id: controller
   }
