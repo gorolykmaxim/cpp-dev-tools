@@ -34,8 +34,8 @@ void UserCommandSystem::RegisterCommands() {
   RegisterCommand("General", "Close Project", "Ctrl+W", [] {
     Application::Get().project.SetCurrentProject(Project());
   });
-  RegisterCommand("Task", "Run Task", "Ctrl+R", [] {
-    Application::Get().view.SetCurrentView("RunTask.qml");
+  RegisterCommand("Task", "Tasks", "Ctrl+T", [] {
+    Application::Get().view.SetCurrentView("TaskList.qml");
   });
   RegisterCommand("Task", "Task Execution History", "Ctrl+E", [] {
     Application::Get().view.SetCurrentView("TaskExecutionHistory.qml");

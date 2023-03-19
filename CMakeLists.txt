@@ -24,8 +24,8 @@ qt_add_executable(cpp-dev-tools
   src/UserCommandSystem.cpp
   src/SearchUserCommandController.hpp
   src/SearchUserCommandController.cpp
-  src/ChooseTaskController.hpp
-  src/ChooseTaskController.cpp
+  src/TaskListController.hpp
+  src/TaskListController.cpp
   src/ProjectSystem.hpp
   src/ProjectSystem.cpp
   src/ViewSystem.hpp
@@ -34,8 +34,6 @@ qt_add_executable(cpp-dev-tools
   src/TaskSystem.cpp
   src/TaskExecutionHistoryController.hpp
   src/TaskExecutionHistoryController.cpp
-  src/RunTaskController.hpp
-  src/RunTaskController.cpp
   src/TextAreaController.hpp
   src/TextAreaController.cpp
   src/main.cpp)
@@ -70,8 +68,7 @@ qt_add_qml_module(cpp-dev-tools URI cdt VERSION 1.0
       qml/MenuBar.qml
       qml/SearchUserCommandDialog.qml
       qml/SearchableTextList.qml
-      qml/RunTask.qml
-      qml/ChooseTask.qml
+      qml/TaskList.qml
       qml/TaskExecutionHistory.qml
       qml/IconButton.qml
   RESOURCES

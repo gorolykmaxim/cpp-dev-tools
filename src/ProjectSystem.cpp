@@ -59,7 +59,7 @@ void ProjectSystem::SetCurrentProject(Project project) {
         {project.is_opened, project.last_open_time, project.id});
     current_project = project;
     emit currentProjectChanged();
-    app.view.SetCurrentView("RunTask.qml");
+    app.view.SetCurrentView("TaskList.qml");
   }
 }
 

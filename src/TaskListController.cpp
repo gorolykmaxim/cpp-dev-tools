@@ -1,8 +1,8 @@
-#include "ChooseTaskController.hpp"
+#include "TaskListController.hpp"
 
 #include "Application.hpp"
 
-#define LOG() qDebug() << "[ChooseTaskController]"
+#define LOG() qDebug() << "[TaskListController]"
 
 static bool CompareExecs(const QString &a, const QString &b) {
   if (a.size() != b.size()) {
@@ -12,12 +12,13 @@ static bool CompareExecs(const QString &a, const QString &b) {
   }
 }
 
-ChooseTaskController::ChooseTaskController(QObject *parent)
+TaskListController::TaskListController(QObject *parent)
     : QObject(parent),
       tasks(new SimpleQVariantListModel(this, {{0, "title"}, {1, "command"}},
                                         {0})),
       is_loading(true) {
   Application &app = Application::Get();
+  app.view.SetWindowTitle("Tasks");
   SetIsLoading(true);
   QString project_path = app.project.GetCurrentProject().path;
   app.RunIOTask<QList<QString>>(
@@ -44,13 +45,19 @@ ChooseTaskController::ChooseTaskController(QObject *parent)
       });
 }
 
-bool ChooseTaskController::ShouldShowPlaceholder() const {
+bool TaskListController::ShouldShowPlaceholder() const {
   return is_loading || tasks->list.isEmpty();
 }
 
-bool ChooseTaskController::IsLoading() const { return is_loading; }
+void TaskListController::ExecuteTask(const QString &command) const {
+  Application &app = Application::Get();
+  app.task.ExecuteTask(command);
+  app.view.SetCurrentView("TaskExecutionHistory.qml");
+}
 
-void ChooseTaskController::SetIsLoading(bool value) {
+bool TaskListController::IsLoading() const { return is_loading; }
+
+void TaskListController::SetIsLoading(bool value) {
   is_loading = value;
   emit isLoadingChanged();
 }
