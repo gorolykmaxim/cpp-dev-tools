@@ -1,6 +1,7 @@
 #include "QVariantListModel.hpp"
 
 #include <algorithm>
+#include <limits>
 
 QVariantListModel::QVariantListModel(QObject* parent)
     : QAbstractListModel(parent) {}
@@ -98,7 +99,10 @@ static SortableProps GetSortableProps(const QString& str) {
     }
     last_end = end + kHighlightClose.length();
   }
-  if (last_end < str.length() - 1) {
+  if (last_end == 0) {
+    result.not_matching_chars = std::numeric_limits<int>::max();
+    result.first_match_pos = std::numeric_limits<qsizetype>::max();
+  } else if (last_end < str.length() - 1) {
     result.not_matching_chars += str.length() - last_end - 1;
   }
   return result;
