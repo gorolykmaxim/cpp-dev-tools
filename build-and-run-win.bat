@@ -5,3 +5,4 @@ if not exist build\ (
   cmake -B build -G Ninja -DCMAKE_BUILD_TYPE=Debug
 )
 cmake --build build
+start /b /wait ./build/cpp-dev-tools.exe
