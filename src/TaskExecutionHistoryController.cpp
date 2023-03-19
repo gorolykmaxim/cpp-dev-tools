@@ -118,34 +118,40 @@ void TaskExecutionHistoryController::LoadExecutions(
       });
 }
 
-static void PaintStderrLinesRed(QString& output,
-                                const QSet<int>& stderr_line_indices) {
-  int pos = 0;
-  int line = 0;
+static QString ToRichText(const TaskExecutionOutput& exec_output) {
   static const QString kStart = "<span style=\"color:red;\">";
   static const QString kEnd = "</span>";
+  static const QString kLineBreak = "<br>";
+  QString source = exec_output.output.toHtmlEscaped();
+  QString result;
+  result.reserve(source.size() * 1.5);
+  int pos = 0;
+  int line = 0;
   while (true) {
-    int i = output.indexOf('\n', pos);
+    int i = source.indexOf('\n', pos);
     if (i < 0) {
       break;
     }
-    if (stderr_line_indices.contains(line)) {
-      output.insert(i, kEnd);
-      output.insert(pos, kStart);
-      i += kStart.size() + kEnd.size();
+    bool is_stderr = exec_output.stderr_line_indices.contains(line);
+    if (is_stderr) {
+      result += kStart;
     }
+    result += source.sliced(pos, i - pos);
+    if (is_stderr) {
+      result += kEnd;
+    }
+    result += kLineBreak;
     pos = i + 1;
     line++;
   }
+  return result;
 }
 
 void TaskExecutionHistoryController::LoadSelectedExecutionOutput() {
   LOG() << "Reloading selected execution's output";
   Application::Get().task.FetchExecutionOutput(
       this, execution_id, [this](const TaskExecutionOutput& exec_output) {
-        execution_output = exec_output.output.toHtmlEscaped();
-        PaintStderrLinesRed(execution_output, exec_output.stderr_line_indices);
-        execution_output.replace("\n", "<br>");
+        execution_output = ToRichText(exec_output);
         emit executionChanged();
       });
 }
