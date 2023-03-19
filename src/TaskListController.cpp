@@ -1,6 +1,7 @@
 #include "TaskListController.hpp"
 
 #include "Application.hpp"
+#include "Database.hpp"
 
 #define LOG() qDebug() << "[TaskListController]"
 
@@ -23,6 +24,8 @@ QVariantList TaskListModel::GetRow(int i) const {
 
 int TaskListModel::GetRowCount() const { return list.size(); }
 
+static TaskId ReadTaskId(QSqlQuery &query) { return query.value(0).toString(); }
+
 TaskListController::TaskListController(QObject *parent)
     : QObject(parent), tasks(new TaskListModel(this)), is_loading(true) {
   Application &app = Application::Get();
@@ -44,6 +47,26 @@ TaskListController::TaskListController(QObject *parent)
         }
         std::sort(results.begin(), results.end(),
                   [](const Task &a, const Task &b) { return a.id < b.id; });
+        // Move executed tasks to the beginning so the most recently executed
+        // task is first.
+        QList<TaskId> task_ids = Database::ExecQueryAndRead<TaskId>(
+            "SELECT task_id, MAX(start_time) as start_time "
+            "FROM task_execution "
+            "GROUP BY task_id "
+            "ORDER BY start_time ASC",
+            ReadTaskId);
+        for (const TaskId &id : task_ids) {
+          int index = -1;
+          for (int i = 0; i < results.size(); i++) {
+            if (results[i].id == id) {
+              index = i;
+              break;
+            }
+          }
+          if (index >= 0) {
+            results.move(index, 0);
+          }
+        }
         return results;
       },
       [this](QList<Task> results) {
