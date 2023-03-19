@@ -10,10 +10,28 @@
 #include <QUuid>
 #include <optional>
 
+struct ExecutableTask {
+  QString path;
+
+  bool IsNull() const;
+};
+
+using TaskId = QString;
+
+struct Task {
+  TaskId id;
+  ExecutableTask executable;
+
+  explicit Task(const TaskId& id);
+};
+
+QDebug operator<<(QDebug debug, const Task& task);
+
 struct TaskExecution {
   QUuid id;
   QDateTime start_time;
-  QString command;
+  TaskId task_id;
+  QString task_name;
   std::optional<int> exit_code;
 
   bool operator==(const TaskExecution& another) const;
@@ -28,7 +46,8 @@ struct TaskExecutionOutput {
 class TaskSystem : public QObject {
   Q_OBJECT
  public:
-  void ExecuteTask(const QString& command);
+  static QString GetName(const Task& task);
+  void ExecuteTask(const Task& Task);
   void KillAllTasks();
   void FetchExecutions(
       QObject* requestor, QUuid project_id,

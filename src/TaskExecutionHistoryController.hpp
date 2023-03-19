@@ -24,7 +24,7 @@ class TaskExecutionHistoryController : public QObject {
       bool executionsEmpty READ AreExecutionsEmpty NOTIFY executionsChanged)
   Q_PROPERTY(TaskExecutionListModel* executions MEMBER executions CONSTANT)
   Q_PROPERTY(
-      QString executionCommand MEMBER execution_command NOTIFY executionChanged)
+      QString executionName MEMBER execution_name NOTIFY executionChanged)
   Q_PROPERTY(
       QString executionStatus MEMBER execution_status NOTIFY executionChanged)
   Q_PROPERTY(
@@ -48,7 +48,7 @@ class TaskExecutionHistoryController : public QObject {
   void LoadSelectedExecutionOutput();
   void DisplaySelectedExecution();
 
-  QString execution_command;
+  QString execution_name;
   QString execution_status;
   QString execution_output;
   QUuid execution_id;

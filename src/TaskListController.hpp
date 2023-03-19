@@ -4,6 +4,18 @@
 #include <QtQmlIntegration>
 
 #include "QVariantListModel.hpp"
+#include "TaskSystem.hpp"
+
+class TaskListModel : public QVariantListModel {
+ public:
+  explicit TaskListModel(QObject* parent);
+
+  QList<Task> list;
+
+ protected:
+  QVariantList GetRow(int i) const override;
+  int GetRowCount() const override;
+};
 
 class TaskListController : public QObject {
   Q_OBJECT
@@ -11,15 +23,16 @@ class TaskListController : public QObject {
   Q_PROPERTY(
       bool showPlaceholder READ ShouldShowPlaceholder NOTIFY isLoadingChanged)
   Q_PROPERTY(bool isLoading READ IsLoading NOTIFY isLoadingChanged)
-  Q_PROPERTY(SimpleQVariantListModel* tasks MEMBER tasks CONSTANT)
+  Q_PROPERTY(TaskListModel* tasks MEMBER tasks CONSTANT)
  public:
   explicit TaskListController(QObject* parent = nullptr);
   bool ShouldShowPlaceholder() const;
   bool IsLoading() const;
 
-  SimpleQVariantListModel* tasks;
+  TaskListModel* tasks;
+
  public slots:
-  void ExecuteTask(const QString& command) const;
+  void ExecuteTask(int i) const;
 
  signals:
   void isLoadingChanged();

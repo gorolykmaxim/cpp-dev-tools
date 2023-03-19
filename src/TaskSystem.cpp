@@ -5,6 +5,15 @@
 
 #define LOG() qDebug() << "[TaskSystem]"
 
+bool ExecutableTask::IsNull() const { return path.isEmpty(); }
+
+Task::Task(const TaskId& id) : id(id) {}
+
+QDebug operator<<(QDebug debug, const Task& task) {
+  QDebugStateSaver saver(debug);
+  return debug.nospace() << "Task(id=" << task.id << ')';
+}
+
 bool TaskExecution::operator==(const TaskExecution& another) const {
   return id == another.id;
 }
@@ -13,14 +22,35 @@ bool TaskExecution::operator!=(const TaskExecution& another) const {
   return !(*this == another);
 }
 
-void TaskSystem::ExecuteTask(const QString& command) {
-  LOG() << "Executing task" << command;
+static QString GetFileName(const QString& path) {
+  int pos = path.lastIndexOf('/');
+  if (pos < 0) {
+    return path;
+  } else if (pos == path.size() - 1) {
+    return "";
+  } else {
+    return path.sliced(pos + 1, path.size() - pos - 1);
+  }
+}
+
+QString TaskSystem::GetName(const Task& task) {
+  if (!task.executable.IsNull()) {
+    return GetFileName(task.executable.path);
+  } else {
+    return task.id;
+  }
+}
+
+void TaskSystem::ExecuteTask(const Task& task) {
+  LOG() << "Executing" << task;
   QUuid exec_id = QUuid::createUuid();
-  active_execution_outputs[exec_id] = TaskExecutionOutput();
+  TaskExecutionOutput& exec_output = active_execution_outputs[exec_id];
+  exec_output.output += task.executable.path + "\n";
   TaskExecution& exec = active_executions[exec_id];
   exec.id = exec_id;
   exec.start_time = QDateTime::currentDateTime();
-  exec.command = command;
+  exec.task_id = task.id;
+  exec.task_name = GetName(task);
   QProcess* process = new QProcess();
   active_processes[exec_id] = process;
   QObject::connect(process, &QProcess::readyReadStandardOutput, this,
@@ -41,7 +71,7 @@ void TaskSystem::ExecuteTask(const QString& command) {
                    [this, process, exec_id](int, QProcess::ExitStatus) {
                      FinishExecution(exec_id, process);
                    });
-  process->startCommand(command);
+  process->startCommand(task.executable.path);
 }
 
 void TaskSystem::KillAllTasks() {
@@ -58,8 +88,9 @@ TaskExecution TaskSystem::ReadExecutionFromSql(QSqlQuery& query) {
   TaskExecution exec;
   exec.id = query.value(0).toUuid();
   exec.start_time = query.value(1).toDateTime();
-  exec.command = query.value(2).toString();
-  exec.exit_code = query.value(3).toInt();
+  exec.task_id = query.value(2).toString();
+  exec.task_name = query.value(3).toString();
+  exec.exit_code = query.value(4).toInt();
   return exec;
 }
 
@@ -107,9 +138,9 @@ void TaskSystem::FinishExecution(QUuid id, QProcess* process) {
       indices.append(QString::number(i));
     }
     Database::ExecCmdAsync(
-        "INSERT INTO task_execution VALUES(?,?,?,?,?,?,?)",
-        {exec.id, project.id, exec.start_time, exec.command, *exec.exit_code,
-         indices.join(','), exec_output.output});
+        "INSERT INTO task_execution VALUES(?,?,?,?,?,?,?,?)",
+        {exec.id, project.id, exec.start_time, exec.task_id, exec.task_name,
+         *exec.exit_code, indices.join(','), exec_output.output});
     active_executions.remove(id);
     active_execution_outputs.remove(id);
     active_processes.remove(id);
@@ -134,7 +165,8 @@ void TaskSystem::FetchExecutions(
       requestor,
       [project_id] {
         return Database::ExecQueryAndRead<TaskExecution>(
-            "SELECT id, start_time, command, exit_code FROM task_execution "
+            "SELECT id, start_time, task_id, task_name, exit_code FROM "
+            "task_execution "
             "WHERE project_id=? ORDER BY start_time",
             &TaskSystem::ReadExecutionFromSql, {project_id});
       },

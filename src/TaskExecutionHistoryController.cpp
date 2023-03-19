@@ -33,8 +33,8 @@ QVariantList TaskExecutionListModel::GetRow(int i) const {
     }
   }
   bool is_selected = selected_execution_id == exec.id;
-  return {exec.id, exec.command, exec.start_time.toString(),
-          icon,    iconColor,    is_selected};
+  return {exec.id, exec.task_name, exec.start_time.toString(),
+          icon,    iconColor,      is_selected};
 }
 
 int TaskExecutionListModel::GetRowCount() const { return list.size(); }
@@ -162,7 +162,7 @@ void TaskExecutionHistoryController::DisplaySelectedExecution() {
     return;
   }
   LOG() << "Updating selected execution's status";
-  execution_command = exec->command;
+  execution_name = exec->task_name;
   execution_status = "Running...";
   if (exec->exit_code) {
     execution_status = "Exit Code: " + QString::number(*exec->exit_code);

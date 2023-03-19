@@ -65,7 +65,7 @@ RowLayout {
         Cdt.Text {
           Layout.fillWidth: true
           elide: Text.ElideLeft
-          text: controller.executionCommand
+          text: controller.executionName
         }
         Cdt.Text {
           Layout.fillWidth: true
