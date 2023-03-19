@@ -29,6 +29,7 @@ Application::Application(int argc, char** argv)
   qml_engine.rootContext()->setContextProperty("viewSystem", &view);
   qml_engine.rootContext()->setContextProperty("userCommandSystem",
                                                &user_command);
+  qml_engine.rootContext()->setContextProperty("taskSystem", &task);
 #if __APPLE__
   qml_engine.rootContext()->setContextProperty("isMacOS", true);
 #else

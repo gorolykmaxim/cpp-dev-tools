@@ -200,3 +200,20 @@ void TaskSystem::FetchExecutionOutput(
         callback(result.isEmpty() ? TaskExecutionOutput() : result[0]);
       });
 }
+
+void TaskSystem::CancelExecution(QUuid execution_id, bool forcefully) {
+  if (!task_executions.contains(execution_id)) {
+    return;
+  }
+  LOG() << "Attempting to cancel execution" << execution_id
+        << "forcefully:" << forcefully;
+  RunningTaskExecution& exec = task_executions[execution_id];
+  if (!exec.process) {
+    return;
+  }
+  if (forcefully) {
+    exec.process->kill();
+  } else {
+    exec.process->terminate();
+  }
+}

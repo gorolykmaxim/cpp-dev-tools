@@ -62,6 +62,9 @@ class TaskSystem : public QObject {
       QObject* requestor, QUuid execution_id,
       const std::function<void(const TaskExecutionOutput&)>& callback) const;
 
+ public slots:
+  void CancelExecution(QUuid execution_id, bool forcefully);
+
  signals:
   void executionOutputChanged(QUuid exec_id);
   void executionFinished(QUuid exec_id);

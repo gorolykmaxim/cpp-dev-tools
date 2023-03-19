@@ -32,6 +32,18 @@ RowLayout {
     onItemRightClicked: contextMenu.open()
     KeyNavigation.right: execOutputTextArea
     Shortcut {
+      id: shortcutTerminate
+      enabled: execList.activeFocus
+      sequence: "Ctrl+Shift+T"
+      onActivated: execList.ifCurrentItem('id', (id) => taskSystem.CancelExecution(id, false))
+    }
+    Shortcut {
+      id: shortcutKill
+      enabled: execList.activeFocus
+      sequence: "Ctrl+Shift+K"
+      onActivated: execList.ifCurrentItem('id', (id) => taskSystem.CancelExecution(id, true))
+    }
+    Shortcut {
       id: shortcutRemoveFinished
       enabled: execList.activeFocus
       sequence: "Ctrl+Shift+D"
@@ -40,6 +52,14 @@ RowLayout {
   }
   Menu {
     id: contextMenu
+    MenuItem {
+      text: "Terminate"
+      onTriggered: shortcutTerminate.activated()
+    }
+    MenuItem {
+      text: "Kill"
+      onTriggered: shortcutKill.activated()
+    }
     MenuItem {
       text: "Remove Finished Executions"
       onTriggered: shortcutRemoveFinished.activated()
