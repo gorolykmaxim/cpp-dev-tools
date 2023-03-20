@@ -12,7 +12,7 @@ TextField {
   padding: Theme.basePadding
   selectByMouse: true
   selectionColor: Theme.colorHighlight
-  onPressed: e => Common.handleRightClick(e, textField, contextMenu)
+  onPressed: e => Common.handleRightClick(textField, contextMenu, e)
   background: Rectangle {
     color: Theme.colorBgDark
     border.color: parent.activeFocus ? Theme.colorHighlight : Theme.colorBgBlack

@@ -150,7 +150,7 @@ FocusScope {
               event.accepted = true;
             }
           }
-          onPressed: e => Common.handleRightClick(e, textArea, contextMenu)
+          onPressed: e => Common.handleRightClick(textArea, contextMenu, e)
           Menu {
             id: contextMenu
             MenuItem {

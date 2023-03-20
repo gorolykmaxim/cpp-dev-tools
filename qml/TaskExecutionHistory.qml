@@ -4,6 +4,7 @@ import QtQuick.Layouts
 import Qt.labs.platform
 import "." as Cdt
 import cdt
+import "Common.js" as Common
 
 RowLayout {
   anchors.fill: parent
@@ -29,42 +30,28 @@ RowLayout {
       controller.SelectExecution(id);
       execOutputTextArea.closeSearchBar();
     })
-    onItemRightClicked: contextMenu.open()
+    onItemRightClicked: Common.handleRightClick(execList, contextMenu)
     KeyNavigation.right: execOutputTextArea
-    Shortcut {
-      id: shortcutTerminate
-      enabled: execList.activeFocus
-      sequence: "Ctrl+Shift+T"
-      onActivated: execList.ifCurrentItem('id', (id) => taskSystem.CancelExecution(id, false))
-    }
-    Shortcut {
-      id: shortcutKill
-      enabled: execList.activeFocus
-      sequence: "Ctrl+Shift+K"
-      onActivated: execList.ifCurrentItem('id', (id) => taskSystem.CancelExecution(id, true))
-    }
-    Shortcut {
-      id: shortcutRemoveFinished
-      enabled: execList.activeFocus
-      sequence: "Ctrl+Shift+D"
-      onActivated: controller.RemoveFinishedExecutions()
-    }
   }
   Menu {
     id: contextMenu
     MenuItem {
       text: "Terminate"
-      enabled: controller.executionRunning
-      onTriggered: shortcutTerminate.activated()
+      enabled: execList.activeFocus && controller.executionRunning
+      shortcut: "Ctrl+Shift+T"
+      onTriggered: execList.ifCurrentItem('id', (id) => taskSystem.CancelExecution(id, false))
     }
     MenuItem {
       text: "Kill"
-      enabled: controller.executionRunning
-      onTriggered: shortcutKill.activated()
+      enabled: execList.activeFocus && controller.executionRunning
+      shortcut: "Ctrl+Shift+K"
+      onTriggered: execList.ifCurrentItem('id', (id) => taskSystem.CancelExecution(id, true))
     }
     MenuItem {
       text: "Remove Finished Executions"
-      onTriggered: shortcutRemoveFinished.activated()
+      enabled: execList.activeFocus
+      shortcut: "Ctrl+Shift+D"
+      onTriggered: controller.RemoveFinishedExecutions()
     }
   }
   Rectangle {

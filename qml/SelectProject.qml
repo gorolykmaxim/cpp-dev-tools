@@ -34,12 +34,6 @@ Loader {
             listModel: controller.projects
             focus: true
             onEnterPressed: projectList.ifCurrentItem('idx', controller.OpenProject)
-            Shortcut {
-              id: shortcutRemoveFromList
-              enabled: input.activeFocus
-              sequence: "Ctrl+Shift+D"
-              onActivated: projectList.ifCurrentItem('idx', controller.DeleteProject)
-            }
           }
           Cdt.Button {
             id: button
@@ -68,7 +62,9 @@ Loader {
         }
         MenuItem {
           text: "Remove From List"
-          onTriggered: shortcutRemoveFromList.activated()
+          enabled: input.activeFocus
+          shortcut: "Ctrl+Shift+D"
+          onTriggered: projectList.ifCurrentItem('idx', controller.DeleteProject)
         }
       }
     }

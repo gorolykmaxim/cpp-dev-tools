@@ -83,7 +83,7 @@ ListView {
       anchors.fill: parent
       acceptedButtons: Qt.LeftButton | Qt.RightButton
       hoverEnabled: true
-      onClicked: e => {
+      onPressed: e => {
         root.currentIndex = index;
         if (e.button == Qt.LeftButton) {
           root.itemLeftClicked(itemModel, e);

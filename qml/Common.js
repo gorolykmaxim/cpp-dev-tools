@@ -8,8 +8,8 @@ function findMenuByTitle(menuBar, menuTitle) {
   return null;
 }
 
-function handleRightClick(event, component, menu) {
-  if (event.button == Qt.RightButton) {
+function handleRightClick(component, menu, event) {
+  if (!event || event.button == Qt.RightButton) {
     component.forceActiveFocus();
     menu.open();
   }
