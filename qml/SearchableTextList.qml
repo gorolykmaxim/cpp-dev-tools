@@ -10,7 +10,7 @@ FocusScope {
   property string placeholderText: ""
   property bool showPlaceholder: false
   signal itemSelected(selectedItemModel: QtObject)
-  signal itemRightClicked()
+  signal itemRightClicked(clickedItemModel: QtObject)
   signal currentItemChanged()
   function ifCurrentItem(field, callback) {
     textList.ifCurrentItem(field, callback);
@@ -55,7 +55,7 @@ FocusScope {
         model: searchableModel
         elide: Text.ElideLeft
         onItemLeftClicked: selectCurrentItemIfPresent()
-        onItemRightClicked: root.itemRightClicked()
+        onItemRightClicked: item => root.itemRightClicked(item)
         onCurrentIndexChanged: root.currentItemChanged()
       }
     }

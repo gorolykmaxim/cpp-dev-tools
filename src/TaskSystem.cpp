@@ -230,6 +230,10 @@ void TaskSystem::FetchExecutionOutput(
       });
 }
 
+bool TaskSystem::IsExecutionRunning(QUuid execution_id) const {
+  return active_executions.contains(execution_id);
+}
+
 void TaskSystem::CancelExecution(QUuid execution_id, bool forcefully) {
   if (!active_commands.contains(execution_id)) {
     return;

@@ -29,9 +29,12 @@ class TaskExecutionHistoryController : public QObject {
       QString executionStatus MEMBER execution_status NOTIFY executionChanged)
   Q_PROPERTY(
       QString executionOutput MEMBER execution_output NOTIFY executionChanged)
+  Q_PROPERTY(bool executionRunning READ IsSelectedExecutionRunning NOTIFY
+                 executionChanged)
  public:
   explicit TaskExecutionHistoryController(QObject* parent = nullptr);
   bool AreExecutionsEmpty() const;
+  bool IsSelectedExecutionRunning() const;
 
  public slots:
   void SelectExecution(QUuid id);

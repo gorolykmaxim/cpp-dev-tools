@@ -66,6 +66,7 @@ class TaskSystem : public QObject {
   void FetchExecutionOutput(
       QObject* requestor, QUuid execution_id,
       const std::function<void(const TaskExecutionOutput&)>& callback) const;
+  bool IsExecutionRunning(QUuid execution_id) const;
 
  public slots:
   void CancelExecution(QUuid execution_id, bool forcefully);

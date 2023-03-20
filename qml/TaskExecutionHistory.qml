@@ -54,10 +54,12 @@ RowLayout {
     id: contextMenu
     MenuItem {
       text: "Terminate"
+      enabled: controller.executionRunning
       onTriggered: shortcutTerminate.activated()
     }
     MenuItem {
       text: "Kill"
+      enabled: controller.executionRunning
       onTriggered: shortcutKill.activated()
     }
     MenuItem {

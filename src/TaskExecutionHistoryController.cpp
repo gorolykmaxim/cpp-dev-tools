@@ -67,6 +67,10 @@ bool TaskExecutionHistoryController::AreExecutionsEmpty() const {
   return executions->list.size() == 0;
 }
 
+bool TaskExecutionHistoryController::IsSelectedExecutionRunning() const {
+  return Application::Get().task.IsExecutionRunning(execution_id);
+}
+
 void TaskExecutionHistoryController::SelectExecution(QUuid id) {
   execution_id = id;
   LOG() << "Execution selected:" << execution_id;
