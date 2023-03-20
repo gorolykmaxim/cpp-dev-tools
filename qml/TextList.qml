@@ -33,6 +33,7 @@ ListView {
   signal itemRightClicked(clickedItemModel: QtObject, event: QtObject);
   clip: true
   boundsBehavior: ListView.StopAtBounds
+  highlightMoveDuration: 100
   ScrollBar.vertical: ScrollBar {}
   delegate: Rectangle {
     property var isSelected: ListView.isCurrentItem
