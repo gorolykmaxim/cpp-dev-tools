@@ -43,10 +43,15 @@ struct TaskExecutionOutput {
   QString output;
 };
 
-struct RunningTaskExecution {
-  TaskExecution task_execution;
-  TaskExecutionOutput task_execution_output;
-  QProcess* process;
+class ExecuteTaskCommand : public QObject {
+  Q_OBJECT
+ public:
+  virtual void Start() = 0;
+  virtual void Cancel(bool forcefully) = 0;
+
+ signals:
+  void outputWritten(const QString& data, bool is_stderr);
+  void finished(int exit_code);
 };
 
 class TaskSystem : public QObject {
@@ -72,9 +77,10 @@ class TaskSystem : public QObject {
  private:
   static TaskExecution ReadExecutionFromSql(QSqlQuery& query);
   static TaskExecutionOutput ReadExecutionOutputFromSql(QSqlQuery& query);
-  void AppendToExecutionOutput(QUuid id, const QByteArray& data,
-                               bool is_stderr);
-  void FinishExecution(QUuid id, QProcess* process);
+  void AppendToExecutionOutput(QUuid id, const QString& data, bool is_stderr);
+  void FinishExecution(QUuid id, int exit_code);
 
-  QHash<QUuid, RunningTaskExecution> task_executions;
+  QHash<QUuid, TaskExecution> active_executions;
+  QHash<QUuid, TaskExecutionOutput> active_outputs;
+  QHash<QUuid, QSharedPointer<ExecuteTaskCommand>> active_commands;
 };

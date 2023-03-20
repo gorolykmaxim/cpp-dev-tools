@@ -22,6 +22,47 @@ bool TaskExecution::operator!=(const TaskExecution& another) const {
   return !(*this == another);
 }
 
+class ExecuteExecutableTaskCommand : public ExecuteTaskCommand {
+ public:
+  ExecuteExecutableTaskCommand(const ExecutableTask& task) : executable(task) {
+    QObject::connect(
+        &process, &QProcess::readyReadStandardOutput, this,
+        [this] { emit outputWritten(process.readAllStandardOutput(), false); });
+    QObject::connect(&process, &QProcess::readyReadStandardError, this, [this] {
+      emit outputWritten(process.readAllStandardError(), true);
+    });
+    QObject::connect(&process, &QProcess::errorOccurred, this,
+                     [this](QProcess::ProcessError error) {
+                       if (error != QProcess::FailedToStart) {
+                         return;
+                       }
+                       emit outputWritten("Failed to start executable\n", true);
+                       emit finished(-1);
+                     });
+    QObject::connect(&process, &QProcess::finished, this,
+                     [this](int exit_code, QProcess::ExitStatus) {
+                       emit finished(exit_code);
+                     });
+  }
+
+  virtual void Start() override {
+    process.startCommand(executable.path);
+    emit outputWritten(executable.path + '\n', false);
+  }
+
+  virtual void Cancel(bool forcefully) override {
+    if (forcefully) {
+      process.kill();
+    } else {
+      process.terminate();
+    }
+  }
+
+ private:
+  QProcess process;
+  ExecutableTask executable;
+};
+
 static QString GetFileName(const QString& path) {
   int pos = path.lastIndexOf('/');
   if (pos < 0) {
@@ -44,43 +85,36 @@ QString TaskSystem::GetName(const Task& task) {
 void TaskSystem::ExecuteTask(const Task& task) {
   LOG() << "Executing" << task;
   QUuid exec_id = QUuid::createUuid();
-  RunningTaskExecution& running_exec = task_executions[exec_id];
-  TaskExecutionOutput& exec_output = running_exec.task_execution_output;
-  exec_output.output += task.executable.path + "\n";
-  TaskExecution& exec = running_exec.task_execution;
+  active_outputs[exec_id] = TaskExecutionOutput();
+  TaskExecution& exec = active_executions[exec_id];
   exec.id = exec_id;
   exec.start_time = QDateTime::currentDateTime();
   exec.task_id = task.id;
   exec.task_name = GetName(task);
-  QProcess* process = new QProcess();
-  running_exec.process = process;
-  QObject::connect(process, &QProcess::readyReadStandardOutput, this,
-                   [this, process, exec_id] {
-                     AppendToExecutionOutput(
-                         exec_id, process->readAllStandardOutput(), false);
-                   });
-  QObject::connect(process, &QProcess::readyReadStandardError, this,
-                   [this, process, exec_id] {
-                     AppendToExecutionOutput(
-                         exec_id, process->readAllStandardError(), true);
-                   });
-  QObject::connect(process, &QProcess::errorOccurred, this,
-                   [this, process, exec_id](QProcess::ProcessError) {
-                     FinishExecution(exec_id, process);
-                   });
-  QObject::connect(process, &QProcess::finished, this,
-                   [this, process, exec_id](int, QProcess::ExitStatus) {
-                     FinishExecution(exec_id, process);
-                   });
-  process->startCommand(task.executable.path);
+  auto cmd =
+      QSharedPointer<ExecuteExecutableTaskCommand>::create(task.executable);
+  active_commands[exec_id] = cmd;
+  QObject::connect(
+      cmd.get(), &ExecuteTaskCommand::outputWritten, this,
+      [this, exec_id](const QString& output, bool is_stderr) {
+        AppendToExecutionOutput(exec_id, output, is_stderr);
+      },
+      Qt::QueuedConnection);
+  QObject::connect(
+      cmd.get(), &ExecuteTaskCommand::finished, this,
+      [this, exec_id](int exit_code) { FinishExecution(exec_id, exit_code); },
+      Qt::QueuedConnection);
+  cmd->Start();
 }
 
 void TaskSystem::KillAllTasks() {
   LOG() << "Killing all tasks";
-  for (RunningTaskExecution& exec : task_executions.values()) {
-    exec.process->kill();
+  for (QSharedPointer<ExecuteTaskCommand> cmd : active_commands.values()) {
+    cmd->Cancel(true);
   }
-  task_executions.clear();
+  active_executions.clear();
+  active_outputs.clear();
+  active_commands.clear();
 }
 
 TaskExecution TaskSystem::ReadExecutionFromSql(QSqlQuery& query) {
@@ -103,48 +137,43 @@ TaskExecutionOutput TaskSystem::ReadExecutionOutputFromSql(QSqlQuery& query) {
   return exec_output;
 }
 
-void TaskSystem::AppendToExecutionOutput(QUuid id, const QByteArray& data,
+void TaskSystem::AppendToExecutionOutput(QUuid id, const QString& data,
                                          bool is_stderr) {
-  if (!task_executions.contains(id)) {
+  if (!active_outputs.contains(id)) {
     return;
   }
-  TaskExecutionOutput& exec_output = task_executions[id].task_execution_output;
-  QString data_str(data);
+  TaskExecutionOutput& exec_output = active_outputs[id];
   if (is_stderr) {
     int lines_before = exec_output.output.count('\n');
-    for (int i = 0; i < data_str.count('\n'); i++) {
+    for (int i = 0; i < data.count('\n'); i++) {
       exec_output.stderr_line_indices.insert(i + lines_before);
     }
   }
-  exec_output.output += data_str;
+  exec_output.output += data;
   emit executionOutputChanged(id);
 }
 
-void TaskSystem::FinishExecution(QUuid id, QProcess* process) {
-  if (task_executions.contains(id)) {
-    RunningTaskExecution& running_exec = task_executions[id];
-    TaskExecution& exec = running_exec.task_execution;
-    if (process->error() == QProcess::FailedToStart ||
-        process->exitStatus() == QProcess::CrashExit) {
-      exec.exit_code = -1;
-    } else {
-      exec.exit_code = process->exitCode();
-    }
-    LOG() << "Task" << id << "finished with code" << *exec.exit_code;
-    TaskExecutionOutput& exec_output = running_exec.task_execution_output;
-    const Project& project = Application::Get().project.GetCurrentProject();
-    QStringList indices;
-    for (int i : exec_output.stderr_line_indices) {
-      indices.append(QString::number(i));
-    }
-    Database::ExecCmdAsync(
-        "INSERT INTO task_execution VALUES(?,?,?,?,?,?,?,?)",
-        {exec.id, project.id, exec.start_time, exec.task_id, exec.task_name,
-         *exec.exit_code, indices.join(','), exec_output.output});
-    task_executions.remove(id);
-    emit executionFinished(id);
+void TaskSystem::FinishExecution(QUuid id, int exit_code) {
+  if (!active_executions.contains(id)) {
+    return;
   }
-  process->deleteLater();
+  TaskExecution& exec = active_executions[id];
+  exec.exit_code = exit_code;
+  LOG() << "Task execution" << id << "finished with code" << exit_code;
+  TaskExecutionOutput& exec_output = active_outputs[id];
+  const Project& project = Application::Get().project.GetCurrentProject();
+  QStringList indices;
+  for (int i : exec_output.stderr_line_indices) {
+    indices.append(QString::number(i));
+  }
+  Database::ExecCmdAsync(
+      "INSERT INTO task_execution VALUES(?,?,?,?,?,?,?,?)",
+      {exec.id, project.id, exec.start_time, exec.task_id, exec.task_name,
+       *exec.exit_code, indices.join(','), exec_output.output});
+  active_executions.remove(id);
+  active_outputs.remove(id);
+  active_commands.remove(id);
+  emit executionFinished(id);
 }
 
 void TaskSystem::FetchExecutions(
@@ -152,8 +181,8 @@ void TaskSystem::FetchExecutions(
     const std::function<void(const QList<TaskExecution>&)>& callback) const {
   LOG() << "Fetching executions for project" << project_id;
   QList<TaskExecution> execs;
-  for (QUuid id : task_executions.keys()) {
-    execs.append(task_executions[id].task_execution);
+  for (QUuid id : active_executions.keys()) {
+    execs.append(active_executions[id]);
   }
   std::sort(execs.begin(), execs.end(),
             [](const TaskExecution& a, const TaskExecution& b) {
@@ -185,8 +214,8 @@ void TaskSystem::FetchExecutionOutput(
     QObject* requestor, QUuid execution_id,
     const std::function<void(const TaskExecutionOutput&)>& callback) const {
   LOG() << "Fetching output of execution" << execution_id;
-  if (task_executions.contains(execution_id)) {
-    callback(task_executions[execution_id].task_execution_output);
+  if (active_outputs.contains(execution_id)) {
+    callback(active_outputs[execution_id]);
     return;
   }
   Application::Get().RunIOTask<QList<TaskExecutionOutput>>(
@@ -202,18 +231,10 @@ void TaskSystem::FetchExecutionOutput(
 }
 
 void TaskSystem::CancelExecution(QUuid execution_id, bool forcefully) {
-  if (!task_executions.contains(execution_id)) {
+  if (!active_commands.contains(execution_id)) {
     return;
   }
   LOG() << "Attempting to cancel execution" << execution_id
         << "forcefully:" << forcefully;
-  RunningTaskExecution& exec = task_executions[execution_id];
-  if (!exec.process) {
-    return;
-  }
-  if (forcefully) {
-    exec.process->kill();
-  } else {
-    exec.process->terminate();
-  }
+  active_commands[execution_id]->Cancel(forcefully);
 }
