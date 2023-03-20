@@ -32,6 +32,8 @@ FocusScope {
     const position = textArea.selectionStart;
     searchOutputTextField.text = textArea.selectedText;
     searchBar.visible = true;
+    // When searchBar open request arrives we need to focus the search bar's
+    // input regardless of what else is happenning.
     searchOutputTextField.forceActiveFocus();
     controller.GoToResultWithStartAt(position);
   }
