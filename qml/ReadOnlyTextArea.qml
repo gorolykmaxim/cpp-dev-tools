@@ -4,6 +4,7 @@ import QtQuick.Layouts
 import Qt.labs.platform
 import cdt
 import "." as Cdt
+import "Common.js" as Common
 
 FocusScope {
   id: root
@@ -132,28 +133,6 @@ FocusScope {
             color: "transparent"
           }
           wrapMode: TextArea.WordWrap
-          Shortcut {
-            id: shortcutFind
-            sequence: StandardKey.Find
-            enabled: textArea.activeFocus && searchable
-            onActivated: openSearchBar()
-          }
-          Shortcut {
-            id: shortcutSelectWord
-            sequence: "Ctrl+D"
-            enabled: textArea.activeFocus
-            onActivated: textArea.selectWord()
-          }
-          Shortcut {
-            sequence: "Ctrl+Alt+Left"
-            enabled: textArea.activeFocus
-            onActivated: controller.GoToPreviousCursorPosition()
-          }
-          Shortcut {
-            sequence: "Ctrl+Alt+Right"
-            enabled: textArea.activeFocus
-            onActivated: controller.GoToNextCursorPosition()
-          }
           onCursorPositionChanged: controller.SaveCursorPosition(cursorPosition)
           // Make text area effectively readOnly but don't hide the cursor and
           // allow navigating it using the cursor
@@ -171,31 +150,46 @@ FocusScope {
               event.accepted = true;
             }
           }
-          onPressed: event => {
-            if (event.button == Qt.RightButton) {
-              contextMenu.open();
-            }
-          }
+          onPressed: e => Common.handleRightClick(e, textArea, contextMenu)
           Menu {
             id: contextMenu
             MenuItem {
               text: "Copy"
+              enabled: textArea.activeFocus
+              shortcut: "Ctrl+C"
               onTriggered: textArea.copy()
             }
             MenuSeparator {}
             MenuItem {
               text: "Find"
-              enabled: searchable
-              onTriggered: shortcutFind.activated()
+              enabled: textArea.activeFocus && searchable
+              shortcut: "Ctrl+F"
+              onTriggered: openSearchBar()
             }
             MenuSeparator {}
             MenuItem {
               text: "Select All"
+              enabled: textArea.activeFocus
+              shortcut: "Ctrl+A"
               onTriggered: textArea.selectAll()
             }
             MenuItem {
               text: "Select Word"
-              onTriggered: shortcutSelectWord.activated()
+              enabled: textArea.activeFocus
+              shortcut: "Ctrl+D"
+              onTriggered: textArea.selectWord()
+            }
+            MenuItem {
+              text: "Previous Cursor Position"
+              enabled: textArea.activeFocus
+              shortcut: "Ctrl+Alt+Left"
+              onTriggered: controller.GoToPreviousCursorPosition();
+            }
+            MenuItem {
+              text: "Next Cursor Position"
+              enabled: textArea.activeFocus
+              shortcut: "Ctrl+Alt+Right"
+              onTriggered: controller.GoToNextCursorPosition()
             }
           }
         }
