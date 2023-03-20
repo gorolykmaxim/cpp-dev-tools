@@ -23,26 +23,26 @@ TextField {
     id: contextMenu
     MenuItem {
       text: "Cut"
-      shortcut: StandardKey.Cut
+      shortcut: "Ctrl+X"
       enabled: textField.activeFocus
       onTriggered: textField.cut()
     }
     MenuItem {
       text: "Copy"
-      shortcut: StandardKey.Copy
+      shortcut: "Ctrl+C"
       enabled: textField.activeFocus
       onTriggered: textField.copy()
     }
     MenuItem {
       text: "Paste"
-      shortcut: StandardKey.Paste
+      shortcut: "Ctrl+P"
       enabled: textField.activeFocus
       onTriggered: textField.paste()
     }
     MenuSeparator {}
     MenuItem {
       text: "Select All"
-      shortcut: StandardKey.SelectAll
+      shortcut: "Ctrl+A"
       enabled: textField.activeFocus
       onTriggered: textField.selectAll()
     }
