@@ -32,6 +32,7 @@ FocusScope {
     const position = textArea.selectionStart;
     searchOutputTextField.text = textArea.selectedText;
     searchBar.visible = true;
+    searchOutputTextField.forceActiveFocus();
     controller.GoToResultWithStartAt(position);
   }
   function closeSearchBar() {
@@ -51,7 +52,6 @@ FocusScope {
       color: Theme.colorBgMedium
       padding: Theme.basePadding
       visible: false
-      focus: visible
       Keys.onEscapePressed: closeSearchBar(true)
       RowLayout {
         anchors.fill: parent
@@ -61,13 +61,6 @@ FocusScope {
           placeholderText: "Search text"
           onDisplayTextChanged: controller.Search(displayText,
                                                   textArea.getText(0, textArea.length))
-          // This is bound to "visible" and not just set to true in order to
-          // trigger its re-evaluation when searchBar becomes visible.
-          // Otheriwse if the last time when a searchBar got hidden one of its
-          // arrow buttons had focus - when the next time searchBar gets
-          // displayed that button would still have focus (even in case if it
-          // is now disabled and can't be interacted with, which will trap focus)
-          focus: visible
           KeyNavigation.down: textArea
           KeyNavigation.right: searchPrevBtn
           function goToSearchResult(event) {
