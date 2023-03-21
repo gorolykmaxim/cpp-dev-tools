@@ -183,7 +183,7 @@ void QVariantListModel::Load() {
       int last;
       if (i < cmd_count) {
         last = (i + 1) * kRowsPerCmd - 1;
-      } else if (last_row_changed > first) {
+      } else if (last_row_changed >= first) {
         last = last_row_changed;
       } else {
         break;
