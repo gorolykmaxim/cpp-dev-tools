@@ -125,13 +125,12 @@ static bool CompareRows(const QVariantList& row1, const QVariantList& row2,
 }
 
 void QVariantListModel::Load() {
-  beginResetModel();
-  items.clear();
+  QList<QVariantList> new_items;
   int count = GetRowCount();
   for (int i = 0; i < count; i++) {
     QVariantList row = GetRow(i);
     if (filter.isEmpty() || searchable_roles.isEmpty()) {
-      items.append(row);
+      new_items.append(row);
       continue;
     }
     bool matches = false;
@@ -144,18 +143,36 @@ void QVariantListModel::Load() {
       }
     }
     if (matches) {
-      items.append(row);
+      new_items.append(row);
     }
   }
   if (!filter.isEmpty()) {
     // Only sort when actual filter is applied. Otherwise - preserve original
     // order, supplied by the client code.
-    std::sort(items.begin(), items.end(),
+    std::sort(new_items.begin(), new_items.end(),
               [this](const QVariantList& row1, const QVariantList& row2) {
                 return CompareRows(row1, row2, searchable_roles);
               });
   }
-  endResetModel();
+  int diff = new_items.size() - items.size();
+  int last_row_changed = 0;
+  if (diff > 0) {
+    last_row_changed = items.size() - 1;
+    beginInsertRows(QModelIndex(), items.size(), new_items.size() - 1);
+    items = std::move(new_items);
+    endInsertRows();
+  } else if (diff < 0) {
+    last_row_changed = new_items.size() - 1;
+    beginRemoveRows(QModelIndex(), new_items.size(), items.size() - 1);
+    items = std::move(new_items);
+    endRemoveRows();
+  } else {
+    last_row_changed = items.size() - 1;
+    items = std::move(new_items);
+  }
+  if (last_row_changed >= 0) {
+    emit dataChanged(index(0), index(last_row_changed));
+  }
 }
 
 QVariant QVariantListModel::GetFieldByRoleName(int row,

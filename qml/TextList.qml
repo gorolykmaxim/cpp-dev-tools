@@ -12,25 +12,32 @@ ListView {
         toSelect = i;
       }
     }
-    root.currentIndex = toSelect;
+    root.mCurrentIndex = toSelect;
   }
   function ifCurrentItem(field, fn) {
     if (currentItem) {
       fn(currentItem.itemModel[field]);
     }
   }
-  onModelChanged: {
-    if (!root.model) {
-      return;
+  onModelChanged: selectCurrentItem()
+  Connections {
+    target: model
+    function onDataChanged() {
+      selectCurrentItem();
     }
-    selectCurrentItem();
-    root.model.onModelReset.connect(selectCurrentItem);
+    function onRowsInserted() {
+      selectCurrentItem();
+    }
+    function onRowsRemoved() {
+      selectCurrentItem();
+    }
   }
-  Component.onDestruction: root.model.onModelReset.disconnect(selectCurrentItem)
   id: root
   property var elide: Text.ElideNone
+  property int mCurrentIndex: 0
   signal itemLeftClicked(clickedItemModel: QtObject, event: QtObject);
   signal itemRightClicked(clickedItemModel: QtObject, event: QtObject);
+  onCountChanged: currentIndex = mCurrentIndex < count ? mCurrentIndex : count
   clip: true
   boundsBehavior: ListView.StopAtBounds
   boundsMovement: ListView.StopAtBounds
