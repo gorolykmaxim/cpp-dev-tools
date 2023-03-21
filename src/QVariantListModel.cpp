@@ -4,7 +4,11 @@
 #include <limits>
 
 QVariantListModel::QVariantListModel(QObject* parent)
-    : QAbstractListModel(parent) {}
+    : QAbstractListModel(parent) {
+  QObject::connect(this, &QVariantListModel::uiUpdateCommandsReady, this,
+                   &QVariantListModel::ExecuteUiUpdateCommands,
+                   Qt::QueuedConnection);
+}
 
 int QVariantListModel::rowCount(const QModelIndex&) const {
   return items.size();
@@ -171,7 +175,23 @@ void QVariantListModel::Load() {
     items = std::move(new_items);
   }
   if (last_row_changed >= 0) {
-    emit dataChanged(index(0), index(last_row_changed));
+    static int kRowsPerCmd = 5;
+    ui_update_commands.clear();
+    int cmd_count = (last_row_changed + 1) / kRowsPerCmd;
+    for (int i = 0; i <= cmd_count; i++) {
+      int first = i * kRowsPerCmd;
+      int last;
+      if (i < cmd_count) {
+        last = (i + 1) * kRowsPerCmd - 1;
+      } else if (last_row_changed > first) {
+        last = last_row_changed;
+      } else {
+        break;
+      }
+      ui_update_commands.enqueue(
+          [this, first, last] { emit dataChanged(index(first), index(last)); });
+    }
+    emit uiUpdateCommandsReady();
   }
 }
 
@@ -219,6 +239,15 @@ void QVariantListModel::SetRoleNames(const QHash<int, QByteArray>& role_names) {
     QString name(role_names[role]);
     name_to_role[name] = role;
   }
+}
+
+void QVariantListModel::ExecuteUiUpdateCommands() {
+  if (ui_update_commands.isEmpty()) {
+    return;
+  }
+  std::function<void()> cmd = ui_update_commands.dequeue();
+  cmd();
+  emit uiUpdateCommandsReady();
 }
 
 SimpleQVariantListModel::SimpleQVariantListModel(

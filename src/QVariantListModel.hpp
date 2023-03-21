@@ -4,6 +4,7 @@
 #include <QHash>
 #include <QList>
 #include <QObject>
+#include <QQueue>
 #include <functional>
 
 class QVariantListModel : public QAbstractListModel {
@@ -23,9 +24,11 @@ class QVariantListModel : public QAbstractListModel {
   void SetFilterIfChanged(const QString& filter);
   void SetFilter(const QString& filter);
   QString GetFilter();
+  void ExecuteUiUpdateCommands();
 
  signals:
   void filterChanged();
+  void uiUpdateCommandsReady();
 
  protected:
   virtual QVariantList GetRow(int i) const;
@@ -37,6 +40,7 @@ class QVariantListModel : public QAbstractListModel {
   QList<int> searchable_roles;
   QHash<int, QByteArray> role_names;
   QHash<QString, int> name_to_role;
+  QQueue<std::function<void()>> ui_update_commands;
 };
 
 class SimpleQVariantListModel : public QVariantListModel {
