@@ -209,7 +209,7 @@ void QVariantListModel::Load() {
       endRemoveRows();
     });
   }
-  cmd_buffer.ScheduleCommands(new_items.size(), 5,
+  cmd_buffer.ScheduleCommands(std::min(new_items.size(), items.size()), 5,
                               [this, new_items](int first, int last) {
                                 for (int i = first; i <= last; i++) {
                                   items[i] = new_items[i];
