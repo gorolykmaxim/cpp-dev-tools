@@ -7,6 +7,21 @@
 #include <QQueue>
 #include <functional>
 
+class UiCommandBuffer : public QObject {
+  Q_OBJECT
+ public:
+  UiCommandBuffer();
+  void ScheduleCommands(int items, int items_per_cmd,
+                        const std::function<void(int, int)>& cmd);
+ signals:
+  void commandsReady();
+
+ private:
+  void ExecuteCommand();
+
+  QQueue<std::function<void()>> commands;
+};
+
 class QVariantListModel : public QAbstractListModel {
   Q_OBJECT
   Q_PROPERTY(QString filter READ GetFilter WRITE SetFilterIfChanged NOTIFY
@@ -24,11 +39,9 @@ class QVariantListModel : public QAbstractListModel {
   void SetFilterIfChanged(const QString& filter);
   void SetFilter(const QString& filter);
   QString GetFilter();
-  void ExecuteUiUpdateCommands();
 
  signals:
   void filterChanged();
-  void uiUpdateCommandsReady();
 
  protected:
   virtual QVariantList GetRow(int i) const;
@@ -40,7 +53,7 @@ class QVariantListModel : public QAbstractListModel {
   QList<int> searchable_roles;
   QHash<int, QByteArray> role_names;
   QHash<QString, int> name_to_role;
-  QQueue<std::function<void()>> ui_update_commands;
+  UiCommandBuffer cmd_buffer;
 };
 
 class SimpleQVariantListModel : public QVariantListModel {

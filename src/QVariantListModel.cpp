@@ -3,12 +3,41 @@
 #include <algorithm>
 #include <limits>
 
-QVariantListModel::QVariantListModel(QObject* parent)
-    : QAbstractListModel(parent) {
-  QObject::connect(this, &QVariantListModel::uiUpdateCommandsReady, this,
-                   &QVariantListModel::ExecuteUiUpdateCommands,
-                   Qt::QueuedConnection);
+UiCommandBuffer::UiCommandBuffer() : QObject() {
+  QObject::connect(this, &UiCommandBuffer::commandsReady, this,
+                   &UiCommandBuffer::ExecuteCommand, Qt::QueuedConnection);
 }
+
+void UiCommandBuffer::ScheduleCommands(
+    int items, int items_per_cmd, const std::function<void(int, int)>& cmd) {
+  commands.clear();
+  int cmd_count = items / items_per_cmd;
+  for (int i = 0; i <= cmd_count; i++) {
+    int first = i * items_per_cmd;
+    int last;
+    if (i < cmd_count) {
+      last = (i + 1) * items_per_cmd - 1;
+    } else if (items - 1 >= first) {
+      last = items - 1;
+    } else {
+      break;
+    }
+    commands.enqueue([cmd, first, last] { cmd(first, last); });
+  }
+  emit commandsReady();
+}
+
+void UiCommandBuffer::ExecuteCommand() {
+  if (commands.isEmpty()) {
+    return;
+  }
+  std::function<void()> cmd = commands.dequeue();
+  cmd();
+  emit commandsReady();
+}
+
+QVariantListModel::QVariantListModel(QObject* parent)
+    : QAbstractListModel(parent) {}
 
 int QVariantListModel::rowCount(const QModelIndex&) const {
   return items.size();
@@ -175,23 +204,10 @@ void QVariantListModel::Load() {
     items = std::move(new_items);
   }
   if (last_row_changed >= 0) {
-    static int kRowsPerCmd = 5;
-    ui_update_commands.clear();
-    int cmd_count = (last_row_changed + 1) / kRowsPerCmd;
-    for (int i = 0; i <= cmd_count; i++) {
-      int first = i * kRowsPerCmd;
-      int last;
-      if (i < cmd_count) {
-        last = (i + 1) * kRowsPerCmd - 1;
-      } else if (last_row_changed >= first) {
-        last = last_row_changed;
-      } else {
-        break;
-      }
-      ui_update_commands.enqueue(
-          [this, first, last] { emit dataChanged(index(first), index(last)); });
-    }
-    emit uiUpdateCommandsReady();
+    cmd_buffer.ScheduleCommands(last_row_changed + 1, 5,
+                                [this](int first, int last) {
+                                  emit dataChanged(index(first), index(last));
+                                });
   }
 }
 
@@ -239,15 +255,6 @@ void QVariantListModel::SetRoleNames(const QHash<int, QByteArray>& role_names) {
     QString name(role_names[role]);
     name_to_role[name] = role;
   }
-}
-
-void QVariantListModel::ExecuteUiUpdateCommands() {
-  if (ui_update_commands.isEmpty()) {
-    return;
-  }
-  std::function<void()> cmd = ui_update_commands.dequeue();
-  cmd();
-  emit uiUpdateCommandsReady();
 }
 
 SimpleQVariantListModel::SimpleQVariantListModel(
