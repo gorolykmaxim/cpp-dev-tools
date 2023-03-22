@@ -10,7 +10,6 @@ UiCommandBuffer::UiCommandBuffer() : QObject() {
 
 void UiCommandBuffer::ScheduleCommands(
     int items, int items_per_cmd, const std::function<void(int, int)>& cmd) {
-  commands.clear();
   int cmd_count = items / items_per_cmd;
   for (int i = 0; i <= cmd_count; i++) {
     int first = i * items_per_cmd;
@@ -24,8 +23,11 @@ void UiCommandBuffer::ScheduleCommands(
     }
     commands.enqueue([cmd, first, last] { cmd(first, last); });
   }
-  emit commandsReady();
 }
+
+void UiCommandBuffer::RunCommands() { emit commandsReady(); }
+
+void UiCommandBuffer::Clear() { commands.clear(); }
 
 void UiCommandBuffer::ExecuteCommand() {
   if (commands.isEmpty()) {
@@ -188,27 +190,33 @@ void QVariantListModel::Load() {
               });
   }
   int diff = new_items.size() - items.size();
-  int last_row_changed = 0;
+  cmd_buffer.Clear();
   if (diff > 0) {
-    last_row_changed = items.size() - 1;
-    beginInsertRows(QModelIndex(), items.size(), new_items.size() - 1);
-    items = std::move(new_items);
-    endInsertRows();
+    cmd_buffer.ScheduleCommands(
+        diff, 100, [this, new_items](int first, int last) {
+          int to_insert = last - first + 1;
+          beginInsertRows(QModelIndex(), items.size(),
+                          items.size() + to_insert - 1);
+          items.append(new_items.sliced(items.size(), to_insert));
+          endInsertRows();
+        });
   } else if (diff < 0) {
-    last_row_changed = new_items.size() - 1;
-    beginRemoveRows(QModelIndex(), new_items.size(), items.size() - 1);
-    items = std::move(new_items);
-    endRemoveRows();
-  } else {
-    last_row_changed = items.size() - 1;
-    items = std::move(new_items);
+    cmd_buffer.ScheduleCommands(diff * -1, 100, [this](int first, int last) {
+      int to_remove = last - first + 1;
+      int starting_from = items.size() - to_remove;
+      beginRemoveRows(QModelIndex(), starting_from, items.size() - 1);
+      items.remove(starting_from, to_remove);
+      endRemoveRows();
+    });
   }
-  if (last_row_changed >= 0) {
-    cmd_buffer.ScheduleCommands(last_row_changed + 1, 5,
-                                [this](int first, int last) {
-                                  emit dataChanged(index(first), index(last));
-                                });
-  }
+  cmd_buffer.ScheduleCommands(new_items.size(), 5,
+                              [this, new_items](int first, int last) {
+                                for (int i = first; i <= last; i++) {
+                                  items[i] = new_items[i];
+                                }
+                                emit dataChanged(index(first), index(last));
+                              });
+  cmd_buffer.RunCommands();
 }
 
 QVariant QVariantListModel::GetFieldByRoleName(int row,

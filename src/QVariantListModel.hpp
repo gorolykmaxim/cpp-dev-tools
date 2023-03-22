@@ -13,6 +13,8 @@ class UiCommandBuffer : public QObject {
   UiCommandBuffer();
   void ScheduleCommands(int items, int items_per_cmd,
                         const std::function<void(int, int)>& cmd);
+  void RunCommands();
+  void Clear();
  signals:
   void commandsReady();
 
