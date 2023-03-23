@@ -5,6 +5,9 @@
 
 #define LOG() qDebug() << "[TaskSystem]"
 
+template <typename T>
+using Ptr = QSharedPointer<T>;
+
 bool ExecutableTask::IsNull() const { return path.isEmpty(); }
 
 Task::Task(const TaskId& id) : id(id) {}
@@ -22,9 +25,9 @@ bool TaskExecution::operator!=(const TaskExecution& another) const {
   return !(*this == another);
 }
 
-class ExecuteExecutableTaskCommand : public ExecuteTaskCommand {
+class RunExecutableCommand : public RunTaskCommand {
  public:
-  ExecuteExecutableTaskCommand(const Task& task) : executable(task.executable) {
+  RunExecutableCommand(const Task& task) : executable(task.executable) {
     QObject::connect(
         &process, &QProcess::readyReadStandardOutput, this,
         [this] { emit outputWritten(process.readAllStandardOutput(), false); });
@@ -63,18 +66,17 @@ class ExecuteExecutableTaskCommand : public ExecuteTaskCommand {
   ExecutableTask executable;
 };
 
-class ExecuteTaskUntilFailureCommand : public ExecuteTaskCommand {
+class RunUntilFailCommand : public RunTaskCommand {
  public:
-  ExecuteTaskUntilFailureCommand(QSharedPointer<ExecuteTaskCommand> target,
-                                 QUuid execution_id,
-                                 QHash<QUuid, TaskExecutionOutput>& outputs)
+  RunUntilFailCommand(Ptr<RunTaskCommand> target, QUuid execution_id,
+                      QHash<QUuid, TaskExecutionOutput>& outputs)
       : target(target), execution_id(execution_id), outputs(outputs) {
-    QObject::connect(target.get(), &ExecuteTaskCommand::outputWritten, this,
+    QObject::connect(target.get(), &RunTaskCommand::outputWritten, this,
                      [this](const QString& output, bool is_stderr) {
                        emit outputWritten(output, is_stderr);
                      });
-    QObject::connect(target.get(), &ExecuteTaskCommand::finished, this,
-                     &ExecuteTaskUntilFailureCommand::HandleTargetFinished);
+    QObject::connect(target.get(), &RunTaskCommand::finished, this,
+                     &RunUntilFailCommand::HandleTargetFinished);
   }
 
   virtual void Start() override { target->Start(); }
@@ -91,7 +93,7 @@ class ExecuteTaskUntilFailureCommand : public ExecuteTaskCommand {
     }
   }
 
-  QSharedPointer<ExecuteTaskCommand> target;
+  Ptr<RunTaskCommand> target;
   QUuid execution_id;
   QHash<QUuid, TaskExecutionOutput>& outputs;
 };
@@ -124,21 +126,19 @@ void TaskSystem::ExecuteTask(const Task& task, bool repeat_until_fail) {
   exec.start_time = QDateTime::currentDateTime();
   exec.task_id = task.id;
   exec.task_name = GetName(task);
-  QSharedPointer<ExecuteTaskCommand> cmd =
-      QSharedPointer<ExecuteExecutableTaskCommand>::create(task);
+  Ptr<RunTaskCommand> cmd = Ptr<RunExecutableCommand>::create(task);
   if (repeat_until_fail) {
-    cmd = QSharedPointer<ExecuteTaskUntilFailureCommand>::create(
-        cmd, exec_id, active_outputs);
+    cmd = Ptr<RunUntilFailCommand>::create(cmd, exec_id, active_outputs);
   }
   active_commands[exec_id] = cmd;
   QObject::connect(
-      cmd.get(), &ExecuteTaskCommand::outputWritten, this,
+      cmd.get(), &RunTaskCommand::outputWritten, this,
       [this, exec_id](const QString& output, bool is_stderr) {
         AppendToExecutionOutput(exec_id, output, is_stderr);
       },
       Qt::QueuedConnection);
   QObject::connect(
-      cmd.get(), &ExecuteTaskCommand::finished, this,
+      cmd.get(), &RunTaskCommand::finished, this,
       [this, exec_id](int exit_code) { FinishExecution(exec_id, exit_code); },
       Qt::QueuedConnection);
   cmd->Start();
@@ -146,7 +146,7 @@ void TaskSystem::ExecuteTask(const Task& task, bool repeat_until_fail) {
 
 void TaskSystem::KillAllTasks() {
   LOG() << "Killing all tasks";
-  for (QSharedPointer<ExecuteTaskCommand> cmd : active_commands.values()) {
+  for (Ptr<RunTaskCommand> cmd : active_commands.values()) {
     cmd->Cancel(true);
   }
   active_executions.clear();

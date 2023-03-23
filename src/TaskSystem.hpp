@@ -43,7 +43,7 @@ struct TaskExecutionOutput {
   QString output;
 };
 
-class ExecuteTaskCommand : public QObject {
+class RunTaskCommand : public QObject {
   Q_OBJECT
  public:
   virtual void Start() = 0;
@@ -83,5 +83,5 @@ class TaskSystem : public QObject {
 
   QHash<QUuid, TaskExecution> active_executions;
   QHash<QUuid, TaskExecutionOutput> active_outputs;
-  QHash<QUuid, QSharedPointer<ExecuteTaskCommand>> active_commands;
+  QHash<QUuid, QSharedPointer<RunTaskCommand>> active_commands;
 };
