@@ -35,7 +35,7 @@ TextField {
     }
     MenuItem {
       text: "Paste"
-      shortcut: "Ctrl+P"
+      shortcut: "Ctrl+V"
       enabled: textField.activeFocus
       onTriggered: textField.paste()
     }
