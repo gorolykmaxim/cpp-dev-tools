@@ -25,6 +25,10 @@ void UiCommandBuffer::ScheduleCommands(
   }
 }
 
+void UiCommandBuffer::ScheduleCommand(const std::function<void()>& cmd) {
+  commands.enqueue(cmd);
+}
+
 void UiCommandBuffer::RunCommands() { emit commandsReady(); }
 
 void UiCommandBuffer::Clear() { commands.clear(); }
@@ -216,6 +220,7 @@ void QVariantListModel::Load() {
                                 }
                                 emit dataChanged(index(first), index(last));
                               });
+  cmd_buffer.ScheduleCommand([this] { emit loadingComplete(); });
   cmd_buffer.RunCommands();
 }
 

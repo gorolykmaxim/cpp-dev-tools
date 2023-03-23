@@ -13,6 +13,7 @@ class UiCommandBuffer : public QObject {
   UiCommandBuffer();
   void ScheduleCommands(int items, int items_per_cmd,
                         const std::function<void(int, int)>& cmd);
+  void ScheduleCommand(const std::function<void()>& cmd);
   void RunCommands();
   void Clear();
  signals:
@@ -44,6 +45,7 @@ class QVariantListModel : public QAbstractListModel {
 
  signals:
   void filterChanged();
+  void loadingComplete();
 
  protected:
   virtual QVariantList GetRow(int i) const;

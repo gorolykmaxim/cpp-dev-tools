@@ -12,7 +12,7 @@ ListView {
         toSelect = i;
       }
     }
-    root.mCurrentIndex = toSelect;
+    root.currentIndex = toSelect;
   }
   function ifCurrentItem(field, fn) {
     if (currentItem) {
@@ -22,22 +22,14 @@ ListView {
   onModelChanged: selectCurrentItem()
   Connections {
     target: model
-    function onDataChanged() {
-      selectCurrentItem();
-    }
-    function onRowsInserted() {
-      selectCurrentItem();
-    }
-    function onRowsRemoved() {
+    function onLoadingComplete() {
       selectCurrentItem();
     }
   }
   id: root
   property var elide: Text.ElideNone
-  property int mCurrentIndex: 0
   signal itemLeftClicked(clickedItemModel: QtObject, event: QtObject);
   signal itemRightClicked(clickedItemModel: QtObject, event: QtObject);
-  onCountChanged: currentIndex = mCurrentIndex < count ? mCurrentIndex : count
   clip: true
   boundsBehavior: ListView.StopAtBounds
   boundsMovement: ListView.StopAtBounds
