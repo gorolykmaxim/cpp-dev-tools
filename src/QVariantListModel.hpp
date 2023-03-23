@@ -45,7 +45,7 @@ class QVariantListModel : public QAbstractListModel {
 
  signals:
   void filterChanged();
-  void loadingComplete();
+  void preSelectCurrentIndex(int index);
 
  protected:
   virtual QVariantList GetRow(int i) const;

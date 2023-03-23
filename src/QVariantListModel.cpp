@@ -220,7 +220,20 @@ void QVariantListModel::Load() {
                                 }
                                 emit dataChanged(index(first), index(last));
                               });
-  cmd_buffer.ScheduleCommand([this] { emit loadingComplete(); });
+  cmd_buffer.ScheduleCommand([this] {
+    int current_index = 0;
+    if (!name_to_role.contains("isSelected")) {
+      return;
+    }
+    int role = name_to_role["isSelected"];
+    for (int i = 0; i < items.size(); i++) {
+      if (items[i][role].toBool()) {
+        current_index = i;
+        break;
+      }
+    }
+    emit preSelectCurrentIndex(current_index);
+  });
   cmd_buffer.RunCommands();
 }
 

@@ -5,31 +5,21 @@ import cdt
 import "." as Cdt
 
 ListView {
-  function selectCurrentItem() {
-    let toSelect = 0;
-    for (let i = 0; i < root.model.rowCount(); i++) {
-      if (root.model.GetFieldByRoleName(i, "isSelected")) {
-        toSelect = i;
-      }
-    }
-    root.currentIndex = toSelect;
-  }
+  id: root
+  property var elide: Text.ElideNone
+  signal itemLeftClicked(clickedItemModel: QtObject, event: QtObject);
+  signal itemRightClicked(clickedItemModel: QtObject, event: QtObject);
   function ifCurrentItem(field, fn) {
     if (currentItem) {
       fn(currentItem.itemModel[field]);
     }
   }
-  onModelChanged: selectCurrentItem()
   Connections {
     target: model
-    function onLoadingComplete() {
-      selectCurrentItem();
+    function onPreSelectCurrentIndex(index) {
+      currentIndex = index;
     }
   }
-  id: root
-  property var elide: Text.ElideNone
-  signal itemLeftClicked(clickedItemModel: QtObject, event: QtObject);
-  signal itemRightClicked(clickedItemModel: QtObject, event: QtObject);
   clip: true
   boundsBehavior: ListView.StopAtBounds
   boundsMovement: ListView.StopAtBounds
