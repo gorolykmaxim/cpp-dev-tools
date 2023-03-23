@@ -24,7 +24,7 @@ Cdt.SearchableTextList {
     }
     MenuItem {
       text: "Run Until Fails"
-      shortcut: "Alt+R"
+      shortcut: "Alt+Shift+R"
       onTriggered: list.ifCurrentItem('idx', id => controller.ExecuteTask(id, true))
     }
   }
