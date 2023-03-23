@@ -24,7 +24,7 @@ bool TaskExecution::operator!=(const TaskExecution& another) const {
 
 class ExecuteExecutableTaskCommand : public ExecuteTaskCommand {
  public:
-  ExecuteExecutableTaskCommand(const ExecutableTask& task) : executable(task) {
+  ExecuteExecutableTaskCommand(const Task& task) : executable(task.executable) {
     QObject::connect(
         &process, &QProcess::readyReadStandardOutput, this,
         [this] { emit outputWritten(process.readAllStandardOutput(), false); });
@@ -63,6 +63,39 @@ class ExecuteExecutableTaskCommand : public ExecuteTaskCommand {
   ExecutableTask executable;
 };
 
+class ExecuteTaskUntilFailureCommand : public ExecuteTaskCommand {
+ public:
+  ExecuteTaskUntilFailureCommand(QSharedPointer<ExecuteTaskCommand> target,
+                                 QUuid execution_id,
+                                 QHash<QUuid, TaskExecutionOutput>& outputs)
+      : target(target), execution_id(execution_id), outputs(outputs) {
+    QObject::connect(target.get(), &ExecuteTaskCommand::outputWritten, this,
+                     [this](const QString& output, bool is_stderr) {
+                       emit outputWritten(output, is_stderr);
+                     });
+    QObject::connect(target.get(), &ExecuteTaskCommand::finished, this,
+                     &ExecuteTaskUntilFailureCommand::HandleTargetFinished);
+  }
+
+  virtual void Start() override { target->Start(); }
+
+  virtual void Cancel(bool forcefully) override { target->Cancel(forcefully); }
+
+ private:
+  void HandleTargetFinished(int exit_code) {
+    if (exit_code != 0) {
+      emit finished(exit_code);
+    } else {
+      outputs[execution_id] = TaskExecutionOutput();
+      target->Start();
+    }
+  }
+
+  QSharedPointer<ExecuteTaskCommand> target;
+  QUuid execution_id;
+  QHash<QUuid, TaskExecutionOutput>& outputs;
+};
+
 static QString GetFileName(const QString& path) {
   int pos = path.lastIndexOf('/');
   if (pos < 0) {
@@ -82,7 +115,7 @@ QString TaskSystem::GetName(const Task& task) {
   }
 }
 
-void TaskSystem::ExecuteTask(const Task& task) {
+void TaskSystem::ExecuteTask(const Task& task, bool repeat_until_fail) {
   LOG() << "Executing" << task;
   QUuid exec_id = QUuid::createUuid();
   active_outputs[exec_id] = TaskExecutionOutput();
@@ -91,8 +124,12 @@ void TaskSystem::ExecuteTask(const Task& task) {
   exec.start_time = QDateTime::currentDateTime();
   exec.task_id = task.id;
   exec.task_name = GetName(task);
-  auto cmd =
-      QSharedPointer<ExecuteExecutableTaskCommand>::create(task.executable);
+  QSharedPointer<ExecuteTaskCommand> cmd =
+      QSharedPointer<ExecuteExecutableTaskCommand>::create(task);
+  if (repeat_until_fail) {
+    cmd = QSharedPointer<ExecuteTaskUntilFailureCommand>::create(
+        cmd, exec_id, active_outputs);
+  }
   active_commands[exec_id] = cmd;
   QObject::connect(
       cmd.get(), &ExecuteTaskCommand::outputWritten, this,

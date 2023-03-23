@@ -32,7 +32,7 @@ class TaskListController : public QObject {
   TaskListModel* tasks;
 
  public slots:
-  void ExecuteTask(int i) const;
+  void ExecuteTask(int i, bool repeat_until_fail) const;
 
  signals:
   void isLoadingChanged();

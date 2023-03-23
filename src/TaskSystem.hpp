@@ -58,7 +58,7 @@ class TaskSystem : public QObject {
   Q_OBJECT
  public:
   static QString GetName(const Task& task);
-  void ExecuteTask(const Task& Task);
+  void ExecuteTask(const Task& Task, bool repeat_until_fail = false);
   void KillAllTasks();
   void FetchExecutions(
       QObject* requestor, QUuid project_id,

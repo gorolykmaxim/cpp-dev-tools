@@ -80,10 +80,10 @@ bool TaskListController::ShouldShowPlaceholder() const {
   return is_loading || tasks->list.isEmpty();
 }
 
-void TaskListController::ExecuteTask(int i) const {
+void TaskListController::ExecuteTask(int i, bool repeat_until_fail) const {
   Application &app = Application::Get();
   const Task &task = tasks->list[i];
-  app.task.ExecuteTask(task);
+  app.task.ExecuteTask(task, repeat_until_fail);
   app.view.SetCurrentView("TaskExecutionHistory.qml");
 }
 
