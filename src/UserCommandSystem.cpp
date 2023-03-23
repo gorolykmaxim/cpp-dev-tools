@@ -42,7 +42,7 @@ void UserCommandSystem::RegisterCommands() {
   RegisterCommand("Task", "Task Executions", "Ctrl+E", [] {
     Application::Get().view.SetCurrentView("TaskExecutionHistory.qml");
   });
-  RegisterCommand("Window", "Set Default Window Size", "Ctrl+Shift+M",
+  RegisterCommand("Window", "Default Size", "Ctrl+Shift+M",
                   [] { Application::Get().view.SetDefaultWindowSize(); });
   LOG() << "Comitting changes to user command list";
   user_commands->Load();
