@@ -38,19 +38,19 @@ RowLayout {
     MenuItem {
       text: "Terminate"
       enabled: execList.activeFocus && controller.executionRunning
-      shortcut: "Ctrl+Shift+T"
+      shortcut: "Alt+Shift+T"
       onTriggered: execList.ifCurrentItem('id', (id) => taskSystem.CancelExecution(id, false))
     }
     MenuItem {
       text: "Kill"
       enabled: execList.activeFocus && controller.executionRunning
-      shortcut: "Ctrl+Shift+K"
+      shortcut: "Alt+Shift+K"
       onTriggered: execList.ifCurrentItem('id', (id) => taskSystem.CancelExecution(id, true))
     }
     MenuItem {
       text: "Remove Finished Executions"
       enabled: execList.activeFocus
-      shortcut: "Ctrl+Shift+D"
+      shortcut: "Alt+Shift+D"
       onTriggered: controller.RemoveFinishedExecutions()
     }
   }

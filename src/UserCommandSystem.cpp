@@ -8,6 +8,8 @@ QString UserCommand::GetFormattedShortcut() const {
   QString result = shortcut.toUpper();
 #if __APPLE__
   result.replace("CTRL", "\u2318");
+  result.replace("SHIFT", "\u21e7");
+  result.replace("ALT", "\u2325");
 #endif
   return result;
 }
