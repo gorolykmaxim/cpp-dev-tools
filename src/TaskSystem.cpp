@@ -143,6 +143,8 @@ void TaskSystem::ExecuteTask(int i, bool repeat_until_fail) {
       [this, exec_id](int exit_code) { FinishExecution(exec_id, exit_code); },
       Qt::QueuedConnection);
   cmd->Start();
+  tasks.move(i, 0);
+  emit taskListRefreshed();
 }
 
 void TaskSystem::KillAllTasks() {
@@ -286,6 +288,7 @@ static TaskId ReadTaskId(QSqlQuery& query) { return query.value(0).toString(); }
 void TaskSystem::FindTasks() {
   Application& app = Application::Get();
   QString project_path = app.project.GetCurrentProject().path;
+  LOG() << "Refreshing task list";
   app.RunIOTask<QList<Task>>(
       this,
       [project_path] {
@@ -330,3 +333,10 @@ void TaskSystem::FindTasks() {
 }
 
 const QList<Task>& TaskSystem::GetTasks() const { return tasks; }
+
+QString TaskSystem::GetCurrentTaskName() const {
+  if (tasks.isEmpty()) {
+    return "";
+  }
+  return "[" + GetName(tasks[0]) + "]";
+}

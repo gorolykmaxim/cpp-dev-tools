@@ -56,6 +56,8 @@ class RunTaskCommand : public QObject {
 
 class TaskSystem : public QObject {
   Q_OBJECT
+  Q_PROPERTY(
+      QString currentTaskName READ GetCurrentTaskName NOTIFY taskListRefreshed)
  public:
   static QString GetName(const Task& task);
   void ExecuteTask(int i, bool repeat_until_fail = false);
@@ -69,6 +71,7 @@ class TaskSystem : public QObject {
   bool IsExecutionRunning(QUuid execution_id) const;
   void FindTasks();
   const QList<Task>& GetTasks() const;
+  QString GetCurrentTaskName() const;
 
  public slots:
   void CancelExecution(QUuid execution_id, bool forcefully);
