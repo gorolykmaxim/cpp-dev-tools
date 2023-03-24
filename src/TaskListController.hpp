@@ -10,8 +10,6 @@ class TaskListModel : public QVariantListModel {
  public:
   explicit TaskListModel(QObject* parent);
 
-  QList<Task> list;
-
  protected:
   QVariantList GetRow(int i) const override;
   int GetRowCount() const override;

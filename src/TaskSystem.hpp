@@ -58,7 +58,7 @@ class TaskSystem : public QObject {
   Q_OBJECT
  public:
   static QString GetName(const Task& task);
-  void ExecuteTask(const Task& Task, bool repeat_until_fail = false);
+  void ExecuteTask(int i, bool repeat_until_fail = false);
   void KillAllTasks();
   void FetchExecutions(
       QObject* requestor, QUuid project_id,
@@ -67,6 +67,8 @@ class TaskSystem : public QObject {
       QObject* requestor, QUuid execution_id,
       const std::function<void(const TaskExecutionOutput&)>& callback) const;
   bool IsExecutionRunning(QUuid execution_id) const;
+  void FindTasks();
+  const QList<Task>& GetTasks() const;
 
  public slots:
   void CancelExecution(QUuid execution_id, bool forcefully);
@@ -74,6 +76,7 @@ class TaskSystem : public QObject {
  signals:
   void executionOutputChanged(QUuid exec_id);
   void executionFinished(QUuid exec_id);
+  void taskListRefreshed();
 
  private:
   static TaskExecution ReadExecutionFromSql(QSqlQuery& query);
@@ -84,4 +87,5 @@ class TaskSystem : public QObject {
   QHash<QUuid, TaskExecution> active_executions;
   QHash<QUuid, TaskExecutionOutput> active_outputs;
   QHash<QUuid, QSharedPointer<RunTaskCommand>> active_commands;
+  QList<Task> tasks;
 };
