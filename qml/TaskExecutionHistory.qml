@@ -36,6 +36,18 @@ RowLayout {
   Menu {
     id: contextMenu
     MenuItem {
+      text: "Re-Run"
+      enabled: execList.activeFocus && controller.executionTaskIndex >= 0
+      shortcut: "Alt+Shift+R"
+      onTriggered: taskSystem.ExecuteTask(controller.executionTaskIndex)
+    }
+    MenuItem {
+      text: "Re-Run Until Fails"
+      enabled: execList.activeFocus && controller.executionTaskIndex >= 0
+      shortcut: "Ctrl+Alt+Shift+R"
+      onTriggered: taskSystem.ExecuteTask(controller.executionTaskIndex, true)
+    }
+    MenuItem {
       text: "Terminate"
       enabled: execList.activeFocus && controller.executionRunning
       shortcut: "Alt+Shift+T"

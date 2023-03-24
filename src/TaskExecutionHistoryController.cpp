@@ -173,3 +173,20 @@ void TaskExecutionHistoryController::DisplaySelectedExecution() {
   }
   emit executionChanged();
 }
+
+int TaskExecutionHistoryController::IndexOfExecutionTask() const {
+  const QList<Task>& tasks = Application::Get().task.GetTasks();
+  for (const TaskExecution& exec : executions->list) {
+    if (exec.id != execution_id) {
+      continue;
+    }
+    for (int i = 0; i < tasks.size(); i++) {
+      if (exec.task_id == tasks[i].id) {
+        return i;
+      }
+    }
+    // Didn't find the task for the corresponding execution
+    return -1;
+  }
+  return -1;
+}
