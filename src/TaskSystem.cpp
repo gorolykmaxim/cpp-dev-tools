@@ -283,15 +283,21 @@ void TaskSystem::CancelExecution(QUuid execution_id, bool forcefully) {
   active_commands[execution_id]->Cancel(forcefully);
 }
 
-static TaskId ReadTaskId(QSqlQuery& query) { return query.value(0).toString(); }
+static TaskExecution ReadTaskExecutionStartTime(QSqlQuery& query) {
+  TaskExecution exec;
+  exec.task_id = query.value(0).toString();
+  exec.start_time = query.value(1).toDateTime();
+  return exec;
+}
 
 void TaskSystem::FindTasks() {
   Application& app = Application::Get();
   QString project_path = app.project.GetCurrentProject().path;
   LOG() << "Refreshing task list";
+  QList<TaskExecution> active_execs = active_executions.values();
   app.RunIOTask<QList<Task>>(
       this,
-      [project_path] {
+      [project_path, active_execs] {
         QList<Task> results;
         QDirIterator it(project_path, QDir::Files | QDir::Executable,
                         QDirIterator::Subdirectories);
@@ -306,16 +312,36 @@ void TaskSystem::FindTasks() {
                   [](const Task& a, const Task& b) { return a.id < b.id; });
         // Move executed tasks to the beginning so the most recently executed
         // task is first.
-        QList<TaskId> task_ids = Database::ExecQueryAndRead<TaskId>(
+        QList<TaskExecution> execs = Database::ExecQueryAndRead<TaskExecution>(
             "SELECT task_id, MAX(start_time) as start_time "
             "FROM task_execution "
             "GROUP BY task_id "
             "ORDER BY start_time ASC",
-            ReadTaskId);
-        for (const TaskId& id : task_ids) {
+            ReadTaskExecutionStartTime);
+        // Merge active executions with finished ones to account for start times
+        // of executions that are still running.
+        for (const TaskExecution& active : active_execs) {
+          bool updated = false;
+          for (TaskExecution& exec : execs) {
+            if (exec.task_id == active.task_id &&
+                active.start_time > exec.start_time) {
+              exec.start_time = active.start_time;
+              updated = true;
+              break;
+            }
+          }
+          if (!updated) {
+            execs.append(active);
+          }
+        }
+        std::sort(execs.begin(), execs.end(),
+                  [](const TaskExecution& a, const TaskExecution& b) {
+                    return a.start_time < b.start_time;
+                  });
+        for (const TaskExecution& exec : execs) {
           int index = -1;
           for (int i = 0; i < results.size(); i++) {
-            if (results[i].id == id) {
+            if (results[i].id == exec.task_id) {
               index = i;
               break;
             }
