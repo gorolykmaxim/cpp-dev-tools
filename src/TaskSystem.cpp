@@ -368,5 +368,5 @@ QString TaskSystem::GetCurrentTaskName() const {
   if (tasks.isEmpty()) {
     return "";
   }
-  return "[" + GetName(tasks[0]) + "]";
+  return GetName(tasks[0]);
 }

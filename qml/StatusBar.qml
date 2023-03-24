@@ -16,7 +16,7 @@ RowLayout {
     spacing: Theme.basePadding * 2
     Layout.alignment: Qt.AlignRight
     Cdt.Text {
-      text: taskSystem.currentTaskName
+      text: taskSystem.currentTaskName ? "[" + taskSystem.currentTaskName + "]" : ""
     }
   }
 }
