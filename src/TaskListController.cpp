@@ -41,12 +41,6 @@ bool TaskListController::ShouldShowPlaceholder() const {
   return is_loading || Application::Get().task.GetTasks().isEmpty();
 }
 
-void TaskListController::ExecuteTask(int i, bool repeat_until_fail) const {
-  Application &app = Application::Get();
-  app.task.ExecuteTask(i, repeat_until_fail);
-  app.view.SetCurrentView("TaskExecutionHistory.qml");
-}
-
 bool TaskListController::IsLoading() const { return is_loading; }
 
 void TaskListController::SetIsLoading(bool value) {

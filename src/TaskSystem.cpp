@@ -118,6 +118,9 @@ QString TaskSystem::GetName(const Task& task) {
 }
 
 void TaskSystem::ExecuteTask(int i, bool repeat_until_fail) {
+  if (i < 0 || i >= tasks.size()) {
+    return;
+  }
   const Task& task = tasks[i];
   LOG() << "Executing" << task;
   QUuid exec_id = QUuid::createUuid();
@@ -145,6 +148,7 @@ void TaskSystem::ExecuteTask(int i, bool repeat_until_fail) {
   cmd->Start();
   tasks.move(i, 0);
   emit taskListRefreshed();
+  Application::Get().view.SetCurrentView("TaskExecutionHistory.qml");
 }
 
 void TaskSystem::KillAllTasks() {

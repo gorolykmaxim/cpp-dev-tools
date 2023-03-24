@@ -12,7 +12,7 @@ Cdt.SearchableTextList {
   searchableModel: controller.tasks
   focus: true
   onItemRightClicked: contextMenu.open()
-  onItemSelected: item => controller.ExecuteTask(item.idx, false)
+  onItemSelected: item => taskSystem.ExecuteTask(item.idx, false)
   TaskListController {
     id: controller
   }
@@ -20,12 +20,12 @@ Cdt.SearchableTextList {
     id: contextMenu
     MenuItem {
       text: "Run"
-      onTriggered: list.ifCurrentItem('idx', id => controller.ExecuteTask(id, false))
+      onTriggered: list.ifCurrentItem('idx', id => taskSystem.ExecuteTask(id, false))
     }
     MenuItem {
       text: "Run Until Fails"
       shortcut: "Alt+Shift+R"
-      onTriggered: list.ifCurrentItem('idx', id => controller.ExecuteTask(id, true))
+      onTriggered: list.ifCurrentItem('idx', id => taskSystem.ExecuteTask(id, true))
     }
   }
 }

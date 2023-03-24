@@ -60,7 +60,6 @@ class TaskSystem : public QObject {
       QString currentTaskName READ GetCurrentTaskName NOTIFY taskListRefreshed)
  public:
   static QString GetName(const Task& task);
-  void ExecuteTask(int i, bool repeat_until_fail = false);
   void KillAllTasks();
   void FetchExecutions(
       QObject* requestor, QUuid project_id,
@@ -74,6 +73,7 @@ class TaskSystem : public QObject {
   QString GetCurrentTaskName() const;
 
  public slots:
+  void ExecuteTask(int i, bool repeat_until_fail = false);
   void CancelExecution(QUuid execution_id, bool forcefully);
 
  signals:

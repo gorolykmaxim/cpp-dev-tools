@@ -36,6 +36,10 @@ void UserCommandSystem::RegisterCommands() {
   RegisterCommand("General", "Close Project", "Ctrl+W", [] {
     Application::Get().project.SetCurrentProject(Project());
   });
+  RegisterCommand("Task", "Run Last", "Ctrl+R",
+                  [] { Application::Get().task.ExecuteTask(0); });
+  RegisterCommand("Task", "Run Last Until Fails", "Ctrl+Shift+R",
+                  [] { Application::Get().task.ExecuteTask(0, true); });
   RegisterCommand("Task", "Tasks", "Ctrl+T", [] {
     Application::Get().view.SetCurrentView("TaskList.qml");
   });
