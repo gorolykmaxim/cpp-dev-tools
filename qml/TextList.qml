@@ -9,6 +9,7 @@ ListView {
   property var elide: Text.ElideNone
   signal itemLeftClicked(clickedItemModel: QtObject, event: QtObject);
   signal itemRightClicked(clickedItemModel: QtObject, event: QtObject);
+  signal itemSelected();
   function ifCurrentItem(field, fn) {
     if (currentItem) {
       fn(currentItem.itemModel[field]);
@@ -18,6 +19,11 @@ ListView {
     target: model
     function onPreSelectCurrentIndex(index) {
       currentIndex = index;
+    }
+  }
+  onCurrentIndexChanged: {
+    if (!model.isUpdating) {
+      itemSelected();
     }
   }
   clip: true

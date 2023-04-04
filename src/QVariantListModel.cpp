@@ -164,6 +164,7 @@ static bool CompareRows(const QVariantList& row1, const QVariantList& row2,
 }
 
 void QVariantListModel::Load() {
+  SetIsUpdating(true);
   QList<QVariantList> new_items;
   int count = GetRowCount();
   for (int i = 0; i < count; i++) {
@@ -222,16 +223,16 @@ void QVariantListModel::Load() {
                               });
   cmd_buffer.ScheduleCommand([this] {
     int current_index = 0;
-    if (!name_to_role.contains("isSelected")) {
-      return;
-    }
-    int role = name_to_role["isSelected"];
-    for (int i = 0; i < items.size(); i++) {
-      if (items[i][role].toBool()) {
-        current_index = i;
-        break;
+    if (name_to_role.contains("isSelected")) {
+      int role = name_to_role["isSelected"];
+      for (int i = 0; i < items.size(); i++) {
+        if (items[i][role].toBool()) {
+          current_index = i;
+          break;
+        }
       }
     }
+    SetIsUpdating(false);
     emit preSelectCurrentIndex(current_index);
   });
   cmd_buffer.RunCommands();
@@ -281,6 +282,11 @@ void QVariantListModel::SetRoleNames(const QHash<int, QByteArray>& role_names) {
     QString name(role_names[role]);
     name_to_role[name] = role;
   }
+}
+
+void QVariantListModel::SetIsUpdating(bool is_updating) {
+  this->is_updating = is_updating;
+  emit isUpdatingChanged();
 }
 
 SimpleQVariantListModel::SimpleQVariantListModel(

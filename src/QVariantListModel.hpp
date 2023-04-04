@@ -29,6 +29,7 @@ class QVariantListModel : public QAbstractListModel {
   Q_OBJECT
   Q_PROPERTY(QString filter READ GetFilter WRITE SetFilterIfChanged NOTIFY
                  filterChanged)
+  Q_PROPERTY(bool isUpdating MEMBER is_updating NOTIFY isUpdatingChanged)
  public:
   explicit QVariantListModel(QObject* parent);
   int rowCount(const QModelIndex& parent = QModelIndex()) const override;
@@ -46,11 +47,13 @@ class QVariantListModel : public QAbstractListModel {
  signals:
   void filterChanged();
   void preSelectCurrentIndex(int index);
+  void isUpdatingChanged();
 
  protected:
   virtual QVariantList GetRow(int i) const;
   virtual int GetRowCount() const;
   void SetRoleNames(const QHash<int, QByteArray>& role_names);
+  void SetIsUpdating(bool is_updating);
 
   QString filter;
   QList<QVariantList> items;
@@ -58,6 +61,7 @@ class QVariantListModel : public QAbstractListModel {
   QHash<int, QByteArray> role_names;
   QHash<QString, int> name_to_role;
   UiCommandBuffer cmd_buffer;
+  bool is_updating = false;
 };
 
 class SimpleQVariantListModel : public QVariantListModel {

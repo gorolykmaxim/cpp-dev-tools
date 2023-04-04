@@ -56,7 +56,7 @@ FocusScope {
         elide: Text.ElideLeft
         onItemLeftClicked: selectCurrentItemIfPresent()
         onItemRightClicked: item => root.itemRightClicked(item)
-        onCurrentIndexChanged: root.currentItemChanged()
+        onItemSelected: root.currentItemChanged()
       }
     }
   }

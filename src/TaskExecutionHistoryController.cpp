@@ -72,6 +72,9 @@ bool TaskExecutionHistoryController::IsSelectedExecutionRunning() const {
 }
 
 void TaskExecutionHistoryController::SelectExecution(QUuid id) {
+  if (execution_id == id) {
+    return;
+  }
   execution_id = id;
   LOG() << "Execution selected:" << execution_id;
   DisplaySelectedExecution();
