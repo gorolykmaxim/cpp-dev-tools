@@ -15,7 +15,7 @@ class TaskExecutionOutputHighlighter : public QSyntaxHighlighter {
   QSet<int> stderr_line_indices;
 
  protected:
-  void highlightBlock(const QString& text);
+  void highlightBlock(const QString& text) override;
 
  private:
   QTextCharFormat error_line_format;
