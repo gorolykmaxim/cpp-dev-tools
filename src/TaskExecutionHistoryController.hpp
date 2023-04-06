@@ -1,10 +1,25 @@
 #pragma once
 
 #include <QObject>
+#include <QQuickTextDocument>
+#include <QSyntaxHighlighter>
 #include <QtQmlIntegration>
 
 #include "QVariantListModel.hpp"
 #include "TaskSystem.hpp"
+
+class TaskExecutionOutputHighlighter : public QSyntaxHighlighter {
+ public:
+  TaskExecutionOutputHighlighter();
+
+  QSet<int> stderr_line_indices;
+
+ protected:
+  void highlightBlock(const QString& text);
+
+ private:
+  QTextCharFormat error_line_format;
+};
 
 class TaskExecutionListModel : public QVariantListModel {
  public:
@@ -44,6 +59,7 @@ class TaskExecutionHistoryController : public QObject {
   void HandleExecutionFinished(QUuid id);
   void HandleExecutionOutputChanged(QUuid id);
   void RemoveFinishedExecutions();
+  void AttachTaskExecutionOutputHighlighter(QQuickTextDocument* document);
 
  signals:
   void executionsChanged();
@@ -59,4 +75,5 @@ class TaskExecutionHistoryController : public QObject {
   QString execution_output;
   QUuid execution_id;
   TaskExecutionListModel* executions;
+  TaskExecutionOutputHighlighter execution_output_highlighter;
 };

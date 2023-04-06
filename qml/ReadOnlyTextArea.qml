@@ -12,8 +12,8 @@ FocusScope {
   property bool searchable: false
   property string text: ""
   property string color: "transparent"
-  property var textFormat: TextEdit.PlainText
   property real innerPadding: 0
+  property alias textDocument: textArea.textDocument
   onTextChanged: {
     textArea.text = text;
     controller.ResetCursorPositionHistory();
@@ -122,7 +122,7 @@ FocusScope {
           rightPadding: root.innerPadding
           topPadding: root.innerPadding
           bottomPadding: root.innerPadding
-          textFormat: root.textFormat
+          textFormat: TextEdit.PlainText
           focus: true
           background: Rectangle {
             color: "transparent"

@@ -5,6 +5,17 @@
 
 #define LOG() qDebug() << "[TaskExecutionHistoryController]"
 
+TaskExecutionOutputHighlighter::TaskExecutionOutputHighlighter()
+    : QSyntaxHighlighter((QObject*)nullptr) {
+  error_line_format.setForeground(QBrush(Qt::red));
+}
+
+void TaskExecutionOutputHighlighter::highlightBlock(const QString& text) {
+  if (stderr_line_indices.contains(currentBlock().firstLineNumber())) {
+    setFormat(0, text.size(), error_line_format);
+  }
+}
+
 TaskExecutionListModel::TaskExecutionListModel(QObject* parent,
                                                QUuid& selected_execution_id)
     : QVariantListModel(parent), selected_execution_id(selected_execution_id) {
@@ -125,40 +136,13 @@ void TaskExecutionHistoryController::LoadExecutions(
       });
 }
 
-static QString ToRichText(const TaskExecutionOutput& exec_output) {
-  static const QString kStart = "<span style=\"color:red;\">";
-  static const QString kEnd = "</span>";
-  static const QString kLineBreak = "<br>";
-  QString source = exec_output.output.toHtmlEscaped();
-  QString result;
-  result.reserve(source.size() * 1.5);
-  int pos = 0;
-  int line = 0;
-  while (true) {
-    int i = source.indexOf('\n', pos);
-    if (i < 0) {
-      break;
-    }
-    bool is_stderr = exec_output.stderr_line_indices.contains(line);
-    if (is_stderr) {
-      result += kStart;
-    }
-    result += source.sliced(pos, i - pos);
-    if (is_stderr) {
-      result += kEnd;
-    }
-    result += kLineBreak;
-    pos = i + 1;
-    line++;
-  }
-  return result;
-}
-
 void TaskExecutionHistoryController::LoadSelectedExecutionOutput() {
   LOG() << "Reloading selected execution's output";
   Application::Get().task.FetchExecutionOutput(
       this, execution_id, [this](const TaskExecutionOutput& exec_output) {
-        execution_output = ToRichText(exec_output);
+        execution_output = exec_output.output;
+        execution_output_highlighter.stderr_line_indices =
+            exec_output.stderr_line_indices;
         emit executionChanged();
       });
 }
@@ -192,4 +176,9 @@ int TaskExecutionHistoryController::IndexOfExecutionTask() const {
     return -1;
   }
   return -1;
+}
+
+void TaskExecutionHistoryController::AttachTaskExecutionOutputHighlighter(
+    QQuickTextDocument* document) {
+  execution_output_highlighter.setDocument(document->textDocument());
 }
