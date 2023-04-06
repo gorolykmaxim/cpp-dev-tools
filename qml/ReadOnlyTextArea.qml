@@ -18,7 +18,7 @@ FocusScope {
     textArea.text = text;
     controller.ResetCursorPositionHistory();
     if (cursorFollowEnd) {
-      textArea.cursorPosition = textArea.length;
+      textArea.cursorPosition = textArea.length - 1;
     }
     if (searchBar.visible) {
       controller.Search(searchOutputTextField.displayText,
