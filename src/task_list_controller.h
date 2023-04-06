@@ -3,8 +3,8 @@
 #include <QObject>
 #include <QtQmlIntegration>
 
-#include "QVariantListModel.hpp"
-#include "TaskSystem.hpp"
+#include "qvariant_list_model.h"
+#include "task_system.h"
 
 class TaskListModel : public QVariantListModel {
  public:

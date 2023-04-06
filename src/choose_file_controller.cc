@@ -1,8 +1,8 @@
-#include "ChooseFileController.hpp"
+#include "choose_file_controller.h"
 
-#include "Application.hpp"
-#include "QVariantListModel.hpp"
-#include "ViewSystem.hpp"
+#include "application.h"
+#include "qvariant_list_model.h"
+#include "view_system.h"
 
 #define LOG() qDebug() << "[ChooseFileController]"
 

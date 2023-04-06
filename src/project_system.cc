@@ -1,10 +1,10 @@
-#include "ProjectSystem.hpp"
+#include "project_system.h"
 
 #include <QDir>
 #include <QStandardPaths>
 
-#include "Application.hpp"
-#include "Database.hpp"
+#include "application.h"
+#include "database.h"
 
 #define LOG() qDebug() << "[ProjectSystem]"
 

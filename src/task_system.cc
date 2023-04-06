@@ -1,7 +1,7 @@
-#include "TaskSystem.hpp"
+#include "task_system.h"
 
-#include "Application.hpp"
-#include "Database.hpp"
+#include "application.h"
+#include "database.h"
 
 #define LOG() qDebug() << "[TaskSystem]"
 

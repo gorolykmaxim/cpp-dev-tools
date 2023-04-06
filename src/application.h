@@ -6,10 +6,10 @@
 #include <QtConcurrent>
 #include <functional>
 
-#include "ProjectSystem.hpp"
-#include "TaskSystem.hpp"
-#include "UserCommandSystem.hpp"
-#include "ViewSystem.hpp"
+#include "project_system.h"
+#include "task_system.h"
+#include "user_command_system.h"
+#include "view_system.h"
 
 class Application {
  public:

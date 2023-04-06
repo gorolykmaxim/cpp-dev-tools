@@ -1,4 +1,4 @@
-#include "QVariantListModel.hpp"
+#include "qvariant_list_model.h"
 
 #include <algorithm>
 #include <limits>

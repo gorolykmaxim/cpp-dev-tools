@@ -1,4 +1,4 @@
-#include "PerfTimer.hpp"
+#include "perf_timer.h"
 
 #include <QDebug>
 

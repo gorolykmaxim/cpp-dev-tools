@@ -1,6 +1,6 @@
-#include "UserCommandSystem.hpp"
+#include "user_command_system.h"
 
-#include "Application.hpp"
+#include "application.h"
 
 #define LOG() qDebug() << "[UserCommandSystem]"
 

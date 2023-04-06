@@ -4,8 +4,8 @@
 #include <QSqlQuery>
 #include <QtQmlIntegration>
 
-#include "ProjectSystem.hpp"
-#include "QVariantListModel.hpp"
+#include "project_system.h"
+#include "qvariant_list_model.h"
 
 class ProjectListModel : public QVariantListModel {
  public:

@@ -1,8 +1,8 @@
-#include "ProjectController.hpp"
+#include "project_controller.h"
 
-#include "Application.hpp"
-#include "Database.hpp"
-#include "QVariantListModel.hpp"
+#include "application.h"
+#include "database.h"
+#include "qvariant_list_model.h"
 
 #define LOG() qDebug() << "[ProjectController]"
 

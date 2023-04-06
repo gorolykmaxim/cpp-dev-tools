@@ -5,8 +5,8 @@
 #include <QSyntaxHighlighter>
 #include <QtQmlIntegration>
 
-#include "QVariantListModel.hpp"
-#include "TaskSystem.hpp"
+#include "qvariant_list_model.h"
+#include "task_system.h"
 
 class TaskExecutionOutputHighlighter : public QSyntaxHighlighter {
  public:

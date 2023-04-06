@@ -3,7 +3,7 @@
 #include <QObject>
 #include <functional>
 
-#include "QVariantListModel.hpp"
+#include "qvariant_list_model.h"
 
 struct UserCommand {
   QString GetFormattedShortcut() const;

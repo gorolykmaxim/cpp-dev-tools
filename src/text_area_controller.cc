@@ -1,4 +1,4 @@
-#include "TextAreaController.hpp"
+#include "text_area_controller.h"
 
 static const int kCursorHistoryLimit = 100;
 

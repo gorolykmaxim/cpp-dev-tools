@@ -3,7 +3,7 @@
 #include <QObject>
 #include <QtQmlIntegration>
 
-#include "QVariantListModel.hpp"
+#include "qvariant_list_model.h"
 
 class ChooseFileController : public QObject {
   Q_OBJECT

@@ -1,4 +1,4 @@
-#include "Database.hpp"
+#include "database.h"
 
 #include <QDebug>
 #include <QSqlError>
@@ -6,7 +6,7 @@
 #include <QUuid>
 #include <QtConcurrent>
 
-#include "Application.hpp"
+#include "application.h"
 
 #define LOG() qDebug() << "[Database]"
 

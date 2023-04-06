@@ -1,8 +1,8 @@
 #include <QGuiApplication>
 #include <QTest>
 
-#include "AnotherExampleTest.hpp"
-#include "ExampleTest.hpp"
+#include "another_example_test.h"
+#include "example_test.h"
 
 int main(int argc, char** argv) {
   QGuiApplication app(argc, argv);

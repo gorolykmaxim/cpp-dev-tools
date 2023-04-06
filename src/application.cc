@@ -1,10 +1,10 @@
-#include "Application.hpp"
+#include "application.h"
 
 #include <QQmlContext>
 #include <QQuickStyle>
 #include <QQuickWindow>
 
-#include "Database.hpp"
+#include "database.h"
 
 Application& Application::Get() { return *instance; }
 

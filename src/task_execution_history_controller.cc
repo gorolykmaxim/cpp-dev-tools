@@ -1,7 +1,7 @@
-#include "TaskExecutionHistoryController.hpp"
+#include "task_execution_history_controller.h"
 
-#include "Application.hpp"
-#include "Database.hpp"
+#include "application.h"
+#include "database.h"
 
 #define LOG() qDebug() << "[TaskExecutionHistoryController]"
 

@@ -1,8 +1,8 @@
-#include "SearchUserCommandController.hpp"
+#include "search_user_command_controller.h"
 
-#include "Application.hpp"
-#include "QVariantListModel.hpp"
-#include "UserCommandSystem.hpp"
+#include "application.h"
+#include "qvariant_list_model.h"
+#include "user_command_system.h"
 
 #define LOG() qDebug() << "[SearchUserCommandController]"
 

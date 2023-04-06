@@ -1,10 +1,10 @@
-#include "ViewSystem.hpp"
+#include "view_system.h"
 
 #include <QGuiApplication>
 #include <QScreen>
 
-#include "Application.hpp"
-#include "Database.hpp"
+#include "application.h"
+#include "database.h"
 
 #define LOG() qDebug() << "[ViewSystem]"
 
