@@ -33,7 +33,7 @@ FocusScope {
     }
   }
   function setText(newText) {
-    textArea.text = text;
+    textArea.text = newText;
     isLoading = false;
     if (cursorFollowEnd) {
       textArea.cursorPosition = textArea.length;
