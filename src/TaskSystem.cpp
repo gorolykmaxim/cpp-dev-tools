@@ -181,11 +181,12 @@ TaskExecutionOutput TaskSystem::ReadExecutionOutputFromSql(QSqlQuery& query) {
   return exec_output;
 }
 
-void TaskSystem::AppendToExecutionOutput(QUuid id, const QString& data,
+void TaskSystem::AppendToExecutionOutput(QUuid id, QString data,
                                          bool is_stderr) {
   if (!active_outputs.contains(id)) {
     return;
   }
+  data.remove('\r');
   TaskExecutionOutput& exec_output = active_outputs[id];
   if (is_stderr) {
     int lines_before = exec_output.output.count('\n');

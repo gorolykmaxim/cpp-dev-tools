@@ -84,7 +84,7 @@ class TaskSystem : public QObject {
  private:
   static TaskExecution ReadExecutionFromSql(QSqlQuery& query);
   static TaskExecutionOutput ReadExecutionOutputFromSql(QSqlQuery& query);
-  void AppendToExecutionOutput(QUuid id, const QString& data, bool is_stderr);
+  void AppendToExecutionOutput(QUuid id, QString data, bool is_stderr);
   void FinishExecution(QUuid id, int exit_code);
 
   QHash<QUuid, TaskExecution> active_executions;
