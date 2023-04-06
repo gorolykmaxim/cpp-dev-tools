@@ -18,13 +18,6 @@ Application::Application(int argc, char** argv)
   io_thread_pool.setMaxThreadCount(1);
   qSetMessagePattern("%{time yyyy-MM-dd h:mm:ss.zzz} %{message}");
   QQuickStyle::setStyle("Basic");
-#if defined(_WIN32) && defined(NDEBUG)
-  // This fixes laggy window movement on an external monitor on Windows and
-  // slightly slower selection in TextArea.
-  // Although we don't want to do it in a debug build because in debug software
-  // rendering is even slower.
-  QQuickWindow::setGraphicsApi(QSGRendererInterface::Software);
-#endif
   qml_engine.rootContext()->setContextProperty("projectSystem", &project);
   qml_engine.rootContext()->setContextProperty("viewSystem", &view);
   qml_engine.rootContext()->setContextProperty("userCommandSystem",

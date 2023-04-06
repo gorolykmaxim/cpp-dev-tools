@@ -10,13 +10,31 @@ FocusScope {
   id: root
   property bool cursorFollowEnd: false
   property bool searchable: false
+  property bool isLoading: false
   property string text: ""
   property string color: "transparent"
-  property var textFormat: TextEdit.PlainText
   property real innerPadding: 0
+  property alias textDocument: textArea.textDocument
   onTextChanged: {
-    textArea.text = text;
     controller.ResetCursorPositionHistory();
+    if (text.startsWith(textArea.text)) {
+      setText(text);
+    } else {
+      isLoading = true;
+      // Setting textArea's text to "" is necessary because if we are currently
+      // displaying a large text and the ScrollView's position is outside of the
+      // future ScrollView's content region - both ScrollView and TextArea won't
+      // get re-rendered right away and instead we will see nothing.
+      // By setting text to "" we trigger that bug first and after a delay we set
+      // text to the actual next value - which will make TextArea and ScrollView
+      // re-render with the new text value properly.
+      textArea.text = "";
+      textSetDelay.restart();
+    }
+  }
+  function setText(newText) {
+    textArea.text = text;
+    isLoading = false;
     if (cursorFollowEnd) {
       textArea.cursorPosition = textArea.length;
     }
@@ -40,12 +58,29 @@ FocusScope {
   function closeSearchBar() {
     searchBar.visible = false;
   }
+  Timer {
+    id: textSetDelay
+    interval: 1 // Having it as just 0 does not always trigger "Loading"
+    onTriggered: setText(text)
+  }
   TextAreaController {
     id: controller
     onSelectText: (start, end) => textArea.select(start, end)
     onChangeCursorPosition: pos => textArea.cursorPosition = pos
   }
+  Cdt.Pane {
+    visible: isLoading
+    anchors.fill: parent
+    color: root.color
+    Cdt.Text {
+      anchors.fill: parent
+      verticalAlignment: Text.AlignVCenter
+      horizontalAlignment: Text.AlignHCenter
+      text: "Loading..."
+    }
+  }
   ColumnLayout {
+    visible: !isLoading
     anchors.fill: parent
     spacing: 0
     Cdt.Pane {
@@ -122,7 +157,7 @@ FocusScope {
           rightPadding: root.innerPadding
           topPadding: root.innerPadding
           bottomPadding: root.innerPadding
-          textFormat: root.textFormat
+          textFormat: TextEdit.PlainText
           focus: true
           background: Rectangle {
             color: "transparent"

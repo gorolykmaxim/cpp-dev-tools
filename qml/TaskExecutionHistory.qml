@@ -7,6 +7,7 @@ import cdt
 import "Common.js" as Common
 
 RowLayout {
+  Component.onCompleted: controller.AttachTaskExecutionOutputHighlighter(execOutputTextArea.textDocument)
   anchors.fill: parent
   spacing: 0
   TaskExecutionHistoryController {
@@ -107,7 +108,6 @@ RowLayout {
       innerPadding: Theme.basePadding
       color: Theme.colorBgDark
       text: controller.executionOutput
-      textFormat: TextEdit.RichText
       cursorFollowEnd: true
       searchable: true
     }
