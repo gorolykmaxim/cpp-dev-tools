@@ -5,15 +5,22 @@
 
 #define LOG() qDebug() << "[TaskExecutionHistoryController]"
 
-TaskExecutionOutputHighlighter::TaskExecutionOutputHighlighter()
-    : QSyntaxHighlighter((QObject*)nullptr) {
+TaskExecutionOutputFormatter::TaskExecutionOutputFormatter(QObject* parent)
+    : TextAreaFormatter(parent) {
   error_line_format.setForeground(QBrush(Qt::red));
 }
 
-void TaskExecutionOutputHighlighter::highlightBlock(const QString& text) {
-  if (stderr_line_indices.contains(currentBlock().firstLineNumber())) {
-    setFormat(0, text.size(), error_line_format);
+QList<TextSectionFormat> TaskExecutionOutputFormatter::Format(
+    const QString& text, const QTextBlock block) {
+  QList<TextSectionFormat> results;
+  if (stderr_line_indices.contains(block.firstLineNumber())) {
+    TextSectionFormat f;
+    f.section.start = 0;
+    f.section.end = text.size() - 1;
+    f.format = error_line_format;
+    results.append(f);
   }
+  return results;
 }
 
 TaskExecutionListModel::TaskExecutionListModel(QObject* parent,
@@ -63,7 +70,8 @@ const TaskExecution* TaskExecutionListModel::FindById(QUuid id) const {
 
 TaskExecutionHistoryController::TaskExecutionHistoryController(QObject* parent)
     : QObject(parent),
-      executions(new TaskExecutionListModel(this, execution_id)) {
+      executions(new TaskExecutionListModel(this, execution_id)),
+      execution_formatter(new TaskExecutionOutputFormatter(this)) {
   Application& app = Application::Get();
   app.view.SetWindowTitle("Task Executions");
   QObject::connect(&app.task, &TaskSystem::executionFinished, this,
@@ -141,7 +149,7 @@ void TaskExecutionHistoryController::LoadSelectedExecutionOutput() {
   Application::Get().task.FetchExecutionOutput(
       this, execution_id, [this](const TaskExecutionOutput& exec_output) {
         execution_output = exec_output.output;
-        execution_output_highlighter.stderr_line_indices =
+        execution_formatter->stderr_line_indices =
             exec_output.stderr_line_indices;
         emit executionChanged();
       });
@@ -176,9 +184,4 @@ int TaskExecutionHistoryController::IndexOfExecutionTask() const {
     return -1;
   }
   return -1;
-}
-
-void TaskExecutionHistoryController::AttachTaskExecutionOutputHighlighter(
-    QQuickTextDocument* document) {
-  execution_output_highlighter.setDocument(document->textDocument());
 }

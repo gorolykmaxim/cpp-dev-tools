@@ -2,6 +2,20 @@
 
 static const int kCursorHistoryLimit = 100;
 
+TextAreaFormatter::TextAreaFormatter(QObject* parent) : QObject(parent) {}
+
+TextAreaHighlighter::TextAreaHighlighter()
+    : QSyntaxHighlighter((QObject*)nullptr) {}
+
+void TextAreaHighlighter::highlightBlock(const QString& text) {
+  if (!formatter) {
+    return;
+  }
+  for (const TextSectionFormat& f : formatter->Format(text, currentBlock())) {
+    setFormat(f.section.start, f.section.end - f.section.start + 1, f.format);
+  }
+}
+
 TextAreaController::TextAreaController(QObject* parent) : QObject(parent) {
   cursor_history.reserve(kCursorHistoryLimit);
   UpdateSearchResultsCount();
@@ -20,7 +34,7 @@ void TextAreaController::Search(const QString& term, const QString& text) {
       if (i < 0) {
         break;
       }
-      SearchResult result;
+      TextSection result;
       result.start = i;
       result.end = i + term.size();
       search_results.append(result);
@@ -130,6 +144,24 @@ void TextAreaController::UpdateSearchResultsCount() {
 }
 
 void TextAreaController::DisplaySelectedSearchResult() {
-  const SearchResult& result = search_results[selected_result];
+  const TextSection& result = search_results[selected_result];
   emit selectText(result.start, result.end);
+}
+
+QQuickTextDocument* TextAreaController::GetDocument() { return document; }
+
+void TextAreaController::SetDocument(QQuickTextDocument* document) {
+  this->document = document;
+  highlighter.setDocument(document->textDocument());
+  emit documentChanged();
+}
+
+TextAreaFormatter* TextAreaController::GetFormatter() {
+  return highlighter.formatter;
+}
+
+void TextAreaController::SetFormatter(TextAreaFormatter* formatter) {
+  highlighter.formatter = formatter;
+  highlighter.rehighlight();
+  emit formatterChanged();
 }
