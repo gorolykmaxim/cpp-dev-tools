@@ -1,19 +1,23 @@
 #pragma once
 
 #include <QObject>
+#include <QQuickTextDocument>
+#include <QSyntaxHighlighter>
 #include <QtQmlIntegration>
 
 #include "qvariant_list_model.h"
 #include "task_system.h"
-#include "text_area_controller.h"
 
-class TaskExecutionOutputFormatter : public TextAreaFormatter {
+class TaskExecutionOutputHighlighter : public QSyntaxHighlighter {
  public:
-  explicit TaskExecutionOutputFormatter(QObject* parent);
-  QList<TextSectionFormat> Format(const QString& text,
-                                  const QTextBlock block) override;
+  TaskExecutionOutputHighlighter();
 
   QSet<int> stderr_line_indices;
+
+ protected:
+  void highlightBlock(const QString& text) override;
+
+ private:
   QTextCharFormat error_line_format;
 };
 
@@ -44,8 +48,6 @@ class TaskExecutionHistoryController : public QObject {
                  executionChanged)
   Q_PROPERTY(
       int executionTaskIndex READ IndexOfExecutionTask NOTIFY executionChanged)
-  Q_PROPERTY(
-      TextAreaFormatter* executionFormatter MEMBER execution_formatter CONSTANT)
  public:
   explicit TaskExecutionHistoryController(QObject* parent = nullptr);
   bool AreExecutionsEmpty() const;
@@ -57,6 +59,7 @@ class TaskExecutionHistoryController : public QObject {
   void HandleExecutionFinished(QUuid id);
   void HandleExecutionOutputChanged(QUuid id);
   void RemoveFinishedExecutions();
+  void AttachTaskExecutionOutputHighlighter(QQuickTextDocument* document);
 
  signals:
   void executionsChanged();
@@ -72,5 +75,5 @@ class TaskExecutionHistoryController : public QObject {
   QString execution_output;
   QUuid execution_id;
   TaskExecutionListModel* executions;
-  TaskExecutionOutputFormatter* execution_formatter;
+  TaskExecutionOutputHighlighter execution_output_highlighter;
 };
