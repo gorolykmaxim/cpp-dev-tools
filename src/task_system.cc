@@ -69,8 +69,8 @@ class RunExecutableCommand : public RunTaskCommand {
 class RunUntilFailCommand : public RunTaskCommand {
  public:
   RunUntilFailCommand(Ptr<RunTaskCommand> target, QUuid execution_id,
-                      QHash<QUuid, TaskExecutionOutput>& outputs)
-      : target(target), execution_id(execution_id), outputs(outputs) {
+                      QHash<QUuid, TaskExecution>& executions)
+      : target(target), execution_id(execution_id), executions(executions) {
     QObject::connect(target.get(), &RunTaskCommand::outputWritten, this,
                      [this](const QString& output, bool is_stderr) {
                        emit outputWritten(output, is_stderr);
@@ -88,14 +88,16 @@ class RunUntilFailCommand : public RunTaskCommand {
     if (exit_code != 0) {
       emit finished(exit_code);
     } else {
-      outputs[execution_id] = TaskExecutionOutput();
+      TaskExecution& exec = executions[execution_id];
+      exec.output.clear();
+      exec.stderr_line_indices.clear();
       target->Start();
     }
   }
 
   Ptr<RunTaskCommand> target;
   QUuid execution_id;
-  QHash<QUuid, TaskExecutionOutput>& outputs;
+  QHash<QUuid, TaskExecution>& executions;
 };
 
 static QString GetFileName(const QString& path) {
@@ -124,7 +126,6 @@ void TaskSystem::ExecuteTask(int i, bool repeat_until_fail) {
   const Task& task = tasks[i];
   LOG() << "Executing" << task;
   QUuid exec_id = QUuid::createUuid();
-  active_outputs[exec_id] = TaskExecutionOutput();
   TaskExecution& exec = active_executions[exec_id];
   exec.id = exec_id;
   exec.start_time = QDateTime::currentDateTime();
@@ -132,7 +133,7 @@ void TaskSystem::ExecuteTask(int i, bool repeat_until_fail) {
   exec.task_name = GetName(task);
   Ptr<RunTaskCommand> cmd = Ptr<RunExecutableCommand>::create(task);
   if (repeat_until_fail) {
-    cmd = Ptr<RunUntilFailCommand>::create(cmd, exec_id, active_outputs);
+    cmd = Ptr<RunUntilFailCommand>::create(cmd, exec_id, active_executions);
   }
   active_commands[exec_id] = cmd;
   QObject::connect(
@@ -148,7 +149,8 @@ void TaskSystem::ExecuteTask(int i, bool repeat_until_fail) {
   cmd->Start();
   tasks.move(i, 0);
   emit taskListRefreshed();
-  Application::Get().view.SetCurrentView("TaskExecutionHistory.qml");
+  SetSelectedExecutionId(exec_id);
+  Application::Get().view.SetCurrentView("TaskExecution.qml");
 }
 
 void TaskSystem::KillAllTasks() {
@@ -157,44 +159,41 @@ void TaskSystem::KillAllTasks() {
     cmd->Cancel(true);
   }
   active_executions.clear();
-  active_outputs.clear();
   active_commands.clear();
 }
 
-TaskExecution TaskSystem::ReadExecutionFromSql(QSqlQuery& query) {
+TaskExecution TaskSystem::ReadExecutionFromSql(QSqlQuery& query,
+                                               bool include_output) {
   TaskExecution exec;
   exec.id = query.value(0).toUuid();
   exec.start_time = query.value(1).toDateTime();
   exec.task_id = query.value(2).toString();
   exec.task_name = query.value(3).toString();
   exec.exit_code = query.value(4).toInt();
-  return exec;
-}
-
-TaskExecutionOutput TaskSystem::ReadExecutionOutputFromSql(QSqlQuery& query) {
-  TaskExecutionOutput exec_output;
-  QString indices = query.value(0).toString();
-  for (const QString& i : indices.split(',', Qt::SkipEmptyParts)) {
-    exec_output.stderr_line_indices.insert(i.toInt());
+  if (include_output) {
+    QString indices = query.value(5).toString();
+    for (const QString& i : indices.split(',', Qt::SkipEmptyParts)) {
+      exec.stderr_line_indices.insert(i.toInt());
+    }
+    exec.output = query.value(6).toString();
   }
-  exec_output.output = query.value(1).toString();
-  return exec_output;
+  return exec;
 }
 
 void TaskSystem::AppendToExecutionOutput(QUuid id, QString data,
                                          bool is_stderr) {
-  if (!active_outputs.contains(id)) {
+  if (!active_executions.contains(id)) {
     return;
   }
   data.remove('\r');
-  TaskExecutionOutput& exec_output = active_outputs[id];
+  TaskExecution& exec = active_executions[id];
   if (is_stderr) {
-    int lines_before = exec_output.output.count('\n');
+    int lines_before = exec.output.count('\n');
     for (int i = 0; i < data.count('\n'); i++) {
-      exec_output.stderr_line_indices.insert(i + lines_before);
+      exec.stderr_line_indices.insert(i + lines_before);
     }
   }
-  exec_output.output += data;
+  exec.output += data;
   emit executionOutputChanged(id);
 }
 
@@ -205,18 +204,16 @@ void TaskSystem::FinishExecution(QUuid id, int exit_code) {
   TaskExecution& exec = active_executions[id];
   exec.exit_code = exit_code;
   LOG() << "Task execution" << id << "finished with code" << exit_code;
-  TaskExecutionOutput& exec_output = active_outputs[id];
   const Project& project = Application::Get().project.GetCurrentProject();
   QStringList indices;
-  for (int i : exec_output.stderr_line_indices) {
+  for (int i : exec.stderr_line_indices) {
     indices.append(QString::number(i));
   }
   Database::ExecCmdAsync(
       "INSERT INTO task_execution VALUES(?,?,?,?,?,?,?,?)",
       {exec.id, project.id, exec.start_time, exec.task_id, exec.task_name,
-       *exec.exit_code, indices.join(','), exec_output.output});
+       *exec.exit_code, indices.join(','), exec.output});
   active_executions.remove(id);
-  active_outputs.remove(id);
   active_commands.remove(id);
   emit executionFinished(id);
 }
@@ -240,7 +237,8 @@ void TaskSystem::FetchExecutions(
             "SELECT id, start_time, task_id, task_name, exit_code FROM "
             "task_execution "
             "WHERE project_id=? ORDER BY start_time",
-            &TaskSystem::ReadExecutionFromSql, {project_id});
+            [](QSqlQuery& query) { return ReadExecutionFromSql(query, false); },
+            {project_id});
       },
       [execs, callback](QList<TaskExecution> result) {
         for (const TaskExecution& exec : execs) {
@@ -255,23 +253,32 @@ void TaskSystem::FetchExecutions(
       });
 }
 
-void TaskSystem::FetchExecutionOutput(
-    QObject* requestor, QUuid execution_id,
-    const std::function<void(const TaskExecutionOutput&)>& callback) const {
-  LOG() << "Fetching output of execution" << execution_id;
-  if (active_outputs.contains(execution_id)) {
-    callback(active_outputs[execution_id]);
+void TaskSystem::FetchExecution(
+    QObject* requestor, QUuid execution_id, bool include_output,
+    const std::function<void(const TaskExecution&)>& callback) const {
+  LOG() << "Fetching execution" << execution_id
+        << "including output:" << include_output;
+  if (active_executions.contains(execution_id)) {
+    callback(active_executions[execution_id]);
     return;
   }
-  Application::Get().RunIOTask<QList<TaskExecutionOutput>>(
+  Application::Get().RunIOTask<QList<TaskExecution>>(
       requestor,
-      [execution_id] {
-        return Database::ExecQueryAndRead<TaskExecutionOutput>(
-            "SELECT stderr_line_indices, output FROM task_execution WHERE id=?",
-            &TaskSystem::ReadExecutionOutputFromSql, {execution_id});
+      [execution_id, include_output] {
+        QString query = "SELECT id, start_time, task_id, task_name, exit_code";
+        if (include_output) {
+          query += ", stderr_line_indices, output";
+        }
+        query += " FROM task_execution WHERE id=?";
+        return Database::ExecQueryAndRead<TaskExecution>(
+            query,
+            [include_output](QSqlQuery& query) {
+              return ReadExecutionFromSql(query, include_output);
+            },
+            {execution_id});
       },
-      [callback](QList<TaskExecutionOutput> result) {
-        callback(result.isEmpty() ? TaskExecutionOutput() : result[0]);
+      [callback](QList<TaskExecution> result) {
+        callback(result.isEmpty() ? TaskExecution() : result[0]);
       });
 }
 
@@ -370,4 +377,14 @@ QString TaskSystem::GetCurrentTaskName() const {
     return "";
   }
   return GetName(tasks[0]);
+}
+
+void TaskSystem::SetSelectedExecutionId(QUuid id) {
+  LOG() << "Selected execution" << id;
+  selected_execution_id = id;
+  emit selectedExecutionChanged();
+}
+
+QUuid TaskSystem::GetSelectedExecutionId() const {
+  return selected_execution_id;
 }

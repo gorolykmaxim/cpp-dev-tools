@@ -1,5 +1,4 @@
 import QtQuick
-import QtQuick.Controls
 import QtQuick.Layouts
 import Qt.labs.platform
 import "." as Cdt
@@ -7,10 +6,9 @@ import cdt
 import "Common.js" as Common
 
 RowLayout {
-  Component.onCompleted: controller.AttachTaskExecutionOutputHighlighter(execOutputTextArea.textDocument)
   anchors.fill: parent
   spacing: 0
-  TaskExecutionHistoryController {
+  TaskExecutionListController {
     id: controller
   }
   Cdt.Text {
@@ -21,21 +19,23 @@ RowLayout {
   Cdt.SearchableTextList {
     id: execList
     visible: !controller.executionsEmpty
-    Layout.maximumWidth: 300
-    Layout.minimumWidth: 300
+    Layout.fillWidth: true
     Layout.fillHeight: true
     searchPlaceholderText: "Search execution"
     searchableModel: controller.executions
     focus: true
-    onCurrentItemChanged: ifCurrentItem('id', (id) => {
-      controller.SelectExecution(id);
-      execOutputTextArea.closeSearchBar();
-    })
+    onCurrentItemChanged: ifCurrentItem('id', (id) => taskSystem.selectedExecutionId = id)
+    onItemSelected: controller.OpenExecutionOutput()
     onItemRightClicked: Common.handleRightClick(execList, contextMenu)
-    KeyNavigation.right: execOutputTextArea
   }
   Menu {
     id: contextMenu
+    MenuItem {
+      text: "Open Output"
+      enabled: execList.activeFocus
+      shortcut: "Enter"
+      onTriggered: controller.OpenExecutionOutput()
+    }
     MenuItem {
       text: "Re-Run"
       enabled: execList.activeFocus && controller.executionTaskIndex >= 0
@@ -65,51 +65,6 @@ RowLayout {
       enabled: execList.activeFocus
       shortcut: "Alt+Shift+D"
       onTriggered: controller.RemoveFinishedExecutions()
-    }
-  }
-  Rectangle {
-    visible: !controller.executionsEmpty
-    Layout.fillHeight: true
-    width: 1
-    color: Theme.colorBgBlack
-  }
-  ColumnLayout {
-    visible: !controller.executionsEmpty
-    Layout.fillWidth: true
-    spacing: 0
-    Cdt.Pane {
-      Layout.fillWidth: true
-      color: Theme.colorBgMedium
-      padding: Theme.basePadding
-      ColumnLayout {
-        spacing: 0
-        width: parent.width
-        Cdt.Text {
-          Layout.fillWidth: true
-          elide: Text.ElideLeft
-          text: controller.executionName
-        }
-        Cdt.Text {
-          Layout.fillWidth: true
-          text: controller.executionStatus
-          color: Theme.colorSubText
-        }
-      }
-    }
-    Rectangle {
-      Layout.fillWidth: true
-      height: 1
-      color: Theme.colorBgBlack
-    }
-    Cdt.ReadOnlyTextArea {
-      id: execOutputTextArea
-      Layout.fillWidth: true
-      Layout.fillHeight: true
-      innerPadding: Theme.basePadding
-      color: Theme.colorBgDark
-      text: controller.executionOutput
-      cursorFollowEnd: true
-      searchable: true
     }
   }
 }
