@@ -76,7 +76,8 @@ qt_add_qml_module(cpp-dev-tools URI cdt VERSION 1.0
       qml/TaskExecutionList.qml
       qml/TaskExecution.qml
   RESOURCES
-      fonts/MaterialIcons-Regular.ttf)
+      fonts/MaterialIcons-Regular.ttf
+  RESOURCE_PREFIX /)
 
 qt_add_executable(example-test test/main.cc test/example_test.h
   test/another_example_test.h)
