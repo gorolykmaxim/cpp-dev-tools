@@ -17,7 +17,7 @@ FocusScope {
   property alias textDocument: textArea.textDocument
   onTextChanged: {
     controller.ResetCursorPositionHistory();
-    if (text.startsWith(textArea.text)) {
+    if (textArea.text && text.startsWith(textArea.text)) {
       setText(text);
     } else {
       isLoading = true;
