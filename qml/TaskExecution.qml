@@ -14,18 +14,27 @@ ColumnLayout {
     Layout.fillWidth: true
     color: Theme.colorBgMedium
     padding: Theme.basePadding
-    ColumnLayout {
-      spacing: 0
+    RowLayout {
       width: parent.width
-      Cdt.Text {
-        Layout.fillWidth: true
-        elide: Text.ElideLeft
-        text: controller.executionName
+      Cdt.Icon {
+        icon: controller.executionIcon
+        color: controller.executionIconColor
+        Layout.margins: Theme.basePadding
       }
-      Cdt.Text {
+      ColumnLayout {
+        spacing: 0
         Layout.fillWidth: true
-        text: controller.executionStatus
-        color: Theme.colorSubText
+        Layout.fillHeight: true
+        Cdt.Text {
+          Layout.fillWidth: true
+          elide: Text.ElideLeft
+          text: controller.executionName
+        }
+        Cdt.Text {
+          Layout.fillWidth: true
+          text: controller.executionStatus
+          color: Theme.colorSubText
+        }
       }
     }
   }

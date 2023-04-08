@@ -2,6 +2,7 @@
 
 #include "application.h"
 #include "database.h"
+#include "theme.h"
 
 #define LOG() qDebug() << "[TaskSystem]"
 
@@ -387,4 +388,22 @@ void TaskSystem::SetSelectedExecutionId(QUuid id) {
 
 QUuid TaskSystem::GetSelectedExecutionId() const {
   return selected_execution_id;
+}
+
+UiIcon TaskSystem::GetStatusAsIcon(const TaskExecution& exec) {
+  Theme theme;
+  UiIcon icon;
+  if (!exec.exit_code) {
+    icon.icon = "autorenew";
+    icon.color = "green";
+  } else {
+    if (*exec.exit_code == 0) {
+      icon.icon = "check";
+      icon.color = theme.kColorText;
+    } else {
+      icon.icon = "error";
+      icon.color = "red";
+    }
+  }
+  return icon;
 }

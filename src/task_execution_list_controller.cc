@@ -19,22 +19,10 @@ TaskExecutionListModel::TaskExecutionListModel(QObject* parent)
 QVariantList TaskExecutionListModel::GetRow(int i) const {
   Application& app = Application::Get();
   const TaskExecution& exec = list[i];
-  QString icon, iconColor;
-  if (!exec.exit_code) {
-    icon = "autorenew";
-    iconColor = "green";
-  } else {
-    if (*exec.exit_code == 0) {
-      icon = "check";
-      iconColor = "";
-    } else {
-      icon = "error";
-      iconColor = "red";
-    }
-  }
+  UiIcon icon = TaskSystem::GetStatusAsIcon(exec);
   bool is_selected = app.task.GetSelectedExecutionId() == exec.id;
-  return {exec.id, exec.task_name, exec.start_time.toString(),
-          icon,    iconColor,      is_selected};
+  return {exec.id,   exec.task_name, exec.start_time.toString(),
+          icon.icon, icon.color,     is_selected};
 }
 
 int TaskExecutionListModel::GetRowCount() const { return list.size(); }

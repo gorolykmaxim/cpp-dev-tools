@@ -10,6 +10,8 @@
 #include <QUuid>
 #include <optional>
 
+#include "ui_icon.h"
+
 struct ExecutableTask {
   QString path;
 
@@ -59,6 +61,7 @@ class TaskSystem : public QObject {
                  SetSelectedExecutionId NOTIFY selectedExecutionChanged)
  public:
   static QString GetName(const Task& task);
+  static UiIcon GetStatusAsIcon(const TaskExecution& exec);
   void KillAllTasks();
   void FetchExecutions(
       QObject* requestor, QUuid project_id,

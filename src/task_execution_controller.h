@@ -26,6 +26,10 @@ class TaskExecutionController : public QObject {
   Q_PROPERTY(
       QString executionStatus MEMBER execution_status NOTIFY executionChanged)
   Q_PROPERTY(
+      QString executionIcon MEMBER execution_icon NOTIFY executionChanged)
+  Q_PROPERTY(QString executionIconColor MEMBER execution_icon_color NOTIFY
+                 executionChanged)
+  Q_PROPERTY(
       QString executionOutput MEMBER execution_output NOTIFY executionChanged)
  public:
   explicit TaskExecutionController(QObject* parent = nullptr);
@@ -42,5 +46,7 @@ class TaskExecutionController : public QObject {
   QString execution_name;
   QString execution_status;
   QString execution_output;
+  QString execution_icon;
+  QString execution_icon_color;
   TaskExecutionOutputHighlighter execution_output_highlighter;
 };

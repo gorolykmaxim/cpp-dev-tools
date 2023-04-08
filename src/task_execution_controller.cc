@@ -46,6 +46,9 @@ void TaskExecutionController::LoadExecution(bool include_output) {
         if (exec.exit_code) {
           execution_status = "Exit Code: " + QString::number(*exec.exit_code);
         }
+        UiIcon icon = TaskSystem::GetStatusAsIcon(exec);
+        execution_icon = icon.icon;
+        execution_icon_color = icon.color;
         if (include_output) {
           execution_output = exec.output;
           execution_output_highlighter.stderr_line_indices =

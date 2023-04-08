@@ -38,6 +38,7 @@ qt_add_executable(cpp-dev-tools
   src/task_execution_list_controller.cc
   src/task_execution_controller.h
   src/task_execution_controller.cc
+  src/ui_icon.h
   src/main.cc)
 if(NOT MSVC)
   # TODO: figure out how to enable all warnings in MSVC without triggering
