@@ -40,11 +40,11 @@ void UserCommandSystem::RegisterCommands() {
                   [] { Application::Get().task.ExecuteTask(0); });
   RegisterCommand("Task", "Run Last Until Fails", "Ctrl+Shift+R",
                   [] { Application::Get().task.ExecuteTask(0, true); });
-  RegisterCommand("Task", "Terminate Selected Execution", "Ctrl+Shift+T", [] {
+  RegisterCommand("Task", "Terminate Execution", "Ctrl+Shift+T", [] {
     Application& app = Application::Get();
     app.task.CancelExecution(app.task.GetSelectedExecutionId(), false);
   });
-  RegisterCommand("Task", "Kill Selected Execution", "Ctrl+Shift+K", [] {
+  RegisterCommand("Task", "Kill Execution", "Ctrl+Shift+K", [] {
     Application& app = Application::Get();
     app.task.CancelExecution(app.task.GetSelectedExecutionId(), true);
   });
