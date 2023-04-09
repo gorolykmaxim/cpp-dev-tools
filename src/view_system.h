@@ -6,18 +6,14 @@
 
 struct WindowDimensions {
   Q_GADGET
-  Q_PROPERTY(int minimumWidth MEMBER minimum_width CONSTANT)
-  Q_PROPERTY(int minimumHeight MEMBER minimum_height CONSTANT)
   Q_PROPERTY(int width MEMBER width CONSTANT)
   Q_PROPERTY(int height MEMBER height CONSTANT)
   Q_PROPERTY(int x MEMBER x CONSTANT)
   Q_PROPERTY(int y MEMBER y CONSTANT)
   Q_PROPERTY(bool isMaximized MEMBER is_maximized CONSTANT)
  public:
-  int minimum_width = 1024;
-  int minimum_height = 600;
-  int width = minimum_width;
-  int height = minimum_height;
+  int width = 1024;
+  int height = 600;
   int x = 0;
   int y = 0;
   bool is_maximized = false;

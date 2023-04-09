@@ -14,8 +14,6 @@ ApplicationWindow {
   height: viewSystem.dimensions.height
   x: viewSystem.dimensions.x
   y: viewSystem.dimensions.y
-  minimumWidth: viewSystem.dimensions.minimumWidth
-  minimumHeight: viewSystem.dimensions.minimumHeight
   onWidthChanged: windowDimensionsDebounce.restart()
   onHeightChanged: windowDimensionsDebounce.restart()
   onXChanged: windowDimensionsDebounce.restart()
