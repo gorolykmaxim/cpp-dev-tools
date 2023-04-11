@@ -1,8 +1,11 @@
 #include "text_area_controller.h"
 
+#include "theme.h"
+
 static const int kCursorHistoryLimit = 100;
 
-TextAreaController::TextAreaController(QObject* parent) : QObject(parent) {
+TextAreaController::TextAreaController(QObject* parent)
+    : QObject(parent), highlighter(file_links) {
   cursor_history.reserve(kCursorHistoryLimit);
   UpdateSearchResultsCount();
 }
@@ -115,6 +118,21 @@ void TextAreaController::ResetCursorPositionHistory() {
   cursor_history_index = -1;
 }
 
+void TextAreaController::FindFileLinks(const QString& text) {
+  static const QRegularExpression regex(
+      "(\\/[^:]+):([0-9]+):?([0-9]+)?|"
+      "([A-Z]\\:\\\\[^:]+)\\(([0-9]+),?([0-9]+)?\\)|"
+      "([A-Z]\\:\\\\[^:]+):([0-9]+):([0-9]+)?");
+  file_links.clear();
+  for (auto it = regex.globalMatch(text); it.hasNext();) {
+    QRegularExpressionMatch m = it.next();
+    TextSection link;
+    link.start = m.capturedStart();
+    link.end = m.capturedEnd();
+    file_links.append(link);
+  }
+}
+
 bool TextAreaController::AreSearchResultsEmpty() const {
   return search_results.isEmpty();
 }
@@ -154,13 +172,26 @@ void TextAreaController::DisplaySelectedSearchResult() {
 
 TextAreaFormatter::TextAreaFormatter(QObject* parent) : QObject(parent) {}
 
-TextAreaHighlighter::TextAreaHighlighter()
-    : QSyntaxHighlighter((QObject*)nullptr) {}
+TextAreaHighlighter::TextAreaHighlighter(QList<TextSection>& file_links)
+    : QSyntaxHighlighter((QObject*)nullptr), file_links(file_links) {
+  Theme theme;
+  QColor color = QColor::fromString(theme.kColorHighlight);
+  link_format.setForeground(QBrush(color));
+  link_format.setFontUnderline(true);
+}
 
 void TextAreaHighlighter::highlightBlock(const QString& text) {
+  QTextBlock block = currentBlock();
   if (formatter) {
-    for (const TextSectionFormat& f : formatter->Format(text, currentBlock())) {
+    for (const TextSectionFormat& f : formatter->Format(text, block)) {
       setFormat(f.section.start, f.section.end - f.section.start + 1, f.format);
     }
+  }
+  for (TextSection link : file_links) {
+    if (!block.contains(link.start)) {
+      continue;
+    }
+    int offset = link.start - block.position();
+    setFormat(offset, link.end - link.start, link_format);
   }
 }

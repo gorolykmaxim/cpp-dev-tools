@@ -24,8 +24,10 @@ class TextAreaFormatter : public QObject {
 
 class TextAreaHighlighter : public QSyntaxHighlighter {
  public:
-  TextAreaHighlighter();
+  TextAreaHighlighter(QList<TextSection>& file_links);
   TextAreaFormatter* formatter;
+  QList<TextSection>& file_links;
+  QTextCharFormat link_format;
 
  protected:
   void highlightBlock(const QString& text) override;
@@ -58,6 +60,7 @@ class TextAreaController : public QObject {
   void GoToPreviousCursorPosition();
   void GoToNextCursorPosition();
   void ResetCursorPositionHistory();
+  void FindFileLinks(const QString& text);
 
  signals:
   void selectText(int start, int end);
@@ -77,4 +80,5 @@ class TextAreaController : public QObject {
   int cursor_history_index = -1;
   TextAreaHighlighter highlighter;
   QQuickTextDocument* document;
+  QList<TextSection> file_links;
 };

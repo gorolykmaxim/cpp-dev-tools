@@ -33,6 +33,7 @@ FocusScope {
     }
   }
   function setText(newText) {
+    controller.FindFileLinks(newText);
     textArea.text = newText;
     isLoading = false;
     if (cursorFollowEnd) {
