@@ -1,20 +1,17 @@
 #pragma once
 
 #include <QObject>
-#include <QQuickTextDocument>
-#include <QSyntaxHighlighter>
 #include <QtQmlIntegration>
 
-class TaskExecutionOutputHighlighter : public QSyntaxHighlighter {
+#include "text_area_controller.h"
+
+class TaskExecutionOutputFormatter : public TextAreaFormatter {
  public:
-  TaskExecutionOutputHighlighter();
+  explicit TaskExecutionOutputFormatter(QObject* parent);
+  QList<TextSectionFormat> Format(const QString& text,
+                                  const QTextBlock& block) override;
 
-  QSet<int> stderr_line_indices;
-
- protected:
-  void highlightBlock(const QString& text) override;
-
- private:
+  QSet<int> stderr_line_indicies;
   QTextCharFormat error_line_format;
 };
 
@@ -31,11 +28,10 @@ class TaskExecutionController : public QObject {
                  executionChanged)
   Q_PROPERTY(
       QString executionOutput MEMBER execution_output NOTIFY executionChanged)
+  Q_PROPERTY(
+      TextAreaFormatter* executionFormatter MEMBER execution_formatter CONSTANT)
  public:
   explicit TaskExecutionController(QObject* parent = nullptr);
-
- public slots:
-  void AttachTaskExecutionOutputHighlighter(QQuickTextDocument* document);
 
  signals:
   void executionChanged();
@@ -48,5 +44,5 @@ class TaskExecutionController : public QObject {
   QString execution_output;
   QString execution_icon;
   QString execution_icon_color;
-  TaskExecutionOutputHighlighter execution_output_highlighter;
+  TaskExecutionOutputFormatter* execution_formatter;
 };

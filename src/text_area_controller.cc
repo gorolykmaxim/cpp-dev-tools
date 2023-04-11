@@ -20,7 +20,7 @@ void TextAreaController::Search(const QString& term, const QString& text) {
       if (i < 0) {
         break;
       }
-      SearchResult result;
+      TextSection result;
       result.start = i;
       result.end = i + term.size();
       search_results.append(result);
@@ -119,6 +119,24 @@ bool TextAreaController::AreSearchResultsEmpty() const {
   return search_results.isEmpty();
 }
 
+QQuickTextDocument* TextAreaController::GetDocument() { return document; }
+
+void TextAreaController::SetDocument(QQuickTextDocument* document) {
+  this->document = document;
+  highlighter.setDocument(document->textDocument());
+  emit documentChanged();
+}
+
+TextAreaFormatter* TextAreaController::GetFormatter() {
+  return highlighter.formatter;
+}
+
+void TextAreaController::SetFormatter(TextAreaFormatter* formatter) {
+  highlighter.formatter = formatter;
+  highlighter.rehighlight();
+  emit formatterChanged();
+}
+
 void TextAreaController::UpdateSearchResultsCount() {
   if (!search_results.isEmpty()) {
     search_results_count = QString::number(selected_result + 1) + " of " +
@@ -130,6 +148,19 @@ void TextAreaController::UpdateSearchResultsCount() {
 }
 
 void TextAreaController::DisplaySelectedSearchResult() {
-  const SearchResult& result = search_results[selected_result];
+  const TextSection& result = search_results[selected_result];
   emit selectText(result.start, result.end);
+}
+
+TextAreaFormatter::TextAreaFormatter(QObject* parent) : QObject(parent) {}
+
+TextAreaHighlighter::TextAreaHighlighter()
+    : QSyntaxHighlighter((QObject*)nullptr) {}
+
+void TextAreaHighlighter::highlightBlock(const QString& text) {
+  if (formatter) {
+    for (const TextSectionFormat& f : formatter->Format(text, currentBlock())) {
+      setFormat(f.section.start, f.section.end - f.section.start + 1, f.format);
+    }
+  }
 }

@@ -6,7 +6,6 @@ import cdt
 ColumnLayout {
   anchors.fill: parent
   spacing: 0
-  Component.onCompleted: controller.AttachTaskExecutionOutputHighlighter(execOutputTextArea.textDocument)
   TaskExecutionController {
     id: controller
   }
@@ -51,6 +50,7 @@ ColumnLayout {
     innerPadding: Theme.basePadding
     color: Theme.colorBgDark
     text: controller.executionOutput
+    formatter: controller.executionFormatter
     cursorFollowEnd: true
     searchable: true
   }

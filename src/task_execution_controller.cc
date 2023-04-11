@@ -4,19 +4,9 @@
 
 #define LOG() qDebug() << "[TaskExecutionController]"
 
-TaskExecutionOutputHighlighter::TaskExecutionOutputHighlighter()
-    : QSyntaxHighlighter((QObject*)nullptr) {
-  error_line_format.setForeground(QBrush(Qt::red));
-}
-
-void TaskExecutionOutputHighlighter::highlightBlock(const QString& text) {
-  if (stderr_line_indices.contains(currentBlock().firstLineNumber())) {
-    setFormat(0, text.size(), error_line_format);
-  }
-}
-
 TaskExecutionController::TaskExecutionController(QObject* parent)
-    : QObject(parent) {
+    : QObject(parent),
+      execution_formatter(new TaskExecutionOutputFormatter(this)) {
   Application& app = Application::Get();
   app.view.SetWindowTitle("Task Execution Output");
   QObject::connect(&app.task, &TaskSystem::executionOutputChanged, this,
@@ -54,14 +44,26 @@ void TaskExecutionController::LoadExecution(bool include_output) {
         execution_icon_color = icon.color;
         if (include_output) {
           execution_output = exec.output;
-          execution_output_highlighter.stderr_line_indices =
-              exec.stderr_line_indices;
+          execution_formatter->stderr_line_indicies = exec.stderr_line_indices;
         }
         emit executionChanged();
       });
 }
 
-void TaskExecutionController::AttachTaskExecutionOutputHighlighter(
-    QQuickTextDocument* document) {
-  execution_output_highlighter.setDocument(document->textDocument());
+TaskExecutionOutputFormatter::TaskExecutionOutputFormatter(QObject* parent)
+    : TextAreaFormatter(parent) {
+  error_line_format.setForeground(QBrush(Qt::red));
+}
+
+QList<TextSectionFormat> TaskExecutionOutputFormatter::Format(
+    const QString& text, const QTextBlock& block) {
+  QList<TextSectionFormat> results;
+  if (stderr_line_indicies.contains(block.firstLineNumber())) {
+    TextSectionFormat f;
+    f.section.start = 0;
+    f.section.end = text.size() - 1;
+    f.format = error_line_format;
+    results.append(f);
+  }
+  return results;
 }

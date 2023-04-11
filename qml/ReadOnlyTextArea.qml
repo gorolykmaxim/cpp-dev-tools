@@ -14,7 +14,7 @@ FocusScope {
   property string text: ""
   property string color: "transparent"
   property real innerPadding: 0
-  property alias textDocument: textArea.textDocument
+  property alias formatter: controller.formatter
   onTextChanged: {
     controller.ResetCursorPositionHistory();
     if (textArea.text && text.startsWith(textArea.text)) {
@@ -65,6 +65,7 @@ FocusScope {
   }
   TextAreaController {
     id: controller
+    document: textArea.textDocument
     onSelectText: (start, end) => textArea.select(start, end)
     onChangeCursorPosition: pos => textArea.cursorPosition = pos
   }
