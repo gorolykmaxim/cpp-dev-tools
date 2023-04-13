@@ -1,9 +1,9 @@
 import QtQuick
-import QtQuick.Controls
+import QtQuick.Controls as QtQuick
 import cdt
 import "." as Cdt
 
-Button {
+QtQuick.Button {
   topPadding: Theme.basePadding
   bottomPadding: Theme.basePadding
   leftPadding: Theme.basePadding * 4
