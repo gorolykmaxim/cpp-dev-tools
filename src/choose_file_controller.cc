@@ -54,11 +54,11 @@ void ChooseFileController::SetPath(const QString& path) {
   emit pathChanged();
 }
 
-void ChooseFileController::PickSuggestion(int i) {
+void ChooseFileController::pickSuggestion(int i) {
   SetPath(folder + suggestions->list[i][1].toString());
 }
 
-void ChooseFileController::OpenOrCreateFile() {
+void ChooseFileController::openOrCreateFile() {
   Application& app = Application::Get();
   QString path = GetResultPath();
   app.RunIOTask<bool>(

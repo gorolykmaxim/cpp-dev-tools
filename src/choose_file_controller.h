@@ -16,9 +16,8 @@ class ChooseFileController : public QObject {
   QString GetPath() const;
 
  public slots:
-  void PickSuggestion(int i);
-  void OpenOrCreateFile();
-  void CreateFile();
+  void pickSuggestion(int i);
+  void openOrCreateFile();
 
  signals:
   void pathChanged();
@@ -27,6 +26,7 @@ class ChooseFileController : public QObject {
  private:
   void SortAndFilterSuggestions();
   QString GetResultPath() const;
+  void CreateFile();
 
   QString folder, file;
   SimpleQVariantListModel* suggestions;

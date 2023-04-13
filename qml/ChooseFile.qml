@@ -29,14 +29,14 @@ ColumnLayout {
         focus: true
         KeyNavigation.right: openBtn
         onDisplayTextChanged: controller.path = displayText
-        onEnterPressed: suggestionList.ifCurrentItem('idx', controller.PickSuggestion)
-        onCtrlEnterPressed: controller.OpenOrCreateFile()
+        onEnterPressed: suggestionList.ifCurrentItem('idx', controller.pickSuggestion)
+        onCtrlEnterPressed: controller.openOrCreateFile()
       }
       Cdt.Button {
         id: openBtn
         text: "Open"
         KeyNavigation.right: cancelBtn
-        onClicked: controller.OpenOrCreateFile()
+        onClicked: controller.openOrCreateFile()
       }
       Cdt.Button {
         id: cancelBtn
@@ -53,7 +53,7 @@ ColumnLayout {
       id: suggestionList
       anchors.fill: parent
       model: controller.suggestions
-      onItemLeftClicked: suggestionList.ifCurrentItem('idx', controller.PickSuggestion)
+      onItemLeftClicked: suggestionList.ifCurrentItem('idx', controller.pickSuggestion)
     }
   }
 }
