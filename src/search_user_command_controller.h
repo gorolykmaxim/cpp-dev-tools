@@ -13,8 +13,8 @@ class SearchUserCommandController : public QObject {
  public:
   explicit SearchUserCommandController(QObject* parent = nullptr);
  public slots:
-  void LoadUserCommands();
-  void ExecuteCommand(int i);
+  void loadUserCommands();
+  void executeCommand(int i);
 
  signals:
   void commandExecuted();

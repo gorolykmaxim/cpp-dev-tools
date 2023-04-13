@@ -12,7 +12,7 @@ SearchUserCommandController::SearchUserCommandController(QObject* parent)
           this, {{0, "title"}, {1, "subTitle"}, {2, "rightText"}, {3, "index"}},
           {0, 1})) {}
 
-void SearchUserCommandController::LoadUserCommands() {
+void SearchUserCommandController::loadUserCommands() {
   LOG() << "Loading user commands";
   user_commands->SetFilterIfChanged("");
   user_commands->list.clear();
@@ -26,7 +26,7 @@ void SearchUserCommandController::LoadUserCommands() {
   user_commands->Load();
 }
 
-void SearchUserCommandController::ExecuteCommand(int i) {
+void SearchUserCommandController::executeCommand(int i) {
   emit commandExecuted();
   Application::Get().user_command.executeCommand(i);
 }

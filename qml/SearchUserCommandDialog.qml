@@ -8,7 +8,7 @@ Dialog {
   Connections {
       target: viewSystem
       function onSearchUserCommandDialogDisplayed() {
-        controller.LoadUserCommands();
+        controller.loadUserCommands();
         visible = true;
       }
       function onDialogClosed() {
@@ -38,6 +38,6 @@ Dialog {
     searchPlaceholderText: "Search command"
     focus: true
     searchableModel: controller.userCommands
-    onItemSelected: item => controller.ExecuteCommand(item.index)
+    onItemSelected: item => controller.executeCommand(item.index)
   }
 }
