@@ -1,8 +1,8 @@
 import QtQuick
-import QtQuick.Controls
+import QtQuick.Controls as QtQuick
 
-Pane {
-  property var color: "transparent"
+QtQuick.Pane {
+  property string color: "transparent"
   padding: 0
   background: Rectangle {
     color: parent.color
