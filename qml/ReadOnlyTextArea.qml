@@ -16,7 +16,7 @@ FocusScope {
   property real innerPadding: 0
   property alias formatter: controller.formatter
   onTextChanged: {
-    controller.ResetCursorPositionHistory();
+    controller.resetCursorPositionHistory();
     if (textArea.text && text.startsWith(textArea.text)) {
       setText(text);
     } else {
@@ -33,14 +33,14 @@ FocusScope {
     }
   }
   function setText(newText) {
-    controller.FindFileLinks(newText);
+    controller.findFileLinks(newText);
     textArea.text = newText;
     isLoading = false;
     if (cursorFollowEnd) {
       textArea.cursorPosition = textArea.length;
     }
     if (searchBar.visible) {
-      controller.Search(searchOutputTextField.displayText,
+      controller.search(searchOutputTextField.displayText,
                         textArea.getText(0, textArea.length))
     }
   }
@@ -54,7 +54,7 @@ FocusScope {
     // When searchBar open request arrives we need to focus the search bar's
     // input regardless of what else is happenning.
     searchOutputTextField.forceActiveFocus();
-    controller.GoToResultWithStartAt(position);
+    controller.goToResultWithStartAt(position);
   }
   function closeSearchBar() {
     searchBar.visible = false;
@@ -98,15 +98,15 @@ FocusScope {
           id: searchOutputTextField
           Layout.fillWidth: true
           placeholderText: "Search text"
-          onDisplayTextChanged: controller.Search(displayText,
+          onDisplayTextChanged: controller.search(displayText,
                                                   textArea.getText(0, textArea.length))
           KeyNavigation.down: textArea
           KeyNavigation.right: searchPrevBtn
           function goToSearchResult(event) {
             if (event.modifiers & Qt.ShiftModifier) {
-              controller.PreviousResult();
+              controller.previousResult();
             } else {
-              controller.NextResult();
+              controller.nextResult();
             }
           }
           Keys.onReturnPressed: (event) => goToSearchResult(event)
@@ -119,7 +119,7 @@ FocusScope {
           id: searchPrevBtn
           buttonIcon: "arrow_upward"
           enabled: !controller.searchResultsEmpty
-          onClicked: controller.PreviousResult()
+          onClicked: controller.previousResult()
           KeyNavigation.down: textArea
           KeyNavigation.right: searchNextBtn
         }
@@ -127,7 +127,7 @@ FocusScope {
           id: searchNextBtn
           buttonIcon: "arrow_downward"
           enabled: !controller.searchResultsEmpty
-          onClicked: controller.NextResult()
+          onClicked: controller.nextResult()
           KeyNavigation.down: textArea
         }
       }
@@ -165,7 +165,7 @@ FocusScope {
             color: "transparent"
           }
           wrapMode: TextArea.WordWrap
-          onCursorPositionChanged: controller.SaveCursorPosition(cursorPosition)
+          onCursorPositionChanged: controller.saveCursorPosition(cursorPosition)
           // Make text area effectively readOnly but don't hide the cursor and
           // allow navigating it using the cursor
           Keys.onPressed: event => {
@@ -215,13 +215,13 @@ FocusScope {
               text: "Previous Cursor Position"
               enabled: textArea.activeFocus
               shortcut: "Ctrl+Alt+Left"
-              onTriggered: controller.GoToPreviousCursorPosition();
+              onTriggered: controller.goToPreviousCursorPosition();
             }
             MenuItem {
               text: "Next Cursor Position"
               enabled: textArea.activeFocus
               shortcut: "Ctrl+Alt+Right"
-              onTriggered: controller.GoToNextCursorPosition()
+              onTriggered: controller.goToNextCursorPosition()
             }
           }
         }

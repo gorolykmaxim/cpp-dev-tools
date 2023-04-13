@@ -10,7 +10,7 @@ TextAreaController::TextAreaController(QObject* parent)
   UpdateSearchResultsCount();
 }
 
-void TextAreaController::Search(const QString& term, const QString& text) {
+void TextAreaController::search(const QString& term, const QString& text) {
   int prev_start = -1;
   if (selected_result < search_results.size()) {
     prev_start = search_results[selected_result].start;
@@ -48,7 +48,7 @@ void TextAreaController::Search(const QString& term, const QString& text) {
   UpdateSearchResultsCount();
 }
 
-void TextAreaController::GoToResultWithStartAt(int text_position) {
+void TextAreaController::goToResultWithStartAt(int text_position) {
   for (int i = 0; i < search_results.size(); i++) {
     if (search_results[i].start == text_position) {
       selected_result = i;
@@ -59,7 +59,7 @@ void TextAreaController::GoToResultWithStartAt(int text_position) {
   }
 }
 
-void TextAreaController::NextResult() {
+void TextAreaController::nextResult() {
   if (search_results.isEmpty()) {
     return;
   }
@@ -70,7 +70,7 @@ void TextAreaController::NextResult() {
   UpdateSearchResultsCount();
 }
 
-void TextAreaController::PreviousResult() {
+void TextAreaController::previousResult() {
   if (search_results.isEmpty()) {
     return;
   }
@@ -81,7 +81,7 @@ void TextAreaController::PreviousResult() {
   UpdateSearchResultsCount();
 }
 
-void TextAreaController::SaveCursorPosition(int position) {
+void TextAreaController::saveCursorPosition(int position) {
   if (!cursor_history.isEmpty() &&
       cursor_history[cursor_history_index] == position) {
     return;
@@ -97,7 +97,7 @@ void TextAreaController::SaveCursorPosition(int position) {
   cursor_history_index = cursor_history.size() - 1;
 }
 
-void TextAreaController::GoToPreviousCursorPosition() {
+void TextAreaController::goToPreviousCursorPosition() {
   if (cursor_history_index == 0) {
     return;
   }
@@ -105,7 +105,7 @@ void TextAreaController::GoToPreviousCursorPosition() {
   emit changeCursorPosition(pos);
 }
 
-void TextAreaController::GoToNextCursorPosition() {
+void TextAreaController::goToNextCursorPosition() {
   if (cursor_history_index == cursor_history.size() - 1) {
     return;
   }
@@ -113,12 +113,12 @@ void TextAreaController::GoToNextCursorPosition() {
   emit changeCursorPosition(pos);
 }
 
-void TextAreaController::ResetCursorPositionHistory() {
+void TextAreaController::resetCursorPositionHistory() {
   cursor_history.clear();
   cursor_history_index = -1;
 }
 
-void TextAreaController::FindFileLinks(const QString& text) {
+void TextAreaController::findFileLinks(const QString& text) {
   static const QRegularExpression regex(
       "([A-Z]?\\:?\\/[^:]+):([0-9]+):?([0-9]+)?|"
       "([A-Z]\\:\\\\[^:]+)\\(([0-9]+),?([0-9]+)?\\)|"

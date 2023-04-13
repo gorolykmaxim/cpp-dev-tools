@@ -52,15 +52,15 @@ class TextAreaController : public QObject {
   TextAreaFormatter* GetFormatter();
   void SetFormatter(TextAreaFormatter* formatter);
  public slots:
-  void Search(const QString& term, const QString& text);
-  void GoToResultWithStartAt(int text_position);
-  void NextResult();
-  void PreviousResult();
-  void SaveCursorPosition(int position);
-  void GoToPreviousCursorPosition();
-  void GoToNextCursorPosition();
-  void ResetCursorPositionHistory();
-  void FindFileLinks(const QString& text);
+  void search(const QString& term, const QString& text);
+  void goToResultWithStartAt(int text_position);
+  void nextResult();
+  void previousResult();
+  void saveCursorPosition(int position);
+  void goToPreviousCursorPosition();
+  void goToNextCursorPosition();
+  void resetCursorPositionHistory();
+  void findFileLinks(const QString& text);
 
  signals:
   void selectText(int start, int end);
