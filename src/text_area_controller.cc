@@ -120,7 +120,7 @@ void TextAreaController::ResetCursorPositionHistory() {
 
 void TextAreaController::FindFileLinks(const QString& text) {
   static const QRegularExpression regex(
-      "(\\/[^:]+):([0-9]+):?([0-9]+)?|"
+      "([A-Z]?\\:?\\/[^:]+):([0-9]+):?([0-9]+)?|"
       "([A-Z]\\:\\\\[^:]+)\\(([0-9]+),?([0-9]+)?\\)|"
       "([A-Z]\\:\\\\[^:]+):([0-9]+):([0-9]+)?");
   file_links.clear();
