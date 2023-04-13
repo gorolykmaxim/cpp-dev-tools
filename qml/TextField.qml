@@ -1,10 +1,10 @@
 import QtQuick
-import QtQuick.Controls
+import QtQuick.Controls as QtQuick
 import Qt.labs.platform
 import cdt
 import "Common.js" as Common
 
-TextField {
+QtQuick.TextField {
   id: textField
   color: Theme.colorText
   enabled: visible
