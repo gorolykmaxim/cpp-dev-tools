@@ -109,7 +109,7 @@ void ViewSystem::SetDefaultWindowSize() {
   emit windowDimensionsChanaged();
 }
 
-void ViewSystem::SaveWindowDimensions(int width, int height, int x, int y,
+void ViewSystem::saveWindowDimensions(int width, int height, int x, int y,
                                       bool is_maximized) const {
   QRect virtual_desktop = QGuiApplication::primaryScreen()->virtualGeometry();
   LOG() << "Saving new window dimensions:" << width << height << x << y

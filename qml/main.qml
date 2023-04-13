@@ -22,7 +22,7 @@ ApplicationWindow {
   Timer {
     id: windowDimensionsDebounce
     interval: 100
-    onTriggered: viewSystem.SaveWindowDimensions(width, height, x, y,
+    onTriggered: viewSystem.saveWindowDimensions(width, height, x, y,
                                                  visibility == Window.Maximized)
   }
   FontLoader {

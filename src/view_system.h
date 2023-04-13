@@ -44,7 +44,7 @@ class ViewSystem : public QObject {
 
  public slots:
   void DisplaySearchUserCommandDialog();
-  void SaveWindowDimensions(int width, int height, int x, int y,
+  void saveWindowDimensions(int width, int height, int x, int y,
                             bool is_maximized) const;
 
  signals:
