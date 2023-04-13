@@ -33,7 +33,7 @@ Loader {
             list: projectList
             listModel: controller.projects
             focus: true
-            onEnterPressed: projectList.ifCurrentItem('idx', controller.OpenProject)
+            onEnterPressed: projectList.ifCurrentItem('idx', controller.openProject)
           }
           Cdt.Button {
             id: button
@@ -50,7 +50,7 @@ Loader {
           id: projectList
           anchors.fill: parent
           model: controller.projects
-          onItemLeftClicked: projectList.ifCurrentItem('idx', controller.OpenProject)
+          onItemLeftClicked: projectList.ifCurrentItem('idx', controller.openProject)
           onItemRightClicked: contextMenu.open()
         }
       }
@@ -64,7 +64,7 @@ Loader {
           text: "Remove From List"
           enabled: input.activeFocus
           shortcut: "Alt+Shift+D"
-          onTriggered: projectList.ifCurrentItem('idx', controller.DeleteProject)
+          onTriggered: projectList.ifCurrentItem('idx', controller.deleteProject)
         }
       }
     }
@@ -72,7 +72,7 @@ Loader {
   Component {
     id: chooseProjectView
     Cdt.ChooseFile {
-      onFileChosen: (file) => controller.OpenNewProject(file)
+      onFileChosen: (file) => controller.openNewProject(file)
       onCancelled: root.sourceComponent = selectProjectView
     }
   }

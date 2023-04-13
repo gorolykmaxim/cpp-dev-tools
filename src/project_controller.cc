@@ -64,7 +64,7 @@ ProjectController::ProjectController(QObject* parent)
       });
 }
 
-void ProjectController::DeleteProject(int i) {
+void ProjectController::deleteProject(int i) {
   const Project& project = projects->list[i];
   LOG() << "Deleting project" << project.path;
   Database::ExecCmdAsync(kSqlDeleteProject, {project.id});
@@ -72,13 +72,13 @@ void ProjectController::DeleteProject(int i) {
   projects->Load();
 }
 
-void ProjectController::OpenProject(int i) {
+void ProjectController::openProject(int i) {
   Project& project = projects->list[i];
   LOG() << "Opening project" << project.path;
   Application::Get().project.SetCurrentProject(project);
 }
 
-void ProjectController::OpenNewProject(const QString& path) {
+void ProjectController::openNewProject(const QString& path) {
   LOG() << "Creating new project" << path;
   Project* existing = nullptr;
   for (Project& project : projects->list) {
