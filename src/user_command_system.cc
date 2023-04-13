@@ -37,16 +37,16 @@ void UserCommandSystem::RegisterCommands() {
     Application::Get().project.SetCurrentProject(Project());
   });
   RegisterCommand("Task", "Run Last", "Ctrl+R",
-                  [] { Application::Get().task.ExecuteTask(0); });
+                  [] { Application::Get().task.executeTask(0); });
   RegisterCommand("Task", "Run Last Until Fails", "Ctrl+Shift+R",
-                  [] { Application::Get().task.ExecuteTask(0, true); });
+                  [] { Application::Get().task.executeTask(0, true); });
   RegisterCommand("Task", "Terminate Execution", "Ctrl+Shift+T", [] {
     Application& app = Application::Get();
-    app.task.CancelExecution(app.task.GetSelectedExecutionId(), false);
+    app.task.cancelExecution(app.task.GetSelectedExecutionId(), false);
   });
   RegisterCommand("Task", "Kill Execution", "Ctrl+Shift+K", [] {
     Application& app = Application::Get();
-    app.task.CancelExecution(app.task.GetSelectedExecutionId(), true);
+    app.task.cancelExecution(app.task.GetSelectedExecutionId(), true);
   });
   RegisterCommand("Task", "Tasks", "Ctrl+T", [] {
     Application::Get().view.SetCurrentView("TaskList.qml");

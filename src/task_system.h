@@ -77,8 +77,8 @@ class TaskSystem : public QObject {
   QUuid GetSelectedExecutionId() const;
 
  public slots:
-  void ExecuteTask(int i, bool repeat_until_fail = false);
-  void CancelExecution(QUuid execution_id, bool forcefully);
+  void executeTask(int i, bool repeat_until_fail = false);
+  void cancelExecution(QUuid execution_id, bool forcefully);
 
  signals:
   void executionOutputChanged(QUuid exec_id);

@@ -120,7 +120,7 @@ QString TaskSystem::GetName(const Task& task) {
   }
 }
 
-void TaskSystem::ExecuteTask(int i, bool repeat_until_fail) {
+void TaskSystem::executeTask(int i, bool repeat_until_fail) {
   if (i < 0 || i >= tasks.size()) {
     return;
   }
@@ -287,7 +287,7 @@ bool TaskSystem::IsExecutionRunning(QUuid execution_id) const {
   return active_executions.contains(execution_id);
 }
 
-void TaskSystem::CancelExecution(QUuid execution_id, bool forcefully) {
+void TaskSystem::cancelExecution(QUuid execution_id, bool forcefully) {
   if (!active_commands.contains(execution_id)) {
     return;
   }

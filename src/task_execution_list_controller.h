@@ -32,8 +32,8 @@ class TaskExecutionListController : public QObject {
   int IndexOfExecutionTask() const;
 
  public slots:
-  void RemoveFinishedExecutions();
-  void OpenExecutionOutput() const;
+  void removeFinishedExecutions();
+  void openExecutionOutput() const;
 
  signals:
   void executionsChanged();

@@ -48,7 +48,7 @@ bool TaskExecutionListController::IsSelectedExecutionRunning() const {
   return app.task.IsExecutionRunning(id);
 }
 
-void TaskExecutionListController::RemoveFinishedExecutions() {
+void TaskExecutionListController::removeFinishedExecutions() {
   Application& app = Application::Get();
   QUuid project_id = app.project.GetCurrentProject().id;
   LOG() << "Clearing task execution history of project" << project_id;
@@ -96,6 +96,6 @@ int TaskExecutionListController::IndexOfExecutionTask() const {
   return -1;
 }
 
-void TaskExecutionListController::OpenExecutionOutput() const {
+void TaskExecutionListController::openExecutionOutput() const {
   Application::Get().view.SetCurrentView("TaskExecution.qml");
 }

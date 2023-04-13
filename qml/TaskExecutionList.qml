@@ -25,7 +25,7 @@ RowLayout {
     searchableModel: controller.executions
     focus: true
     onCurrentItemChanged: ifCurrentItem('id', (id) => taskSystem.selectedExecutionId = id)
-    onItemSelected: controller.OpenExecutionOutput()
+    onItemSelected: controller.openExecutionOutput()
     onItemRightClicked: Common.handleRightClick(execList, contextMenu)
   }
   Menu {
@@ -34,37 +34,37 @@ RowLayout {
       text: "Open Output"
       enabled: execList.activeFocus
       shortcut: "Enter"
-      onTriggered: controller.OpenExecutionOutput()
+      onTriggered: controller.openExecutionOutput()
     }
     MenuItem {
       text: "Re-Run"
       enabled: execList.activeFocus && controller.executionTaskIndex >= 0
       shortcut: "Alt+Shift+R"
-      onTriggered: taskSystem.ExecuteTask(controller.executionTaskIndex)
+      onTriggered: taskSystem.executeTask(controller.executionTaskIndex)
     }
     MenuItem {
       text: "Re-Run Until Fails"
       enabled: execList.activeFocus && controller.executionTaskIndex >= 0
       shortcut: "Ctrl+Alt+Shift+R"
-      onTriggered: taskSystem.ExecuteTask(controller.executionTaskIndex, true)
+      onTriggered: taskSystem.executeTask(controller.executionTaskIndex, true)
     }
     MenuItem {
       text: "Terminate"
       enabled: execList.activeFocus && controller.executionRunning
       shortcut: "Alt+Shift+T"
-      onTriggered: execList.ifCurrentItem('id', (id) => taskSystem.CancelExecution(id, false))
+      onTriggered: execList.ifCurrentItem('id', (id) => taskSystem.cancelExecution(id, false))
     }
     MenuItem {
       text: "Kill"
       enabled: execList.activeFocus && controller.executionRunning
       shortcut: "Alt+Shift+K"
-      onTriggered: execList.ifCurrentItem('id', (id) => taskSystem.CancelExecution(id, true))
+      onTriggered: execList.ifCurrentItem('id', (id) => taskSystem.cancelExecution(id, true))
     }
     MenuItem {
       text: "Remove Finished Executions"
       enabled: execList.activeFocus
       shortcut: "Alt+Shift+D"
-      onTriggered: controller.RemoveFinishedExecutions()
+      onTriggered: controller.removeFinishedExecutions()
     }
   }
 }
