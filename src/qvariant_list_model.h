@@ -38,8 +38,7 @@ class QVariantListModel : public QAbstractListModel {
   void Load();
 
  public slots:
-  QVariant GetFieldByRoleName(int row, const QString& name) const;
-  QVariant GetFieldByRole(int row, int role) const;
+  QVariant getFieldByRoleName(int row, const QString& name) const;
   void SetFilterIfChanged(const QString& filter);
   void SetFilter(const QString& filter);
   QString GetFilter();

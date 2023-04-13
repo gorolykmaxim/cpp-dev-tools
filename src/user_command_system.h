@@ -32,7 +32,7 @@ class UserCommandSystem : public QObject {
   const QList<UserCommand>& GetUserCommands() const;
 
  public slots:
-  void ExecuteCommand(int i);
+  void executeCommand(int i);
 
  private:
   void RegisterCommand(const QString& group, const QString& name,

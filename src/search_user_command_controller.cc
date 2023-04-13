@@ -28,5 +28,5 @@ void SearchUserCommandController::LoadUserCommands() {
 
 void SearchUserCommandController::ExecuteCommand(int i) {
   emit commandExecuted();
-  Application::Get().user_command.ExecuteCommand(i);
+  Application::Get().user_command.executeCommand(i);
 }

@@ -12,16 +12,16 @@ Item {
       return;
     }
     for (let i = 0; i < model.rowCount(); i++) {
-      const menuTitle = model.GetFieldByRoleName(i, "group");
+      const menuTitle = model.getFieldByRoleName(i, "group");
       let menuObj = Common.findMenuByTitle(menuBar, menuTitle);
       if (menuObj === null) {
         menuObj = menu.createObject(menuBar, {title: menuTitle});
         menuBar.addMenu(menuObj);
       }
       const menuItemObj = menuItem.createObject(menuObj, {
-        text: model.GetFieldByRoleName(i, "name"),
-        shortcut: model.GetFieldByRoleName(i, "shortcut"),
-        index: model.GetFieldByRoleName(i, "index"),
+        text: model.getFieldByRoleName(i, "name"),
+        shortcut: model.getFieldByRoleName(i, "shortcut"),
+        index: model.getFieldByRoleName(i, "index"),
       });
       menuObj.addItem(menuItemObj);
     }
@@ -33,7 +33,7 @@ Item {
     id: delay
     property var index
     interval: 0
-    onTriggered: userCommandSystem.ExecuteCommand(index)
+    onTriggered: userCommandSystem.executeCommand(index)
   }
   MenuBar {
     id: menuBar

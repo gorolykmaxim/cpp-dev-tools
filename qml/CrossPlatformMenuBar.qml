@@ -18,16 +18,16 @@ Qml.MenuBar {
       return;
     }
     for (let i = 0; i < model.rowCount(); i++) {
-      const menuTitle = model.GetFieldByRoleName(i, "group");
+      const menuTitle = model.getFieldByRoleName(i, "group");
       let menuObj = Common.findMenuByTitle(menuBar, menuTitle);
       if (menuObj === null) {
         menuObj = menu.createObject(menuBar, {title: menuTitle});
         menuBar.addMenu(menuObj);
       }
       const menuItemObj = action.createObject(menuObj, {
-        text: model.GetFieldByRoleName(i, "name"),
-        shortcut: model.GetFieldByRoleName(i, "shortcut"),
-        index: model.GetFieldByRoleName(i, "index"),
+        text: model.getFieldByRoleName(i, "name"),
+        shortcut: model.getFieldByRoleName(i, "shortcut"),
+        index: model.getFieldByRoleName(i, "index"),
       });
       menuObj.addAction(menuItemObj);
     }
@@ -87,7 +87,7 @@ Qml.MenuBar {
     id: action
     Qml.Action {
       property var index
-      onTriggered: userCommandSystem.ExecuteCommand(index)
+      onTriggered: userCommandSystem.executeCommand(index)
     }
   }
 }

@@ -238,15 +238,12 @@ void QVariantListModel::Load() {
   cmd_buffer.RunCommands();
 }
 
-QVariant QVariantListModel::GetFieldByRoleName(int row,
+QVariant QVariantListModel::getFieldByRoleName(int row,
                                                const QString& name) const {
   if (!name_to_role.contains(name)) {
     return QVariant();
   }
-  return GetFieldByRole(row, name_to_role[name]);
-}
-
-QVariant QVariantListModel::GetFieldByRole(int row, int role) const {
+  int role = name_to_role[name];
   if (row < 0 || row >= items.size()) {
     return QVariant();
   }
