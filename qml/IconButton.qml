@@ -1,10 +1,10 @@
 import QtQuick
-import QtQuick.Controls as QtCtrls
+import QtQuick.Controls as QtQuick
 import cdt
 import "." as Cdt
 
-QtCtrls.Button {
-  property var buttonIcon: ""
+QtQuick.Button {
+  property string buttonIcon: ""
   padding: Theme.basePadding
   background: Rectangle {
     color: enabled && hovered && !pressed ? Theme.colorBgLight : "transparent"
