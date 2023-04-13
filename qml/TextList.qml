@@ -6,7 +6,7 @@ import "." as Cdt
 
 ListView {
   id: root
-  property var elide: Text.ElideNone
+  property int elide: Text.ElideNone
   signal itemLeftClicked(clickedItemModel: QtObject, event: QtObject);
   signal itemRightClicked(clickedItemModel: QtObject, event: QtObject);
   signal itemSelected();
@@ -82,7 +82,7 @@ ListView {
       hoverEnabled: true
       onPressed: e => {
         root.currentIndex = index;
-        if (e.button == Qt.LeftButton) {
+        if (e.button === Qt.LeftButton) {
           root.itemLeftClicked(itemModel, e);
         } else {
           root.itemRightClicked(itemModel, e);
