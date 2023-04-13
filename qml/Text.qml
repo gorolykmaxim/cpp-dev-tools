@@ -2,7 +2,7 @@ import QtQuick.Controls
 import cdt
 
 Label {
-  property var textColor: Theme.colorText
-  property var highlight: false
+  property string textColor: Theme.colorText
+  property bool highlight: false
   color: highlight ? Theme.colorHighlight : textColor
 }
