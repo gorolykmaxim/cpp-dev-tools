@@ -145,7 +145,7 @@ void TextAreaController::openFileLinkAtCursor() {
   }
   QString link_str = link->file_path + ':' + QString::number(link->column);
   if (link->row >= 0) {
-    link_str += QString::number(link->row);
+    link_str += ':' + QString::number(link->row);
   }
   LOG() << "Opening file link" << link_str;
 }
