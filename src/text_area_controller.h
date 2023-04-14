@@ -15,6 +15,13 @@ struct TextSectionFormat {
   QTextCharFormat format;
 };
 
+struct FileLink {
+  TextSection section;
+  QString file_path;
+  int column = -1;
+  int row = -1;
+};
+
 class TextAreaFormatter : public QObject {
  public:
   explicit TextAreaFormatter(QObject* parent);
@@ -24,9 +31,9 @@ class TextAreaFormatter : public QObject {
 
 class TextAreaHighlighter : public QSyntaxHighlighter {
  public:
-  TextAreaHighlighter(QList<TextSection>& file_links);
+  TextAreaHighlighter(QList<FileLink>& file_links);
   TextAreaFormatter* formatter;
-  QList<TextSection>& file_links;
+  QList<FileLink>& file_links;
   QTextCharFormat link_format;
 
  protected:
@@ -44,6 +51,8 @@ class TextAreaController : public QObject {
                  NOTIFY documentChanged)
   Q_PROPERTY(TextAreaFormatter* formatter READ GetFormatter WRITE SetFormatter
                  NOTIFY formatterChanged)
+  Q_PROPERTY(
+      bool isCursorOnLink READ IsCursorOnLink NOTIFY cursorPositionChanged)
  public:
   explicit TextAreaController(QObject* parent = nullptr);
   bool AreSearchResultsEmpty() const;
@@ -51,6 +60,7 @@ class TextAreaController : public QObject {
   void SetDocument(QQuickTextDocument* document);
   TextAreaFormatter* GetFormatter();
   void SetFormatter(TextAreaFormatter* formatter);
+  bool IsCursorOnLink() const;
  public slots:
   void search(const QString& term, const QString& text);
   void goToResultWithStartAt(int text_position);
@@ -61,6 +71,7 @@ class TextAreaController : public QObject {
   void goToNextCursorPosition();
   void resetCursorPositionHistory();
   void findFileLinks(const QString& text);
+  void openFileLinkAtCursor();
 
  signals:
   void selectText(int start, int end);
@@ -68,10 +79,13 @@ class TextAreaController : public QObject {
   void changeCursorPosition(int position);
   void documentChanged();
   void formatterChanged();
+  void cursorPositionChanged();
 
  private:
   void UpdateSearchResultsCount();
   void DisplaySelectedSearchResult();
+  void FindFileLinks(const QRegularExpression& regex, const QString& text);
+  const FileLink* FindFileLinkAtPosition(int position) const;
 
   int selected_result = 0;
   QList<TextSection> search_results;
@@ -80,5 +94,5 @@ class TextAreaController : public QObject {
   int cursor_history_index = -1;
   TextAreaHighlighter highlighter;
   QQuickTextDocument* document;
-  QList<TextSection> file_links;
+  QList<FileLink> file_links;
 };

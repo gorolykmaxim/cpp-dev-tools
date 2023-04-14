@@ -175,6 +175,8 @@ FocusScope {
               } else {
                 textArea.deselect();
               }
+            } else if (event.key === Qt.Key_Return) {
+              controller.openFileLinkAtCursor();
             }
             if (!allowedKeys.has(event.key) &&
                 !event.matches(StandardKey.Copy) &&
@@ -182,7 +184,10 @@ FocusScope {
               event.accepted = true;
             }
           }
-          onPressed: e => Common.handleRightClick(textArea, contextMenu, e)
+          onPressed: e => {
+            cursorPosition = positionAt(e.x, e.y);
+            Common.handleRightClick(textArea, contextMenu, e);
+          }
           Menu {
             id: contextMenu
             MenuItem {
@@ -222,6 +227,12 @@ FocusScope {
               enabled: textArea.activeFocus
               shortcut: "Ctrl+Alt+Right"
               onTriggered: controller.goToNextCursorPosition()
+            }
+            MenuItem {
+              text: "Open File In Editor"
+              enabled: textArea.activeFocus && controller.isCursorOnLink
+              shortcut: "Enter"
+              onTriggered: controller.openFileLinkAtCursor()
             }
           }
         }
