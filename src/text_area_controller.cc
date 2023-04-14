@@ -1,5 +1,8 @@
 #include "text_area_controller.h"
 
+#include <cmath>
+#include <limits>
+
 #include "theme.h"
 
 #define LOG() qDebug() << "[TextAreaController]"
@@ -101,19 +104,11 @@ void TextAreaController::saveCursorPosition(int position) {
 }
 
 void TextAreaController::goToPreviousCursorPosition() {
-  if (cursor_history_index == 0) {
-    return;
-  }
-  int pos = cursor_history[--cursor_history_index];
-  emit changeCursorPosition(pos);
+  GoToCursorHistoryIndex(cursor_history_index - 1);
 }
 
 void TextAreaController::goToNextCursorPosition() {
-  if (cursor_history_index == cursor_history.size() - 1) {
-    return;
-  }
-  int pos = cursor_history[++cursor_history_index];
-  emit changeCursorPosition(pos);
+  GoToCursorHistoryIndex(cursor_history_index + 1);
 }
 
 void TextAreaController::resetCursorPositionHistory() {
@@ -139,15 +134,40 @@ void TextAreaController::openFileLinkAtCursor() {
     return;
   }
   int pos = cursor_history[cursor_history_index];
-  const FileLink* link = FindFileLinkAtPosition(pos);
-  if (!link) {
+  int i = IndexOfFileLinkAtPosition(pos);
+  if (i < 0) {
     return;
   }
-  QString link_str = link->file_path + ':' + QString::number(link->column);
-  if (link->row >= 0) {
-    link_str += ':' + QString::number(link->row);
+  const FileLink& link = file_links[i];
+  QString link_str = link.file_path + ':' + QString::number(link.column);
+  if (link.row >= 0) {
+    link_str += ':' + QString::number(link.row);
   }
   LOG() << "Opening file link" << link_str;
+}
+
+void TextAreaController::goToFileLink(bool next) {
+  if (cursor_history_index < 0) {
+    return;
+  }
+  int pos = cursor_history[cursor_history_index];
+  int i = -1;
+  int min_distance = std::numeric_limits<int>::max();
+  for (int j = 0; j < file_links.size(); j++) {
+    TextSection section = file_links[j].section;
+    int distance = std::abs(section.start - pos);
+    if (((next && section.start > pos) || (!next && section.start < pos)) &&
+        distance < min_distance) {
+      i = j;
+      min_distance = distance;
+    }
+  }
+  if (i < 0) {
+    return;
+  }
+  pos = file_links[i].section.start;
+  saveCursorPosition(pos);
+  emit changeCursorPosition(pos);
 }
 
 bool TextAreaController::AreSearchResultsEmpty() const {
@@ -177,7 +197,7 @@ bool TextAreaController::IsCursorOnLink() const {
     return false;
   }
   int pos = cursor_history[cursor_history_index];
-  return FindFileLinkAtPosition(pos) != nullptr;
+  return IndexOfFileLinkAtPosition(pos) >= 0;
 }
 
 void TextAreaController::UpdateSearchResultsCount() {
@@ -211,13 +231,23 @@ void TextAreaController::FindFileLinks(const QRegularExpression& regex,
   }
 }
 
-const FileLink* TextAreaController::FindFileLinkAtPosition(int position) const {
-  for (const FileLink& link : file_links) {
-    if (position >= link.section.start && position <= link.section.end) {
-      return &link;
+void TextAreaController::GoToCursorHistoryIndex(int new_history_index) {
+  if (new_history_index < 0 || new_history_index >= cursor_history.size()) {
+    return;
+  }
+  cursor_history_index = new_history_index;
+  int pos = cursor_history[cursor_history_index];
+  emit changeCursorPosition(pos);
+}
+
+int TextAreaController::IndexOfFileLinkAtPosition(int position) const {
+  for (int i = 0; i < file_links.size(); i++) {
+    TextSection section = file_links[i].section;
+    if (position >= section.start && position <= section.end) {
+      return i;
     }
   }
-  return nullptr;
+  return -1;
 }
 
 TextAreaFormatter::TextAreaFormatter(QObject* parent) : QObject(parent) {}

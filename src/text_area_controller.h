@@ -72,6 +72,7 @@ class TextAreaController : public QObject {
   void resetCursorPositionHistory();
   void findFileLinks(const QString& text);
   void openFileLinkAtCursor();
+  void goToFileLink(bool next);
 
  signals:
   void selectText(int start, int end);
@@ -85,7 +86,8 @@ class TextAreaController : public QObject {
   void UpdateSearchResultsCount();
   void DisplaySelectedSearchResult();
   void FindFileLinks(const QRegularExpression& regex, const QString& text);
-  const FileLink* FindFileLinkAtPosition(int position) const;
+  void GoToCursorHistoryIndex(int new_history_index);
+  int IndexOfFileLinkAtPosition(int position) const;
 
   int selected_result = 0;
   QList<TextSection> search_results;

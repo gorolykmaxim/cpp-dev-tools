@@ -234,6 +234,18 @@ FocusScope {
               shortcut: "Enter"
               onTriggered: controller.openFileLinkAtCursor()
             }
+            MenuItem {
+              text: "Previous File Link"
+              enabled: textArea.activeFocus
+              shortcut: "Ctrl+Alt+Up"
+              onTriggered: controller.goToFileLink(false)
+            }
+            MenuItem {
+              text: "Next File Link"
+              enabled: textArea.activeFocus
+              shortcut: "Ctrl+Alt+Down"
+              onTriggered: controller.goToFileLink(true)
+            }
           }
         }
       }
