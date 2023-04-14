@@ -184,10 +184,7 @@ FocusScope {
               event.accepted = true;
             }
           }
-          onPressed: e => {
-            cursorPosition = positionAt(e.x, e.y);
-            Common.handleRightClick(textArea, contextMenu, e);
-          }
+          onPressed: e => Common.handleRightClick(textArea, contextMenu, e)
           Menu {
             id: contextMenu
             MenuItem {
