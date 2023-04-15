@@ -7,6 +7,7 @@
 #include <functional>
 
 #include "editor_system.h"
+#include "notification_system.h"
 #include "project_system.h"
 #include "task_system.h"
 #include "user_command_system.h"
@@ -42,6 +43,7 @@ class Application {
   UserCommandSystem user_command;
   TaskSystem task;
   EditorSystem editor;
+  NotificationSystem notification;
   QGuiApplication gui_app;
   QQmlApplicationEngine qml_engine;
   QThreadPool io_thread_pool;

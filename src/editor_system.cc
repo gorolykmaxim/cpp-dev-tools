@@ -6,7 +6,7 @@
 
 #define LOG() qDebug() << "[EditorSystem]"
 
-static void RunOsCommand(const QString& command) {
+static void RunOsCommand(const QString& command, const QString& error_title) {
   QSharedPointer<QString> output = QSharedPointer<QString>::create();
   QProcess* process = new QProcess();
   QObject::connect(
@@ -24,8 +24,14 @@ static void RunOsCommand(const QString& command) {
                      emit process->finished(-1);
                    });
   QObject::connect(process, &QProcess::finished, process,
-                   [process, output, command] {
-                     LOG() << command << "finished:" << *output;
+                   [process, output, command, error_title](int exit_code) {
+                     if (exit_code != 0) {
+                       Notification notification;
+                       notification.is_error = true;
+                       notification.title = error_title;
+                       notification.description = *output;
+                       Application::Get().notification.Post(notification);
+                     }
                      process->deleteLater();
                    });
   process->startCommand(command);
@@ -55,5 +61,5 @@ void EditorSystem::OpenFile(const QString& file) {
   LOG() << "Opening file link" << file;
   QString cmd = open_command;
   cmd.replace("{}", file);
-  RunOsCommand(cmd);
+  RunOsCommand(cmd, "Failed to open file in editor: " + file);
 }

@@ -42,6 +42,8 @@ qt_add_executable(cpp-dev-tools
   src/editor_system.cc
   src/settings_controller.h
   src/settings_controller.cc
+  src/notification_system.h
+  src/notification_system.cc
   src/ui_icon.h
   src/main.cc)
 if(NOT MSVC)
