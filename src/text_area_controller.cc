@@ -3,9 +3,8 @@
 #include <cmath>
 #include <limits>
 
+#include "application.h"
 #include "theme.h"
-
-#define LOG() qDebug() << "[TextAreaController]"
 
 static const int kCursorHistoryLimit = 100;
 
@@ -143,7 +142,7 @@ void TextAreaController::openFileLinkAtCursor() {
   if (link.row >= 0) {
     link_str += ':' + QString::number(link.row);
   }
-  LOG() << "Opening file link" << link_str;
+  Application::Get().editor.OpenFile(link_str);
 }
 
 void TextAreaController::goToFileLink(bool next) {
