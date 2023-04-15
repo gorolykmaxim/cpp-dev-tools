@@ -30,11 +30,14 @@ UserCommandSystem::UserCommandSystem()
     : user_commands(new UserCommandListModel(this)) {}
 
 void UserCommandSystem::RegisterCommands() {
-  RegisterCommand("General", "Execute Command", "Ctrl+P", [] {
+  RegisterCommand("File", "Execute Command", "Ctrl+P", [] {
     Application::Get().view.DisplaySearchUserCommandDialog();
   });
-  RegisterCommand("General", "Close Project", "Ctrl+W", [] {
+  RegisterCommand("File", "Close Project", "Ctrl+W", [] {
     Application::Get().project.SetCurrentProject(Project());
+  });
+  RegisterCommand("File", "Settings", "Ctrl+,", [] {
+    Application::Get().view.SetCurrentView("Settings.qml");
   });
   RegisterCommand("Task", "Run Last", "Ctrl+R",
                   [] { Application::Get().task.executeTask(0); });

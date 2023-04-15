@@ -4,7 +4,10 @@
 #include <QSqlQuery>
 #include <QString>
 #include <QVariantList>
+#include <QtConcurrent>
 #include <functional>
+
+#include "application.h"
 
 class Database {
  public:
@@ -21,6 +24,25 @@ class Database {
       result.append(map(sql));
     }
     return result;
+  }
+
+  template <typename T>
+  static QList<T> ExecQueryAndReadSync(const QString& query,
+                                       const std::function<T(QSqlQuery&)>& map,
+                                       const QVariantList& args = {}) {
+    QFuture<QList<T>> future = QtConcurrent::run(
+        &Application::Get().io_thread_pool, [query, map, args] {
+          return Database::ExecQueryAndRead<T>(query, map, args);
+        });
+    while (!future.isResultReadyAt(0)) {
+      // If we just call result() - Qt will not just block current thread
+      // waiting for the result, it will RUN the specified function on the
+      // current thread :) which will crash the app because the Database
+      // instance only exists on the IO thread. So instead of relying on Qt
+      // to block waiting for result, lets block ourselves with this simple
+      // spin-lock.
+    };
+    return future.result();
   }
 
   static void ExecQuery(QSqlQuery& sql, const QString& query,

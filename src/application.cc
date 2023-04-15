@@ -23,6 +23,7 @@ Application::Application(int argc, char** argv)
   qml_engine.rootContext()->setContextProperty("userCommandSystem",
                                                &user_command);
   qml_engine.rootContext()->setContextProperty("taskSystem", &task);
+  qml_engine.rootContext()->setContextProperty("editorSystem", &editor);
 #if __APPLE__
   qml_engine.rootContext()->setContextProperty("isMacOS", true);
 #else
@@ -36,6 +37,7 @@ int Application::Exec() {
   QtConcurrent::run(&io_thread_pool, &Database::Initialize).waitForFinished();
   user_command.RegisterCommands();
   view.DetermineWindowDimensions();
+  editor.Initialize();
   qml_engine.load(QUrl("qrc:/cdt/qml/main.qml"));
   return gui_app.exec();
 }

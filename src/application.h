@@ -6,6 +6,7 @@
 #include <QtConcurrent>
 #include <functional>
 
+#include "editor_system.h"
 #include "project_system.h"
 #include "task_system.h"
 #include "user_command_system.h"
@@ -40,6 +41,7 @@ class Application {
   ViewSystem view;
   UserCommandSystem user_command;
   TaskSystem task;
+  EditorSystem editor;
   QGuiApplication gui_app;
   QQmlApplicationEngine qml_engine;
   QThreadPool io_thread_pool;

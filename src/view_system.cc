@@ -3,7 +3,6 @@
 #include <QGuiApplication>
 #include <QScreen>
 
-#include "application.h"
 #include "database.h"
 
 #define LOG() qDebug() << "[ViewSystem]"
@@ -72,25 +71,14 @@ void ViewSystem::DetermineWindowDimensions() {
   QRect virtual_desktop = QGuiApplication::primaryScreen()->virtualGeometry();
   SetDefaultWindowSize();
   LOG() << "Loading window dimensions from database";
-  QFuture<QList<WindowDimensions>> future =
-      QtConcurrent::run(&Application::Get().io_thread_pool, [virtual_desktop] {
-        return Database::ExecQueryAndRead<WindowDimensions>(
-            "SELECT width, height, x, y, is_maximized FROM window_dimensions "
-            "WHERE virtual_width=? AND virtual_height=? AND virtual_x=? AND "
-            "virtual_y=?",
-            &WindowDimensions::ReadFromSql,
-            {virtual_desktop.width(), virtual_desktop.height(),
-             virtual_desktop.x(), virtual_desktop.y()});
-      });
-  while (!future.isResultReadyAt(0)) {
-    // If we just call result() - Qt will not just block current thread waiting
-    // for the result, it will RUN the specified function
-    // on the current thread :) which will crash the app because the Database
-    // instance only exists on the IO thread. So instead of relying on Qt
-    // to block waiting for result, lets block ourselves with this simple
-    // spin-lock.
-  };
-  QList<WindowDimensions> results = future.result();
+  QList<WindowDimensions> results =
+      Database::ExecQueryAndReadSync<WindowDimensions>(
+          "SELECT width, height, x, y, is_maximized FROM window_dimensions "
+          "WHERE virtual_width=? AND virtual_height=? AND virtual_x=? AND "
+          "virtual_y=?",
+          &WindowDimensions::ReadFromSql,
+          {virtual_desktop.width(), virtual_desktop.height(),
+           virtual_desktop.x(), virtual_desktop.y()});
   if (!results.isEmpty()) {
     dimensions = results[0];
     LOG() << "Will use existing" << dimensions;

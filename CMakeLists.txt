@@ -38,6 +38,10 @@ qt_add_executable(cpp-dev-tools
   src/task_execution_list_controller.cc
   src/task_execution_controller.h
   src/task_execution_controller.cc
+  src/editor_system.h
+  src/editor_system.cc
+  src/settings_controller.h
+  src/settings_controller.cc
   src/ui_icon.h
   src/main.cc)
 if(NOT MSVC)
@@ -75,6 +79,7 @@ qt_add_qml_module(cpp-dev-tools URI cdt VERSION 1.0
       qml/IconButton.qml
       qml/TaskExecutionList.qml
       qml/TaskExecution.qml
+      qml/Settings.qml
   RESOURCES
       fonts/MaterialIcons-Regular.ttf
   RESOURCE_PREFIX /)

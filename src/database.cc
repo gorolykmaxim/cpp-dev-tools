@@ -4,9 +4,6 @@
 #include <QSqlError>
 #include <QStandardPaths>
 #include <QUuid>
-#include <QtConcurrent>
-
-#include "application.h"
 
 #define LOG() qDebug() << "[Database]"
 
@@ -47,6 +44,11 @@ void Database::Initialize() {
       "stderr_line_indices TEXT, "
       "output TEXT, "
       "FOREIGN KEY(project_id) REFERENCES project(id) ON DELETE CASCADE)");
+  ExecCmd(
+      "CREATE TABLE IF NOT EXISTS editor("
+      "id INT PRIMARY KEY DEFAULT 1, "
+      "open_command TEXT)");
+  ExecCmd("INSERT OR IGNORE INTO editor(open_command) VALUES(?)", {"code {}"});
 }
 
 void Database::ExecQuery(QSqlQuery &sql, const QString &query,
