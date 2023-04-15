@@ -4,22 +4,19 @@
 
 #define LOG() qDebug() << "[NotificationSystem]"
 
-void NotificationSystem::Post(Notification notification) {
+void NotificationSystem::Post(const Notification &notification) {
   if (notification.is_error) {
     LOG() << "Error:" << notification.title;
   } else {
     LOG() << "Info:" << notification.title;
   }
-  notification.seen_by_user = false;
-  notifications.append(std::move(notification));
+  notifications.append(notification);
   emit notificationsChanged();
 }
 
 void NotificationSystem::MarkAllNotificationsSeenByUser() {
   LOG() << "Marking all notifications as seen by user";
-  for (Notification notification : notifications) {
-    notification.seen_by_user = true;
-  }
+  last_seen_notification = notifications.size() - 1;
   emit notificationsChanged();
 }
 
@@ -28,11 +25,13 @@ const QList<Notification> &NotificationSystem::GetNotifications() const {
 }
 
 int NotificationSystem::GetNotSeenNotificationsCount() const {
-  int result = 0;
-  for (const Notification &notification : notifications) {
-    if (!notification.seen_by_user) {
-      result++;
-    }
+  if (last_seen_notification < 0) {
+    return notifications.size();
+  } else {
+    return notifications.size() - last_seen_notification - 1;
   }
-  return result;
+}
+
+int NotificationSystem::IndexOfLastSeenNotification() const {
+  return last_seen_notification;
 }

@@ -24,6 +24,8 @@ Application::Application(int argc, char** argv)
                                                &user_command);
   qml_engine.rootContext()->setContextProperty("taskSystem", &task);
   qml_engine.rootContext()->setContextProperty("editorSystem", &editor);
+  qml_engine.rootContext()->setContextProperty("notificationSystem",
+                                               &notification);
 #if __APPLE__
   qml_engine.rootContext()->setContextProperty("isMacOS", true);
 #else

@@ -36,9 +36,6 @@ void UserCommandSystem::RegisterCommands() {
   RegisterCommand("File", "Close Project", "Ctrl+W", [] {
     Application::Get().project.SetCurrentProject(Project());
   });
-  RegisterCommand("File", "Settings", "Ctrl+,", [] {
-    Application::Get().view.SetCurrentView("Settings.qml");
-  });
   RegisterCommand("Task", "Run Last", "Ctrl+R",
                   [] { Application::Get().task.executeTask(0); });
   RegisterCommand("Task", "Run Last Until Fails", "Ctrl+Shift+R",
@@ -57,7 +54,13 @@ void UserCommandSystem::RegisterCommands() {
   RegisterCommand("Task", "Task Executions", "Ctrl+E", [] {
     Application::Get().view.SetCurrentView("TaskExecutionList.qml");
   });
-  RegisterCommand("Window", "Default Size", "Ctrl+Shift+M",
+  RegisterCommand("View", "Notifications", "Ctrl+N", [] {
+    Application::Get().view.SetCurrentView("NotificationList.qml");
+  });
+  RegisterCommand("View", "Settings", "Ctrl+,", [] {
+    Application::Get().view.SetCurrentView("Settings.qml");
+  });
+  RegisterCommand("View", "Default Size", "Ctrl+Shift+M",
                   [] { Application::Get().view.SetDefaultWindowSize(); });
   LOG() << "Comitting changes to user command list";
   user_commands->Load();

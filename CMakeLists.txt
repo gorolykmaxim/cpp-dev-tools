@@ -44,6 +44,8 @@ qt_add_executable(cpp-dev-tools
   src/settings_controller.cc
   src/notification_system.h
   src/notification_system.cc
+  src/notification_list_controller.h
+  src/notification_list_controller.cc
   src/ui_icon.h
   src/main.cc)
 if(NOT MSVC)
@@ -82,6 +84,7 @@ qt_add_qml_module(cpp-dev-tools URI cdt VERSION 1.0
       qml/TaskExecutionList.qml
       qml/TaskExecution.qml
       qml/Settings.qml
+      qml/NotificationList.qml
   RESOURCES
       fonts/MaterialIcons-Regular.ttf
   RESOURCE_PREFIX /)
