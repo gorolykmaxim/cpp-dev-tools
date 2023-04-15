@@ -13,12 +13,14 @@ class NotificationSystem : public QObject {
   Q_OBJECT
   Q_PROPERTY(int notSeenNotifications READ GetNotSeenNotificationsCount NOTIFY
                  notificationsChanged)
+  Q_PROPERTY(bool newErrors READ HasNewErrors NOTIFY notificationsChanged)
  public:
   void Post(const Notification& notification);
   void MarkAllNotificationsSeenByUser();
   const QList<Notification>& GetNotifications() const;
   int GetNotSeenNotificationsCount() const;
   int IndexOfLastSeenNotification() const;
+  bool HasNewErrors() const;
 
  signals:
   void notificationsChanged();

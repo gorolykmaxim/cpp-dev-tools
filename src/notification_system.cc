@@ -35,3 +35,12 @@ int NotificationSystem::GetNotSeenNotificationsCount() const {
 int NotificationSystem::IndexOfLastSeenNotification() const {
   return last_seen_notification;
 }
+
+bool NotificationSystem::HasNewErrors() const {
+  for (int i = last_seen_notification + 1; i < notifications.size(); i++) {
+    if (notifications[i].is_error) {
+      return true;
+    }
+  }
+  return false;
+}
