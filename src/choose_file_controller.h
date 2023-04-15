@@ -24,7 +24,6 @@ class ChooseFileController : public QObject {
   void fileChosen(const QString& path);
 
  private:
-  void SortAndFilterSuggestions();
   QString GetResultPath() const;
   void CreateFile();
 
