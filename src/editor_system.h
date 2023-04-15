@@ -7,7 +7,7 @@ class EditorSystem : public QObject {
   Q_OBJECT
  public:
   void Initialize();
-  void SetOpenCommand(const QString& cmd);
+  void SetOpenCommand(QString cmd);
   QString GetOpenCommand() const;
   void OpenFile(const QString& file);
 

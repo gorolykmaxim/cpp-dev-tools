@@ -47,11 +47,14 @@ void EditorSystem::Initialize() {
   open_command = results.first();
 }
 
-void EditorSystem::SetOpenCommand(const QString& cmd) {
-  open_command = cmd;
-  if (!open_command.contains("{}")) {
-    open_command += "{}";
+void EditorSystem::SetOpenCommand(QString cmd) {
+  if (!cmd.contains("{}")) {
+    cmd += "{}";
   }
+  if (cmd.trimmed() == "{}") {
+    return;
+  }
+  open_command = cmd;
   Database::ExecCmdAsync("UPDATE editor SET open_command=?", {open_command});
 }
 
