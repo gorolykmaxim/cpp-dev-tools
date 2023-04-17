@@ -9,13 +9,14 @@ QtQuick.Button {
   leftPadding: Theme.basePadding * 4
   rightPadding: Theme.basePadding * 4
   background: Rectangle {
-    color: hovered && !pressed ? Theme.colorBgBright : Theme.colorBgLight
-    border.color: parent.activeFocus ? Theme.colorHighlight : Theme.colorBgDark
+    color: !enabled ? Theme.colorBgDimmed : (hovered && !pressed ? Theme.colorBgBright : Theme.colorBgLight)
+    border.color: !enabled ? Theme.colorBgMedium : (parent.activeFocus ? Theme.colorHighlight : Theme.colorBgDark)
     border.width: parent.activeFocus ? 2 : 1
     radius: Theme.baseRadius
   }
   contentItem: Cdt.Text {
     text: parent.text
+    color: parent.enabled ? Theme.colorText : Theme.colorSubText
   }
   Keys.onReturnPressed: clicked()
   Keys.onEnterPressed: clicked()

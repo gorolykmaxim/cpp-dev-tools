@@ -15,6 +15,10 @@ ChooseFileController::ChooseFileController(QObject* parent)
 
 QString ChooseFileController::GetPath() const { return folder + file; }
 
+bool ChooseFileController::CanOpen() const {
+  return allow_creating || (file.isEmpty() && !folder.isEmpty());
+}
+
 void ChooseFileController::SetPath(const QString& path) {
   if (path == GetPath()) {
     return;
@@ -59,6 +63,9 @@ void ChooseFileController::pickSuggestion(int i) {
 }
 
 void ChooseFileController::openOrCreateFile() {
+  if (!CanOpen()) {
+    return;
+  }
   Application& app = Application::Get();
   QString path = GetResultPath();
   app.RunIOTask<bool>(

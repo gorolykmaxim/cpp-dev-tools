@@ -6,6 +6,7 @@ import "." as Cdt
 
 ColumnLayout {
   id: root
+  property alias allowCreating: controller.allowCreating
   signal fileChosen(string path)
   signal cancelled()
   ChooseFileController {
@@ -35,6 +36,7 @@ ColumnLayout {
       Cdt.Button {
         id: openBtn
         text: "Open"
+        enabled: controller.canOpen
         KeyNavigation.right: cancelBtn
         onClicked: controller.openOrCreateFile()
       }

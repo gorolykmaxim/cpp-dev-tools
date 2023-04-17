@@ -11,6 +11,7 @@ class Theme : public QObject {
   Q_PROPERTY(int baseRadius MEMBER kBaseRadius CONSTANT)
   Q_PROPERTY(QString colorBgBright MEMBER kColorBgBright CONSTANT)
   Q_PROPERTY(QString colorBgLight MEMBER kColorBgLight CONSTANT)
+  Q_PROPERTY(QString colorBgDimmed MEMBER kColorBgDimmed CONSTANT)
   Q_PROPERTY(QString colorBgMedium MEMBER kColorBgMedium CONSTANT)
   Q_PROPERTY(QString colorBgDark MEMBER kColorBgDark CONSTANT)
   Q_PROPERTY(QString colorBgBlack MEMBER kColorBgBlack CONSTANT)
@@ -22,6 +23,7 @@ class Theme : public QObject {
   const int kBaseRadius = 4;
   const QString kColorBgBright = "#6a6a6a";
   const QString kColorBgLight = "#585859";
+  const QString kColorBgDimmed = "#494949";
   const QString kColorBgMedium = "#383838";
   const QString kColorBgDark = "#282828";
   const QString kColorBgBlack = "#191919";
