@@ -14,10 +14,11 @@ void BaseIoTask::Run() {
 class VoidIoTask : public BaseIoTask {
  public:
   explicit VoidIoTask(const std::function<void()> &on_background,
-                      QObject *parent);
+                      QObject *parent)
+      : BaseIoTask(parent), on_background(on_background) {}
 
  protected:
-  void RunInBackground();
+  void RunInBackground() { on_background(); }
 
  private:
   std::function<void()> on_background;
@@ -33,9 +34,3 @@ void IoTask::Run(QObject *requestor, const std::function<void()> &on_io_thread,
                    });
   task->Run();
 }
-
-VoidIoTask::VoidIoTask(const std::function<void()> &on_background,
-                       QObject *parent)
-    : BaseIoTask(parent), on_background(on_background) {}
-
-void VoidIoTask::RunInBackground() { on_background(); }
