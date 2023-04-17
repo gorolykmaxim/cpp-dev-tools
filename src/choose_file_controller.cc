@@ -1,6 +1,7 @@
 #include "choose_file_controller.h"
 
 #include "application.h"
+#include "io_task.h"
 #include "qvariant_list_model.h"
 #include "view_system.h"
 
@@ -31,7 +32,7 @@ void ChooseFileController::SetPath(const QString& path) {
   if (old_folder != folder) {
     LOG() << "Will refresh list of file suggestions";
     QString path = folder;
-    Application::Get().RunIOTask<QStringList>(
+    IoTask::Run<QStringList>(
         this,
         [path]() {
           QStringList results;
@@ -66,15 +67,15 @@ void ChooseFileController::openOrCreateFile() {
   if (!CanOpen()) {
     return;
   }
-  Application& app = Application::Get();
   QString path = GetResultPath();
-  app.RunIOTask<bool>(
+  IoTask::Run<bool>(
       this,
       [path]() {
         LOG() << "Checking if" << path << "exists";
         return QFile(path).exists();
       },
-      [this, &app, path](bool exists) {
+      [this, path](bool exists) {
+        Application& app = Application::Get();
         if (exists) {
           emit fileChosen(path);
         } else {
@@ -90,7 +91,7 @@ void ChooseFileController::openOrCreateFile() {
 void ChooseFileController::CreateFile() {
   QString path = GetResultPath();
   LOG() << "Creating" << path;
-  Application::Get().RunIOTask(
+  IoTask::Run(
       this, [path] { QDir().mkpath(path); },
       [this, path] { emit fileChosen(path); });
 }

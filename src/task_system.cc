@@ -2,6 +2,7 @@
 
 #include "application.h"
 #include "database.h"
+#include "io_task.h"
 #include "theme.h"
 
 #define LOG() qDebug() << "[TaskSystem]"
@@ -233,7 +234,7 @@ void TaskSystem::FetchExecutions(
             [](const TaskExecution& a, const TaskExecution& b) {
               return a.start_time < b.start_time;
             });
-  Application::Get().RunIOTask<QList<TaskExecution>>(
+  IoTask::Run<QList<TaskExecution>>(
       requestor,
       [project_id] {
         return Database::ExecQueryAndRead<TaskExecution>(
@@ -264,7 +265,7 @@ void TaskSystem::FetchExecution(
     callback(active_executions[execution_id]);
     return;
   }
-  Application::Get().RunIOTask<QList<TaskExecution>>(
+  IoTask::Run<QList<TaskExecution>>(
       requestor,
       [execution_id, include_output] {
         QString query = "SELECT id, start_time, task_id, task_name, exit_code";
@@ -301,11 +302,10 @@ static TaskExecution ReadTaskExecutionStartTime(QSqlQuery& query) {
 }
 
 void TaskSystem::FindTasks() {
-  Application& app = Application::Get();
-  QString project_path = app.project.GetCurrentProject().path;
+  QString project_path = Application::Get().project.GetCurrentProject().path;
   LOG() << "Refreshing task list";
   QList<TaskExecution> active_execs = active_executions.values();
-  app.RunIOTask<QList<Task>>(
+  IoTask::Run<QList<Task>>(
       this,
       [project_path, active_execs] {
         QList<Task> results;

@@ -1,7 +1,6 @@
 #include "task_list_controller.h"
 
 #include "application.h"
-#include "database.h"
 
 #define LOG() qDebug() << "[TaskListController]"
 

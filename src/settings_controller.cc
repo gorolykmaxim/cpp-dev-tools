@@ -2,6 +2,7 @@
 
 #include "application.h"
 #include "database.h"
+#include "io_task.h"
 
 #define LOG() qDebug() << "[SettingsController]"
 
@@ -60,18 +61,17 @@ void SettingsController::save() {
 
 void SettingsController::Load() {
   LOG() << "Loading settings";
-  Application &app = Application::Get();
-  app.RunIOTask<QList<QString>>(
+  IoTask::Run<QList<QString>>(
       this,
       [] {
         return Database::ExecQueryAndRead<QString>(
             "SELECT * FROM external_search_folder",
             &Database::ReadStringFromSql);
       },
-      [this, &app](QList<QString> folders) {
+      [this](QList<QString> folders) {
         external_search_folders->list = folders;
         external_search_folders->Load();
-        open_in_editor_command = app.editor.open_command;
+        open_in_editor_command = Application::Get().editor.open_command;
         emit settingsChanged();
       });
 }

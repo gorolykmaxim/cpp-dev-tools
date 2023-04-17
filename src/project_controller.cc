@@ -2,6 +2,7 @@
 
 #include "application.h"
 #include "database.h"
+#include "io_task.h"
 #include "qvariant_list_model.h"
 
 #define LOG() qDebug() << "[ProjectController]"
@@ -23,9 +24,8 @@ int ProjectListModel::GetRowCount() const { return list.size(); }
 
 ProjectController::ProjectController(QObject* parent)
     : QObject(parent), projects(new ProjectListModel(this)) {
-  Application& app = Application::Get();
-  app.view.SetWindowTitle("Open Project");
-  app.RunIOTask<QList<Project>>(
+  Application::Get().view.SetWindowTitle("Open Project");
+  IoTask::Run<QList<Project>>(
       this,
       []() {
         LOG() << "Loading projects from datbaase";

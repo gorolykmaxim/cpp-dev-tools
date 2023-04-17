@@ -2,6 +2,7 @@
 
 #include "application.h"
 #include "database.h"
+#include "io_task.h"
 
 #define LOG() qDebug() << "[TaskExecutionListController]"
 
@@ -49,10 +50,9 @@ bool TaskExecutionListController::IsSelectedExecutionRunning() const {
 }
 
 void TaskExecutionListController::removeFinishedExecutions() {
-  Application& app = Application::Get();
-  QUuid project_id = app.project.GetCurrentProject().id;
+  QUuid project_id = Application::Get().project.GetCurrentProject().id;
   LOG() << "Clearing task execution history of project" << project_id;
-  app.RunIOTask(
+  IoTask::Run(
       this,
       [project_id] {
         Database::ExecCmd("DELETE FROM task_execution WHERE project_id=?",
