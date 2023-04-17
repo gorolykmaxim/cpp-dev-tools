@@ -16,6 +16,7 @@ QtQuick.Button {
   }
   contentItem: Cdt.Text {
     text: parent.text
+    horizontalAlignment: Text.AlignHCenter
     color: parent.enabled ? Theme.colorText : Theme.colorSubText
   }
   Keys.onReturnPressed: clicked()

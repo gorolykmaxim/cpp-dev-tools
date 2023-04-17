@@ -11,6 +11,18 @@
 
 class Database {
  public:
+  class Transaction {
+   public:
+    Transaction();
+    ~Transaction();
+  };
+  struct Cmd {
+    explicit Cmd(const QString& query, const QVariantList& args = {});
+
+    QString query;
+    QVariantList args;
+  };
+
   static void Initialize();
 
   template <typename T>
@@ -49,10 +61,5 @@ class Database {
                         const QVariantList& args = {});
   static void ExecCmd(const QString& query, const QVariantList& args = {});
   static void ExecCmdAsync(const QString& query, const QVariantList& args = {});
-
-  class Transaction {
-   public:
-    Transaction();
-    ~Transaction();
-  };
+  static void ExecCmdsAsync(const QList<Cmd>& cmds);
 };

@@ -49,6 +49,9 @@ void Database::Initialize() {
       "id INT PRIMARY KEY DEFAULT 1, "
       "open_command TEXT)");
   ExecCmd("INSERT OR IGNORE INTO editor(open_command) VALUES(?)", {"code {}"});
+  ExecCmd(
+      "CREATE TABLE IF NOT EXISTS external_search_folder("
+      "path TEXT PRIMARY KEY)");
 }
 
 void Database::ExecQuery(QSqlQuery &sql, const QString &query,
@@ -86,6 +89,15 @@ void Database::ExecCmdAsync(const QString &query, const QVariantList &args) {
                           [query, args] { ExecCmd(query, args); });
 }
 
+void Database::ExecCmdsAsync(const QList<Cmd> &cmds) {
+  (void)QtConcurrent::run(&Application::Get().io_thread_pool, [cmds] {
+    Transaction t;
+    for (const Cmd &cmd : cmds) {
+      ExecCmd(cmd.query, cmd.args);
+    }
+  });
+}
+
 Database::Transaction::Transaction() {
   LOG() << "Begin transaction";
   bool transaction_began = QSqlDatabase::database().transaction();
@@ -97,3 +109,6 @@ Database::Transaction::~Transaction() {
   bool transaction_committed = QSqlDatabase::database().commit();
   Q_ASSERT(transaction_committed);
 }
+
+Database::Cmd::Cmd(const QString &query, const QVariantList &args)
+    : query(query), args(args) {}

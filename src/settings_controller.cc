@@ -1,18 +1,89 @@
 #include "settings_controller.h"
 
 #include "application.h"
+#include "database.h"
 
-SettingsController::SettingsController(QObject *parent) : QObject(parent) {
+#define LOG() qDebug() << "[SettingsController]"
+
+SettingsController::SettingsController(QObject *parent)
+    : QObject(parent), external_search_folders(new FolderListModel(this)) {
   Application::Get().view.SetWindowTitle("Settings");
   Load();
 }
 
+void SettingsController::configureExternalSearchFolders() {
+  LOG() << "Opening external search folder editor";
+  Application::Get().view.SetWindowTitle("External Search Folders");
+  emit openExternalSearchFoldersEditor();
+}
+
+void SettingsController::addExternalSearchFolder(const QString &folder) {
+  if (external_search_folders->list.contains(folder)) {
+    return;
+  }
+  LOG() << "Adding external search folder" << folder;
+  external_search_folders->list.append(folder);
+  external_search_folders->Load();
+}
+
+void SettingsController::removeExternalSearchFolder(const QString &folder) {
+  LOG() << "Removing external search folder" << folder;
+  external_search_folders->list.removeAll(folder);
+  external_search_folders->Load();
+}
+
+void SettingsController::goToSettings() {
+  LOG() << "Opening settings";
+  Application::Get().view.SetWindowTitle("Settings");
+  emit openSettings();
+}
+
 void SettingsController::save() {
-  Application::Get().editor.SetOpenCommand(open_in_editor_command);
-  Load();
+  LOG() << "Saving settings";
+  QList<Database::Cmd> cmds;
+  if (!open_in_editor_command.contains("{}")) {
+    open_in_editor_command += " {}";
+  }
+  if (open_in_editor_command.trimmed() != "{}") {
+    Application::Get().editor.open_command = open_in_editor_command;
+    cmds.append(Database::Cmd("UPDATE editor SET open_command=?",
+                              {open_in_editor_command}));
+  }
+  cmds.append(Database::Cmd("DELETE FROM external_search_folder"));
+  for (const QString &folder : external_search_folders->list) {
+    cmds.append(Database::Cmd("INSERT INTO external_search_folder VALUES(?)",
+                              {folder}));
+  }
+  Database::ExecCmdsAsync(cmds);
+  emit settingsChanged();
+}
+
+static QString ReadFolderFromSql(QSqlQuery &sql) {
+  return sql.value(0).toString();
 }
 
 void SettingsController::Load() {
-  open_in_editor_command = Application::Get().editor.GetOpenCommand();
-  emit settingsChanged();
+  LOG() << "Loading settings";
+  Application &app = Application::Get();
+  app.RunIOTask<QList<QString>>(
+      this,
+      [] {
+        return Database::ExecQueryAndRead<QString>(
+            "SELECT * FROM external_search_folder", ReadFolderFromSql);
+      },
+      [this, &app](QList<QString> folders) {
+        external_search_folders->list = folders;
+        external_search_folders->Load();
+        open_in_editor_command = app.editor.open_command;
+        emit settingsChanged();
+      });
 }
+
+FolderListModel::FolderListModel(QObject *parent) : QVariantListModel(parent) {
+  SetRoleNames({{0, "title"}});
+  searchable_roles = {0};
+}
+
+QVariantList FolderListModel::GetRow(int i) const { return {list[i]}; }
+
+int FolderListModel::GetRowCount() const { return list.size(); }

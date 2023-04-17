@@ -47,19 +47,6 @@ void EditorSystem::Initialize() {
   open_command = results.first();
 }
 
-void EditorSystem::SetOpenCommand(QString cmd) {
-  if (!cmd.contains("{}")) {
-    cmd += "{}";
-  }
-  if (cmd.trimmed() == "{}") {
-    return;
-  }
-  open_command = cmd;
-  Database::ExecCmdAsync("UPDATE editor SET open_command=?", {open_command});
-}
-
-QString EditorSystem::GetOpenCommand() const { return open_command; }
-
 void EditorSystem::OpenFile(const QString& file) {
   LOG() << "Opening file link" << file;
   QString cmd = open_command;
