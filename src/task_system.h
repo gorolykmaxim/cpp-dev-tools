@@ -87,8 +87,6 @@ class TaskSystem : public QObject {
   void selectedExecutionChanged();
 
  private:
-  static TaskExecution ReadExecutionFromSql(QSqlQuery& query,
-                                            bool include_output);
   void AppendToExecutionOutput(QUuid id, QString data, bool is_stderr);
   void FinishExecution(QUuid id, int exit_code);
 

@@ -98,6 +98,10 @@ void Database::ExecCmdsAsync(const QList<Cmd> &cmds) {
   });
 }
 
+QString Database::ReadStringFromSql(QSqlQuery &sql) {
+  return sql.value(0).toString();
+}
+
 Database::Transaction::Transaction() {
   LOG() << "Begin transaction";
   bool transaction_began = QSqlDatabase::database().transaction();

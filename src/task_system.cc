@@ -163,22 +163,24 @@ void TaskSystem::KillAllTasks() {
   active_commands.clear();
 }
 
-TaskExecution TaskSystem::ReadExecutionFromSql(QSqlQuery& query,
-                                               bool include_output) {
-  TaskExecution exec;
-  exec.id = query.value(0).toUuid();
-  exec.start_time = query.value(1).toDateTime();
-  exec.task_id = query.value(2).toString();
-  exec.task_name = query.value(3).toString();
-  exec.exit_code = query.value(4).toInt();
-  if (include_output) {
-    QString indices = query.value(5).toString();
-    for (const QString& i : indices.split(',', Qt::SkipEmptyParts)) {
-      exec.stderr_line_indices.insert(i.toInt());
+static std::function<TaskExecution(QSqlQuery&)> MakeReadExecutionFromSql(
+    bool include_output) {
+  return [include_output](QSqlQuery& query) {
+    TaskExecution exec;
+    exec.id = query.value(0).toUuid();
+    exec.start_time = query.value(1).toDateTime();
+    exec.task_id = query.value(2).toString();
+    exec.task_name = query.value(3).toString();
+    exec.exit_code = query.value(4).toInt();
+    if (include_output) {
+      QString indices = query.value(5).toString();
+      for (const QString& i : indices.split(',', Qt::SkipEmptyParts)) {
+        exec.stderr_line_indices.insert(i.toInt());
+      }
+      exec.output = query.value(6).toString();
     }
-    exec.output = query.value(6).toString();
-  }
-  return exec;
+    return exec;
+  };
 }
 
 void TaskSystem::AppendToExecutionOutput(QUuid id, QString data,
@@ -238,8 +240,7 @@ void TaskSystem::FetchExecutions(
             "SELECT id, start_time, task_id, task_name, exit_code FROM "
             "task_execution "
             "WHERE project_id=? ORDER BY start_time",
-            [](QSqlQuery& query) { return ReadExecutionFromSql(query, false); },
-            {project_id});
+            MakeReadExecutionFromSql(false), {project_id});
       },
       [execs, callback](QList<TaskExecution> result) {
         for (const TaskExecution& exec : execs) {
@@ -272,11 +273,7 @@ void TaskSystem::FetchExecution(
         }
         query += " FROM task_execution WHERE id=?";
         return Database::ExecQueryAndRead<TaskExecution>(
-            query,
-            [include_output](QSqlQuery& query) {
-              return ReadExecutionFromSql(query, include_output);
-            },
-            {execution_id});
+            query, MakeReadExecutionFromSql(include_output), {execution_id});
       },
       [callback](QList<TaskExecution> result) {
         callback(result.isEmpty() ? TaskExecution() : result[0]);

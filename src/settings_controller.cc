@@ -58,10 +58,6 @@ void SettingsController::save() {
   emit settingsChanged();
 }
 
-static QString ReadFolderFromSql(QSqlQuery &sql) {
-  return sql.value(0).toString();
-}
-
 void SettingsController::Load() {
   LOG() << "Loading settings";
   Application &app = Application::Get();
@@ -69,7 +65,8 @@ void SettingsController::Load() {
       this,
       [] {
         return Database::ExecQueryAndRead<QString>(
-            "SELECT * FROM external_search_folder", ReadFolderFromSql);
+            "SELECT * FROM external_search_folder",
+            &Database::ReadStringFromSql);
       },
       [this, &app](QList<QString> folders) {
         external_search_folders->list = folders;

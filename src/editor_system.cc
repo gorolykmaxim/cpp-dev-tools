@@ -37,13 +37,9 @@ static void RunOsCommand(const QString& command, const QString& error_title) {
   process->startCommand(command);
 }
 
-static QString ReadOpenCommandFromSql(QSqlQuery& query) {
-  return query.value(0).toString();
-}
-
 void EditorSystem::Initialize() {
   QList<QString> results = Database::ExecQueryAndReadSync<QString>(
-      "SELECT open_command FROM editor", &ReadOpenCommandFromSql);
+      "SELECT open_command FROM editor", &Database::ReadStringFromSql);
   open_command = results.first();
 }
 
