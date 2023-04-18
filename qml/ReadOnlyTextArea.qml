@@ -15,6 +15,7 @@ FocusScope {
   property string color: "transparent"
   property real innerPadding: 0
   property alias formatter: controller.formatter
+  property alias detectFileLinks: controller.detectFileLinks
   onTextChanged: {
     controller.resetCursorPositionHistory();
     if (textArea.text && text.startsWith(textArea.text)) {
@@ -227,19 +228,19 @@ FocusScope {
             }
             MenuItem {
               text: "Open File In Editor"
-              enabled: textArea.activeFocus && controller.isCursorOnLink
+              enabled: controller.detectFileLinks && textArea.activeFocus && controller.isCursorOnLink
               shortcut: "Enter"
               onTriggered: controller.openFileLinkAtCursor()
             }
             MenuItem {
               text: "Previous File Link"
-              enabled: textArea.activeFocus
+              enabled: controller.detectFileLinks && textArea.activeFocus
               shortcut: "Ctrl+Alt+Up"
               onTriggered: controller.goToFileLink(false)
             }
             MenuItem {
               text: "Next File Link"
-              enabled: textArea.activeFocus
+              enabled: controller.detectFileLinks && textArea.activeFocus
               shortcut: "Ctrl+Alt+Down"
               onTriggered: controller.goToFileLink(true)
             }

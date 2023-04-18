@@ -116,6 +116,9 @@ void TextAreaController::resetCursorPositionHistory() {
 }
 
 void TextAreaController::findFileLinks(const QString& text) {
+  if (!detect_file_links) {
+    return;
+  }
   static const QRegularExpression kUnix(
       "([A-Z]?\\:?\\/[^:\\n]+):([0-9]+):?([0-9]+)?");
   static const QRegularExpression kWin1(

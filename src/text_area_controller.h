@@ -53,6 +53,8 @@ class TextAreaController : public QObject {
                  NOTIFY formatterChanged)
   Q_PROPERTY(
       bool isCursorOnLink READ IsCursorOnLink NOTIFY cursorPositionChanged)
+  Q_PROPERTY(bool detectFileLinks MEMBER detect_file_links NOTIFY
+                 detectFileLinksChanged)
  public:
   explicit TextAreaController(QObject* parent = nullptr);
   bool AreSearchResultsEmpty() const;
@@ -81,6 +83,7 @@ class TextAreaController : public QObject {
   void documentChanged();
   void formatterChanged();
   void cursorPositionChanged();
+  void detectFileLinksChanged();
 
  private:
   void UpdateSearchResultsCount();
@@ -97,4 +100,5 @@ class TextAreaController : public QObject {
   TextAreaHighlighter highlighter;
   QQuickTextDocument* document;
   QList<FileLink> file_links;
+  bool detect_file_links = true;
 };
