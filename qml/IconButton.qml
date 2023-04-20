@@ -14,8 +14,8 @@ QtQuick.Button {
   }
   contentItem: Cdt.Icon {
     icon: buttonIcon
-    color: parent.enabled ? Theme.colorText : Theme.colorSubText
+    color: !parent.enabled ? Theme.colorSubText : (parent.checked ? Theme.colorHighlight : Theme.colorText)
   }
-  Keys.onReturnPressed: clicked()
-  Keys.onEnterPressed: clicked()
+  Keys.onReturnPressed: checkable ? toggle() : clicked()
+  Keys.onEnterPressed: checkable ? toggle() : clicked()
 }

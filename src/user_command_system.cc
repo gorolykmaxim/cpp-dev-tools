@@ -33,6 +33,9 @@ void UserCommandSystem::RegisterCommands() {
   RegisterCommand("File", "Execute Command", "Ctrl+P", [] {
     Application::Get().view.DisplaySearchUserCommandDialog();
   });
+  RegisterCommand("File", "Find In Files", "Ctrl+Shift+F", [] {
+    Application::Get().view.SetCurrentView("FindInFiles.qml");
+  });
   RegisterCommand("File", "Close Project", "Ctrl+W", [] {
     Application::Get().project.SetCurrentProject(Project());
   });
