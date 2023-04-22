@@ -10,6 +10,8 @@ FindInFilesController::FindInFilesController(QObject* parent)
       search_results(new FileSearchResultListModel(this)),
       selected_result(-1) {}
 
+FindInFilesController::~FindInFilesController() { CancelSearchIfRunning(); }
+
 QString FindInFilesController::GetSearchStatus() const {
   QString result;
   result += QString::number(search_results->rowCount(QModelIndex())) +
@@ -23,6 +25,7 @@ void FindInFilesController::search() {
   LOG() << "Searching for" << search_term;
   selected_result = -1;
   search_results->Clear();
+  CancelSearchIfRunning();
   emit searchStatusChanged();
   if (search_term.isEmpty()) {
     return;
@@ -58,6 +61,12 @@ void FindInFilesController::OnSearchComplete() {
   LOG() << "Search is complete";
   find_task = nullptr;
   emit searchStatusChanged();
+}
+
+void FindInFilesController::CancelSearchIfRunning() {
+  if (find_task) {
+    find_task->is_cancelled = true;
+  }
 }
 
 FindInFilesTask::FindInFilesTask(const QString& search_term)
@@ -121,6 +130,10 @@ void FindInFilesTask::RunInBackground() {
         result.row = row + 1;
         file_results.append(result);
         pos = row + search_term.size() + 1;
+        if (is_cancelled) {
+          LOG() << "Searching for" << search_term << "has been cancelled";
+          return;
+        }
       }
       column++;
     }

@@ -4,6 +4,7 @@
 #include <QAbstractListModel>
 #include <QObject>
 #include <QtQmlIntegration>
+#include <atomic>
 
 #include "io_task.h"
 
@@ -41,6 +42,7 @@ class FindInFilesTask : public BaseIoTask {
  public:
   FindInFilesTask(const QString& search_term);
 
+  std::atomic<bool> is_cancelled = false;
  signals:
   void resultsFound(QList<FileSearchResult> result);
 
@@ -61,6 +63,7 @@ class FindInFilesController : public QObject {
       QString searchStatus READ GetSearchStatus NOTIFY searchStatusChanged)
  public:
   explicit FindInFilesController(QObject* parent = nullptr);
+  ~FindInFilesController();
   QString GetSearchStatus() const;
  public slots:
   void search();
@@ -73,6 +76,7 @@ class FindInFilesController : public QObject {
  private:
   void OnResultFound(QList<FileSearchResult> results);
   void OnSearchComplete();
+  void CancelSearchIfRunning();
 
   QString search_term;
   FindInFilesTask* find_task;
