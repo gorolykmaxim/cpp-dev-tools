@@ -7,7 +7,7 @@ class EditorSystem : public QObject {
   Q_OBJECT
  public:
   void Initialize();
-  void OpenFile(const QString& file);
+  void OpenFile(const QString& file, int column, int row);
 
   QString open_command;
 };

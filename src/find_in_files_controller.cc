@@ -7,7 +7,8 @@
 FindInFilesController::FindInFilesController(QObject* parent)
     : QObject(parent),
       find_task(nullptr),
-      search_results(new FileSearchResultListModel(this)) {}
+      search_results(new FileSearchResultListModel(this)),
+      selected_result(-1) {}
 
 QString FindInFilesController::GetSearchStatus() const {
   if (!find_task) {
@@ -23,6 +24,7 @@ QString FindInFilesController::GetSearchStatus() const {
 
 void FindInFilesController::search() {
   LOG() << "Searching for" << search_term;
+  selected_result = -1;
   search_results->Clear();
   emit searchStatusChanged();
   if (search_term.isEmpty()) {
@@ -37,6 +39,20 @@ void FindInFilesController::search() {
   QObject::connect(find_task, &FindInFilesTask::resultsFound, this,
                    &FindInFilesController::OnResultFound);
   find_task->Run();
+}
+
+void FindInFilesController::selectResult(int i) {
+  LOG() << "Selected search result" << i;
+  selected_result = i;
+}
+
+void FindInFilesController::openSelectedResultInEditor() {
+  if (selected_result < 0) {
+    return;
+  }
+  const FileSearchResult& result = search_results->At(selected_result);
+  Application::Get().editor.OpenFile(result.file_path, result.column,
+                                     result.row);
 }
 
 void FindInFilesController::OnResultFound(QList<FileSearchResult> results) {
@@ -83,7 +99,7 @@ void FindInFilesTask::RunInBackground() {
     QList<FileSearchResult> file_results;
     bool seen_replacement_char = false;
     bool seen_null = false;
-    int column = 0;
+    int column = 1;
     while (!stream.atEnd()) {
       QString line = stream.readLine();
       if (line.contains("\uFFFD")) {
@@ -107,7 +123,7 @@ void FindInFilesTask::RunInBackground() {
         result.file_path = file.fileName();
         result.match = HighlighMatch(line, row, search_term.size());
         result.column = column;
-        result.row = row;
+        result.row = row + 1;
         file_results.append(result);
         pos = row + search_term.size() + 1;
       }
@@ -127,7 +143,7 @@ int FileSearchResultListModel::rowCount(const QModelIndex&) const {
 }
 
 QHash<int, QByteArray> FileSearchResultListModel::roleNames() const {
-  return {{0, "title"}, {1, "subTitle"}};
+  return {{0, "idx"}, {1, "title"}, {2, "subTitle"}};
 }
 
 QVariant FileSearchResultListModel::data(const QModelIndex& index,
@@ -141,6 +157,8 @@ QVariant FileSearchResultListModel::data(const QModelIndex& index,
   Q_ASSERT(roleNames().contains(role));
   const FileSearchResult& result = list[index.row()];
   if (role == 0) {
+    return index.row();
+  } else if (role == 1) {
     return result.match;
   } else {
     int i = result.file_path.lastIndexOf('/');
@@ -172,4 +190,8 @@ void FileSearchResultListModel::Append(const QList<FileSearchResult>& items) {
 
 int FileSearchResultListModel::CountUniqueFiles() const {
   return unique_file_paths.size();
+}
+
+const FileSearchResult& FileSearchResultListModel::At(int i) const {
+  return list[i];
 }

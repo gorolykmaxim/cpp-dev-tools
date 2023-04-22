@@ -25,6 +25,7 @@ class FileSearchResultListModel : public QAbstractListModel {
   void Clear();
   void Append(const QList<FileSearchResult>& items);
   int CountUniqueFiles() const;
+  const FileSearchResult& At(int i) const;
 
  signals:
   void preSelectCurrentIndex(int);
@@ -63,6 +64,8 @@ class FindInFilesController : public QObject {
   QString GetSearchStatus() const;
  public slots:
   void search();
+  void selectResult(int i);
+  void openSelectedResultInEditor();
  signals:
   void searchTermChanged();
   void searchStatusChanged();
@@ -74,6 +77,7 @@ class FindInFilesController : public QObject {
   QString search_term;
   FindInFilesTask* find_task;
   FileSearchResultListModel* search_results;
+  int selected_result;
 };
 
 #endif  // FINDINFILESCONTROLLER_H

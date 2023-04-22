@@ -43,9 +43,16 @@ void EditorSystem::Initialize() {
   open_command = results.first();
 }
 
-void EditorSystem::OpenFile(const QString& file) {
-  LOG() << "Opening file link" << file;
+void EditorSystem::OpenFile(const QString& file, int column, int row) {
+  QString link = file;
+  if (column > 0) {
+    link += ':' + QString::number(column);
+  }
+  if (row > 0) {
+    link += ':' + QString::number(row);
+  }
+  LOG() << "Opening file link" << link;
   QString cmd = open_command;
-  cmd.replace("{}", file);
-  RunOsCommand(cmd, "Failed to open file in editor: " + file);
+  cmd.replace("{}", link);
+  RunOsCommand(cmd, "Failed to open file in editor: " + link);
 }

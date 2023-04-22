@@ -141,11 +141,7 @@ void TextAreaController::openFileLinkAtCursor() {
     return;
   }
   const FileLink& link = file_links[i];
-  QString link_str = link.file_path + ':' + QString::number(link.column);
-  if (link.row >= 0) {
-    link_str += ':' + QString::number(link.row);
-  }
-  Application::Get().editor.OpenFile(link_str);
+  Application::Get().editor.OpenFile(link.file_path, link.column, link.row);
 }
 
 void TextAreaController::goToFileLink(bool next) {

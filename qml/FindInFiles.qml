@@ -1,6 +1,7 @@
 import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
+import Qt.labs.platform
 import "." as Cdt
 import cdt
 
@@ -114,8 +115,24 @@ SplitView {
         anchors.fill: parent
         model: controller.results
         elide: Text.ElideRight
+        onItemSelected: ifCurrentItem('idx', controller.selectResult)
+        onItemRightClicked: {
+          forceActiveFocus();
+          contextMenu.open();
+        }
+        Keys.onEnterPressed: controller.openSelectedResultInEditor()
+        Keys.onReturnPressed: controller.openSelectedResultInEditor()
         KeyNavigation.right: filePreviewArea
         KeyNavigation.up: fileToExcludeInput.visible ? fileToExcludeInput : searchInput
+        Menu {
+          id: contextMenu
+          MenuItem {
+            text: "Open In Editor"
+            shortcut: "Enter"
+            enabled: searchResultsList.activeFocus
+            onTriggered: controller.openSelectedResultInEditor()
+          }
+        }
       }
     }
   }
