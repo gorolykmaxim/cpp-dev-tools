@@ -78,6 +78,8 @@ SplitView {
           id: regularExpressionCheck
           text: "Regular Expression"
           visible: advancedBtn.checked
+          checked: controller.options.regexp
+          onCheckedChanged: controller.options.regexp = checked
           KeyNavigation.down: includeExternalSearchFoldersCheck
           KeyNavigation.right: filePreviewArea
         }

@@ -73,10 +73,22 @@ FindInFilesTask::FindInFilesTask(const QString& search_term,
                                  FindInFilesOptions options)
     : BaseIoTask(), search_term(search_term), options(options) {
   folder = Application::Get().project.GetCurrentProject().path;
+  if (options.regexp) {
+    QRegularExpression::PatternOptions regex_opts =
+        QRegularExpression::NoPatternOption;
+    if (!options.match_case) {
+      regex_opts |= QRegularExpression::CaseInsensitiveOption;
+    }
+    QString pattern = search_term;
+    if (options.match_whole_word) {
+      pattern = "\\b" + pattern + "\\b";
+    }
+    search_term_regex = QRegularExpression(pattern, regex_opts);
+  }
 }
 
-static QString HighlighMatch(const QString& line, int match_pos,
-                             int match_length) {
+static QString HighlightMatch(const QString& line, int match_pos,
+                              int match_length) {
   const static int kMaxLength = 200;
   QString before = line.sliced(0, match_pos).toHtmlEscaped();
   QString match = line.sliced(match_pos, match_length).toHtmlEscaped();
@@ -118,34 +130,14 @@ void FindInFilesTask::RunInBackground() {
         file_results.clear();
         break;
       }
-      int pos = 0;
-      while (true) {
-        Qt::CaseSensitivity sensitivity;
-        if (options.match_case) {
-          sensitivity = Qt::CaseSensitive;
-        } else {
-          sensitivity = Qt::CaseInsensitive;
-        }
-        int row = line.indexOf(search_term, pos, sensitivity);
-        if (row < 0) {
-          break;
-        }
-        bool letter_before = row > 0 && line[row - 1].isLetter();
-        bool letter_after = row + search_term.size() < line.size() &&
-                            line[row + search_term.size()].isLetter();
-        if (!options.match_whole_word || (!letter_before && !letter_after)) {
-          FileSearchResult result;
-          result.file_path = file.fileName();
-          result.match = HighlighMatch(line, row, search_term.size());
-          result.column = column;
-          result.row = row + 1;
-          file_results.append(result);
-        }
-        pos = row + search_term.size() + 1;
-        if (is_cancelled) {
-          LOG() << "Searching for" << search_term << "has been cancelled";
-          return;
-        }
+      if (options.regexp) {
+        file_results.append(FindRegex(line, column, file.fileName()));
+      } else {
+        file_results.append(Find(line, column, file.fileName()));
+      }
+      if (is_cancelled) {
+        LOG() << "Searching for" << search_term << "has been cancelled";
+        return;
       }
       column++;
     }
@@ -153,6 +145,59 @@ void FindInFilesTask::RunInBackground() {
       emit resultsFound(file_results);
     }
   }
+}
+
+QList<FileSearchResult> FindInFilesTask::Find(const QString& line, int column,
+                                              const QString& file_name) const {
+  QList<FileSearchResult> results;
+  int pos = 0;
+  while (true) {
+    Qt::CaseSensitivity sensitivity;
+    if (options.match_case) {
+      sensitivity = Qt::CaseSensitive;
+    } else {
+      sensitivity = Qt::CaseInsensitive;
+    }
+    int row = line.indexOf(search_term, pos, sensitivity);
+    if (row < 0) {
+      break;
+    }
+    bool letter_before = row > 0 && line[row - 1].isLetter();
+    bool letter_after = row + search_term.size() < line.size() &&
+                        line[row + search_term.size()].isLetter();
+    if (!options.match_whole_word || (!letter_before && !letter_after)) {
+      FileSearchResult result;
+      result.file_path = file_name;
+      result.match = HighlightMatch(line, row, search_term.size());
+      result.column = column;
+      result.row = row + 1;
+      results.append(result);
+    }
+    pos = row + search_term.size() + 1;
+    if (is_cancelled) {
+      break;
+    }
+  }
+  return results;
+}
+
+QList<FileSearchResult> FindInFilesTask::FindRegex(
+    const QString& line, int column, const QString& file_name) const {
+  QList<FileSearchResult> results;
+  for (auto it = search_term_regex.globalMatch(line); it.hasNext();) {
+    QRegularExpressionMatch match = it.next();
+    FileSearchResult result;
+    result.file_path = file_name;
+    result.match =
+        HighlightMatch(line, match.capturedStart(0), match.capturedLength(0));
+    result.column = column;
+    result.row = match.capturedStart(0) + 1;
+    results.append(result);
+    if (is_cancelled) {
+      break;
+    }
+  }
+  return results;
 }
 
 FileSearchResultListModel::FileSearchResultListModel(QObject* parent)
@@ -218,7 +263,8 @@ const FileSearchResult& FileSearchResultListModel::At(int i) const {
 
 bool FindInFilesOptions::operator==(const FindInFilesOptions& another) const {
   return match_case == another.match_case &&
-         match_whole_word == another.match_whole_word;
+         match_whole_word == another.match_whole_word &&
+         regexp == another.regexp;
 }
 
 bool FindInFilesOptions::operator!=(const FindInFilesOptions& another) const {

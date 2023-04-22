@@ -41,9 +41,11 @@ struct FindInFilesOptions {
   Q_GADGET
   Q_PROPERTY(bool matchCase MEMBER match_case)
   Q_PROPERTY(bool matchWholeWord MEMBER match_whole_word)
+  Q_PROPERTY(bool regexp MEMBER regexp)
  public:
   bool match_case = false;
   bool match_whole_word = false;
+  bool regexp = false;
 
   bool operator==(const FindInFilesOptions& another) const;
   bool operator!=(const FindInFilesOptions& another) const;
@@ -62,7 +64,13 @@ class FindInFilesTask : public BaseIoTask {
   void RunInBackground() override;
 
  private:
+  QList<FileSearchResult> Find(const QString& line, int column,
+                               const QString& file_name) const;
+  QList<FileSearchResult> FindRegex(const QString& line, int column,
+                                    const QString& file_name) const;
+
   QString search_term;
+  QRegularExpression search_term_regex;
   QString folder;
   FindInFilesOptions options;
 };
