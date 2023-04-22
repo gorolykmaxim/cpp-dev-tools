@@ -7,9 +7,12 @@ BaseIoTask::BaseIoTask(QObject *parent) : QObject(parent) {}
 void BaseIoTask::Run() {
   (void)QtConcurrent::run(&Application::Get().io_thread_pool, [this] {
     RunInBackground();
+    is_finished = true;
     emit finished();
   });
 }
+
+bool BaseIoTask::IsFinished() const { return is_finished; }
 
 class VoidIoTask : public BaseIoTask {
  public:

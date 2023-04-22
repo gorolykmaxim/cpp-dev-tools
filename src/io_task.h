@@ -3,18 +3,23 @@
 
 #include <QObject>
 #include <QtConcurrent>
+#include <atomic>
 
 class BaseIoTask : public QObject {
   Q_OBJECT
  public:
   explicit BaseIoTask(QObject* parent = nullptr);
   void Run();
+  bool IsFinished() const;
 
  protected:
   virtual void RunInBackground() = 0;
 
  signals:
   void finished();
+
+ private:
+  std::atomic<bool> is_finished = false;
 };
 
 template <typename T>

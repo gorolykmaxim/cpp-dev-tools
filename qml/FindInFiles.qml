@@ -9,7 +9,10 @@ SplitView {
   handle: Rectangle {
     implicitWidth: Theme.basePadding / 2
     implicitHeight: Theme.basePadding / 2
-    color: Theme.colorBgBlack
+    color: parent.resizing ? Theme.colorHighlight : Theme.colorBgBlack
+  }
+  FindInFilesController {
+    id: controller
   }
   ColumnLayout {
     SplitView.minimumWidth: 300
@@ -27,15 +30,20 @@ SplitView {
           width: parent.width
           Cdt.TextField {
             id: searchInput
+            text: controller.searchTerm
+            onDisplayTextChanged: controller.searchTerm = displayText
             focus: true
             placeholderText: "Search"
             Layout.fillWidth: true
             KeyNavigation.down: matchCaseCheck.visible ? matchCaseCheck : searchResultsList
             KeyNavigation.right: searchBtn
+            Keys.onEnterPressed: controller.search()
+            Keys.onReturnPressed: controller.search()
           }
           Cdt.Button {
             id: searchBtn
             text: "Search"
+            onClicked: controller.search()
             KeyNavigation.down: matchCaseCheck.visible ? matchCaseCheck : searchResultsList
             KeyNavigation.right: advancedBtn
           }
@@ -92,7 +100,7 @@ SplitView {
           KeyNavigation.right: filePreviewArea
         }
         Cdt.Text {
-          text: "Searching..."
+          text: controller.searchStatus
           color: Theme.colorSubText
         }
       }
@@ -104,6 +112,8 @@ SplitView {
       Cdt.TextList {
         id: searchResultsList
         anchors.fill: parent
+        model: controller.results
+        elide: Text.ElideRight
         KeyNavigation.right: filePreviewArea
         KeyNavigation.up: fileToExcludeInput.visible ? fileToExcludeInput : searchInput
       }
