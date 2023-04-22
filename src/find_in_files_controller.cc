@@ -12,21 +12,17 @@ QString FindInFilesController::GetSearchStatus() const {
     return "";
   }
   QString result;
-  QSet<QString> files;
-  for (const FileSearchResult& result : search_results->list) {
-    files.insert(result.file_path);
-  }
-  result += QString::number(search_results->list.size()) + " results in " +
-            QString::number(files.size()) + " files. ";
+  result += QString::number(search_results->rowCount(QModelIndex())) +
+            " results in " +
+            QString::number(search_results->CountUniqueFiles()) + " files. ";
   result += find_task->IsFinished() ? "Complete." : "Searching...";
   return result;
 }
 
 void FindInFilesController::search() {
   LOG() << "Searching for" << search_term;
-  search_results->list.clear();
+  search_results->Clear();
   emit searchStatusChanged();
-  search_results->Load();
   if (search_term.isEmpty()) {
     return;
   }
@@ -42,11 +38,8 @@ void FindInFilesController::search() {
 }
 
 void FindInFilesController::OnResultFound(QList<FileSearchResult> results) {
-  for (const FileSearchResult& result : results) {
-    search_results->list.append(result);
-  }
+  search_results->Append(results);
   emit searchStatusChanged();
-  search_results->Load();
 }
 
 void FindInFilesController::OnSearchComplete() {
@@ -125,15 +118,56 @@ void FindInFilesTask::RunInBackground() {
 }
 
 FileSearchResultListModel::FileSearchResultListModel(QObject* parent)
-    : QVariantListModel(parent) {
-  SetRoleNames({{0, "title"}, {1, "subTitle"}});
+    : QAbstractListModel(parent) {}
+
+int FileSearchResultListModel::rowCount(const QModelIndex&) const {
+  return list.size();
 }
 
-QVariantList FileSearchResultListModel::GetRow(int i) const {
-  const FileSearchResult& result = list[i];
-  int j = result.file_path.lastIndexOf('/');
-  QString file_name = j < 0 ? result.file_path : result.file_path.sliced(j + 1);
-  return {result.match, file_name};
+QHash<int, QByteArray> FileSearchResultListModel::roleNames() const {
+  return {{0, "title"}, {1, "subTitle"}};
 }
 
-int FileSearchResultListModel::GetRowCount() const { return list.size(); }
+QVariant FileSearchResultListModel::data(const QModelIndex& index,
+                                         int role) const {
+  if (!index.isValid()) {
+    return QVariant();
+  }
+  if (index.row() < 0 || index.row() >= list.size()) {
+    return QVariant();
+  }
+  Q_ASSERT(roleNames().contains(role));
+  const FileSearchResult& result = list[index.row()];
+  if (role == 0) {
+    return result.match;
+  } else {
+    int i = result.file_path.lastIndexOf('/');
+    return i < 0 ? result.file_path : result.file_path.sliced(i + 1);
+  }
+}
+
+void FileSearchResultListModel::Clear() {
+  if (list.isEmpty()) {
+    return;
+  }
+  beginRemoveRows(QModelIndex(), 0, list.size() - 1);
+  list.clear();
+  unique_file_paths.clear();
+  endRemoveRows();
+}
+
+void FileSearchResultListModel::Append(const QList<FileSearchResult>& items) {
+  if (items.isEmpty()) {
+    return;
+  }
+  beginInsertRows(QModelIndex(), list.size(), list.size() + items.size() - 1);
+  list.append(items);
+  for (const FileSearchResult& result : items) {
+    unique_file_paths.insert(result.file_path);
+  }
+  endInsertRows();
+}
+
+int FileSearchResultListModel::CountUniqueFiles() const {
+  return unique_file_paths.size();
+}

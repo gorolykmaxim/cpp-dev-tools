@@ -1,11 +1,11 @@
 #ifndef FINDINFILESCONTROLLER_H
 #define FINDINFILESCONTROLLER_H
 
+#include <QAbstractListModel>
 #include <QObject>
 #include <QtQmlIntegration>
 
 #include "io_task.h"
-#include "qvariant_list_model.h"
 
 struct FileSearchResult {
   QString match;
@@ -14,15 +14,25 @@ struct FileSearchResult {
   int row = -1;
 };
 
-class FileSearchResultListModel : public QVariantListModel {
+class FileSearchResultListModel : public QAbstractListModel {
+  Q_OBJECT
+  Q_PROPERTY(bool isUpdating MEMBER is_updating CONSTANT)
  public:
   explicit FileSearchResultListModel(QObject* parent);
+  int rowCount(const QModelIndex& parent) const override;
+  QHash<int, QByteArray> roleNames() const override;
+  QVariant data(const QModelIndex& index, int role) const override;
+  void Clear();
+  void Append(const QList<FileSearchResult>& items);
+  int CountUniqueFiles() const;
 
+ signals:
+  void preSelectCurrentIndex(int);
+
+ private:
+  bool is_updating = false;
+  QSet<QString> unique_file_paths;
   QList<FileSearchResult> list;
-
- protected:
-  QVariantList GetRow(int i) const;
-  int GetRowCount() const;
 };
 
 class FindInFilesTask : public BaseIoTask {
