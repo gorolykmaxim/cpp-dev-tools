@@ -7,6 +7,7 @@ import "." as Cdt
 ListView {
   id: root
   property int elide: Text.ElideNone
+  property bool highlightCurrentItemWithoutFocus: true
   signal itemLeftClicked(clickedItemModel: QtObject, event: QtObject);
   signal itemRightClicked(clickedItemModel: QtObject, event: QtObject);
   signal itemSelected();
@@ -32,7 +33,7 @@ ListView {
   highlightMoveDuration: 100
   ScrollBar.vertical: ScrollBar {}
   delegate: Rectangle {
-    property var isSelected: ListView.isCurrentItem
+    property var isSelected: ListView.isCurrentItem && (highlightCurrentItemWithoutFocus || root.activeFocus)
     property var itemModel: model
     width: root.width
     height: row.height

@@ -115,6 +115,7 @@ SplitView {
         anchors.fill: parent
         model: controller.results
         elide: Text.ElideRight
+        highlightCurrentItemWithoutFocus: false
         onItemSelected: ifCurrentItem('idx', controller.selectResult)
         onItemRightClicked: {
           forceActiveFocus();
