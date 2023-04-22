@@ -30,7 +30,7 @@ void FindInFilesController::search() {
   if (search_term.isEmpty()) {
     return;
   }
-  find_task = new FindInFilesTask(search_term);
+  find_task = new FindInFilesTask(search_term, match_case);
   QObject::connect(find_task, &FindInFilesTask::finished, this,
                    &FindInFilesController::OnSearchComplete);
   QObject::connect(find_task, &FindInFilesTask::resultsFound, this,
@@ -69,8 +69,8 @@ void FindInFilesController::CancelSearchIfRunning() {
   }
 }
 
-FindInFilesTask::FindInFilesTask(const QString& search_term)
-    : BaseIoTask(), search_term(search_term) {
+FindInFilesTask::FindInFilesTask(const QString& search_term, bool match_case)
+    : BaseIoTask(), search_term(search_term), match_case(match_case) {
   folder = Application::Get().project.GetCurrentProject().path;
 }
 
@@ -119,7 +119,13 @@ void FindInFilesTask::RunInBackground() {
       }
       int pos = 0;
       while (true) {
-        int row = line.indexOf(search_term, pos);
+        Qt::CaseSensitivity sensitivity;
+        if (match_case) {
+          sensitivity = Qt::CaseSensitive;
+        } else {
+          sensitivity = Qt::CaseInsensitive;
+        }
+        int row = line.indexOf(search_term, pos, sensitivity);
         if (row < 0) {
           break;
         }

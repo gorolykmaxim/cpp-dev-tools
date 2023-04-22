@@ -40,7 +40,7 @@ class FileSearchResultListModel : public QAbstractListModel {
 class FindInFilesTask : public BaseIoTask {
   Q_OBJECT
  public:
-  FindInFilesTask(const QString& search_term);
+  FindInFilesTask(const QString& search_term, bool match_case);
 
   std::atomic<bool> is_cancelled = false;
  signals:
@@ -52,6 +52,7 @@ class FindInFilesTask : public BaseIoTask {
  private:
   QString search_term;
   QString folder;
+  bool match_case;
 };
 
 class FindInFilesController : public QObject {
@@ -61,6 +62,7 @@ class FindInFilesController : public QObject {
   Q_PROPERTY(FileSearchResultListModel* results MEMBER search_results CONSTANT)
   Q_PROPERTY(
       QString searchStatus READ GetSearchStatus NOTIFY searchStatusChanged)
+  Q_PROPERTY(bool matchCase MEMBER match_case NOTIFY searchOptionsChanged)
  public:
   explicit FindInFilesController(QObject* parent = nullptr);
   ~FindInFilesController();
@@ -72,6 +74,7 @@ class FindInFilesController : public QObject {
  signals:
   void searchTermChanged();
   void searchStatusChanged();
+  void searchOptionsChanged();
 
  private:
   void OnResultFound(QList<FileSearchResult> results);
@@ -82,6 +85,7 @@ class FindInFilesController : public QObject {
   FindInFilesTask* find_task;
   FileSearchResultListModel* search_results;
   int selected_result;
+  bool match_case = false;
 };
 
 #endif  // FINDINFILESCONTROLLER_H

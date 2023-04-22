@@ -60,6 +60,8 @@ SplitView {
           id: matchCaseCheck
           text: "Match Case"
           visible: advancedBtn.checked
+          checked: controller.matchCase
+          onCheckedChanged: controller.matchCase = checked
           KeyNavigation.down: matchWholeWordCheck
           KeyNavigation.right: filePreviewArea
         }
