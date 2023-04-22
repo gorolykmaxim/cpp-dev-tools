@@ -5,7 +5,9 @@
 #define LOG() qDebug() << "[FindInFilesController]"
 
 FindInFilesController::FindInFilesController(QObject* parent)
-    : QObject(parent), search_results(new FileSearchResultListModel(this)) {}
+    : QObject(parent),
+      find_task(nullptr),
+      search_results(new FileSearchResultListModel(this)) {}
 
 QString FindInFilesController::GetSearchStatus() const {
   if (!find_task) {
