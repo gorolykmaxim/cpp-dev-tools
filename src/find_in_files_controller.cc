@@ -1,6 +1,7 @@
 #include "find_in_files_controller.h"
 
 #include "application.h"
+#include "database.h"
 
 #define LOG() qDebug() << "[FindInFilesController]"
 
@@ -106,43 +107,51 @@ static QString HighlightMatch(const QString& line, int match_pos,
 }
 
 void FindInFilesTask::RunInBackground() {
-  QDirIterator it(folder, QDir::Files, QDirIterator::Subdirectories);
-  while (it.hasNext()) {
-    QFile file(it.next());
-    if (!file.open(QIODevice::ReadOnly)) {
-      continue;
-    }
-    QTextStream stream(&file);
-    QList<FileSearchResult> file_results;
-    bool seen_replacement_char = false;
-    bool seen_null = false;
-    int column = 1;
-    while (!stream.atEnd()) {
-      QString line = stream.readLine();
-      if (line.contains("\uFFFD")) {
-        seen_replacement_char = true;
+  QList<QString> folders = {folder};
+  if (options.include_external_search_folders) {
+    QList<QString> external = Database::ExecQueryAndRead<QString>(
+        "SELECT * FROM external_search_folder", &Database::ReadStringFromSql);
+    folders.append(external);
+  }
+  for (const QString& folder : folders) {
+    QDirIterator it(folder, QDir::Files, QDirIterator::Subdirectories);
+    while (it.hasNext()) {
+      QFile file(it.next());
+      if (!file.open(QIODevice::ReadOnly)) {
+        continue;
       }
-      if (line.contains('\0')) {
-        seen_null = true;
+      QTextStream stream(&file);
+      QList<FileSearchResult> file_results;
+      bool seen_replacement_char = false;
+      bool seen_null = false;
+      int column = 1;
+      while (!stream.atEnd()) {
+        QString line = stream.readLine();
+        if (line.contains("\uFFFD")) {
+          seen_replacement_char = true;
+        }
+        if (line.contains('\0')) {
+          seen_null = true;
+        }
+        if (seen_replacement_char && seen_null) {
+          LOG() << "Skipping binary file" << file.fileName();
+          file_results.clear();
+          break;
+        }
+        if (options.regexp) {
+          file_results.append(FindRegex(line, column, file.fileName()));
+        } else {
+          file_results.append(Find(line, column, file.fileName()));
+        }
+        if (is_cancelled) {
+          LOG() << "Searching for" << search_term << "has been cancelled";
+          return;
+        }
+        column++;
       }
-      if (seen_replacement_char && seen_null) {
-        LOG() << "Skipping binary file" << file.fileName();
-        file_results.clear();
-        break;
+      if (!file_results.isEmpty()) {
+        emit resultsFound(file_results);
       }
-      if (options.regexp) {
-        file_results.append(FindRegex(line, column, file.fileName()));
-      } else {
-        file_results.append(Find(line, column, file.fileName()));
-      }
-      if (is_cancelled) {
-        LOG() << "Searching for" << search_term << "has been cancelled";
-        return;
-      }
-      column++;
-    }
-    if (!file_results.isEmpty()) {
-      emit resultsFound(file_results);
     }
   }
 }
@@ -264,7 +273,9 @@ const FileSearchResult& FileSearchResultListModel::At(int i) const {
 bool FindInFilesOptions::operator==(const FindInFilesOptions& another) const {
   return match_case == another.match_case &&
          match_whole_word == another.match_whole_word &&
-         regexp == another.regexp;
+         regexp == another.regexp &&
+         include_external_search_folders ==
+             another.include_external_search_folders;
 }
 
 bool FindInFilesOptions::operator!=(const FindInFilesOptions& another) const {

@@ -87,6 +87,8 @@ SplitView {
           id: includeExternalSearchFoldersCheck
           text: "Include External Search Folders"
           visible: advancedBtn.checked
+          checked: controller.options.includeExternalSearchFolders
+          onCheckedChanged: controller.options.includeExternalSearchFolders = checked
           KeyNavigation.down: fileToIncludeInput
           KeyNavigation.right: filePreviewArea
         }

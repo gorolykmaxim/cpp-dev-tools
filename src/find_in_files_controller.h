@@ -42,10 +42,13 @@ struct FindInFilesOptions {
   Q_PROPERTY(bool matchCase MEMBER match_case)
   Q_PROPERTY(bool matchWholeWord MEMBER match_whole_word)
   Q_PROPERTY(bool regexp MEMBER regexp)
+  Q_PROPERTY(
+      bool includeExternalSearchFolders MEMBER include_external_search_folders)
  public:
   bool match_case = false;
   bool match_whole_word = false;
   bool regexp = false;
+  bool include_external_search_folders = false;
 
   bool operator==(const FindInFilesOptions& another) const;
   bool operator!=(const FindInFilesOptions& another) const;
