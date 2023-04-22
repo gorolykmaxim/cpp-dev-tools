@@ -37,10 +37,22 @@ class FileSearchResultListModel : public QAbstractListModel {
   QList<FileSearchResult> list;
 };
 
+struct FindInFilesOptions {
+  Q_GADGET
+  Q_PROPERTY(bool matchCase MEMBER match_case)
+  Q_PROPERTY(bool matchWholeWord MEMBER match_whole_word)
+ public:
+  bool match_case = false;
+  bool match_whole_word = false;
+
+  bool operator==(const FindInFilesOptions& another) const;
+  bool operator!=(const FindInFilesOptions& another) const;
+};
+
 class FindInFilesTask : public BaseIoTask {
   Q_OBJECT
  public:
-  FindInFilesTask(const QString& search_term, bool match_case);
+  FindInFilesTask(const QString& search_term, FindInFilesOptions options);
 
   std::atomic<bool> is_cancelled = false;
  signals:
@@ -52,7 +64,7 @@ class FindInFilesTask : public BaseIoTask {
  private:
   QString search_term;
   QString folder;
-  bool match_case;
+  FindInFilesOptions options;
 };
 
 class FindInFilesController : public QObject {
@@ -62,7 +74,7 @@ class FindInFilesController : public QObject {
   Q_PROPERTY(FileSearchResultListModel* results MEMBER search_results CONSTANT)
   Q_PROPERTY(
       QString searchStatus READ GetSearchStatus NOTIFY searchStatusChanged)
-  Q_PROPERTY(bool matchCase MEMBER match_case NOTIFY searchOptionsChanged)
+  Q_PROPERTY(FindInFilesOptions options MEMBER options NOTIFY optionsChanged)
  public:
   explicit FindInFilesController(QObject* parent = nullptr);
   ~FindInFilesController();
@@ -74,7 +86,7 @@ class FindInFilesController : public QObject {
  signals:
   void searchTermChanged();
   void searchStatusChanged();
-  void searchOptionsChanged();
+  void optionsChanged();
 
  private:
   void OnResultFound(QList<FileSearchResult> results);
@@ -85,7 +97,7 @@ class FindInFilesController : public QObject {
   FindInFilesTask* find_task;
   FileSearchResultListModel* search_results;
   int selected_result;
-  bool match_case = false;
+  FindInFilesOptions options;
 };
 
 #endif  // FINDINFILESCONTROLLER_H

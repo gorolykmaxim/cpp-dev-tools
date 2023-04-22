@@ -30,7 +30,7 @@ void FindInFilesController::search() {
   if (search_term.isEmpty()) {
     return;
   }
-  find_task = new FindInFilesTask(search_term, match_case);
+  find_task = new FindInFilesTask(search_term, options);
   QObject::connect(find_task, &FindInFilesTask::finished, this,
                    &FindInFilesController::OnSearchComplete);
   QObject::connect(find_task, &FindInFilesTask::resultsFound, this,
@@ -69,8 +69,9 @@ void FindInFilesController::CancelSearchIfRunning() {
   }
 }
 
-FindInFilesTask::FindInFilesTask(const QString& search_term, bool match_case)
-    : BaseIoTask(), search_term(search_term), match_case(match_case) {
+FindInFilesTask::FindInFilesTask(const QString& search_term,
+                                 FindInFilesOptions options)
+    : BaseIoTask(), search_term(search_term), options(options) {
   folder = Application::Get().project.GetCurrentProject().path;
 }
 
@@ -120,7 +121,7 @@ void FindInFilesTask::RunInBackground() {
       int pos = 0;
       while (true) {
         Qt::CaseSensitivity sensitivity;
-        if (match_case) {
+        if (options.match_case) {
           sensitivity = Qt::CaseSensitive;
         } else {
           sensitivity = Qt::CaseInsensitive;
@@ -129,12 +130,17 @@ void FindInFilesTask::RunInBackground() {
         if (row < 0) {
           break;
         }
-        FileSearchResult result;
-        result.file_path = file.fileName();
-        result.match = HighlighMatch(line, row, search_term.size());
-        result.column = column;
-        result.row = row + 1;
-        file_results.append(result);
+        bool letter_before = row > 0 && line[row - 1].isLetter();
+        bool letter_after = row + search_term.size() < line.size() &&
+                            line[row + search_term.size()].isLetter();
+        if (!options.match_whole_word || (!letter_before && !letter_after)) {
+          FileSearchResult result;
+          result.file_path = file.fileName();
+          result.match = HighlighMatch(line, row, search_term.size());
+          result.column = column;
+          result.row = row + 1;
+          file_results.append(result);
+        }
         pos = row + search_term.size() + 1;
         if (is_cancelled) {
           LOG() << "Searching for" << search_term << "has been cancelled";
@@ -208,4 +214,13 @@ int FileSearchResultListModel::CountUniqueFiles() const {
 
 const FileSearchResult& FileSearchResultListModel::At(int i) const {
   return list[i];
+}
+
+bool FindInFilesOptions::operator==(const FindInFilesOptions& another) const {
+  return match_case == another.match_case &&
+         match_whole_word == another.match_whole_word;
+}
+
+bool FindInFilesOptions::operator!=(const FindInFilesOptions& another) const {
+  return !(*this == another);
 }

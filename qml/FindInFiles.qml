@@ -60,8 +60,8 @@ SplitView {
           id: matchCaseCheck
           text: "Match Case"
           visible: advancedBtn.checked
-          checked: controller.matchCase
-          onCheckedChanged: controller.matchCase = checked
+          checked: controller.options.matchCase
+          onCheckedChanged: controller.options.matchCase = checked
           KeyNavigation.down: matchWholeWordCheck
           KeyNavigation.right: filePreviewArea
         }
@@ -69,6 +69,8 @@ SplitView {
           id: matchWholeWordCheck
           text: "Match Whole Word"
           visible: advancedBtn.checked
+          checked: controller.options.matchWholeWord
+          onCheckedChanged: controller.options.matchWholeWord = checked
           KeyNavigation.down: regularExpressionCheck
           KeyNavigation.right: filePreviewArea
         }
