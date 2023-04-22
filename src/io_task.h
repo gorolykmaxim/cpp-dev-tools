@@ -3,31 +3,25 @@
 
 #include <QObject>
 #include <QtConcurrent>
-#include <atomic>
 
 class BaseIoTask : public QObject {
   Q_OBJECT
  public:
-  explicit BaseIoTask(QObject* parent = nullptr);
+  BaseIoTask();
   void Run();
-  bool IsFinished() const;
 
  protected:
   virtual void RunInBackground() = 0;
 
  signals:
   void finished();
-
- private:
-  std::atomic<bool> is_finished = false;
 };
 
 template <typename T>
 class TemplateIoTask : public BaseIoTask {
  public:
-  explicit TemplateIoTask(const std::function<T()>& on_background,
-                          QObject* parent)
-      : BaseIoTask(parent), on_background(on_background) {}
+  explicit TemplateIoTask(const std::function<T()>& on_background)
+      : BaseIoTask(), on_background(on_background) {}
 
   T result;
 
@@ -43,12 +37,9 @@ class IoTask {
   template <typename T>
   static void Run(QObject* requestor, const std::function<T()>& on_io_thread,
                   const std::function<void(T)>& on_ui_thread) {
-    auto task = new TemplateIoTask<T>(on_io_thread, requestor);
+    auto task = new TemplateIoTask<T>(on_io_thread);
     QObject::connect(task, &BaseIoTask::finished, requestor,
-                     [task, on_ui_thread] {
-                       on_ui_thread(task->result);
-                       task->deleteLater();
-                     });
+                     [task, on_ui_thread] { on_ui_thread(task->result); });
     task->Run();
   }
 

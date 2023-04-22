@@ -11,14 +11,11 @@ FindInFilesController::FindInFilesController(QObject* parent)
       selected_result(-1) {}
 
 QString FindInFilesController::GetSearchStatus() const {
-  if (!find_task) {
-    return "";
-  }
   QString result;
   result += QString::number(search_results->rowCount(QModelIndex())) +
             " results in " +
             QString::number(search_results->CountUniqueFiles()) + " files. ";
-  result += find_task->IsFinished() ? "Complete." : "Searching...";
+  result += !find_task ? "Complete." : "Searching...";
   return result;
 }
 
@@ -30,10 +27,7 @@ void FindInFilesController::search() {
   if (search_term.isEmpty()) {
     return;
   }
-  if (find_task) {
-    find_task->deleteLater();
-  }
-  find_task = new FindInFilesTask(this, search_term);
+  find_task = new FindInFilesTask(search_term);
   QObject::connect(find_task, &FindInFilesTask::finished, this,
                    &FindInFilesController::OnSearchComplete);
   QObject::connect(find_task, &FindInFilesTask::resultsFound, this,
@@ -62,11 +56,12 @@ void FindInFilesController::OnResultFound(QList<FileSearchResult> results) {
 
 void FindInFilesController::OnSearchComplete() {
   LOG() << "Search is complete";
+  find_task = nullptr;
   emit searchStatusChanged();
 }
 
-FindInFilesTask::FindInFilesTask(QObject* parent, const QString& search_term)
-    : BaseIoTask(parent), search_term(search_term) {
+FindInFilesTask::FindInFilesTask(const QString& search_term)
+    : BaseIoTask(), search_term(search_term) {
   folder = Application::Get().project.GetCurrentProject().path;
 }
 

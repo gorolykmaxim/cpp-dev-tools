@@ -2,23 +2,20 @@
 
 #include "application.h"
 
-BaseIoTask::BaseIoTask(QObject *parent) : QObject(parent) {}
+BaseIoTask::BaseIoTask() : QObject(nullptr) {}
 
 void BaseIoTask::Run() {
   (void)QtConcurrent::run(&Application::Get().io_thread_pool, [this] {
     RunInBackground();
-    is_finished = true;
     emit finished();
+    deleteLater();
   });
 }
 
-bool BaseIoTask::IsFinished() const { return is_finished; }
-
 class VoidIoTask : public BaseIoTask {
  public:
-  explicit VoidIoTask(const std::function<void()> &on_background,
-                      QObject *parent)
-      : BaseIoTask(parent), on_background(on_background) {}
+  explicit VoidIoTask(const std::function<void()> &on_background)
+      : BaseIoTask(), on_background(on_background) {}
 
  protected:
   void RunInBackground() { on_background(); }
@@ -29,11 +26,8 @@ class VoidIoTask : public BaseIoTask {
 
 void IoTask::Run(QObject *requestor, const std::function<void()> &on_io_thread,
                  const std::function<void()> &on_ui_thread) {
-  VoidIoTask *task = new VoidIoTask(on_io_thread, requestor);
+  VoidIoTask *task = new VoidIoTask(on_io_thread);
   QObject::connect(task, &BaseIoTask::finished, requestor,
-                   [task, on_ui_thread] {
-                     on_ui_thread();
-                     task->deleteLater();
-                   });
+                   [on_ui_thread] { on_ui_thread(); });
   task->Run();
 }

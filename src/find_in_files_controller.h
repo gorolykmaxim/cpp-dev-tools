@@ -39,7 +39,7 @@ class FileSearchResultListModel : public QAbstractListModel {
 class FindInFilesTask : public BaseIoTask {
   Q_OBJECT
  public:
-  FindInFilesTask(QObject* parent, const QString& search_term);
+  FindInFilesTask(const QString& search_term);
 
  signals:
   void resultsFound(QList<FileSearchResult> result);
