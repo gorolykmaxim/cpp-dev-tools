@@ -94,19 +94,27 @@ SplitView {
         }
         Cdt.TextField {
           id: fileToIncludeInput
+          text: controller.options.filesToInclude
+          onDisplayTextChanged: controller.options.filesToInclude = displayText
           placeholderText: "Files To Include"
           width: parent.width
           visible: advancedBtn.checked
           KeyNavigation.down: fileToExcludeInput
           KeyNavigation.right: filePreviewArea
+          Keys.onEnterPressed: controller.search()
+          Keys.onReturnPressed: controller.search()
         }
         Cdt.TextField {
           id: fileToExcludeInput
+          text: controller.options.filesToExclude
+          onDisplayTextChanged: controller.options.filesToExclude = displayText
           placeholderText: "Files To Exclude"
           width: parent.width
           visible: advancedBtn.checked
           KeyNavigation.down: searchResultsList
           KeyNavigation.right: filePreviewArea
+          Keys.onEnterPressed: controller.search()
+          Keys.onReturnPressed: controller.search()
         }
         Cdt.Text {
           text: controller.searchStatus

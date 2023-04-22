@@ -44,11 +44,15 @@ struct FindInFilesOptions {
   Q_PROPERTY(bool regexp MEMBER regexp)
   Q_PROPERTY(
       bool includeExternalSearchFolders MEMBER include_external_search_folders)
+  Q_PROPERTY(QString filesToInclude MEMBER files_to_include)
+  Q_PROPERTY(QString filesToExclude MEMBER files_to_exclude)
  public:
   bool match_case = false;
   bool match_whole_word = false;
   bool regexp = false;
   bool include_external_search_folders = false;
+  QString files_to_include;
+  QString files_to_exclude;
 
   bool operator==(const FindInFilesOptions& another) const;
   bool operator!=(const FindInFilesOptions& another) const;

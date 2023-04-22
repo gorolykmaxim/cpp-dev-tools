@@ -70,6 +70,28 @@ void FindInFilesController::CancelSearchIfRunning() {
   }
 }
 
+static bool MatchesWildcard(const QString& str, const QString& pattern) {
+  QStringList parts = pattern.split('*');
+  int pos = 0;
+  for (int i = 0; i < parts.size(); i++) {
+    const QString& part = parts[i];
+    if (part.isEmpty()) {
+      continue;
+    }
+    int j = str.indexOf(part, pos, Qt::CaseSensitive);
+    if (j < 0) {
+      return false;
+    }
+    if (i == 0 && j != 0) {
+      return false;
+    } else if (i == parts.size() - 1 && part.size() + j != str.size()) {
+      return false;
+    }
+    pos = part.size() + j + 1;
+  }
+  return true;
+}
+
 FindInFilesTask::FindInFilesTask(const QString& search_term,
                                  FindInFilesOptions options)
     : BaseIoTask(), search_term(search_term), options(options) {
@@ -117,7 +139,13 @@ void FindInFilesTask::RunInBackground() {
     QDirIterator it(folder, QDir::Files, QDirIterator::Subdirectories);
     while (it.hasNext()) {
       QFile file(it.next());
-      if (!file.open(QIODevice::ReadOnly)) {
+      bool not_included =
+          !options.files_to_include.isEmpty() &&
+          !MatchesWildcard(file.fileName(), options.files_to_include);
+      bool excluded =
+          !options.files_to_exclude.isEmpty() &&
+          MatchesWildcard(file.fileName(), options.files_to_exclude);
+      if (not_included || excluded || !file.open(QIODevice::ReadOnly)) {
         continue;
       }
       QTextStream stream(&file);
@@ -275,7 +303,9 @@ bool FindInFilesOptions::operator==(const FindInFilesOptions& another) const {
          match_whole_word == another.match_whole_word &&
          regexp == another.regexp &&
          include_external_search_folders ==
-             another.include_external_search_folders;
+             another.include_external_search_folders &&
+         files_to_include == another.files_to_include &&
+         files_to_exclude == another.files_to_exclude;
 }
 
 bool FindInFilesOptions::operator!=(const FindInFilesOptions& another) const {
