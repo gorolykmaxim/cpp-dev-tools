@@ -7,6 +7,7 @@
 #include <atomic>
 
 #include "io_task.h"
+#include "text_area_controller.h"
 
 struct FileSearchResult {
   QString match;
@@ -14,6 +15,7 @@ struct FileSearchResult {
   int column = -1;
   int row = -1;
   int offset = -1;
+  int match_length = -1;
 };
 
 class FileSearchResultListModel : public QAbstractListModel {
@@ -85,6 +87,18 @@ class FindInFilesTask : public BaseIoTask {
   FindInFilesOptions options;
 };
 
+class FileSearchResultFormatter : public TextAreaFormatter {
+ public:
+  explicit FileSearchResultFormatter(QObject* parent, int& selected_result,
+                                     FileSearchResultListModel* search_results);
+  QList<TextSectionFormat> Format(const QString& text, const QTextBlock& block);
+
+ private:
+  QTextCharFormat result_format;
+  int& selected_result;
+  FileSearchResultListModel* search_results;
+};
+
 class FindInFilesController : public QObject {
   Q_OBJECT
   QML_ELEMENT
@@ -99,6 +113,7 @@ class FindInFilesController : public QObject {
                  selectedResultChanged)
   Q_PROPERTY(int selectedFileCursorPosition MEMBER selected_file_cursor_position
                  NOTIFY selectedResultChanged)
+  Q_PROPERTY(FileSearchResultFormatter* formatter MEMBER formatter CONSTANT)
  public:
   explicit FindInFilesController(QObject* parent = nullptr);
   ~FindInFilesController();
@@ -112,6 +127,7 @@ class FindInFilesController : public QObject {
   void searchStatusChanged();
   void optionsChanged();
   void selectedResultChanged();
+  void rehighlight();
 
  private:
   void OnResultFound(QList<FileSearchResult> results);
@@ -126,6 +142,7 @@ class FindInFilesController : public QObject {
   QString selected_file_content;
   int selected_file_cursor_position;
   FindInFilesOptions options;
+  FileSearchResultFormatter* formatter;
 };
 
 #endif  // FINDINFILESCONTROLLER_H

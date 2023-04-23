@@ -14,6 +14,7 @@ SplitView {
   }
   FindInFilesController {
     id: controller
+    onRehighlight: filePreviewArea.rehighlight()
   }
   ColumnLayout {
     SplitView.minimumWidth: 300
@@ -184,6 +185,7 @@ SplitView {
       searchable: true
       text: controller.selectedFileContent
       cursorPosition: controller.selectedFileCursorPosition
+      formatter: controller.formatter
       Layout.fillWidth: true
       Layout.fillHeight: true
     }

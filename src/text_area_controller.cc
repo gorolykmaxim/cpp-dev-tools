@@ -168,6 +168,8 @@ void TextAreaController::goToFileLink(bool next) {
   emit changeCursorPosition(pos);
 }
 
+void TextAreaController::rehighlight() { highlighter.rehighlight(); }
+
 bool TextAreaController::AreSearchResultsEmpty() const {
   return search_results.isEmpty();
 }

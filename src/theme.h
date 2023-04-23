@@ -9,6 +9,7 @@ class Theme : public QObject {
   QML_SINGLETON
   Q_PROPERTY(int basePadding MEMBER kBasePadding CONSTANT)
   Q_PROPERTY(int baseRadius MEMBER kBaseRadius CONSTANT)
+  Q_PROPERTY(QString colorBgHighlight MEMBER kColorBgHighlight CONSTANT)
   Q_PROPERTY(QString colorBgBright MEMBER kColorBgBright CONSTANT)
   Q_PROPERTY(QString colorBgLight MEMBER kColorBgLight CONSTANT)
   Q_PROPERTY(QString colorBgDimmed MEMBER kColorBgDimmed CONSTANT)
@@ -21,6 +22,7 @@ class Theme : public QObject {
  public:
   const int kBasePadding = 4;
   const int kBaseRadius = 4;
+  const QString kColorBgHighlight = "#46607c";
   const QString kColorBgBright = "#6a6a6a";
   const QString kColorBgLight = "#585859";
   const QString kColorBgDimmed = "#494949";

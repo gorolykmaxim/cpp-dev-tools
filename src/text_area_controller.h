@@ -75,6 +75,7 @@ class TextAreaController : public QObject {
   void findFileLinks(const QString& text);
   void openFileLinkAtCursor();
   void goToFileLink(bool next);
+  void rehighlight();
 
  signals:
   void selectText(int start, int end);

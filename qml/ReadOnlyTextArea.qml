@@ -64,6 +64,9 @@ FocusScope {
   function closeSearchBar() {
     searchBar.visible = false;
   }
+  function rehighlight() {
+    controller.rehighlight();
+  }
   Timer {
     id: textSetDelay
     interval: 1 // Having it as just 0 does not always trigger "Loading"

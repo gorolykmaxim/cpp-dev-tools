@@ -3,6 +3,7 @@
 #include "application.h"
 #include "database.h"
 #include "git_system.h"
+#include "theme.h"
 
 #define LOG() qDebug() << "[FindInFilesController]"
 
@@ -11,7 +12,9 @@ FindInFilesController::FindInFilesController(QObject* parent)
       find_task(nullptr),
       search_results(new FileSearchResultListModel(this)),
       selected_result(-1),
-      selected_file_cursor_position(-1) {}
+      selected_file_cursor_position(-1),
+      formatter(new FileSearchResultFormatter(this, selected_result,
+                                              search_results)) {}
 
 FindInFilesController::~FindInFilesController() { CancelSearchIfRunning(); }
 
@@ -69,6 +72,7 @@ void FindInFilesController::selectResult(int i) {
   } else {
     selected_file_cursor_position = result.offset;
     emit selectedResultChanged();
+    emit rehighlight();
   }
 }
 
@@ -253,6 +257,7 @@ QList<FileSearchResult> FindInFilesTask::Find(const QString& line, int column,
       result.column = column;
       result.row = row + 1;
       result.offset = offset + row;
+      result.match_length = search_term.size();
       results.append(result);
     }
     pos = row + search_term.size() + 1;
@@ -276,6 +281,7 @@ QList<FileSearchResult> FindInFilesTask::FindRegex(
     result.column = column;
     result.row = match.capturedStart(0) + 1;
     result.offset = offset + match.capturedStart(0);
+    result.match_length = match.capturedLength(0);
     results.append(result);
     if (is_cancelled) {
       break;
@@ -358,4 +364,32 @@ bool FindInFilesOptions::operator==(const FindInFilesOptions& another) const {
 
 bool FindInFilesOptions::operator!=(const FindInFilesOptions& another) const {
   return !(*this == another);
+}
+
+FileSearchResultFormatter::FileSearchResultFormatter(
+    QObject* parent, int& selected_result,
+    FileSearchResultListModel* search_results)
+    : TextAreaFormatter(parent),
+      selected_result(selected_result),
+      search_results(search_results) {
+  Theme theme;
+  QColor color = QColor::fromString(theme.kColorBgHighlight);
+  result_format.setBackground(QBrush(color));
+}
+
+QList<TextSectionFormat> FileSearchResultFormatter::Format(
+    const QString&, const QTextBlock& block) {
+  QList<TextSectionFormat> results;
+  if (selected_result < 0) {
+    return results;
+  }
+  const FileSearchResult& result = search_results->At(selected_result);
+  if (block.firstLineNumber() == result.column - 1) {
+    TextSectionFormat f;
+    f.section.start = result.row - 1;
+    f.section.end = f.section.start + result.match_length - 1;
+    f.format = result_format;
+    results.append(f);
+  }
+  return results;
 }
