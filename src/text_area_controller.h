@@ -76,6 +76,7 @@ class TextAreaController : public QObject {
   void openFileLinkAtCursor();
   void goToFileLink(bool next);
   void rehighlight();
+  void movePage(const QString& text, bool up);
 
  signals:
   void selectText(int start, int end);

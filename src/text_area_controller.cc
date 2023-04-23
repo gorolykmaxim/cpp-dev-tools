@@ -7,6 +7,7 @@
 #include "theme.h"
 
 static const int kCursorHistoryLimit = 100;
+static const int kLinesPerPage = 20;
 
 TextAreaController::TextAreaController(QObject* parent)
     : QObject(parent), highlighter(file_links) {
@@ -169,6 +170,28 @@ void TextAreaController::goToFileLink(bool next) {
 }
 
 void TextAreaController::rehighlight() { highlighter.rehighlight(); }
+
+void TextAreaController::movePage(const QString& text, bool up) {
+  if (cursor_history_index < 0) {
+    return;
+  }
+  int pos = cursor_history[cursor_history_index];
+  int line = 0;
+  while (!(up && pos <= 0) && !(!up && pos >= text.size() - 1)) {
+    if (text[pos] == '\n') {
+      line++;
+    }
+    if (line == kLinesPerPage) {
+      break;
+    }
+    if (up) {
+      pos--;
+    } else {
+      pos++;
+    }
+  }
+  emit changeCursorPosition(pos);
+}
 
 bool TextAreaController::AreSearchResultsEmpty() const {
   return search_results.isEmpty();

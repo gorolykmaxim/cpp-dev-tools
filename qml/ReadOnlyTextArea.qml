@@ -40,13 +40,12 @@ FocusScope {
     textArea.text = newText;
     isLoading = false;
     if (cursorFollowEnd) {
-      textArea.cursorPosition = textArea.length;
+      textArea.cursorPosition = textArea.length - 1;
     } else if (root.cursorPosition >= 0) {
       textArea.cursorPosition = root.cursorPosition;
     }
     if (searchBar.visible) {
-      controller.search(searchOutputTextField.displayText,
-                        textArea.getText(0, textArea.length))
+      controller.search(searchOutputTextField.displayText, root.getText())
     }
   }
   function openSearchBar() {
@@ -66,6 +65,9 @@ FocusScope {
   }
   function rehighlight() {
     controller.rehighlight();
+  }
+  function getText() {
+    return textArea.getText(0, textArea.length)
   }
   Timer {
     id: textSetDelay
@@ -106,8 +108,7 @@ FocusScope {
           id: searchOutputTextField
           Layout.fillWidth: true
           placeholderText: "Search text"
-          onDisplayTextChanged: controller.search(displayText,
-                                                  textArea.getText(0, textArea.length))
+          onDisplayTextChanged: controller.search(displayText, root.getText())
           KeyNavigation.down: textArea
           KeyNavigation.right: searchPrevBtn
           function goToSearchResult(event) {
@@ -185,6 +186,10 @@ FocusScope {
               }
             } else if (event.key === Qt.Key_Return) {
               controller.openFileLinkAtCursor();
+            } else if (event.key === Qt.Key_PageUp) {
+              controller.movePage(root.getText(), true);
+            } else if (event.key === Qt.Key_PageDown) {
+              controller.movePage(root.getText(), false);
             }
             if (!allowedKeys.has(event.key) &&
                 !event.matches(StandardKey.Copy) &&
