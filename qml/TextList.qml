@@ -16,6 +16,14 @@ ListView {
       fn(currentItem.itemModel[field]);
     }
   }
+  function pageUp() {
+    const result = currentIndex - 10;
+    currentIndex = result < 0 ? 0 : result;
+  }
+  function pageDown() {
+    const result = currentIndex + 10;
+    currentIndex = result >= count ? count - 1 : result;
+  }
   Connections {
     target: model
     function onPreSelectCurrentIndex(index) {
@@ -25,6 +33,16 @@ ListView {
   onCurrentIndexChanged: {
     if (!model.isUpdating) {
       itemSelected();
+    }
+  }
+  Keys.onPressed: e => {
+    switch (e.key) {
+      case Qt.Key_PageUp:
+        pageUp();
+        break;
+      case Qt.Key_PageDown:
+        pageDown();
+        break;
     }
   }
   clip: true

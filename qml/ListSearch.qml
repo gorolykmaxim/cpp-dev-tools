@@ -24,14 +24,10 @@ Cdt.TextField {
         list.decrementCurrentIndex();
         break;
       case Qt.Key_PageUp:
-        for (let i = 0; i < 10; i++) {
-          list.decrementCurrentIndex();
-        }
+        list.pageUp();
         break;
       case Qt.Key_PageDown:
-        for (let i = 0; i < 10; i++) {
-          list.incrementCurrentIndex();
-        }
+        list.pageDown();
         break;
       case Qt.Key_Enter:
       case Qt.Key_Return:
