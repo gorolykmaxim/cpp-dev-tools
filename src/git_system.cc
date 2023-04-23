@@ -15,14 +15,17 @@ QList<QString> GitSystem::FindIgnoredPathsSync() {
   proc.start("git", QStringList() << "status"
                                   << "--porcelain=v1"
                                   << "--ignored");
-  if (!proc.waitForFinished()) {
-    return results;
-  }
-  if (proc.exitCode() != 0) {
+  bool failed_to_start = !proc.waitForFinished();
+  if (failed_to_start || proc.exitCode() != 0) {
     Notification notification;
     notification.is_error = true;
     notification.title = "Failed to find files ignored by git";
-    notification.description = proc.readAllStandardError();
+    if (failed_to_start) {
+      notification.description = "Failed to execute: " + proc.program() + ' ' +
+                                 proc.arguments().join(' ');
+    } else {
+      notification.description = proc.readAllStandardError();
+    }
     Application::Get().notification.Post(notification);
   } else {
     QTextStream stream(&proc);
