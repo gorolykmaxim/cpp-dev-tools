@@ -10,7 +10,8 @@ FindInFilesController::FindInFilesController(QObject* parent)
     : QObject(parent),
       find_task(nullptr),
       search_results(new FileSearchResultListModel(this)),
-      selected_result(-1) {}
+      selected_result(-1),
+      selected_file_cursor_position(-1) {}
 
 FindInFilesController::~FindInFilesController() { CancelSearchIfRunning(); }
 
@@ -26,6 +27,10 @@ QString FindInFilesController::GetSearchStatus() const {
 void FindInFilesController::search() {
   LOG() << "Searching for" << search_term;
   selected_result = -1;
+  selected_file_path.clear();
+  selected_file_content.clear();
+  selected_file_cursor_position = -1;
+  emit selectedResultChanged();
   search_results->Clear();
   CancelSearchIfRunning();
   emit searchStatusChanged();
@@ -43,6 +48,28 @@ void FindInFilesController::search() {
 void FindInFilesController::selectResult(int i) {
   LOG() << "Selected search result" << i;
   selected_result = i;
+  const FileSearchResult& result = search_results->At(selected_result);
+  if (selected_file_path != result.file_path) {
+    IoTask::Run<QString>(
+        this,
+        [result] {
+          LOG() << "Reading contents of" << result.file_path;
+          QFile file(result.file_path);
+          if (!file.open(QIODeviceBase::ReadOnly)) {
+            return "Failed to open file: " + file.errorString();
+          }
+          return QString(file.readAll());
+        },
+        [this, result](QString content) {
+          selected_file_path = result.file_path;
+          selected_file_content = content;
+          selected_file_cursor_position = result.offset;
+          emit selectedResultChanged();
+        });
+  } else {
+    selected_file_cursor_position = result.offset;
+    emit selectedResultChanged();
+  }
 }
 
 void FindInFilesController::openSelectedResultInEditor() {
@@ -166,6 +193,7 @@ void FindInFilesTask::RunInBackground() {
       bool seen_replacement_char = false;
       bool seen_null = false;
       int column = 1;
+      int line_offset = 0;
       while (!stream.atEnd()) {
         QString line = stream.readLine();
         if (line.contains("\uFFFD")) {
@@ -180,15 +208,17 @@ void FindInFilesTask::RunInBackground() {
           break;
         }
         if (options.regexp) {
-          file_results.append(FindRegex(line, column, file.fileName()));
+          file_results.append(
+              FindRegex(line, column, line_offset, file.fileName()));
         } else {
-          file_results.append(Find(line, column, file.fileName()));
+          file_results.append(Find(line, column, line_offset, file.fileName()));
         }
         if (is_cancelled) {
           LOG() << "Searching for" << search_term << "has been cancelled";
           return;
         }
         column++;
+        line_offset += line.size() + 1;
       }
       if (!file_results.isEmpty()) {
         emit resultsFound(file_results);
@@ -198,6 +228,7 @@ void FindInFilesTask::RunInBackground() {
 }
 
 QList<FileSearchResult> FindInFilesTask::Find(const QString& line, int column,
+                                              int offset,
                                               const QString& file_name) const {
   QList<FileSearchResult> results;
   int pos = 0;
@@ -221,6 +252,7 @@ QList<FileSearchResult> FindInFilesTask::Find(const QString& line, int column,
       result.match = HighlightMatch(line, row, search_term.size());
       result.column = column;
       result.row = row + 1;
+      result.offset = offset + row;
       results.append(result);
     }
     pos = row + search_term.size() + 1;
@@ -232,7 +264,8 @@ QList<FileSearchResult> FindInFilesTask::Find(const QString& line, int column,
 }
 
 QList<FileSearchResult> FindInFilesTask::FindRegex(
-    const QString& line, int column, const QString& file_name) const {
+    const QString& line, int column, int offset,
+    const QString& file_name) const {
   QList<FileSearchResult> results;
   for (auto it = search_term_regex.globalMatch(line); it.hasNext();) {
     QRegularExpressionMatch match = it.next();
@@ -242,6 +275,7 @@ QList<FileSearchResult> FindInFilesTask::FindRegex(
         HighlightMatch(line, match.capturedStart(0), match.capturedLength(0));
     result.column = column;
     result.row = match.capturedStart(0) + 1;
+    result.offset = offset + match.capturedStart(0);
     results.append(result);
     if (is_cancelled) {
       break;

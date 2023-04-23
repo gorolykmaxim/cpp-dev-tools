@@ -162,13 +162,30 @@ SplitView {
       }
     }
   }
-  ReadOnlyTextArea {
-    id: filePreviewArea
+  ColumnLayout {
     SplitView.fillWidth: true
     SplitView.fillHeight: true
-    color: Theme.colorBgDark
-    innerPadding: Theme.basePadding
-    detectFileLinks: false
-    searchable: true
+    spacing: 0
+    Cdt.Pane {
+      padding: Theme.basePadding
+      color: Theme.colorBgMedium
+      Layout.fillWidth: true
+      Cdt.Text {
+        text: controller.selectedFilePath
+        elide: Text.ElideLeft
+        width: parent.width
+      }
+    }
+    Cdt.ReadOnlyTextArea {
+      id: filePreviewArea
+      color: Theme.colorBgDark
+      innerPadding: Theme.basePadding
+      detectFileLinks: false
+      searchable: true
+      text: controller.selectedFileContent
+      cursorPosition: controller.selectedFileCursorPosition
+      Layout.fillWidth: true
+      Layout.fillHeight: true
+    }
   }
 }

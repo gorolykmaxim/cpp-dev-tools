@@ -13,6 +13,7 @@ struct FileSearchResult {
   QString file_path;
   int column = -1;
   int row = -1;
+  int offset = -1;
 };
 
 class FileSearchResultListModel : public QAbstractListModel {
@@ -73,9 +74,9 @@ class FindInFilesTask : public BaseIoTask {
   void RunInBackground() override;
 
  private:
-  QList<FileSearchResult> Find(const QString& line, int column,
+  QList<FileSearchResult> Find(const QString& line, int column, int offset,
                                const QString& file_name) const;
-  QList<FileSearchResult> FindRegex(const QString& line, int column,
+  QList<FileSearchResult> FindRegex(const QString& line, int column, int offset,
                                     const QString& file_name) const;
 
   QString search_term;
@@ -92,6 +93,12 @@ class FindInFilesController : public QObject {
   Q_PROPERTY(
       QString searchStatus READ GetSearchStatus NOTIFY searchStatusChanged)
   Q_PROPERTY(FindInFilesOptions options MEMBER options NOTIFY optionsChanged)
+  Q_PROPERTY(QString selectedFilePath MEMBER selected_file_path NOTIFY
+                 selectedResultChanged)
+  Q_PROPERTY(QString selectedFileContent MEMBER selected_file_content NOTIFY
+                 selectedResultChanged)
+  Q_PROPERTY(int selectedFileCursorPosition MEMBER selected_file_cursor_position
+                 NOTIFY selectedResultChanged)
  public:
   explicit FindInFilesController(QObject* parent = nullptr);
   ~FindInFilesController();
@@ -104,6 +111,7 @@ class FindInFilesController : public QObject {
   void searchTermChanged();
   void searchStatusChanged();
   void optionsChanged();
+  void selectedResultChanged();
 
  private:
   void OnResultFound(QList<FileSearchResult> results);
@@ -114,6 +122,9 @@ class FindInFilesController : public QObject {
   FindInFilesTask* find_task;
   FileSearchResultListModel* search_results;
   int selected_result;
+  QString selected_file_path;
+  QString selected_file_content;
+  int selected_file_cursor_position;
   FindInFilesOptions options;
 };
 

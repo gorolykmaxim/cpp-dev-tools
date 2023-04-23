@@ -16,6 +16,8 @@ FocusScope {
   property real innerPadding: 0
   property alias formatter: controller.formatter
   property alias detectFileLinks: controller.detectFileLinks
+  property int cursorPosition: -1
+  onCursorPositionChanged: textArea.cursorPosition = root.cursorPosition
   onTextChanged: {
     controller.resetCursorPositionHistory();
     if (textArea.text && text.startsWith(textArea.text)) {
@@ -39,6 +41,8 @@ FocusScope {
     isLoading = false;
     if (cursorFollowEnd) {
       textArea.cursorPosition = textArea.length;
+    } else if (root.cursorPosition >= 0) {
+      textArea.cursorPosition = root.cursorPosition;
     }
     if (searchBar.visible) {
       controller.search(searchOutputTextField.displayText,
