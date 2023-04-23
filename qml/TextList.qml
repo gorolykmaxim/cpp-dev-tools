@@ -28,8 +28,6 @@ ListView {
     target: model
     function onPreSelectCurrentIndex(index) {
       currentIndex = index;
-      // Index didn't change but the model did and the new currentIndex
-      // might be pointing to a different item.
       itemSelected();
     }
   }
