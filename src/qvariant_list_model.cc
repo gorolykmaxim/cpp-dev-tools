@@ -232,8 +232,8 @@ void QVariantListModel::Load() {
         }
       }
     }
-    SetIsUpdating(false);
     emit preSelectCurrentIndex(current_index);
+    SetIsUpdating(false);
   });
   cmd_buffer.RunCommands();
 }
