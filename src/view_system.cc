@@ -67,25 +67,9 @@ void ViewSystem::DisplaySearchUserCommandDialog() {
   emit searchUserCommandDialogDisplayed();
 }
 
-void ViewSystem::DetermineWindowDimensions() {
-  QRect virtual_desktop = QGuiApplication::primaryScreen()->virtualGeometry();
-  SetDefaultWindowSize();
-  LOG() << "Loading window dimensions from database";
-  QList<WindowDimensions> results =
-      Database::ExecQueryAndReadSync<WindowDimensions>(
-          "SELECT width, height, x, y, is_maximized FROM window_dimensions "
-          "WHERE virtual_width=? AND virtual_height=? AND virtual_x=? AND "
-          "virtual_y=?",
-          &WindowDimensions::ReadFromSql,
-          {virtual_desktop.width(), virtual_desktop.height(),
-           virtual_desktop.x(), virtual_desktop.y()});
-  if (!results.isEmpty()) {
-    dimensions = results[0];
-    LOG() << "Will use existing" << dimensions;
-  } else {
-    LOG() << "No existing window dimensions found - will fallback to the "
-             "default one";
-  }
+void ViewSystem::Initialize() {
+  DetermineWindowDimensions();
+  LoadSplitViewStates();
 }
 
 void ViewSystem::SetDefaultWindowSize() {
@@ -107,4 +91,59 @@ void ViewSystem::saveWindowDimensions(int width, int height, int x, int y,
       "?)",
       {virtual_desktop.width(), virtual_desktop.height(), virtual_desktop.x(),
        virtual_desktop.y(), width, height, x, y, is_maximized});
+}
+
+void ViewSystem::saveSplitViewState(const QString &id,
+                                    const QByteArray &state) {
+  LOG() << "State of" << id << "split view changed";
+  split_view_states[id] = state;
+  Database::ExecCmdAsync("INSERT OR REPLACE INTO split_view_state VALUES(?, ?)",
+                         {id, state});
+}
+
+QByteArray ViewSystem::getSplitViewState(const QString &id) {
+  return split_view_states[id];
+}
+
+void ViewSystem::DetermineWindowDimensions() {
+  QRect virtual_desktop = QGuiApplication::primaryScreen()->virtualGeometry();
+  SetDefaultWindowSize();
+  LOG() << "Loading window dimensions from database";
+  QList<WindowDimensions> results =
+      Database::ExecQueryAndReadSync<WindowDimensions>(
+          "SELECT width, height, x, y, is_maximized FROM window_dimensions "
+          "WHERE virtual_width=? AND virtual_height=? AND virtual_x=? AND "
+          "virtual_y=?",
+          &WindowDimensions::ReadFromSql,
+          {virtual_desktop.width(), virtual_desktop.height(),
+           virtual_desktop.x(), virtual_desktop.y()});
+  if (!results.isEmpty()) {
+    dimensions = results[0];
+    LOG() << "Will use existing" << dimensions;
+  } else {
+    LOG() << "No existing window dimensions found - will fallback to the "
+             "default one";
+  }
+}
+
+struct SplitViewState {
+  QString id;
+  QByteArray state;
+
+  static SplitViewState ReadFromSql(QSqlQuery &sql) {
+    SplitViewState state;
+    state.id = sql.value(0).toString();
+    state.state = sql.value(1).toByteArray();
+    return state;
+  }
+};
+
+void ViewSystem::LoadSplitViewStates() {
+  LOG() << "Loading split view states from the database";
+  split_view_states.clear();
+  QList<SplitViewState> states = Database::ExecQueryAndReadSync<SplitViewState>(
+      "SELECT id, state FROM split_view_state", &SplitViewState::ReadFromSql);
+  for (const SplitViewState &state : states) {
+    split_view_states[state.id] = state.state;
+  }
 }

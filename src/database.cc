@@ -52,6 +52,10 @@ void Database::Initialize() {
   ExecCmd(
       "CREATE TABLE IF NOT EXISTS external_search_folder("
       "path TEXT PRIMARY KEY)");
+  ExecCmd(
+      "CREATE TABLE IF NOT EXISTS split_view_state("
+      "id TEXT PRIMARY KEY, "
+      "state BLOB NOT NULL)");
 }
 
 void Database::ExecQuery(QSqlQuery &sql, const QString &query,

@@ -6,11 +6,11 @@ import "." as Cdt
 import cdt
 
 SplitView {
+  id: root
   anchors.fill: parent
-  handle: Rectangle {
-    implicitWidth: Theme.basePadding / 2
-    implicitHeight: Theme.basePadding / 2
-    color: parent.resizing ? Theme.colorHighlight : Theme.colorBgBlack
+  handle: Cdt.SplitViewHandle {
+    viewId: "FindInFiles"
+    view: root
   }
   FindInFilesController {
     id: controller

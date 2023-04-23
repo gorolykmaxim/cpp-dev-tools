@@ -39,13 +39,15 @@ class ViewSystem : public QObject {
   void DisplayAlertDialog(const QString& title, const QString& text);
   void SetWindowTitle(const QString& title);
   QString GetWindowTitle() const;
-  void DetermineWindowDimensions();
+  void Initialize();
   void SetDefaultWindowSize();
 
  public slots:
   void DisplaySearchUserCommandDialog();
   void saveWindowDimensions(int width, int height, int x, int y,
                             bool is_maximized) const;
+  void saveSplitViewState(const QString& id, const QByteArray& state);
+  QByteArray getSplitViewState(const QString& id);
 
  signals:
   void currentViewChanged();
@@ -58,7 +60,11 @@ class ViewSystem : public QObject {
   void windowDimensionsChanaged();
 
  private:
+  void DetermineWindowDimensions();
+  void LoadSplitViewStates();
+
   QString current_view = "SelectProject.qml";
   QString window_title = "CPP Dev Tools";
   WindowDimensions dimensions;
+  QHash<QString, QByteArray> split_view_states;
 };

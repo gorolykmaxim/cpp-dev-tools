@@ -94,6 +94,7 @@ qt_add_qml_module(cpp-dev-tools URI cdt VERSION 1.0
       qml/FolderList.qml
       qml/FindInFiles.qml
       qml/CheckBox.qml
+      qml/SplitViewHandle.qml
   RESOURCES
       fonts/MaterialIcons-Regular.ttf
   RESOURCE_PREFIX /)

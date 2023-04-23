@@ -38,7 +38,7 @@ Application::~Application() { task.KillAllTasks(); }
 int Application::Exec() {
   QtConcurrent::run(&io_thread_pool, &Database::Initialize).waitForFinished();
   user_command.RegisterCommands();
-  view.DetermineWindowDimensions();
+  view.Initialize();
   editor.Initialize();
   qml_engine.load(QUrl("qrc:/cdt/qml/main.qml"));
   return gui_app.exec();
