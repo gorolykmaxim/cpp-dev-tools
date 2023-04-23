@@ -89,6 +89,15 @@ SplitView {
           visible: advancedBtn.checked
           checked: controller.options.includeExternalSearchFolders
           onCheckedChanged: controller.options.includeExternalSearchFolders = checked
+          KeyNavigation.down: excludeGitIgnoredFilesCheck
+          KeyNavigation.right: filePreviewArea
+        }
+        Cdt.CheckBox {
+          id: excludeGitIgnoredFilesCheck
+          text: "Exclude Git Ignored Files"
+          visible: advancedBtn.checked
+          checked: controller.options.excludeGitIgnoredFiles
+          onCheckedChanged: controller.options.excludeGitIgnoredFiles = checked
           KeyNavigation.down: fileToIncludeInput
           KeyNavigation.right: filePreviewArea
         }

@@ -2,6 +2,7 @@
 
 #include "application.h"
 #include "database.h"
+#include "git_system.h"
 
 #define LOG() qDebug() << "[FindInFilesController]"
 
@@ -135,17 +136,29 @@ void FindInFilesTask::RunInBackground() {
         "SELECT * FROM external_search_folder", &Database::ReadStringFromSql);
     folders.append(external);
   }
+  QList<QString> paths_to_exclude;
+  if (options.exclude_git_ignored_files) {
+    paths_to_exclude = GitSystem::FindIgnoredPathsSync();
+  }
   for (const QString& folder : folders) {
     QDirIterator it(folder, QDir::Files, QDirIterator::Subdirectories);
     while (it.hasNext()) {
       QFile file(it.next());
+      bool file_excluded = false;
+      for (const QString& excluded_path : paths_to_exclude) {
+        if (file.fileName().startsWith(excluded_path)) {
+          file_excluded = true;
+          break;
+        }
+      }
       bool not_included =
           !options.files_to_include.isEmpty() &&
           !MatchesWildcard(file.fileName(), options.files_to_include);
       bool excluded =
           !options.files_to_exclude.isEmpty() &&
           MatchesWildcard(file.fileName(), options.files_to_exclude);
-      if (not_included || excluded || !file.open(QIODevice::ReadOnly)) {
+      if (file_excluded || not_included || excluded ||
+          !file.open(QIODevice::ReadOnly)) {
         continue;
       }
       QTextStream stream(&file);
@@ -305,7 +318,8 @@ bool FindInFilesOptions::operator==(const FindInFilesOptions& another) const {
          include_external_search_folders ==
              another.include_external_search_folders &&
          files_to_include == another.files_to_include &&
-         files_to_exclude == another.files_to_exclude;
+         files_to_exclude == another.files_to_exclude &&
+         exclude_git_ignored_files == another.exclude_git_ignored_files;
 }
 
 bool FindInFilesOptions::operator!=(const FindInFilesOptions& another) const {
