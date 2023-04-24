@@ -154,4 +154,5 @@ void ViewSystem::LoadSplitViewStates() {
   for (const SplitViewState &state : states) {
     split_view_states[state.id] = state.state;
   }
+  LOG() << "Loaded split view states:" << split_view_states.keys();
 }
