@@ -46,5 +46,11 @@ QtQuick.TextField {
       enabled: textField.activeFocus
       onTriggered: textField.selectAll()
     }
+    MenuItem {
+      text: "Select Word"
+      shortcut: "Ctrl+D"
+      enabled: textField.activeFocus
+      onTriggered: textField.selectWord()
+    }
   }
 }
