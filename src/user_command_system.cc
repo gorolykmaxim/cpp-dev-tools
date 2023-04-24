@@ -30,31 +30,22 @@ UserCommandSystem::UserCommandSystem()
     : user_commands(new UserCommandListModel(this)) {}
 
 void UserCommandSystem::RegisterCommands() {
-  RegisterCommand("File", "Execute Command", "Ctrl+P", [] {
-    Application::Get().view.DisplaySearchUserCommandDialog();
-  });
-  RegisterCommand("File", "Find In Files", "Ctrl+Shift+F", [] {
-    Application::Get().view.SetCurrentView("FindInFiles.qml");
-  });
   RegisterCommand("File", "Close Project", "Ctrl+W", [] {
     Application::Get().project.SetCurrentProject(Project());
   });
-  RegisterCommand("Task", "Run Last", "Ctrl+R",
-                  [] { Application::Get().task.executeTask(0); });
-  RegisterCommand("Task", "Run Last Until Fails", "Ctrl+Shift+R",
-                  [] { Application::Get().task.executeTask(0, true); });
-  RegisterCommand("Task", "Terminate Execution", "Ctrl+Shift+T", [] {
-    Application& app = Application::Get();
-    app.task.cancelExecution(app.task.GetSelectedExecutionId(), false);
+  RegisterCommand("File", "Settings", "Ctrl+,", [] {
+    Application::Get().view.SetCurrentView("Settings.qml");
   });
-  RegisterCommand("Task", "Kill Execution", "Ctrl+Shift+K", [] {
-    Application& app = Application::Get();
-    app.task.cancelExecution(app.task.GetSelectedExecutionId(), true);
+  RegisterCommand("Edit", "Find In Files", "Ctrl+Shift+F", [] {
+    Application::Get().view.SetCurrentView("FindInFiles.qml");
   });
-  RegisterCommand("Task", "Tasks", "Ctrl+T", [] {
+  RegisterCommand("View", "Commands", "Ctrl+P", [] {
+    Application::Get().view.DisplaySearchUserCommandDialog();
+  });
+  RegisterCommand("View", "Tasks", "Ctrl+T", [] {
     Application::Get().view.SetCurrentView("TaskList.qml");
   });
-  RegisterCommand("Task", "Task Executions", "Ctrl+E", [] {
+  RegisterCommand("View", "Task Executions", "Ctrl+E", [] {
     Application::Get().view.SetCurrentView("TaskExecutionList.qml");
   });
   RegisterCommand("View", "Notifications", "Ctrl+N", [] {
@@ -63,10 +54,19 @@ void UserCommandSystem::RegisterCommands() {
   RegisterCommand("View", "Documentation", "F1", [] {
     Application::Get().view.SetCurrentView("Documentation.qml");
   });
-  RegisterCommand("View", "Settings", "Ctrl+,", [] {
-    Application::Get().view.SetCurrentView("Settings.qml");
+  RegisterCommand("Run", "Run Last", "Ctrl+R",
+                  [] { Application::Get().task.executeTask(0); });
+  RegisterCommand("Run", "Run Last Until Fails", "Ctrl+Shift+R",
+                  [] { Application::Get().task.executeTask(0, true); });
+  RegisterCommand("Run", "Terminate Execution", "Ctrl+Shift+T", [] {
+    Application& app = Application::Get();
+    app.task.cancelExecution(app.task.GetSelectedExecutionId(), false);
   });
-  RegisterCommand("View", "Default Size", "Ctrl+Shift+M",
+  RegisterCommand("Run", "Kill Execution", "Ctrl+Shift+K", [] {
+    Application& app = Application::Get();
+    app.task.cancelExecution(app.task.GetSelectedExecutionId(), true);
+  });
+  RegisterCommand("Window", "Default Size", "Ctrl+Shift+M",
                   [] { Application::Get().view.SetDefaultWindowSize(); });
   LOG() << "Comitting changes to user command list";
   user_commands->Load();
