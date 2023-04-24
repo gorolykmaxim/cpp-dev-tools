@@ -9,7 +9,11 @@
 
 void Database::Initialize() {
   QString home = QStandardPaths::writableLocation(QStandardPaths::HomeLocation);
+#ifdef NDEBUG
   QString db_file = home + "/.cpp-dev-tools.db";
+#else
+  QString db_file = home + "/.cpp-dev-tools.dev.db";
+#endif
   LOG() << "Openning database" << db_file;
   QSqlDatabase db = QSqlDatabase::addDatabase("QSQLITE");
   db.setDatabaseName(db_file);
