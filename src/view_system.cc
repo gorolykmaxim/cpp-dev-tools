@@ -96,9 +96,12 @@ void ViewSystem::saveWindowDimensions(int width, int height, int x, int y,
 void ViewSystem::saveSplitViewState(const QString &id,
                                     const QByteArray &state) {
   LOG() << "State of" << id << "split view changed";
+  QRect virtual_desktop = QGuiApplication::primaryScreen()->virtualGeometry();
   split_view_states[id] = state;
-  Database::ExecCmdAsync("INSERT OR REPLACE INTO split_view_state VALUES(?, ?)",
-                         {id, state});
+  Database::ExecCmdAsync(
+      "INSERT OR REPLACE INTO split_view_state VALUES(?, ?, ?, ?, ?, ?)",
+      {id, virtual_desktop.width(), virtual_desktop.height(),
+       virtual_desktop.x(), virtual_desktop.y(), state});
 }
 
 QByteArray ViewSystem::getSplitViewState(const QString &id) {
@@ -141,8 +144,13 @@ struct SplitViewState {
 void ViewSystem::LoadSplitViewStates() {
   LOG() << "Loading split view states from the database";
   split_view_states.clear();
+  QRect virtual_desktop = QGuiApplication::primaryScreen()->virtualGeometry();
   QList<SplitViewState> states = Database::ExecQueryAndReadSync<SplitViewState>(
-      "SELECT id, state FROM split_view_state", &SplitViewState::ReadFromSql);
+      "SELECT id, state FROM split_view_state WHERE virtual_width=? AND "
+      "virtual_height=? AND virtual_x=? AND virtual_y=?",
+      &SplitViewState::ReadFromSql,
+      {virtual_desktop.width(), virtual_desktop.height(), virtual_desktop.x(),
+       virtual_desktop.y()});
   for (const SplitViewState &state : states) {
     split_view_states[state.id] = state.state;
   }

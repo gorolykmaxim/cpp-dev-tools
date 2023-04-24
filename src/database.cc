@@ -54,8 +54,13 @@ void Database::Initialize() {
       "path TEXT PRIMARY KEY)");
   ExecCmd(
       "CREATE TABLE IF NOT EXISTS split_view_state("
-      "id TEXT PRIMARY KEY, "
-      "state BLOB NOT NULL)");
+      "id TEXT, "
+      "virtual_width INT, "
+      "virtual_height INT, "
+      "virtual_x INT, "
+      "virtual_y INT, "
+      "state BLOB, "
+      "PRIMARY KEY(id, virtual_width, virtual_height, virtual_x, virtual_y))");
 }
 
 void Database::ExecQuery(QSqlQuery &sql, const QString &query,
