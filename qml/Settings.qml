@@ -63,6 +63,7 @@ Loader {
               id: configureExternalSearchFoldersBtn
               text: "Configure External Search Folders"
               Layout.columnSpan: 2
+              Layout.alignment: Qt.AlignHCenter
               onClicked: controller.configureExternalSearchFolders()
               KeyNavigation.down: configureDocumentationFoldersBtn
             }
@@ -70,6 +71,7 @@ Loader {
               id: configureDocumentationFoldersBtn
               text: "Configure Documentation Folders"
               Layout.columnSpan: 2
+              Layout.alignment: Qt.AlignHCenter
               onClicked: controller.configureDocumentationFolders()
               KeyNavigation.down: saveBtn
             }
