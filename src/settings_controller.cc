@@ -68,7 +68,7 @@ void SettingsController::Load() {
             Database::ExecQueryAndRead<int>(
                 "SELECT history_limit FROM task_context",
                 &Database::ReadIntFromSql)
-                .first();
+                .constFirst();
         return settings;
       },
       [this](Settings settings) {

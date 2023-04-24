@@ -157,7 +157,7 @@ void TaskSystem::executeTask(int i, bool repeat_until_fail) {
 
 void TaskSystem::KillAllTasks() {
   LOG() << "Killing all tasks";
-  for (Ptr<RunTaskCommand> cmd : active_commands.values()) {
+  for (Ptr<RunTaskCommand> cmd : qAsConst(active_commands)) {
     cmd->Cancel(true);
   }
   active_executions.clear();
@@ -210,7 +210,7 @@ void TaskSystem::FinishExecution(QUuid id, int exit_code) {
   LOG() << "Task execution" << id << "finished with code" << exit_code;
   const Project& project = Application::Get().project.GetCurrentProject();
   QStringList indices;
-  for (int i : exec.stderr_line_indices) {
+  for (int i : qAsConst(exec.stderr_line_indices)) {
     indices.append(QString::number(i));
   }
   QList<Database::Cmd> cmds;
@@ -235,8 +235,8 @@ void TaskSystem::FetchExecutions(
     const std::function<void(const QList<TaskExecution>&)>& callback) const {
   LOG() << "Fetching executions for project" << project_id;
   QList<TaskExecution> execs;
-  for (QUuid id : active_executions.keys()) {
-    execs.append(active_executions[id]);
+  for (const TaskExecution& exec : active_executions) {
+    execs.append(exec);
   }
   std::sort(execs.begin(), execs.end(),
             [](const TaskExecution& a, const TaskExecution& b) {
@@ -400,7 +400,7 @@ void TaskSystem::Initialize() {
   history_limit =
       Database::ExecQueryAndReadSync<int>(
           "SELECT history_limit FROM task_context", &Database::ReadIntFromSql)
-          .first();
+          .constFirst();
   LOG() << "Task history limit:" << history_limit;
 }
 

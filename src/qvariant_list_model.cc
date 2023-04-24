@@ -100,7 +100,6 @@ static QString HighlightFuzzySubString(const QString& source,
   }
   if (matches && last_char_index < source.length() - 1) {
     if (highlighting) {
-      highlighting = false;
       stream << kHighlightClose;
     }
     stream << source.sliced(last_char_index + 1,
@@ -280,9 +279,9 @@ int QVariantListModel::GetRowCount() const { return 0; }
 
 void QVariantListModel::SetRoleNames(const QHash<int, QByteArray>& role_names) {
   this->role_names = role_names;
-  for (int role : role_names.keys()) {
-    QString name(role_names[role]);
-    name_to_role[name] = role;
+  for (auto it = role_names.begin(); it != role_names.end(); it++) {
+    QString name(it.value());
+    name_to_role[name] = it.key();
   }
 }
 

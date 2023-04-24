@@ -1,6 +1,7 @@
 #include "documentation_system.h"
 
 #include <QDesktopServices>
+#include <QtGlobal>
 
 #include "application.h"
 #include "database.h"
@@ -52,7 +53,7 @@ void DocumentationSystem::displayDocumentation() {
         result.documentation_folders =
             QSet<QString>(folders.begin(), folders.end());
         if (old_folders != result.documentation_folders) {
-          for (const QString& folder : result.documentation_folders) {
+          for (const QString& folder : qAsConst(result.documentation_folders)) {
             LOG() << "Searching for documentation in" << folder;
             QDirIterator it(folder, QDir::Files, QDirIterator::Subdirectories);
             while (it.hasNext()) {
