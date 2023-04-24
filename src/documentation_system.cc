@@ -6,6 +6,8 @@
 #include "database.h"
 #include "io_task.h"
 
+#define LOG() qDebug() << "[DocumentationSystem]"
+
 DocumentListModel::DocumentListModel(QObject* parent)
     : QVariantListModel(parent) {
   SetRoleNames({{0, "idx"}, {1, "title"}, {2, "subTitle"}});
@@ -13,8 +15,10 @@ DocumentListModel::DocumentListModel(QObject* parent)
 }
 
 QVariantList DocumentListModel::GetRow(int i) const {
-  const Document& doc = list[i];
-  return {i, doc.relative_file_path, doc.documentation_folder};
+  const QString& path = list[i];
+  qsizetype j = path.lastIndexOf('/');
+  QString file_name = j < 0 ? path : path.sliced(j + 1);
+  return {i, file_name, path};
 }
 
 int DocumentListModel::GetRowCount() const { return list.size(); }
@@ -32,7 +36,7 @@ bool DocumentationSystem::IsLoading() const { return is_loading; }
 
 struct DocumentationSearch {
   QSet<QString> documentation_folders;
-  QList<Document> documents;
+  QStringList documents;
 };
 
 void DocumentationSystem::displayDocumentation() {
@@ -49,13 +53,10 @@ void DocumentationSystem::displayDocumentation() {
             QSet<QString>(folders.begin(), folders.end());
         if (old_folders != result.documentation_folders) {
           for (const QString& folder : result.documentation_folders) {
+            LOG() << "Searching for documentation in" << folder;
             QDirIterator it(folder, QDir::Files, QDirIterator::Subdirectories);
             while (it.hasNext()) {
-              QString file_path = it.next();
-              Document doc;
-              doc.documentation_folder = folder;
-              doc.relative_file_path = file_path.remove(folder);
-              result.documents.append(doc);
+              result.documents.append(it.next());
             }
           }
         }
@@ -72,8 +73,9 @@ void DocumentationSystem::displayDocumentation() {
 }
 
 void DocumentationSystem::openDocument(int i) {
-  const Document& doc = documents->list[i];
-  QUrl url("file:///" + doc.documentation_folder + doc.relative_file_path);
+  const QString& path = documents->list[i];
+  QUrl url("file:///" + path);
+  LOG() << "Opening document" << url;
   QDesktopServices::openUrl(url);
 }
 
