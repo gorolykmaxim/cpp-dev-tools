@@ -40,6 +40,7 @@ int Application::Exec() {
   user_command.RegisterCommands();
   view.Initialize();
   editor.Initialize();
+  task.Initialize();
   qml_engine.load(QUrl("qrc:/cdt/qml/main.qml"));
   return gui_app.exec();
 }

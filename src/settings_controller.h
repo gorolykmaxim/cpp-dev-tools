@@ -17,11 +17,23 @@ class FolderListModel : public QVariantListModel {
   int GetRowCount() const;
 };
 
+struct Settings {
+  Q_GADGET
+  Q_PROPERTY(QString openInEditorCommand MEMBER open_in_editor_command)
+  Q_PROPERTY(int taskHistoryLimit MEMBER task_history_limit)
+ public:
+  bool operator==(const Settings& another) const;
+  bool operator!=(const Settings& another) const;
+
+  QString open_in_editor_command;
+  int task_history_limit;
+  QStringList external_search_folders;
+};
+
 class SettingsController : public QObject {
   Q_OBJECT
   QML_ELEMENT
-  Q_PROPERTY(QString openInEditorCommand MEMBER open_in_editor_command NOTIFY
-                 settingsChanged)
+  Q_PROPERTY(Settings settings MEMBER settings NOTIFY settingsChanged)
   Q_PROPERTY(FolderListModel* externalSearchFolders MEMBER
                  external_search_folders CONSTANT)
  public:
@@ -42,7 +54,7 @@ class SettingsController : public QObject {
  private:
   void Load();
 
-  QString open_in_editor_command;
+  Settings settings;
   FolderListModel* external_search_folders;
 };
 

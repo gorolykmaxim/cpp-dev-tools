@@ -213,10 +213,18 @@ void TaskSystem::FinishExecution(QUuid id, int exit_code) {
   for (int i : exec.stderr_line_indices) {
     indices.append(QString::number(i));
   }
-  Database::ExecCmdAsync(
+  QList<Database::Cmd> cmds;
+  cmds.append(Database::Cmd(
       "INSERT INTO task_execution VALUES(?,?,?,?,?,?,?,?)",
       {exec.id, project.id, exec.start_time, exec.task_id, exec.task_name,
-       *exec.exit_code, indices.join(','), exec.output});
+       *exec.exit_code, indices.join(','), exec.output}));
+  if (history_limit > 0) {
+    cmds.append(
+        Database::Cmd("DELETE FROM task_execution WHERE id NOT IN (SELECT id "
+                      "FROM task_execution ORDER BY start_time DESC LIMIT ?)",
+                      {history_limit}));
+  }
+  Database::ExecCmdsAsync(cmds);
   active_executions.remove(id);
   active_commands.remove(id);
   emit executionFinished(id);
@@ -385,6 +393,15 @@ void TaskSystem::SetSelectedExecutionId(QUuid id) {
 
 QUuid TaskSystem::GetSelectedExecutionId() const {
   return selected_execution_id;
+}
+
+void TaskSystem::Initialize() {
+  LOG() << "Initializing";
+  history_limit =
+      Database::ExecQueryAndReadSync<int>(
+          "SELECT history_limit FROM task_context", &Database::ReadIntFromSql)
+          .first();
+  LOG() << "Task history limit:" << history_limit;
 }
 
 UiIcon TaskSystem::GetStatusAsIcon(const TaskExecution& exec) {

@@ -63,4 +63,5 @@ class Database {
   static void ExecCmdAsync(const QString& query, const QVariantList& args = {});
   static void ExecCmdsAsync(const QList<Cmd>& cmds);
   static QString ReadStringFromSql(QSqlQuery& sql);
+  static int ReadIntFromSql(QSqlQuery& sql);
 };

@@ -65,6 +65,11 @@ void Database::Initialize() {
       "virtual_y INT, "
       "state BLOB, "
       "PRIMARY KEY(id, virtual_width, virtual_height, virtual_x, virtual_y))");
+  ExecCmd(
+      "CREATE TABLE IF NOT EXISTS task_context("
+      "id INT PRIMARY KEY DEFAULT 1,"
+      "history_limit INT)");
+  ExecCmd("INSERT OR IGNORE INTO task_context(history_limit) VALUES(10)");
 }
 
 void Database::ExecQuery(QSqlQuery &sql, const QString &query,
@@ -114,6 +119,8 @@ void Database::ExecCmdsAsync(const QList<Cmd> &cmds) {
 QString Database::ReadStringFromSql(QSqlQuery &sql) {
   return sql.value(0).toString();
 }
+
+int Database::ReadIntFromSql(QSqlQuery &sql) { return sql.value(0).toInt(); }
 
 Database::Transaction::Transaction() {
   LOG() << "Begin transaction";

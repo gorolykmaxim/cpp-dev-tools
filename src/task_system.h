@@ -75,6 +75,9 @@ class TaskSystem : public QObject {
   QString GetCurrentTaskName() const;
   void SetSelectedExecutionId(QUuid id);
   QUuid GetSelectedExecutionId() const;
+  void Initialize();
+
+  int history_limit;
 
  public slots:
   void executeTask(int i, bool repeat_until_fail = false);

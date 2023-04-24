@@ -3,6 +3,7 @@ import QtQuick.Controls
 import QtQuick.Layouts
 import "." as Cdt
 import cdt
+import "Common.js" as Common
 
 Loader {
   id: root
@@ -36,9 +37,24 @@ Loader {
               Layout.minimumWidth: 200
             }
             Cdt.TextField {
-              text: controller.openInEditorCommand
-              onDisplayTextChanged: controller.openInEditorCommand = displayText
+              text: controller.settings.openInEditorCommand
+              onDisplayTextChanged: controller.settings.openInEditorCommand = displayText
               focus: true
+              Layout.fillWidth: true
+              KeyNavigation.down: taskHistoryLimitInput
+            }
+            Cdt.Text {
+              text: "Maximum Task History Size"
+              Layout.minimumWidth: 200
+            }
+            Cdt.TextField {
+              id: taskHistoryLimitInput
+              text: controller.settings.taskHistoryLimit
+              validator: IntValidator {
+                bottom: 0
+                top: Common.MAX_INT
+              }
+              onDisplayTextChanged: controller.settings.taskHistoryLimit = displayText
               Layout.fillWidth: true
               KeyNavigation.down: configureExternalSearchFoldersBtn
             }

@@ -1,3 +1,5 @@
+const MAX_INT = 2147483647;
+
 function findMenuByTitle(menuBar, menuTitle) {
   for (let i = 0; i < menuBar.menus.length; i++) {
     const menuObj = menuBar.menus[i];
