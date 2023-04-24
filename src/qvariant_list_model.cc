@@ -116,6 +116,7 @@ static QString HighlightFuzzySubString(const QString& source,
 
 struct SortableProps {
   int not_matching_chars = 0;
+  int match_fragments = 0;
   qsizetype first_match_pos = -1;
 };
 
@@ -127,6 +128,7 @@ static SortableProps GetSortableProps(const QString& str) {
     if (start < 0) {
       break;
     }
+    result.match_fragments++;
     if (result.first_match_pos < 0) {
       result.first_match_pos = start;
     }
@@ -141,6 +143,7 @@ static SortableProps GetSortableProps(const QString& str) {
   if (last_end == 0) {
     result.not_matching_chars = std::numeric_limits<int>::max();
     result.first_match_pos = std::numeric_limits<qsizetype>::max();
+    result.match_fragments = std::numeric_limits<int>::max();
   } else if (last_end < str.length() - 1) {
     result.not_matching_chars += str.length() - last_end - 1;
   }
@@ -154,7 +157,9 @@ static bool CompareRows(const QVariantList& row1, const QVariantList& row2,
     QString b = row2[role].toString();
     SortableProps props1 = GetSortableProps(a);
     SortableProps props2 = GetSortableProps(b);
-    if (props1.first_match_pos != props2.first_match_pos) {
+    if (props1.match_fragments != props2.match_fragments) {
+      return props1.match_fragments < props2.match_fragments;
+    } else if (props1.first_match_pos != props2.first_match_pos) {
       return props1.first_match_pos < props2.first_match_pos;
     } else if (props1.not_matching_chars != props2.not_matching_chars) {
       return props1.not_matching_chars < props2.not_matching_chars;
