@@ -70,6 +70,9 @@ void Database::Initialize() {
       "id INT PRIMARY KEY DEFAULT 1,"
       "history_limit INT)");
   ExecCmd("INSERT OR IGNORE INTO task_context(history_limit) VALUES(10)");
+  ExecCmd(
+      "CREATE TABLE IF NOT EXISTS documentation_folder("
+      "path TEXT PRIMARY KEY)");
 }
 
 void Database::ExecQuery(QSqlQuery &sql, const QString &query,

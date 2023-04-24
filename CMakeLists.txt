@@ -53,6 +53,8 @@ qt_add_executable(cpp-dev-tools
   src/find_in_files_controller.cc
   src/git_system.h
   src/git_system.cc
+  src/documentation_system.h
+  src/documentation_system.cc
   src/main.cc)
 if(NOT MSVC)
   # TODO: figure out how to enable all warnings in MSVC without triggering
@@ -95,6 +97,7 @@ qt_add_qml_module(cpp-dev-tools URI cdt VERSION 1.0
       qml/FindInFiles.qml
       qml/CheckBox.qml
       qml/SplitViewHandle.qml
+      qml/Documentation.qml
   RESOURCES
       fonts/MaterialIcons-Regular.ttf
   RESOURCE_PREFIX /)

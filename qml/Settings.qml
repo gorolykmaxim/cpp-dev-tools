@@ -13,6 +13,7 @@ Loader {
   SettingsController {
     id: controller
     onOpenExternalSearchFoldersEditor: sourceComponent = externalSearchFolderEditorView
+    onOpenDocumentationFoldersEditor: sourceComponent = documentationFolderEditorView
     onOpenSettings: sourceComponent = settingsView
   }
   Component {
@@ -63,6 +64,13 @@ Loader {
               text: "Configure External Search Folders"
               Layout.columnSpan: 2
               onClicked: controller.configureExternalSearchFolders()
+              KeyNavigation.down: configureDocumentationFoldersBtn
+            }
+            Cdt.Button {
+              id: configureDocumentationFoldersBtn
+              text: "Configure Documentation Folders"
+              Layout.columnSpan: 2
+              onClicked: controller.configureDocumentationFolders()
               KeyNavigation.down: saveBtn
             }
           }
@@ -80,10 +88,18 @@ Loader {
     id: externalSearchFolderEditorView
     Cdt.FolderList {
       foldersModel: controller.externalSearchFolders
-      onFolderAdded: folder => controller.addExternalSearchFolder(folder)
-      onFolderRemoved: folder => controller.removeExternalSearchFolder(folder)
-      onCancel: controller.goToSettings()
+      onFolderAdded: folder => controller.externalSearchFolders.addFolder(folder)
+      onFolderRemoved: folder => controller.externalSearchFolders.removeFolder(folder)
+      onBack: controller.goToSettings()
+    }
+  }
+  Component {
+    id: documentationFolderEditorView
+    Cdt.FolderList {
+      foldersModel: controller.documentationFolders
+      onFolderAdded: folder => controller.documentationFolders.addFolder(folder)
+      onFolderRemoved: folder => controller.documentationFolders.removeFolder(folder)
+      onBack: controller.goToSettings()
     }
   }
 }
-

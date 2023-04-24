@@ -1,13 +1,15 @@
 #include "settings_controller.h"
 
 #include "application.h"
-#include "database.h"
 #include "io_task.h"
 
 #define LOG() qDebug() << "[SettingsController]"
 
 SettingsController::SettingsController(QObject *parent)
-    : QObject(parent), external_search_folders(new FolderListModel(this)) {
+    : QObject(parent),
+      external_search_folders(
+          new FolderListModel(this, "external_search_folder")),
+      documentation_folders(new FolderListModel(this, "documentation_folder")) {
   Application::Get().view.SetWindowTitle("Settings");
   Load();
 }
@@ -18,19 +20,10 @@ void SettingsController::configureExternalSearchFolders() {
   emit openExternalSearchFoldersEditor();
 }
 
-void SettingsController::addExternalSearchFolder(const QString &folder) {
-  if (external_search_folders->list.contains(folder)) {
-    return;
-  }
-  LOG() << "Adding external search folder" << folder;
-  external_search_folders->list.append(folder);
-  external_search_folders->Load();
-}
-
-void SettingsController::removeExternalSearchFolder(const QString &folder) {
-  LOG() << "Removing external search folder" << folder;
-  external_search_folders->list.removeAll(folder);
-  external_search_folders->Load();
+void SettingsController::configureDocumentationFolders() {
+  LOG() << "Opening documentation folder editor";
+  Application::Get().view.SetWindowTitle("Documentation Folders");
+  emit openDocumentationFoldersEditor();
 }
 
 void SettingsController::goToSettings() {
@@ -51,11 +44,8 @@ void SettingsController::save() {
     cmds.append(Database::Cmd("UPDATE editor SET open_command=?",
                               {settings.open_in_editor_command}));
   }
-  cmds.append(Database::Cmd("DELETE FROM external_search_folder"));
-  for (const QString &folder : external_search_folders->list) {
-    cmds.append(Database::Cmd("INSERT INTO external_search_folder VALUES(?)",
-                              {folder}));
-  }
+  cmds.append(external_search_folders->MakeCommandsToUpdateDatabase());
+  cmds.append(documentation_folders->MakeCommandsToUpdateDatabase());
   app.task.history_limit = settings.task_history_limit;
   cmds.append(Database::Cmd("UPDATE task_context SET history_limit=?",
                             {settings.task_history_limit}));
@@ -72,6 +62,8 @@ void SettingsController::Load() {
         settings.external_search_folders = Database::ExecQueryAndRead<QString>(
             "SELECT * FROM external_search_folder",
             &Database::ReadStringFromSql);
+        settings.documentation_folders = Database::ExecQueryAndRead<QString>(
+            "SELECT * FROM documentation_folder", &Database::ReadStringFromSql);
         settings.task_history_limit =
             Database::ExecQueryAndRead<int>(
                 "SELECT history_limit FROM task_context",
@@ -80,8 +72,8 @@ void SettingsController::Load() {
         return settings;
       },
       [this](Settings settings) {
-        external_search_folders->list = settings.external_search_folders;
-        external_search_folders->Load();
+        external_search_folders->SetFolders(settings.external_search_folders);
+        documentation_folders->SetFolders(settings.documentation_folders);
         settings.open_in_editor_command =
             Application::Get().editor.open_command;
         this->settings = settings;
@@ -89,9 +81,39 @@ void SettingsController::Load() {
       });
 }
 
-FolderListModel::FolderListModel(QObject *parent) : QVariantListModel(parent) {
+FolderListModel::FolderListModel(QObject *parent, const QString &table)
+    : QVariantListModel(parent), table(table) {
   SetRoleNames({{0, "title"}});
   searchable_roles = {0};
+}
+
+void FolderListModel::SetFolders(QStringList &folders) {
+  list = folders;
+  Load();
+}
+
+QList<Database::Cmd> FolderListModel::MakeCommandsToUpdateDatabase() {
+  QList<Database::Cmd> cmds;
+  cmds.append(Database::Cmd("DELETE FROM " + table));
+  for (const QString &folder : list) {
+    cmds.append(Database::Cmd("INSERT INTO " + table + " VALUES(?)", {folder}));
+  }
+  return cmds;
+}
+
+void FolderListModel::addFolder(const QString &folder) {
+  if (list.contains(folder)) {
+    return;
+  }
+  LOG() << "Adding" << table << folder;
+  list.append(folder);
+  Load();
+}
+
+void FolderListModel::removeFolder(const QString &folder) {
+  LOG() << "Removing" << table << folder;
+  list.removeAll(folder);
+  Load();
 }
 
 QVariantList FolderListModel::GetRow(int i) const { return {list[i]}; }
@@ -101,7 +123,8 @@ int FolderListModel::GetRowCount() const { return list.size(); }
 bool Settings::operator==(const Settings &another) const {
   return open_in_editor_command == another.open_in_editor_command &&
          task_history_limit == another.task_history_limit &&
-         external_search_folders == another.external_search_folders;
+         external_search_folders == another.external_search_folders &&
+         documentation_folders == another.documentation_folders;
 }
 
 bool Settings::operator!=(const Settings &another) const {

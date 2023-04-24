@@ -60,6 +60,9 @@ void UserCommandSystem::RegisterCommands() {
   RegisterCommand("View", "Notifications", "Ctrl+N", [] {
     Application::Get().view.SetCurrentView("NotificationList.qml");
   });
+  RegisterCommand("View", "Documentation", "F1", [] {
+    Application::Get().view.SetCurrentView("Documentation.qml");
+  });
   RegisterCommand("View", "Settings", "Ctrl+,", [] {
     Application::Get().view.SetCurrentView("Settings.qml");
   });

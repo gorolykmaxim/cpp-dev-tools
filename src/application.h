@@ -5,6 +5,7 @@
 #include <QThreadPool>
 #include <functional>
 
+#include "documentation_system.h"
 #include "editor_system.h"
 #include "notification_system.h"
 #include "project_system.h"
@@ -27,6 +28,7 @@ class Application {
   TaskSystem task;
   EditorSystem editor;
   NotificationSystem notification;
+  DocumentationSystem documentation;
   QGuiApplication gui_app;
   QQmlApplicationEngine qml_engine;
   QThreadPool io_thread_pool;

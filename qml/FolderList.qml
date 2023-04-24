@@ -9,7 +9,7 @@ Loader {
   property var foldersModel: null
   signal folderAdded(folder: string)
   signal folderRemoved(folder: string)
-  signal cancel()
+  signal back()
   focus: true
   anchors.fill: parent
   sourceComponent: listView
@@ -38,12 +38,12 @@ Loader {
             id: addBtn
             text: "Add Folder"
             onClicked: root.sourceComponent = chooseFolderView
-            KeyNavigation.right: cancelBtn
+            KeyNavigation.right: backBtn
           }
           Cdt.Button {
-            id: cancelBtn
-            text: "Cancel"
-            onClicked: root.cancel()
+            id: backBtn
+            text: "Back"
+            onClicked: root.back()
           }
         }
       }
