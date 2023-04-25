@@ -1,5 +1,6 @@
 #include "qvariant_list_model.h"
 
+#include <QtConcurrent>
 #include <algorithm>
 #include <limits>
 
@@ -65,103 +66,128 @@ QVariant QVariantListModel::data(const QModelIndex& index, int role) const {
   return row[role];
 }
 
-static const QString kHighlightOpen = "<b>";
-static const QString kHighlightClose = "</b>";
-
-static QString HighlightFuzzySubString(const QString& source,
-                                       const QString& term) {
-  QString result;
-  QTextStream stream(&result);
-  qsizetype last_char_index = -1;
-  bool matches = false;
-  bool highlighting = false;
-  for (QChar c : term) {
-    qsizetype pos = source.indexOf(c, last_char_index + 1,
-                                   Qt::CaseSensitivity::CaseInsensitive);
-    if (pos < 0) {
-      matches = false;
-      break;
-    }
-    qsizetype distance = pos - last_char_index;
-    if (distance > 1) {
-      if (highlighting) {
-        highlighting = false;
-        stream << kHighlightClose;
-      }
-      stream << source.sliced(last_char_index + 1, distance - 1);
-    }
-    if (!highlighting) {
-      highlighting = true;
-      matches = true;
-      stream << kHighlightOpen;
-    }
-    stream << source[pos];
-    last_char_index = pos;
-  }
-  if (matches && last_char_index < source.length() - 1) {
-    if (highlighting) {
-      stream << kHighlightClose;
-    }
-    stream << source.sliced(last_char_index + 1,
-                            source.length() - last_char_index - 1);
-  }
-  if (matches) {
-    stream.flush();
-  } else {
-    result = source;
-  }
-  return result;
-}
-
-struct SortableProps {
+struct HighlightResult {
   int not_matching_chars = 0;
   int match_fragments = 0;
   qsizetype first_match_pos = -1;
+  QString result;
+  bool matches = false;
 };
 
-static SortableProps GetSortableProps(const QString& str) {
-  SortableProps result;
-  qsizetype last_end = 0;
-  while (true) {
-    qsizetype start = str.indexOf(kHighlightOpen, last_end);
-    if (start < 0) {
-      break;
+struct Row {
+  QVariantList columns;
+  QList<HighlightResult> highlights;
+  bool matches = false;
+};
+
+static HighlightResult HighlightFuzzySubString(const QString& source,
+                                               const QString& term) {
+  // It is a match if every char of 'term' is found in 'source'
+  // in the same order as in 'term' e.g. 'term'="cppdevtools"
+  // will match 'source'="cpp-dev-tools".
+  // However, those found chars should form continuous sub-matches
+  // inside 'source' of at least 2 consecutive chars each, meaning
+  // that 'term'="cdt" won't match 'source="cpp-dev-tools" because
+  // there is no continuos "cd" or "dt" in 'source'.
+  // However, the user might still be typing the 'term' and might
+  // be at 'term'="cppd". There "d" would be a 1 char match and
+  // wouldn't match 'source'="cpp-dev-tools". We don't want that
+  // to happen because it would lead to ListView not showing
+  // any results for a brief moment which would disorient the user.
+  // For such cases a 1 char sub match at the very end of
+  // the 'term' is allowed and will be considered a match.
+  static const QString kHighlightOpen = "<b>";
+  static const QString kHighlightClose = "</b>";
+  HighlightResult result;
+  result.result.reserve(source.size() * 1.5);
+  int si = 0;
+  int ti = 0;
+  int match_length = 0;  // Current sub-match length
+  if (source.size() > term.size()) {
+    for (; si < source.size(); si++) {
+      if (term[ti].toLower() == source[si].toLower()) {
+        match_length++;
+        ti++;
+        if (match_length == 2) {
+          // Current char sequence is longer than 1, thus it is a sub-match.
+          result.result += kHighlightOpen;
+          // We didn't put char from source while sequence was 1 char long.
+          // Need to put that char in result now.
+          result.result += source[si - 1];
+          result.match_fragments++;
+          if (result.first_match_pos < 0) {
+            result.first_match_pos = si - 1;
+          }
+        }
+      } else {
+        result.not_matching_chars++;
+        if (match_length == 1) {
+          // Last char sequence ended while being 1 char-long.
+          // Need to count that char as not matching and rollback
+          // 'term' index.
+          result.not_matching_chars++;
+          ti--;
+          // We didn't put char from source while sequence was 1 char long.
+          // Need to put that char in result now.
+          result.result += source[si - 1];
+        } else if (match_length > 1) {
+          // Last char sequence was a sub-match. Need to close it's highlight.
+          result.result += kHighlightClose;
+        }
+        match_length = 0;
+      }
+      if (match_length != 1) {
+        // We are here only if:
+        // a) there is no char sequence being matched at all
+        // b) there is a char sequence that is already longer than 2 chars
+        result.result += source[si];
+      }
+      if (ti == term.size()) {
+        // 'term' ended. Need to stop.
+        if (match_length > 1 ||
+            (match_length == 1 && result.first_match_pos >= 0)) {
+          // There was an active sub-match, that needs to be closed.
+          if (match_length == 1) {
+            // A 1 char sub-match at the end of 'term' is allowed.
+            result.result += kHighlightOpen;
+            // We are at 1 char sub-match right now, so current
+            // 'source' char hasn't been putted in result yet.
+            result.result += source[si];
+            result.match_fragments++;
+          }
+          result.result += kHighlightClose;
+          if (++si < source.size()) {
+            // There were more chars in 'source' left after the match.
+            // They need to be appended to the result.
+            result.result += source.sliced(si, source.size() - si);
+            result.not_matching_chars += source.size() - si;
+          }
+          result.matches = true;
+        }
+        break;
+      }
     }
-    result.match_fragments++;
-    if (result.first_match_pos < 0) {
-      result.first_match_pos = start;
-    }
-    result.not_matching_chars += start - last_end;
-    qsizetype end =
-        str.indexOf(kHighlightClose, start + kHighlightOpen.length());
-    if (end < 0) {
-      break;
-    }
-    last_end = end + kHighlightClose.length();
   }
-  if (last_end == 0) {
-    result.not_matching_chars = std::numeric_limits<int>::max();
+  if (!result.matches) {
     result.first_match_pos = std::numeric_limits<qsizetype>::max();
+    result.not_matching_chars = std::numeric_limits<int>::max();
     result.match_fragments = std::numeric_limits<int>::max();
-  } else if (last_end < str.length() - 1) {
-    result.not_matching_chars += str.length() - last_end - 1;
+    result.result = source;
   }
   return result;
 }
 
-static bool CompareRows(const QVariantList& row1, const QVariantList& row2,
+static bool CompareRows(const Row& row1, const Row& row2,
                         const QList<int>& searchable_roles) {
   for (int role : searchable_roles) {
-    QString a = row1[role].toString();
-    QString b = row2[role].toString();
-    SortableProps props1 = GetSortableProps(a);
-    SortableProps props2 = GetSortableProps(b);
-    if (props1.match_fragments != props2.match_fragments) {
-      return props1.match_fragments < props2.match_fragments;
-    } else if (props1.first_match_pos != props2.first_match_pos) {
-      return props1.first_match_pos < props2.first_match_pos;
-    } else if (props1.not_matching_chars != props2.not_matching_chars) {
-      return props1.not_matching_chars < props2.not_matching_chars;
+    const HighlightResult& highlight1 = row1.highlights[role];
+    const HighlightResult& highlight2 = row2.highlights[role];
+    if (highlight1.match_fragments != highlight2.match_fragments) {
+      return highlight1.match_fragments < highlight2.match_fragments;
+    } else if (highlight1.first_match_pos != highlight2.first_match_pos) {
+      return highlight1.first_match_pos < highlight2.first_match_pos;
+    } else if (highlight1.not_matching_chars != highlight2.not_matching_chars) {
+      return highlight1.not_matching_chars < highlight2.not_matching_chars;
     }
   }
   return false;
@@ -169,75 +195,111 @@ static bool CompareRows(const QVariantList& row1, const QVariantList& row2,
 
 void QVariantListModel::Load() {
   SetIsUpdating(true);
-  QList<QVariantList> new_items;
   int count = GetRowCount();
-  for (int i = 0; i < count; i++) {
-    QVariantList row = GetRow(i);
-    if (filter.isEmpty() || searchable_roles.isEmpty()) {
-      new_items.append(row);
-      continue;
-    }
-    bool matches = false;
-    for (int role : searchable_roles) {
-      QString str = row[role].toString();
-      QString result = HighlightFuzzySubString(str, filter);
-      if (result != str) {
-        row[role] = result;
-        matches = true;
-      }
-    }
-    if (matches) {
-      new_items.append(row);
-    }
-  }
-  if (!filter.isEmpty()) {
-    // Only sort when actual filter is applied. Otherwise - preserve original
-    // order, supplied by the client code.
-    std::sort(new_items.begin(), new_items.end(),
-              [this](const QVariantList& row1, const QVariantList& row2) {
-                return CompareRows(row1, row2, searchable_roles);
-              });
-  }
-  int diff = new_items.size() - items.size();
+  auto not_filtered = QSharedPointer<QList<Row>>::create(count);
+  auto filtered = QSharedPointer<QList<Row>>::create();
+  filtered->reserve(count);
   cmd_buffer.Clear();
-  if (diff > 0) {
-    cmd_buffer.ScheduleCommands(
-        diff, 100, [this, new_items](int first, int last) {
-          int to_insert = last - first + 1;
-          beginInsertRows(QModelIndex(), items.size(),
-                          items.size() + to_insert - 1);
-          items.append(new_items.sliced(items.size(), to_insert));
-          endInsertRows();
-        });
-  } else if (diff < 0) {
-    cmd_buffer.ScheduleCommands(diff * -1, 100, [this](int first, int last) {
-      int to_remove = last - first + 1;
-      int starting_from = items.size() - to_remove;
-      beginRemoveRows(QModelIndex(), starting_from, items.size() - 1);
-      items.remove(starting_from, to_remove);
-      endRemoveRows();
-    });
-  }
-  cmd_buffer.ScheduleCommands(std::min(new_items.size(), items.size()), 5,
-                              [this, new_items](int first, int last) {
-                                for (int i = first; i <= last; i++) {
-                                  items[i] = new_items[i];
-                                }
-                                emit dataChanged(index(first), index(last));
-                              });
-  cmd_buffer.ScheduleCommand([this] {
-    int current_index = 0;
-    if (name_to_role.contains("isSelected")) {
-      int role = name_to_role["isSelected"];
-      for (int i = 0; i < items.size(); i++) {
-        if (items[i][role].toBool()) {
-          current_index = i;
-          break;
+  cmd_buffer.ScheduleCommands(
+      count, 2000, [this, not_filtered, filtered](int first, int last) {
+        // Split current items segment among threads.
+        int threads = QThreadPool::globalInstance()->maxThreadCount();
+        int count_per_thread = (last - first + 1) / threads;
+        QList<std::pair<int, int>> ranges;
+        int start = first;
+        int end = first;
+        for (int i = 0; i < threads - 1; i++) {
+          start = first + i * count_per_thread;
+          end = start + count_per_thread;
+          ranges.append(std::make_pair(start, end));
+        }
+        start = end;
+        end = last + 1;
+        ranges.append(std::make_pair(start, end));
+        // Fuzzy-highlight search results in parallel.
+        QtConcurrent::blockingMap(
+            ranges, [this, not_filtered](std::pair<int, int> range) {
+              for (int i = range.first; i < range.second; i++) {
+                Row& row = (*not_filtered)[i];
+                row.columns = GetRow(i);
+                if (filter.size() < 2) {
+                  row.matches = true;
+                  continue;
+                }
+                row.highlights = QList<HighlightResult>(row.columns.size());
+                for (int role : searchable_roles) {
+                  QString str = row.columns[role].toString();
+                  HighlightResult h = HighlightFuzzySubString(str, filter);
+                  row.highlights[role] = h;
+                  if (h.matches) {
+                    row.columns[role] = h.result;
+                    row.matches = true;
+                  }
+                }
+              }
+            });
+        // Accumulate a of matches.
+        for (const Row& row : *not_filtered) {
+          if (row.matches) {
+            filtered->append(row);
+          }
+        }
+      });
+  cmd_buffer.ScheduleCommand([this, filtered] {
+    // Sort filtered results and schedule updates to UI.
+    if (filter.size() > 1 && !searchable_roles.isEmpty()) {
+      // Only sort when actual filter is applied. Otherwise - preserve original
+      // order, supplied by the client code.
+      std::sort(filtered->begin(), filtered->end(),
+                [this](const Row& row1, const Row& row2) {
+                  return CompareRows(row1, row2, searchable_roles);
+                });
+    }
+    QList<QVariantList> new_items;
+    for (const Row& row : *filtered) {
+      new_items.append(row.columns);
+    }
+    int diff = new_items.size() - items.size();
+    cmd_buffer.Clear();
+    if (diff > 0) {
+      cmd_buffer.ScheduleCommands(
+          diff, 100, [this, new_items](int first, int last) {
+            int to_insert = last - first + 1;
+            beginInsertRows(QModelIndex(), items.size(),
+                            items.size() + to_insert - 1);
+            items.append(new_items.sliced(items.size(), to_insert));
+            endInsertRows();
+          });
+    } else if (diff < 0) {
+      cmd_buffer.ScheduleCommands(diff * -1, 100, [this](int first, int last) {
+        int to_remove = last - first + 1;
+        int starting_from = items.size() - to_remove;
+        beginRemoveRows(QModelIndex(), starting_from, items.size() - 1);
+        items.remove(starting_from, to_remove);
+        endRemoveRows();
+      });
+    }
+    cmd_buffer.ScheduleCommands(std::min(new_items.size(), items.size()), 5,
+                                [this, new_items](int first, int last) {
+                                  for (int i = first; i <= last; i++) {
+                                    items[i] = new_items[i];
+                                  }
+                                  emit dataChanged(index(first), index(last));
+                                });
+    cmd_buffer.ScheduleCommand([this] {
+      int current_index = 0;
+      if (name_to_role.contains("isSelected")) {
+        int role = name_to_role["isSelected"];
+        for (int i = 0; i < items.size(); i++) {
+          if (items[i][role].toBool()) {
+            current_index = i;
+            break;
+          }
         }
       }
-    }
-    emit preSelectCurrentIndex(current_index);
-    SetIsUpdating(false);
+      emit preSelectCurrentIndex(current_index);
+      SetIsUpdating(false);
+    });
   });
   cmd_buffer.RunCommands();
 }
@@ -266,9 +328,13 @@ void QVariantListModel::SetFilterIfChanged(const QString& filter) {
 }
 
 void QVariantListModel::SetFilter(const QString& filter) {
+  bool should_load =
+      filter.size() > 1 || (this->filter.size() > 1 && filter.size() < 2);
   this->filter = filter;
   emit filterChanged();
-  Load();
+  if (should_load) {
+    Load();
+  }
 }
 
 QString QVariantListModel::GetFilter() { return filter; }

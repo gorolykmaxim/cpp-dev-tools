@@ -34,7 +34,14 @@ Qml.MenuBar {
   }
 
   onIsProjectOpenedChanged: initialize()
-  onModelChanged: initialize()
+  Connections {
+    target: model
+    function onIsUpdatingChanged() {
+      if (!model.isUpdating) {
+        initialize();
+      }
+    }
+  }
   background: Rectangle {
     implicitHeight: 1
     color: Theme.colorBgDark

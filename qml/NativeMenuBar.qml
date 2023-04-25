@@ -28,7 +28,14 @@ Item {
   }
 
   onIsProjectOpenedChanged: initialize()
-  onModelChanged: initialize()
+  Connections {
+    target: model
+    function onIsUpdatingChanged() {
+      if (!model.isUpdating) {
+        initialize();
+      }
+    }
+  }
   Timer {
     id: delay
     property var index

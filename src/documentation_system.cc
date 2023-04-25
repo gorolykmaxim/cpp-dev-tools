@@ -16,10 +16,8 @@ DocumentListModel::DocumentListModel(QObject* parent)
 }
 
 QVariantList DocumentListModel::GetRow(int i) const {
-  const QString& path = list[i];
-  qsizetype j = path.lastIndexOf('/');
-  QString file_name = j < 0 ? path : path.sliced(j + 1);
-  return {i, file_name, path};
+  const Document& doc = list[i];
+  return {i, doc.file_name, doc.path};
 }
 
 int DocumentListModel::GetRowCount() const { return list.size(); }
@@ -37,7 +35,7 @@ bool DocumentationSystem::IsLoading() const { return is_loading; }
 
 struct DocumentationSearch {
   QSet<QString> documentation_folders;
-  QStringList documents;
+  QList<Document> documents;
 };
 
 void DocumentationSystem::displayDocumentation() {
@@ -57,7 +55,14 @@ void DocumentationSystem::displayDocumentation() {
             LOG() << "Searching for documentation in" << folder;
             QDirIterator it(folder, QDir::Files, QDirIterator::Subdirectories);
             while (it.hasNext()) {
-              result.documents.append(it.next());
+              Document doc;
+              doc.path = it.next();
+              if (!doc.path.endsWith(".html") && !doc.path.endsWith(".htm")) {
+                continue;
+              }
+              qsizetype j = doc.path.lastIndexOf('/');
+              doc.file_name = j < 0 ? doc.path : doc.path.sliced(j + 1);
+              result.documents.append(doc);
             }
           }
         }
@@ -74,8 +79,8 @@ void DocumentationSystem::displayDocumentation() {
 }
 
 void DocumentationSystem::openDocument(int i) {
-  const QString& path = documents->list[i];
-  QUrl url("file:///" + path);
+  const Document& doc = documents->list[i];
+  QUrl url("file:///" + doc.path);
   LOG() << "Opening document" << url;
   QDesktopServices::openUrl(url);
 }

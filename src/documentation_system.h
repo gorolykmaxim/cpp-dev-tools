@@ -5,11 +5,16 @@
 
 #include "qvariant_list_model.h"
 
+struct Document {
+  QString file_name;
+  QString path;
+};
+
 class DocumentListModel : public QVariantListModel {
  public:
   explicit DocumentListModel(QObject* parent);
 
-  QStringList list;
+  QList<Document> list;
 
  protected:
   QVariantList GetRow(int i) const;
