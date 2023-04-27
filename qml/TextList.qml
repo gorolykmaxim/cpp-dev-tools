@@ -65,6 +65,7 @@ ListView {
         icon: itemModel.icon || ""
         color: itemModel.iconColor || Theme.colorText
         visible: itemModel.icon || false
+        iconSize: itemModel.subTitle ? 24 : 16
         Layout.leftMargin: Theme.basePadding
         Layout.topMargin: Theme.basePadding
         Layout.bottomMargin: Theme.basePadding
