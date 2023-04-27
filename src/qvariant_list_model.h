@@ -37,10 +37,13 @@ class QVariantListModel : public QAbstractListModel {
   QVariant data(const QModelIndex& index, int role = 0) const override;
   void Load();
 
+ public:
+  int min_filter_sub_match_length = 2;
+
  public slots:
   QVariant getFieldByRoleName(int row, const QString& name) const;
-  void SetFilterIfChanged(const QString& filter);
-  void SetFilter(const QString& filter);
+  bool SetFilterIfChanged(const QString& filter);
+  bool SetFilter(const QString& filter);
   QString GetFilter();
 
  signals:

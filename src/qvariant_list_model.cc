@@ -81,84 +81,93 @@ struct Row {
 };
 
 static HighlightResult HighlightFuzzySubString(const QString& source,
-                                               const QString& term) {
-  // It is a match if every char of 'term' is found in 'source'
-  // in the same order as in 'term' e.g. 'term'="cppdevtools"
-  // will match 'source'="cpp-dev-tools".
-  // However, those found chars should form continuous sub-matches
-  // inside 'source' of at least 2 consecutive chars each, meaning
-  // that 'term'="cdt" won't match 'source="cpp-dev-tools" because
-  // there is no continuos "cd" or "dt" in 'source'.
-  // However, the user might still be typing the 'term' and might
-  // be at 'term'="cppd". There "d" would be a 1 char match and
-  // wouldn't match 'source'="cpp-dev-tools". We don't want that
-  // to happen because it would lead to ListView not showing
-  // any results for a brief moment which would disorient the user.
-  // For such cases a 1 char sub match at the very end of
+                                               const QString& term,
+                                               int min_sub_match_length) {
+  // It is a match if every char of 'term' is found in 'source' in the same
+  // order as in 'term' e.g. 'term'="cppdevtools" will match
+  // 'source'="cpp-dev-tools".
+  // However, those found chars should form continuous sub-matches inside
+  // 'source' of at least 'min_sub_match_length' consecutive chars each, meaning
+  // that given 'min_sub_match_length'=2, 'term'="cdt" won't match
+  // 'source="cpp-dev-tools" because there is no continuous "cd" or "dt" in
+  // 'source'.
+  // However, the user might still be typing the 'term' and might be
+  // at 'term'="cppd". There "d" would be a 1 char match and wouldn't match
+  // 'source'="cpp-dev-tools". We don't want that to happen because it would
+  // lead to ListView not showing any results for a brief moment which would
+  // disorient the user. For such cases a 1 char sub match at the very end of
   // the 'term' is allowed and will be considered a match.
   static const QString kHighlightOpen = "<b>";
   static const QString kHighlightClose = "</b>";
+  Q_ASSERT(min_sub_match_length > 0);
   HighlightResult result;
   result.result.reserve(source.size() * 1.5);
   int si = 0;
   int ti = 0;
-  int match_length = 0;  // Current sub-match length
+  // Last ti position that pointed to a confirmed sub-match
+  int last_ti_match = 0;
+  // Current sub-match length
+  int match_length = 0;
   if (source.size() > term.size()) {
     for (; si < source.size(); si++) {
       if (term[ti].toLower() == source[si].toLower()) {
         match_length++;
+        if (match_length >= min_sub_match_length) {
+          last_ti_match = ti;
+        }
         ti++;
-        if (match_length == 2) {
-          // Current char sequence is longer than 1, thus it is a sub-match.
+        if (match_length == min_sub_match_length) {
+          // Current char sequence is 'min_sub_match_length' chars long, thus it
+          // is a confirmed sub-match.
           result.result += kHighlightOpen;
-          // We didn't put char from source while sequence was 1 char long.
-          // Need to put that char in result now.
-          result.result += source[si - 1];
+          // We didn't put chars from 'source' to 'result' while this sub-match
+          // was not confirmed. Need to do it now.
+          result.result += source.sliced(si - match_length + 1, match_length);
           result.match_fragments++;
           if (result.first_match_pos < 0) {
-            result.first_match_pos = si - 1;
+            result.first_match_pos = si - match_length + 1;
           }
         }
       } else {
-        result.not_matching_chars++;
-        if (match_length == 1) {
-          // Last char sequence ended while being 1 char-long.
-          // Need to count that char as not matching and rollback
-          // 'term' index.
-          result.not_matching_chars++;
-          ti--;
-          // Need to restart matching from current 'source' char, since
-          // it might match previous 'term' char.
-          si--;
-        } else if (match_length > 1) {
+        if (match_length > 0 && match_length < min_sub_match_length) {
+          // Last sub-match didn't become confirmed.
+          // Rollback 'term' index to last confirmed sub-match position.
+          ti = last_ti_match;
+          // Rollback 'source' index to the first char of current sub-match,
+          // since we need to add it to the 'result' and restart search from the
+          // next char.
+          si -= match_length;
+        } else if (match_length >= min_sub_match_length) {
           // Last char sequence was a sub-match. Need to close it's highlight.
           result.result += kHighlightClose;
         }
+        result.not_matching_chars++;
         match_length = 0;
       }
-      if (match_length != 1) {
+      if (match_length == 0 || match_length > min_sub_match_length) {
         // We are here only if:
         // a) there is no char sequence being matched at all
-        // b) there is a char sequence that is already longer than 2 chars
+        // b) there is a char sequence that is already longer than
+        // 'min_sub_match_length' chars
         result.result += source[si];
       }
       if (ti == term.size()) {
         // 'term' ended. Need to stop.
-        if (match_length > 1 ||
-            (match_length == 1 && result.first_match_pos >= 0)) {
-          // There was an active sub-match, that needs to be closed.
-          if (match_length == 1) {
-            // A 1 char sub-match at the end of 'term' is allowed.
+        if (match_length >= min_sub_match_length ||
+            (match_length > 0 && result.first_match_pos >= 0)) {
+          // There was a sub-match, that needs to be closed.
+          if (match_length < min_sub_match_length) {
+            // An unconfirmed sub-match at the end of 'term' is allowed.
             result.result += kHighlightOpen;
-            // We are at 1 char sub-match right now, so current
-            // 'source' char hasn't been putted in result yet.
-            result.result += source[si];
+            // We didn't put chars from 'source' to 'result' while this
+            // sub-match was not confirmed. Need to do it now.
+            result.result += source.sliced(si - match_length + 1, match_length);
             result.match_fragments++;
           }
           result.result += kHighlightClose;
           if (++si < source.size()) {
             // There were more chars in 'source' left after the match.
-            // They need to be appended to the result.
+            // They need to be appended to the 'result'.
             result.result += source.sliced(si, source.size() - si);
             result.not_matching_chars += source.size() - si;
           }
@@ -222,14 +231,15 @@ void QVariantListModel::Load() {
               for (int i = range.first; i < range.second; i++) {
                 Row& row = (*not_filtered)[i];
                 row.columns = GetRow(i);
-                if (filter.size() < 2) {
+                if (filter.size() < min_filter_sub_match_length) {
                   row.matches = true;
                   continue;
                 }
                 row.highlights = QList<HighlightResult>(row.columns.size());
                 for (int role : searchable_roles) {
                   QString str = row.columns[role].toString();
-                  HighlightResult h = HighlightFuzzySubString(str, filter);
+                  HighlightResult h = HighlightFuzzySubString(
+                      str, filter, min_filter_sub_match_length);
                   row.highlights[role] = h;
                   if (h.matches) {
                     row.columns[role] = h.result;
@@ -248,7 +258,8 @@ void QVariantListModel::Load() {
       });
   cmd_buffer.ScheduleCommand([this, filtered] {
     // Sort filtered results and schedule updates to UI.
-    if (filter.size() > 1 && !searchable_roles.isEmpty()) {
+    if (filter.size() >= min_filter_sub_match_length &&
+        !searchable_roles.isEmpty()) {
       // Only sort when actual filter is applied. Otherwise - preserve original
       // order, supplied by the client code.
       std::sort(filtered->begin(), filtered->end(),
@@ -321,21 +332,23 @@ QVariant QVariantListModel::getFieldByRoleName(int row,
   return row_values[role];
 }
 
-void QVariantListModel::SetFilterIfChanged(const QString& filter) {
+bool QVariantListModel::SetFilterIfChanged(const QString& filter) {
   if (filter == this->filter) {
-    return;
+    return false;
   }
-  SetFilter(filter);
+  return SetFilter(filter);
 }
 
-void QVariantListModel::SetFilter(const QString& filter) {
-  bool should_load =
-      filter.size() > 1 || (this->filter.size() > 1 && filter.size() < 2);
+bool QVariantListModel::SetFilter(const QString& filter) {
+  bool should_load = filter.size() >= min_filter_sub_match_length ||
+                     (this->filter.size() >= min_filter_sub_match_length &&
+                      filter.size() < min_filter_sub_match_length);
   this->filter = filter;
   emit filterChanged();
   if (should_load) {
     Load();
   }
+  return should_load;
 }
 
 QString QVariantListModel::GetFilter() { return filter; }

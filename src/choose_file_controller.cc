@@ -12,6 +12,7 @@ ChooseFileController::ChooseFileController(QObject* parent)
       suggestions(
           new SimpleQVariantListModel(this, {{0, "idx"}, {1, "title"}}, {1})) {
   SetPath(QStandardPaths::writableLocation(QStandardPaths::HomeLocation) + '/');
+  suggestions->min_filter_sub_match_length = 1;
 }
 
 QString ChooseFileController::GetPath() const { return folder + file; }
@@ -51,7 +52,9 @@ void ChooseFileController::SetPath(const QString& path) {
           for (int i = 0; i < results.size(); i++) {
             suggestions->list.append({i, results[i]});
           }
-          suggestions->SetFilter(file);
+          if (!suggestions->SetFilter(file)) {
+            suggestions->Load();
+          }
         });
   } else {
     suggestions->SetFilter(file);
