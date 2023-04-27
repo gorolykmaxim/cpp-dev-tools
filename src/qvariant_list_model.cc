@@ -127,9 +127,9 @@ static HighlightResult HighlightFuzzySubString(const QString& source,
           // 'term' index.
           result.not_matching_chars++;
           ti--;
-          // We didn't put char from source while sequence was 1 char long.
-          // Need to put that char in result now.
-          result.result += source[si - 1];
+          // Need to restart matching from current 'source' char, since
+          // it might match previous 'term' char.
+          si--;
         } else if (match_length > 1) {
           // Last char sequence was a sub-match. Need to close it's highlight.
           result.result += kHighlightClose;
@@ -239,7 +239,8 @@ void QVariantListModel::Load() {
               }
             });
         // Accumulate a of matches.
-        for (const Row& row : *not_filtered) {
+        for (int i = first; i <= last; i++) {
+          const Row& row = (*not_filtered)[i];
           if (row.matches) {
             filtered->append(row);
           }
