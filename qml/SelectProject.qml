@@ -58,6 +58,7 @@ Loader {
         id: contextMenu
         MenuItem {
           text: "Open"
+          enabled: input.activeFocus && (projectList.currentItem?.itemModel?.existsOnDisk || false)
           onTriggered: input.enterPressed()
         }
         MenuItem {

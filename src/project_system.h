@@ -9,6 +9,7 @@ struct Project {
   QUuid id;
   QString path;
   bool is_opened = false;
+  bool is_missing_on_disk = false;
   QDateTime last_open_time;
 
   QString GetPathRelativeToHome() const;

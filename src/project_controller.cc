@@ -1,26 +1,60 @@
 #include "project_controller.h"
 
+#include <algorithm>
+
 #include "application.h"
 #include "database.h"
 #include "io_task.h"
 #include "qvariant_list_model.h"
+#include "theme.h"
+#include "ui_icon.h"
 
 #define LOG() qDebug() << "[ProjectController]"
 
-const QString kSqlDeleteProject = "DELETE FROM project WHERE id=?";
-
 ProjectListModel::ProjectListModel(QObject* parent)
     : QVariantListModel(parent) {
-  SetRoleNames({{0, "idx"}, {1, "title"}, {2, "subTitle"}});
+  SetRoleNames({{0, "idx"},
+                {1, "title"},
+                {2, "subTitle"},
+                {3, "existsOnDisk"},
+                {4, "titleColor"},
+                {5, "icon"},
+                {6, "iconColor"}});
   searchable_roles = {1, 2};
 }
 
 QVariantList ProjectListModel::GetRow(int i) const {
+  static const Theme kTheme;
   const Project& project = list[i];
-  return {i, project.GetFolderName(), project.GetPathRelativeToHome()};
+  QString title_color;
+  UiIcon icon;
+  QString name = project.GetFolderName();
+  if (project.is_missing_on_disk) {
+    title_color = kTheme.kColorSubText;
+    icon.icon = "not_interested";
+    icon.color = title_color;
+    name = "[Not Found] " + name;
+  } else {
+    icon.icon = "widgets";
+  }
+  return {i,
+          name,
+          project.GetPathRelativeToHome(),
+          !project.is_missing_on_disk,
+          title_color,
+          icon.icon,
+          icon.color};
 }
 
 int ProjectListModel::GetRowCount() const { return list.size(); }
+
+static bool Compare(const Project& a, const Project& b) {
+  if (a.is_missing_on_disk != b.is_missing_on_disk) {
+    return a.is_missing_on_disk < b.is_missing_on_disk;
+  } else {
+    return a.last_open_time > b.last_open_time;
+  }
+}
 
 ProjectController::ProjectController(QObject* parent)
     : QObject(parent), projects(new ProjectListModel(this)) {
@@ -31,26 +65,24 @@ ProjectController::ProjectController(QObject* parent)
         LOG() << "Loading projects from datbaase";
         Database::Transaction t;
         QList<Project> projects = Database::ExecQueryAndRead<Project>(
-            "SELECT * FROM project ORDER BY last_open_time DESC",
-            &ProjectSystem::ReadProjectFromSql);
+            "SELECT * FROM project", &ProjectSystem::ReadProjectFromSql);
         LOG() << projects.size() << "projects found";
-        QList<Project> filtered;
-        for (const Project& project : projects) {
-          if (QFile(project.path).exists()) {
-            filtered.append(project);
-            continue;
+        for (Project& project : projects) {
+          project.is_missing_on_disk = !QFile(project.path).exists();
+          if (project.is_missing_on_disk) {
+            project.is_opened = false;
+            Database::ExecCmd("UPDATE project SET is_opened=false WHERE id=?",
+                              {project.id});
           }
-          LOG() << "Project" << project.path << "no longer exists - removing";
-          Database::ExecCmd(kSqlDeleteProject, {project.id});
         }
-        LOG() << filtered.size() << "projects still exist";
-        return filtered;
+        std::sort(projects.begin(), projects.end(), Compare);
+        return projects;
       },
       [this](QList<Project> result) {
         projects->list = result;
         Project* current = nullptr;
         for (Project& project : projects->list) {
-          if (project.is_opened) {
+          if (project.is_opened && !project.is_missing_on_disk) {
             current = &project;
           }
         }
@@ -67,13 +99,18 @@ ProjectController::ProjectController(QObject* parent)
 void ProjectController::deleteProject(int i) {
   const Project& project = projects->list[i];
   LOG() << "Deleting project" << project.path;
-  Database::ExecCmdAsync(kSqlDeleteProject, {project.id});
+  Database::ExecCmdAsync("DELETE FROM project WHERE id=?", {project.id});
   projects->list.remove(i);
   projects->Load();
 }
 
 void ProjectController::openProject(int i) {
   Project& project = projects->list[i];
+  if (project.is_missing_on_disk) {
+    LOG() << "Project" << project.path
+          << "can't be found on disk and thus can't be opened";
+    return;
+  }
   LOG() << "Opening project" << project.path;
   Application::Get().project.SetCurrentProject(project);
 }
