@@ -9,8 +9,7 @@
 SearchUserCommandController::SearchUserCommandController(QObject* parent)
     : QObject(parent),
       user_commands(new SimpleQVariantListModel(
-          this, {{0, "title"}, {1, "subTitle"}, {2, "rightText"}, {3, "index"}},
-          {0, 1})) {}
+          this, {{0, "title"}, {1, "rightText"}, {2, "index"}}, {0})) {}
 
 void SearchUserCommandController::loadUserCommands() {
   LOG() << "Loading user commands";
@@ -20,8 +19,8 @@ void SearchUserCommandController::loadUserCommands() {
   const QList<UserCommand>& commands = app.user_command.GetUserCommands();
   for (int i = 0; i < commands.size(); i++) {
     const UserCommand& cmd = commands[i];
-    user_commands->list.append(
-        {cmd.name, cmd.group, cmd.GetFormattedShortcut(), i});
+    QString title = cmd.group + ": " + cmd.name;
+    user_commands->list.append({title, cmd.GetFormattedShortcut(), i});
   }
   user_commands->Load();
 }

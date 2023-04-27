@@ -49,7 +49,6 @@ QVariantList NotificationListModel::GetRow(int i) const {
     icon.color = "red";
   } else {
     icon.icon = "info";
-    icon.color = kTheme.kColorSubText;
   }
   bool is_selected = i == GetRowCount() - 1;
   return {notification.title, notification.description,

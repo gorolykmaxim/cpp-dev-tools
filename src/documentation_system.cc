@@ -11,13 +11,13 @@
 
 DocumentListModel::DocumentListModel(QObject* parent)
     : QVariantListModel(parent) {
-  SetRoleNames({{0, "idx"}, {1, "title"}, {2, "subTitle"}});
+  SetRoleNames({{0, "idx"}, {1, "title"}, {2, "subTitle"}, {3, "icon"}});
   searchable_roles = {1, 2};
 }
 
 QVariantList DocumentListModel::GetRow(int i) const {
   const Document& doc = list[i];
-  return {i, doc.file_name, doc.path};
+  return {i, doc.file_name, doc.path, "help_outline"};
 }
 
 int DocumentListModel::GetRowCount() const { return list.size(); }

@@ -7,9 +7,10 @@
 
 SettingsController::SettingsController(QObject *parent)
     : QObject(parent),
-      external_search_folders(
-          new FolderListModel(this, "external_search_folder")),
-      documentation_folders(new FolderListModel(this, "documentation_folder")) {
+      external_search_folders(new FolderListModel(
+          this, "external_search_folder", UiIcon("find_in_page"))),
+      documentation_folders(new FolderListModel(this, "documentation_folder",
+                                                UiIcon("description"))) {
   Application::Get().view.SetWindowTitle("Settings");
   Load();
 }
@@ -81,9 +82,10 @@ void SettingsController::Load() {
       });
 }
 
-FolderListModel::FolderListModel(QObject *parent, const QString &table)
-    : QVariantListModel(parent), table(table) {
-  SetRoleNames({{0, "title"}});
+FolderListModel::FolderListModel(QObject *parent, const QString &table,
+                                 const UiIcon &icon)
+    : QVariantListModel(parent), table(table), icon(icon) {
+  SetRoleNames({{0, "title"}, {1, "icon"}});
   searchable_roles = {0};
 }
 
@@ -116,7 +118,9 @@ void FolderListModel::removeFolder(const QString &folder) {
   Load();
 }
 
-QVariantList FolderListModel::GetRow(int i) const { return {list[i]}; }
+QVariantList FolderListModel::GetRow(int i) const {
+  return {list[i], icon.icon};
+}
 
 int FolderListModel::GetRowCount() const { return list.size(); }
 

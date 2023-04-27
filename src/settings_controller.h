@@ -6,11 +6,13 @@
 
 #include "database.h"
 #include "qvariant_list_model.h"
+#include "ui_icon.h"
 
 class FolderListModel : public QVariantListModel {
   Q_OBJECT
  public:
-  explicit FolderListModel(QObject* parent, const QString& table);
+  explicit FolderListModel(QObject* parent, const QString& table,
+                           const UiIcon& icon);
   void SetFolders(QStringList& folders);
   QList<Database::Cmd> MakeCommandsToUpdateDatabase();
 
@@ -26,6 +28,7 @@ class FolderListModel : public QVariantListModel {
 
  private:
   QString table;
+  UiIcon icon;
 };
 
 struct Settings {
