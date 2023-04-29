@@ -108,7 +108,7 @@ static HighlightResult HighlightFuzzySubString(const QString& source,
   int last_ti_match = 0;
   // Current sub-match length
   int match_length = 0;
-  if (source.size() > term.size()) {
+  if (source.size() >= term.size()) {
     for (; si < source.size(); si++) {
       if (term[ti].toLower() == source[si].toLower()) {
         match_length++;
