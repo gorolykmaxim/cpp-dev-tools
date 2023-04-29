@@ -32,7 +32,7 @@ class TextAreaFormatter : public QObject {
 class TextAreaHighlighter : public QSyntaxHighlighter {
  public:
   TextAreaHighlighter(QList<FileLink>& file_links);
-  TextAreaFormatter* formatter;
+  TextAreaFormatter* formatter = nullptr;
   QList<FileLink>& file_links;
   QTextCharFormat link_format;
 
