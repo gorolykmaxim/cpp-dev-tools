@@ -7,6 +7,7 @@ import "." as Cdt
 ColumnLayout {
   id: root
   property alias allowCreating: controller.allowCreating
+  property alias chooseFolder: controller.chooseFolder
   signal fileChosen(string path)
   signal cancelled()
   ChooseFileController {

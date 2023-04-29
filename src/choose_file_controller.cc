@@ -8,9 +8,7 @@
 #define LOG() qDebug() << "[ChooseFileController]"
 
 ChooseFileController::ChooseFileController(QObject* parent)
-    : QObject(parent),
-      suggestions(new SimpleQVariantListModel(
-          this, {{0, "idx"}, {1, "title"}, {2, "icon"}}, {1})) {
+    : QObject(parent), suggestions(new FileSuggestionListModel(this)) {
   SetPath(QStandardPaths::writableLocation(QStandardPaths::HomeLocation) + '/');
   suggestions->min_filter_sub_match_length = 1;
 }
@@ -18,7 +16,24 @@ ChooseFileController::ChooseFileController(QObject* parent)
 QString ChooseFileController::GetPath() const { return folder + file; }
 
 bool ChooseFileController::CanOpen() const {
-  return allow_creating || (file.isEmpty() && !folder.isEmpty());
+  if (choose_folder) {
+    return allow_creating || (file.isEmpty() && !folder.isEmpty());
+  } else {
+    int i = suggestions->IndexOfSuggestionWithName(file);
+    if (i < 0) {
+      return allow_creating && !file.isEmpty();
+    } else {
+      return !suggestions->list[i].is_dir;
+    }
+  }
+}
+
+static bool Compare(const FileSuggestion& a, const FileSuggestion& b) {
+  if (a.is_dir != b.is_dir) {
+    return a.is_dir > b.is_dir;
+  } else {
+    return a.name < b.name;
+  }
 }
 
 void ChooseFileController::SetPath(const QString& path) {
@@ -33,25 +48,28 @@ void ChooseFileController::SetPath(const QString& path) {
   if (old_folder != folder) {
     LOG() << "Will refresh list of file suggestions";
     QString path = folder;
-    IoTask::Run<QStringList>(
+    bool choose_folder = this->choose_folder;
+    IoTask::Run<QList<FileSuggestion>>(
         this,
-        [path]() {
-          QStringList results;
-          for (const QFileInfo& file : QDir(path).entryInfoList()) {
-            if (file.fileName() == "." || file.fileName() == ".." ||
-                !file.isDir()) {
-              continue;
-            }
-            results.append(file.fileName() + '/');
+        [path, choose_folder]() {
+          QList<FileSuggestion> results;
+          QDir::Filters filters = QDir::Dirs | QDir::NoDotAndDotDot;
+          if (!choose_folder) {
+            filters |= QDir::Files;
           }
-          results.sort();
+          QDirIterator it(path, filters);
+          while (it.hasNext()) {
+            FileSuggestion suggestion;
+            suggestion.name = it.next();
+            suggestion.name.remove(path);
+            suggestion.is_dir = it.fileInfo().isDir();
+            results.append(suggestion);
+          }
+          std::sort(results.begin(), results.end(), Compare);
           return results;
         },
-        [this](QStringList results) {
-          suggestions->list.clear();
-          for (int i = 0; i < results.size(); i++) {
-            suggestions->list.append({i, results[i], "folder"});
-          }
+        [this](QList<FileSuggestion> results) {
+          suggestions->list = results;
           if (!suggestions->SetFilter(file)) {
             suggestions->Load();
           }
@@ -63,7 +81,12 @@ void ChooseFileController::SetPath(const QString& path) {
 }
 
 void ChooseFileController::pickSuggestion(int i) {
-  SetPath(folder + suggestions->list[i][1].toString());
+  const FileSuggestion& suggestion = suggestions->list[i];
+  QString path = folder + suggestion.name;
+  if (suggestion.is_dir) {
+    path += '/';
+  }
+  SetPath(path);
 }
 
 void ChooseFileController::openOrCreateFile() {
@@ -75,16 +98,17 @@ void ChooseFileController::openOrCreateFile() {
       this,
       [path]() {
         LOG() << "Checking if" << path << "exists";
-        return QFile(path).exists();
+        return QFile::exists(path);
       },
       [this, path](bool exists) {
         Application& app = Application::Get();
         if (exists) {
           emit fileChosen(path);
         } else {
+          QString type = choose_folder ? "folder" : "file";
           app.view.DisplayAlertDialog(
-              "Create new folder?",
-              "Do you want to create a new folder: " + path + "?");
+              "Create new " + type + '?',
+              "Do you want to create a new " + type + ": " + path + "?");
           QObject::connect(&app.view, &ViewSystem::alertDialogAccepted, this,
                            &ChooseFileController::CreateFile);
         }
@@ -94,8 +118,18 @@ void ChooseFileController::openOrCreateFile() {
 void ChooseFileController::CreateFile() {
   QString path = GetResultPath();
   LOG() << "Creating" << path;
+  bool choose_folder = this->choose_folder;
+  QString folder = this->folder;
   IoTask::Run(
-      this, [path] { QDir().mkpath(path); },
+      this,
+      [path, choose_folder, folder] {
+        if (choose_folder) {
+          QDir().mkpath(path);
+        } else {
+          QDir().mkpath(folder.sliced(0, folder.size() - 1));
+          QFile(path).open(QFile::WriteOnly);
+        }
+      },
       [this, path] { emit fileChosen(path); });
 }
 
@@ -106,3 +140,32 @@ QString ChooseFileController::GetResultPath() const {
   }
   return path;
 }
+
+FileSuggestionListModel::FileSuggestionListModel(QObject* parent)
+    : QVariantListModel(parent) {
+  SetRoleNames({{0, "idx"}, {1, "title"}, {2, "icon"}});
+  searchable_roles = {1};
+}
+
+int FileSuggestionListModel::IndexOfSuggestionWithName(
+    const QString& name) const {
+  for (int i = 0; i < list.size(); i++) {
+    if (list[i].name == name) {
+      return i;
+    }
+  }
+  return -1;
+}
+
+QVariantList FileSuggestionListModel::GetRow(int i) const {
+  const FileSuggestion& suggestion = list[i];
+  QString icon;
+  if (suggestion.is_dir) {
+    icon = "folder_open";
+  } else {
+    icon = "insert_drive_file";
+  }
+  return {i, suggestion.name, icon};
+}
+
+int FileSuggestionListModel::GetRowCount() const { return list.size(); }

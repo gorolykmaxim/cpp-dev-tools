@@ -73,6 +73,7 @@ Loader {
   Component {
     id: chooseProjectView
     Cdt.ChooseFile {
+      chooseFolder: true
       onFileChosen: (file) => controller.openNewProject(file)
       onCancelled: root.sourceComponent = selectProjectView
     }

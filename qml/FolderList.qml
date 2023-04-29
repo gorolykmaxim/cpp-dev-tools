@@ -73,6 +73,7 @@ Loader {
     id: chooseFolderView
     Cdt.ChooseFile {
       allowCreating: false
+      chooseFolder: true
       onFileChosen: (file) => {
         folderAdded(file);
         root.sourceComponent = listView;
