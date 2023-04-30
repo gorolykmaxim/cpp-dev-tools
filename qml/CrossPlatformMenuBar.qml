@@ -17,19 +17,48 @@ Qml.MenuBar {
     if (!isProjectOpened) {
       return;
     }
+    const groups = [];
+    const groupNameToMenuItems = {};
+    const groupNameToMaxItemWidth = {};
     for (let i = 0; i < model.rowCount(); i++) {
-      const menuTitle = model.getFieldByRoleName(i, "group");
-      let menuObj = Common.findMenuByTitle(menuBar, menuTitle);
-      if (menuObj === null) {
-        menuObj = menu.createObject(menuBar, {title: menuTitle});
-        menuBar.addMenu(menuObj);
+      const groupName = model.getFieldByRoleName(i, "group");
+      const text = model.getFieldByRoleName(i, "name");
+      const shortcut = model.getFieldByRoleName(i, "shortcut");
+      const itemWidth = 7 * text.length + 9 * shortcut.length;
+      const index = model.getFieldByRoleName(i, "index");
+      if (groups.indexOf(groupName) < 0) {
+        groups.push(groupName);
       }
-      const menuItemObj = action.createObject(menuObj, {
-        text: model.getFieldByRoleName(i, "name"),
-        shortcut: model.getFieldByRoleName(i, "shortcut"),
-        index: model.getFieldByRoleName(i, "index"),
+      let maxItemWidth = groupNameToMaxItemWidth[groupName] || 0;
+      if (itemWidth > maxItemWidth) {
+        groupNameToMaxItemWidth[groupName] = itemWidth;
+      }
+      let menuItems = groupNameToMenuItems[groupName];
+      if (!menuItems) {
+        menuItems = [];
+        groupNameToMenuItems[groupName] = menuItems;
+      }
+      menuItems.push({
+        text: text,
+        shortcut: shortcut,
+        index: index,
       });
-      menuObj.addAction(menuItemObj);
+    }
+    for (let i = 0; i < groups.length; i++) {
+      const groupName = groups[i];
+      const maxItemWidth = groupNameToMaxItemWidth[groupName];
+      const menuItems = groupNameToMenuItems[groupName];
+      const menuObj = menu.createObject(menuBar, {title: groupName, maxItemWidth: maxItemWidth});
+      for (let j = 0; j < menuItems.length; j++) {
+        const menuItem = menuItems[j];
+        const menuItemObj = action.createObject(menuObj, {
+          text: menuItem.text,
+          shortcut: menuItem.shortcut,
+          index: menuItem.index,
+        });
+        menuObj.addAction(menuItemObj);
+      }
+      menuBar.addMenu(menuObj);
     }
   }
 
@@ -62,8 +91,10 @@ Qml.MenuBar {
   Component {
     id: menu
     Qml.Menu {
+      id: menuRoot
+      property real maxItemWidth: 0
       background: Rectangle {
-        implicitWidth: 200
+        implicitWidth: menuRoot.maxItemWidth
         implicitHeight: 1
         border.width: 1
         border.color: Theme.colorBgMedium
