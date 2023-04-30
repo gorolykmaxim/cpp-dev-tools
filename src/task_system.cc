@@ -366,6 +366,11 @@ void TaskSystem::FindTasks() {
       });
 }
 
+void TaskSystem::ClearTasks() {
+  tasks.clear();
+  emit taskListRefreshed();
+}
+
 const QList<Task>& TaskSystem::GetTasks() const { return tasks; }
 
 QString TaskSystem::GetCurrentTaskName() const {

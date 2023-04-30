@@ -47,6 +47,7 @@ void ProjectSystem::SetCurrentProject(Project project) {
     emit currentProjectChanged();
     app.sqlite.SetSelectedFile("");
     app.task.KillAllTasks();
+    app.task.ClearTasks();
     app.view.SetCurrentView("SelectProject.qml");
   } else {
     LOG() << "Changing current project to" << project.path;

@@ -108,6 +108,7 @@ qt_add_qml_module(cpp-dev-tools URI cdt VERSION 1.0
       qml/Documentation.qml
       qml/SqliteList.qml
       qml/OpenSqliteFile.qml
+      qml/StatusBarItem.qml
   RESOURCES
       fonts/MaterialIcons-Regular.ttf
   RESOURCE_PREFIX /)

@@ -71,6 +71,7 @@ class TaskSystem : public QObject {
       const std::function<void(const TaskExecution&)>& callback) const;
   bool IsExecutionRunning(QUuid execution_id) const;
   void FindTasks();
+  void ClearTasks();
   const QList<Task>& GetTasks() const;
   QString GetCurrentTaskName() const;
   void SetSelectedExecutionId(QUuid id);
