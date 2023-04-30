@@ -27,6 +27,11 @@ RowLayout {
       textColor: iconAndTextColor
     }
     Cdt.StatusBarItem {
+      displayIcon: sqliteSystem.selectedFileName
+      iconName: "storage"
+      text: sqliteSystem.selectedFileName || ""
+    }
+    Cdt.StatusBarItem {
       displayIcon: taskSystem.currentTaskName
       iconName: "code"
       text: taskSystem.currentTaskName || ""

@@ -5,12 +5,13 @@
 
 class SqliteSystem : public QObject {
   Q_OBJECT
-  Q_PROPERTY(QString selectedFile READ GetSelectedFile WRITE SetSelectedFile
-                 NOTIFY selectedFileChanged)
+  Q_PROPERTY(QString selectedFileName READ GetSelectedFileName NOTIFY
+                 selectedFileChanged)
  public:
   void InitializeSelectedFile();
   void SetSelectedFile(const QString& file);
   QString GetSelectedFile() const;
+  QString GetSelectedFileName() const;
 
   inline static const QString kConnectionName = "SQLite User Connection";
 

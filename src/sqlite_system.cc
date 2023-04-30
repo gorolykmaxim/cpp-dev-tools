@@ -4,6 +4,7 @@
 
 #include "database.h"
 #include "io_task.h"
+#include "path.h"
 
 #define LOG() qDebug() << "[SqliteSystem]"
 
@@ -52,3 +53,7 @@ void SqliteSystem::SetSelectedFile(const QString &file) {
 }
 
 QString SqliteSystem::GetSelectedFile() const { return selected_file; }
+
+QString SqliteSystem::GetSelectedFileName() const {
+  return Path::GetFileName(GetSelectedFile());
+}
