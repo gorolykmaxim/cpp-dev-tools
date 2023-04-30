@@ -57,15 +57,15 @@ void UserCommandSystem::RegisterCommands() {
   RegisterCommand("View", "SQLite Databases", "Ctrl+Shift+D", [] {
     Application::Get().view.SetCurrentView("SqliteList.qml");
   });
-  RegisterCommand("Run", "Run Last", "Ctrl+R",
+  RegisterCommand("Run", "Run Last Task", "Ctrl+R",
                   [] { Application::Get().task.executeTask(0); });
-  RegisterCommand("Run", "Run Last Until Fails", "Ctrl+Shift+R",
+  RegisterCommand("Run", "Run Last Task Until Fails", "Ctrl+Shift+R",
                   [] { Application::Get().task.executeTask(0, true); });
-  RegisterCommand("Run", "Terminate Execution", "Ctrl+Shift+T", [] {
+  RegisterCommand("Run", "Terminate Task Execution", "Ctrl+Shift+T", [] {
     Application& app = Application::Get();
     app.task.cancelExecution(app.task.GetSelectedExecutionId(), false);
   });
-  RegisterCommand("Run", "Kill Execution", "Ctrl+Shift+K", [] {
+  RegisterCommand("Run", "Kill Task Execution", "Ctrl+Shift+K", [] {
     Application& app = Application::Get();
     app.task.cancelExecution(app.task.GetSelectedExecutionId(), true);
   });
