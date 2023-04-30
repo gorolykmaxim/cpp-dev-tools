@@ -28,6 +28,7 @@ Application::Application(int argc, char** argv)
                                                &notification);
   qml_engine.rootContext()->setContextProperty("documentationSystem",
                                                &documentation);
+  qml_engine.rootContext()->setContextProperty("sqliteSystem", &sqlite);
 #if __APPLE__
   qml_engine.rootContext()->setContextProperty("isMacOS", true);
 #else

@@ -3,6 +3,7 @@
 #include "application.h"
 #include "database.h"
 #include "io_task.h"
+#include "path.h"
 #include "theme.h"
 
 #define LOG() qDebug() << "[TaskSystem]"
@@ -102,20 +103,9 @@ class RunUntilFailCommand : public RunTaskCommand {
   QHash<QUuid, TaskExecution>& executions;
 };
 
-static QString GetFileName(const QString& path) {
-  int pos = path.lastIndexOf('/');
-  if (pos < 0) {
-    return path;
-  } else if (pos == path.size() - 1) {
-    return "";
-  } else {
-    return path.sliced(pos + 1, path.size() - pos - 1);
-  }
-}
-
 QString TaskSystem::GetName(const Task& task) {
   if (!task.executable.IsNull()) {
-    return GetFileName(task.executable.path);
+    return Path::GetFileName(task.executable.path);
   } else {
     return task.id;
   }

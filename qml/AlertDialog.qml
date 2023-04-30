@@ -14,9 +14,11 @@ Dialog {
   onRejected: viewSystem.alertDialogRejected()
   Connections {
       target: viewSystem
-      function onAlertDialogDisplayed(title, text) {
+      function onAlertDialogDisplayed(title, text, error) {
           dialogTitle = title;
           dialogText = text;
+          isError = error;
+          isCancellable = !isError;
           dialog.visible = true;
       }
       function onDialogClosed() {

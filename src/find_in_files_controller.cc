@@ -3,6 +3,7 @@
 #include "application.h"
 #include "database.h"
 #include "git_system.h"
+#include "path.h"
 #include "theme.h"
 
 #define LOG() qDebug() << "[FindInFilesController]"
@@ -316,8 +317,7 @@ QVariant FileSearchResultListModel::data(const QModelIndex& index,
   } else if (role == 1) {
     return result.match;
   } else {
-    int i = result.file_path.lastIndexOf('/');
-    return i < 0 ? result.file_path : result.file_path.sliced(i + 1);
+    return Path::GetFileName(result.file_path);
   }
 }
 

@@ -73,6 +73,13 @@ void Database::Initialize() {
   ExecCmd(
       "CREATE TABLE IF NOT EXISTS documentation_folder("
       "path TEXT PRIMARY KEY)");
+  ExecCmd(
+      "CREATE TABLE IF NOT EXISTS database_file("
+      "path TEXT NOT NULL,"
+      "project_id BLOB NOT NULL,"
+      "is_selected BOOL DEFAULT FALSE,"
+      "PRIMARY KEY(path, project_id),"
+      "FOREIGN KEY(project_id) REFERENCES project(id) ON DELETE CASCADE)");
 }
 
 void Database::ExecQuery(QSqlQuery &sql, const QString &query,

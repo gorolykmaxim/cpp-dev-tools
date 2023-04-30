@@ -36,7 +36,8 @@ class ViewSystem : public QObject {
  public:
   void SetCurrentView(const QString& current_view);
   QString GetCurrentView() const;
-  void DisplayAlertDialog(const QString& title, const QString& text);
+  void DisplayAlertDialog(const QString& title, const QString& text,
+                          bool is_error = false);
   void SetWindowTitle(const QString& title);
   QString GetWindowTitle() const;
   void Initialize();
@@ -51,7 +52,8 @@ class ViewSystem : public QObject {
 
  signals:
   void currentViewChanged();
-  void alertDialogDisplayed(const QString& title, const QString& text);
+  void alertDialogDisplayed(const QString& title, const QString& text,
+                            bool is_error);
   void alertDialogAccepted();
   void alertDialogRejected();
   void searchUserCommandDialogDisplayed();

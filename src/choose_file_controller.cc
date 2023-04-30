@@ -2,6 +2,7 @@
 
 #include "application.h"
 #include "io_task.h"
+#include "path.h"
 #include "qvariant_list_model.h"
 #include "view_system.h"
 
@@ -41,9 +42,8 @@ void ChooseFileController::SetPath(const QString& path) {
     return;
   }
   QString old_folder = folder;
-  qsizetype i = path.lastIndexOf('/');
-  folder = i < 0 ? "/" : path.sliced(0, i + 1);
-  file = i < 0 ? path : path.sliced(i + 1);
+  folder = Path::GetFolderPath(path);
+  file = Path::GetFileName(path);
   LOG() << "Chaning path to" << path << "folder:" << folder << "file:" << file;
   if (old_folder != folder) {
     LOG() << "Will refresh list of file suggestions";
@@ -53,7 +53,8 @@ void ChooseFileController::SetPath(const QString& path) {
         this,
         [path, choose_folder]() {
           QList<FileSuggestion> results;
-          QDir::Filters filters = QDir::Dirs | QDir::NoDotAndDotDot;
+          QDir::Filters filters =
+              QDir::Dirs | QDir::NoDotAndDotDot | QDir::Hidden;
           if (!choose_folder) {
             filters |= QDir::Files;
           }

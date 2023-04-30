@@ -5,6 +5,7 @@
 
 #include "application.h"
 #include "database.h"
+#include "path.h"
 
 #define LOG() qDebug() << "[ProjectSystem]"
 
@@ -18,10 +19,7 @@ QString Project::GetPathRelativeToHome() const {
   }
 }
 
-QString Project::GetFolderName() const {
-  qsizetype i = path.lastIndexOf('/');
-  return i < 0 ? path : path.sliced(i + 1);
-}
+QString Project::GetFolderName() const { return Path::GetFileName(path); }
 
 bool Project::IsNull() const { return id.isNull(); }
 
@@ -47,6 +45,7 @@ void ProjectSystem::SetCurrentProject(Project project) {
     current_project = Project();
     Database::ExecCmdAsync("UPDATE project SET is_opened=false");
     emit currentProjectChanged();
+    app.sqlite.SetSelectedFile("");
     app.task.KillAllTasks();
     app.view.SetCurrentView("SelectProject.qml");
   } else {
@@ -59,6 +58,7 @@ void ProjectSystem::SetCurrentProject(Project project) {
         {project.is_opened, project.last_open_time, project.id});
     current_project = project;
     emit currentProjectChanged();
+    app.sqlite.InitializeSelectedFile();
     app.view.SetCurrentView("TaskList.qml");
   }
 }

@@ -45,12 +45,13 @@ void ViewSystem::SetCurrentView(const QString &current_view) {
 
 QString ViewSystem::GetCurrentView() const { return current_view; }
 
-void ViewSystem::DisplayAlertDialog(const QString &title, const QString &text) {
+void ViewSystem::DisplayAlertDialog(const QString &title, const QString &text,
+                                    bool is_error) {
   emit dialogClosed();
   LOG() << "Displaying alert dialog";
   QObject::disconnect(this, &ViewSystem::alertDialogAccepted, nullptr, nullptr);
   QObject::disconnect(this, &ViewSystem::alertDialogRejected, nullptr, nullptr);
-  emit alertDialogDisplayed(title, text);
+  emit alertDialogDisplayed(title, text, is_error);
 }
 
 void ViewSystem::SetWindowTitle(const QString &title) {

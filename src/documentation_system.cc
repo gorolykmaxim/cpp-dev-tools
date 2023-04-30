@@ -6,6 +6,7 @@
 #include "application.h"
 #include "database.h"
 #include "io_task.h"
+#include "path.h"
 
 #define LOG() qDebug() << "[DocumentationSystem]"
 
@@ -60,8 +61,7 @@ void DocumentationSystem::displayDocumentation() {
               if (!doc.path.endsWith(".html") && !doc.path.endsWith(".htm")) {
                 continue;
               }
-              qsizetype j = doc.path.lastIndexOf('/');
-              doc.file_name = j < 0 ? doc.path : doc.path.sliced(j + 1);
+              doc.file_name = Path::GetFileName(doc.path);
               result.documents.append(doc);
             }
           }

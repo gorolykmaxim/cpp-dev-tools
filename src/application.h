@@ -9,6 +9,7 @@
 #include "editor_system.h"
 #include "notification_system.h"
 #include "project_system.h"
+#include "sqlite_system.h"
 #include "task_system.h"
 #include "user_command_system.h"
 #include "view_system.h"
@@ -29,6 +30,7 @@ class Application {
   EditorSystem editor;
   NotificationSystem notification;
   DocumentationSystem documentation;
+  SqliteSystem sqlite;
   QGuiApplication gui_app;
   QQmlApplicationEngine qml_engine;
   QThreadPool io_thread_pool;
