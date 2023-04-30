@@ -40,6 +40,7 @@ class ChooseFileController : public QObject {
  public slots:
   void pickSuggestion(int i);
   void openOrCreateFile();
+  void initialize();
 
  signals:
   void pathChanged();

@@ -10,6 +10,7 @@ ColumnLayout {
   property alias chooseFolder: controller.chooseFolder
   signal fileChosen(string path)
   signal cancelled()
+  Component.onCompleted: controller.initialize()
   ChooseFileController {
     id: controller
     onFileChosen: (path) => root.fileChosen(path)

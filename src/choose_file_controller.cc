@@ -10,7 +10,6 @@
 
 ChooseFileController::ChooseFileController(QObject* parent)
     : QObject(parent), suggestions(new FileSuggestionListModel(this)) {
-  SetPath(QStandardPaths::writableLocation(QStandardPaths::HomeLocation) + '/');
   suggestions->min_filter_sub_match_length = 1;
 }
 
@@ -114,6 +113,10 @@ void ChooseFileController::openOrCreateFile() {
                            &ChooseFileController::CreateFile);
         }
       });
+}
+
+void ChooseFileController::initialize() {
+  SetPath(QStandardPaths::writableLocation(QStandardPaths::HomeLocation) + '/');
 }
 
 void ChooseFileController::CreateFile() {
