@@ -15,7 +15,9 @@ FindInFilesController::FindInFilesController(QObject* parent)
       search_results(new FileSearchResultListModel(this)),
       selected_result(-1),
       selected_file_cursor_position(-1),
-      formatter(new FileSearchResultFormatter(this)) {}
+      formatter(new FileSearchResultFormatter(this)) {
+  Application::Get().view.SetWindowTitle("Find In Files");
+}
 
 FindInFilesController::~FindInFilesController() { CancelSearchIfRunning(); }
 
