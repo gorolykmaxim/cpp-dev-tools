@@ -11,7 +11,7 @@
 
 #define LOG() qDebug() << "[ProjectController]"
 
-ProjectListModel::ProjectListModel(QObject* parent, const Project& selected)
+ProjectListModel::ProjectListModel(QObject* parent, Project& selected)
     : QVariantListModel(parent), selected(selected) {
   SetRoleNames({{0, "idx"},
                 {1, "title"},
@@ -83,7 +83,7 @@ void ProjectController::openSelectedProject() {
   Application::Get().project.SetCurrentProject(selected);
 }
 
-void ProjectController::openNewProject(const QString& path) {
+void ProjectController::openProject(const QString& path) {
   LOG() << "Creating new project" << path;
   Project* existing = nullptr;
   for (Project& project : projects->list) {
@@ -108,25 +108,25 @@ void ProjectController::openNewProject(const QString& path) {
   }
 }
 
-void ProjectController::openNewProject() {
+void ProjectController::displayOpenProject() {
   Application::Get().view.SetWindowTitle("Open Project");
-  emit displayOpenNewProjectView();
+  emit displayOpenProjectView();
 }
 
-void ProjectController::updateProjectPath() {
+void ProjectController::displayChangeProjectPath() {
   Application::Get().view.SetWindowTitle("Change Project's Path");
-  emit displayUpdateExistingProjectView();
+  emit displayChangeProjectPathView();
 }
 
-void ProjectController::updateSelectedProjectPath(const QString& path) {
+void ProjectController::changeSelectedProjectPath(const QString& path) {
   LOG() << "Updating path of project" << selected.id << "to" << path;
   selected.path = path;
   Database::ExecCmdAsync("UPDATE project SET path=? WHERE id=?",
                          {selected.path, selected.id});
-  emit displayList();
+  displayProjectList();
 }
 
-void ProjectController::displayProjects() {
+void ProjectController::displayProjectList() {
   Application::Get().view.SetWindowTitle("Open Project");
   IoTask::Run<QList<Project>>(
       this,
@@ -160,7 +160,7 @@ void ProjectController::displayProjects() {
           Application::Get().project.SetCurrentProject(*current);
         } else {
           projects->Load();
-          emit displayList();
+          emit displayProjectListView();
         }
       });
 }

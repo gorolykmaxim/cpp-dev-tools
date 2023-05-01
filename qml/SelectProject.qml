@@ -12,16 +12,16 @@ Loader {
   sourceComponent: selectProjectView
   ProjectController {
     id: controller
-    onDisplayList: root.sourceComponent = selectProjectView
-    onDisplayOpenNewProjectView: root.sourceComponent = chooseProjectView
-    onDisplayUpdateExistingProjectView: root.sourceComponent = updateProjectPathView
+    onDisplayProjectListView: root.sourceComponent = selectProjectView
+    onDisplayOpenProjectView: root.sourceComponent = chooseProjectView
+    onDisplayChangeProjectPathView: root.sourceComponent = updateProjectPathView
   }
   Component {
     id: selectProjectView
     ColumnLayout {
       anchors.fill: parent
       spacing: 0
-      Component.onCompleted: controller.displayProjects()
+      Component.onCompleted: controller.displayProjectList()
       Cdt.Pane {
         Layout.fillWidth: true
         color: Theme.colorBgMedium
@@ -42,7 +42,7 @@ Loader {
           Cdt.Button {
             id: button
             text: "New Project"
-            onClicked: controller.openNewProject()
+            onClicked: controller.displayOpenProject()
           }
         }
       }
@@ -70,7 +70,7 @@ Loader {
           text: "Change Path"
           enabled: input.activeFocus
           shortcut: "Alt+E"
-          onTriggered: controller.updateProjectPath()
+          onTriggered: controller.displayChangeProjectPath()
         }
         MenuItem {
           text: "Remove From List"
@@ -85,16 +85,16 @@ Loader {
     id: chooseProjectView
     Cdt.ChooseFile {
       chooseFolder: true
-      onFileChosen: (file) => controller.openNewProject(file)
-      onCancelled: root.sourceComponent = selectProjectView
+      onFileChosen: (file) => controller.openProject(file)
+      onCancelled: controller.displayProjectList()
     }
   }
   Component {
     id: updateProjectPathView
     Cdt.ChooseFile {
       chooseFolder: true
-      onFileChosen: (file) => controller.updateSelectedProjectPath(file)
-      onCancelled: root.sourceComponent = selectProjectView
+      onFileChosen: (file) => controller.changeSelectedProjectPath(file)
+      onCancelled: controller.displayProjectList()
     }
   }
 }
