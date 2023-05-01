@@ -79,7 +79,9 @@ void FindInFilesController::selectResult(int i) {
   } else {
     selected_file_cursor_position = result.offset;
     emit selectedResultChanged();
-    emit rehighlightBlockByLineNumber(old_result_line);
+    if (old_result_line >= 0) {
+      emit rehighlightBlockByLineNumber(old_result_line);
+    }
     emit rehighlightBlockByLineNumber(new_result_line);
   }
 }
