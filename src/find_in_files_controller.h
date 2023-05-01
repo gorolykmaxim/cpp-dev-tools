@@ -87,16 +87,27 @@ class FindInFilesTask : public BaseIoTask {
   FindInFilesOptions options;
 };
 
+struct TextFormat {
+  QRegularExpression regex;
+  QTextCharFormat format;
+  int match_end_offset = 0;
+};
+
 class FileSearchResultFormatter : public TextAreaFormatter {
  public:
-  explicit FileSearchResultFormatter(QObject* parent, int& selected_result,
-                                     FileSearchResultListModel* search_results);
+  explicit FileSearchResultFormatter(QObject* parent);
   QList<TextSectionFormat> Format(const QString& text, const QTextBlock& block);
+  void SetResult(const FileSearchResult& result);
 
  private:
+  FileSearchResult result;
   QTextCharFormat result_format;
-  int& selected_result;
-  FileSearchResultListModel* search_results;
+  QList<TextFormat> cmake_formats;
+  QList<TextFormat> sql_formats;
+  QList<TextFormat> qml_formats;
+  QList<TextFormat> cpp_formats;
+  QList<TextFormat> js_formats;
+  QList<TextFormat> current_language_formats;
 };
 
 class FindInFilesController : public QObject {

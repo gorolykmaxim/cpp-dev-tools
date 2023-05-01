@@ -3,6 +3,7 @@
 #include "application.h"
 #include "database.h"
 #include "git_system.h"
+#include "language_keywords.h"
 #include "path.h"
 #include "theme.h"
 
@@ -14,8 +15,7 @@ FindInFilesController::FindInFilesController(QObject* parent)
       search_results(new FileSearchResultListModel(this)),
       selected_result(-1),
       selected_file_cursor_position(-1),
-      formatter(new FileSearchResultFormatter(this, selected_result,
-                                              search_results)) {}
+      formatter(new FileSearchResultFormatter(this)) {}
 
 FindInFilesController::~FindInFilesController() { CancelSearchIfRunning(); }
 
@@ -53,6 +53,7 @@ void FindInFilesController::selectResult(int i) {
   LOG() << "Selected search result" << i;
   selected_result = i;
   const FileSearchResult& result = search_results->At(selected_result);
+  formatter->SetResult(result);
   if (selected_file_path != result.file_path) {
     IoTask::Run<QString>(
         this,
@@ -366,24 +367,93 @@ bool FindInFilesOptions::operator!=(const FindInFilesOptions& another) const {
   return !(*this == another);
 }
 
-FileSearchResultFormatter::FileSearchResultFormatter(
-    QObject* parent, int& selected_result,
-    FileSearchResultListModel* search_results)
-    : TextAreaFormatter(parent),
-      selected_result(selected_result),
-      search_results(search_results) {
+static QTextCharFormat TextColorToFormat(const QString& hex) {
+  QTextCharFormat format;
+  format.setForeground(QBrush(QColor::fromString(hex)));
+  return format;
+}
+
+static QRegularExpression KeywordsRegExp(
+    const QStringList& words, QRegularExpression::PatternOptions options =
+                                  QRegularExpression::NoPatternOption) {
+  return QRegularExpression("\\b" + words.join("\\b|\\b") + "\\b", options);
+}
+
+static QRegularExpression KeywordsRegExpNoBoundaries(const QStringList& words) {
+  return QRegularExpression(words.join('|'));
+}
+
+FileSearchResultFormatter::FileSearchResultFormatter(QObject* parent)
+    : TextAreaFormatter(parent) {
   Theme theme;
-  QColor color = QColor::fromString(theme.kColorBgHighlight);
-  result_format.setBackground(QBrush(color));
+  result_format.setBackground(
+      QBrush(QColor::fromString(theme.kColorBgHighlight)));
+  QTextCharFormat function_name_format = TextColorToFormat("#dcdcaa");
+  QTextCharFormat comment_format = TextColorToFormat("#6a9956");
+  QTextCharFormat language_keyword_format1 = TextColorToFormat("#569cd6");
+  QTextCharFormat language_keyword_format2 = TextColorToFormat("#c586c0");
+  TextFormat number_format{QRegularExpression("\\b[0-9.]+\\b"),
+                           TextColorToFormat("#b5cea8")};
+  TextFormat string_format{QRegularExpression("(\"|').*?(?<!\\\\)(\"|')"),
+                           TextColorToFormat("#c98e75")};
+  TextFormat slash_comment_format{QRegularExpression("\\/\\/.*$"),
+                                  comment_format};
+  cmake_formats = {
+      TextFormat{QRegularExpression("\\b[a-zA-Z0-9\\_]+\\s?\\("),
+                 function_name_format, -1},
+      number_format,
+      TextFormat{QRegularExpression("#.*$"), comment_format},
+  };
+  sql_formats = {
+      TextFormat{KeywordsRegExp(kSqlKeywords,
+                                QRegularExpression::CaseInsensitiveOption),
+                 language_keyword_format1},
+      TextFormat{KeywordsRegExp({"TRUE", "FALSE"},
+                                QRegularExpression::CaseInsensitiveOption),
+                 language_keyword_format2},
+      number_format,
+      string_format,
+      TextFormat{QRegularExpression("--.*$"), comment_format},
+  };
+  qml_formats = {
+      TextFormat{KeywordsRegExp(kQmlKeywords), language_keyword_format2},
+      TextFormat{QRegularExpression("[a-zA-Z0-9.]+\\s{"), function_name_format,
+                 -1},
+      TextFormat{QRegularExpression("[a-zA-Z0-9.]+\\s?:"),
+                 language_keyword_format1, -1},
+      number_format,
+      string_format,
+      slash_comment_format,
+  };
+  cpp_formats = {
+      TextFormat{KeywordsRegExp(kCppKeywords), language_keyword_format1},
+      number_format,
+      TextFormat{KeywordsRegExpNoBoundaries(kCPreprocessorKeywords),
+                 language_keyword_format2},
+      string_format,
+      slash_comment_format,
+  };
+  js_formats = {
+      TextFormat{KeywordsRegExp(kJsKeywords), language_keyword_format1},
+      number_format,
+      string_format,
+      slash_comment_format,
+  };
 }
 
 QList<TextSectionFormat> FileSearchResultFormatter::Format(
-    const QString&, const QTextBlock& block) {
+    const QString& text, const QTextBlock& block) {
   QList<TextSectionFormat> results;
-  if (selected_result < 0) {
-    return results;
+  for (const TextFormat& format : current_language_formats) {
+    for (auto it = format.regex.globalMatch(text); it.hasNext();) {
+      QRegularExpressionMatch m = it.next();
+      TextSectionFormat f;
+      f.section.start = m.capturedStart(0);
+      f.section.end = m.capturedEnd(0) - 1 + format.match_end_offset;
+      f.format = format.format;
+      results.append(f);
+    }
   }
-  const FileSearchResult& result = search_results->At(selected_result);
   if (block.firstLineNumber() == result.column - 1) {
     TextSectionFormat f;
     f.section.start = result.row - 1;
@@ -392,4 +462,28 @@ QList<TextSectionFormat> FileSearchResultFormatter::Format(
     results.append(f);
   }
   return results;
+}
+
+void FileSearchResultFormatter::SetResult(const FileSearchResult& result) {
+  this->result = result;
+  if (result.file_path.endsWith("CMakeLists.txt") ||
+      result.file_path.endsWith(".cmake")) {
+    current_language_formats = cmake_formats;
+  } else if (result.file_path.endsWith(".sql")) {
+    current_language_formats = sql_formats;
+  } else if (result.file_path.endsWith(".qml")) {
+    current_language_formats = qml_formats;
+  } else if (result.file_path.endsWith(".h") ||
+             result.file_path.endsWith(".hxx") ||
+             result.file_path.endsWith(".hpp") ||
+             result.file_path.endsWith(".c") ||
+             result.file_path.endsWith(".cc") ||
+             result.file_path.endsWith(".cxx") ||
+             result.file_path.endsWith(".cpp")) {
+    current_language_formats = cpp_formats;
+  } else if (result.file_path.endsWith(".js")) {
+    current_language_formats = js_formats;
+  } else {
+    current_language_formats.clear();
+  }
 }
