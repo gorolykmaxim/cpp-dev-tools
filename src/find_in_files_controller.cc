@@ -373,13 +373,19 @@ static QTextCharFormat TextColorToFormat(const QString& hex) {
   return format;
 }
 
+static bool CompareLength(const QString& a, const QString& b) {
+  return a.size() > b.size();
+}
+
 static QRegularExpression KeywordsRegExp(
-    const QStringList& words, QRegularExpression::PatternOptions options =
-                                  QRegularExpression::NoPatternOption) {
+    QStringList words, QRegularExpression::PatternOptions options =
+                           QRegularExpression::NoPatternOption) {
+  std::sort(words.begin(), words.end(), CompareLength);
   return QRegularExpression("\\b" + words.join("\\b|\\b") + "\\b", options);
 }
 
-static QRegularExpression KeywordsRegExpNoBoundaries(const QStringList& words) {
+static QRegularExpression KeywordsRegExpNoBoundaries(QStringList words) {
+  std::sort(words.begin(), words.end(), CompareLength);
   return QRegularExpression(words.join('|'));
 }
 
@@ -392,7 +398,7 @@ FileSearchResultFormatter::FileSearchResultFormatter(QObject* parent)
   QTextCharFormat comment_format = TextColorToFormat("#6a9956");
   QTextCharFormat language_keyword_format1 = TextColorToFormat("#569cd6");
   QTextCharFormat language_keyword_format2 = TextColorToFormat("#c586c0");
-  TextFormat number_format{QRegularExpression("\\b[0-9.]+\\b"),
+  TextFormat number_format{QRegularExpression("\\b([0-9.]+|0x[0-9.a-f]+)\\b"),
                            TextColorToFormat("#b5cea8")};
   TextFormat string_format{QRegularExpression("(\"|').*?(?<!\\\\)(\"|')"),
                            TextColorToFormat("#c98e75")};
