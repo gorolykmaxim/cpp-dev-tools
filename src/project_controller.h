@@ -9,9 +9,10 @@
 
 class ProjectListModel : public QVariantListModel {
  public:
-  explicit ProjectListModel(QObject* parent);
+  explicit ProjectListModel(QObject* parent, const Project& selected);
 
   QList<Project> list;
+  const Project& selected;
 
  protected:
   QVariantList GetRow(int i) const override;
@@ -28,10 +29,20 @@ class ProjectController : public QObject {
   ProjectListModel* projects;
 
  public slots:
-  void deleteProject(int i);
-  void openProject(int i);
+  void selectProject(int i);
+  void deleteSelectedProject();
+  void openSelectedProject();
   void openNewProject(const QString& path);
+  void openNewProject();
+  void updateProjectPath();
+  void updateSelectedProjectPath(const QString& path);
+  void displayProjects();
 
  signals:
-  void selectProject();
+  void displayList();
+  void displayOpenNewProjectView();
+  void displayUpdateExistingProjectView();
+
+ private:
+  Project selected;
 };

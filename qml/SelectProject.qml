@@ -9,15 +9,19 @@ Loader {
   id: root
   anchors.fill: parent
   focus: true
+  sourceComponent: selectProjectView
   ProjectController {
     id: controller
-    onSelectProject: root.sourceComponent = selectProjectView
+    onDisplayList: root.sourceComponent = selectProjectView
+    onDisplayOpenNewProjectView: root.sourceComponent = chooseProjectView
+    onDisplayUpdateExistingProjectView: root.sourceComponent = updateProjectPathView
   }
   Component {
     id: selectProjectView
     ColumnLayout {
       anchors.fill: parent
       spacing: 0
+      Component.onCompleted: controller.displayProjects()
       Cdt.Pane {
         Layout.fillWidth: true
         color: Theme.colorBgMedium
@@ -33,12 +37,12 @@ Loader {
             list: projectList
             listModel: controller.projects
             focus: true
-            onEnterPressed: projectList.ifCurrentItem('idx', controller.openProject)
+            onEnterPressed: controller.openSelectedProject()
           }
           Cdt.Button {
             id: button
             text: "New Project"
-            onClicked: root.sourceComponent = chooseProjectView
+            onClicked: controller.openNewProject()
           }
         }
       }
@@ -50,8 +54,9 @@ Loader {
           id: projectList
           anchors.fill: parent
           model: controller.projects
-          onItemLeftClicked: projectList.ifCurrentItem('idx', controller.openProject)
+          onItemLeftClicked: controller.openSelectedProject()
           onItemRightClicked: contextMenu.open()
+          onItemSelected: ifCurrentItem('idx', controller.selectProject)
         }
       }
       Menu {
@@ -62,10 +67,16 @@ Loader {
           onTriggered: input.enterPressed()
         }
         MenuItem {
+          text: "Change Path"
+          enabled: input.activeFocus
+          shortcut: "Alt+E"
+          onTriggered: controller.updateProjectPath()
+        }
+        MenuItem {
           text: "Remove From List"
           enabled: input.activeFocus
           shortcut: "Alt+Shift+D"
-          onTriggered: projectList.ifCurrentItem('idx', controller.deleteProject)
+          onTriggered: controller.deleteSelectedProject()
         }
       }
     }
@@ -75,6 +86,14 @@ Loader {
     Cdt.ChooseFile {
       chooseFolder: true
       onFileChosen: (file) => controller.openNewProject(file)
+      onCancelled: root.sourceComponent = selectProjectView
+    }
+  }
+  Component {
+    id: updateProjectPathView
+    Cdt.ChooseFile {
+      chooseFolder: true
+      onFileChosen: (file) => controller.updateSelectedProjectPath(file)
       onCancelled: root.sourceComponent = selectProjectView
     }
   }

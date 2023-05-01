@@ -11,15 +11,16 @@
 
 #define LOG() qDebug() << "[ProjectController]"
 
-ProjectListModel::ProjectListModel(QObject* parent)
-    : QVariantListModel(parent) {
+ProjectListModel::ProjectListModel(QObject* parent, const Project& selected)
+    : QVariantListModel(parent), selected(selected) {
   SetRoleNames({{0, "idx"},
                 {1, "title"},
                 {2, "subTitle"},
                 {3, "existsOnDisk"},
                 {4, "titleColor"},
                 {5, "icon"},
-                {6, "iconColor"}});
+                {6, "iconColor"},
+                {7, "isSelected"}});
   searchable_roles = {1, 2};
 }
 
@@ -43,7 +44,8 @@ QVariantList ProjectListModel::GetRow(int i) const {
           !project.is_missing_on_disk,
           title_color,
           icon.icon,
-          icon.color};
+          icon.color,
+          project == selected};
 }
 
 int ProjectListModel::GetRowCount() const { return list.size(); }
@@ -57,7 +59,74 @@ static bool Compare(const Project& a, const Project& b) {
 }
 
 ProjectController::ProjectController(QObject* parent)
-    : QObject(parent), projects(new ProjectListModel(this)) {
+    : QObject(parent), projects(new ProjectListModel(this, selected)) {}
+
+void ProjectController::selectProject(int i) {
+  selected = projects->list[i];
+  LOG() << "Selecting project" << selected.path;
+}
+
+void ProjectController::deleteSelectedProject() {
+  LOG() << "Deleting project" << selected.path;
+  Database::ExecCmdAsync("DELETE FROM project WHERE id=?", {selected.id});
+  projects->list.removeAll(selected);
+  projects->Load();
+}
+
+void ProjectController::openSelectedProject() {
+  if (selected.is_missing_on_disk) {
+    LOG() << "Project" << selected.path
+          << "can't be found on disk and thus can't be opened";
+    return;
+  }
+  LOG() << "Opening project" << selected.path;
+  Application::Get().project.SetCurrentProject(selected);
+}
+
+void ProjectController::openNewProject(const QString& path) {
+  LOG() << "Creating new project" << path;
+  Project* existing = nullptr;
+  for (Project& project : projects->list) {
+    if (project.path == path) {
+      LOG() << "Attempting to re-open an existing project" << project.path;
+      existing = &project;
+      break;
+    }
+  }
+  if (existing) {
+    Application::Get().project.SetCurrentProject(*existing);
+  } else {
+    Project project;
+    project.id = QUuid::createUuid();
+    project.path = path;
+    project.is_opened = true;
+    project.last_open_time = QDateTime::currentDateTime();
+    Database::ExecCmdAsync(
+        "INSERT INTO project VALUES(?, ?, ?, ?)",
+        {project.id, project.path, project.is_opened, project.last_open_time});
+    Application::Get().project.SetCurrentProject(project);
+  }
+}
+
+void ProjectController::openNewProject() {
+  Application::Get().view.SetWindowTitle("Open Project");
+  emit displayOpenNewProjectView();
+}
+
+void ProjectController::updateProjectPath() {
+  Application::Get().view.SetWindowTitle("Change Project's Path");
+  emit displayUpdateExistingProjectView();
+}
+
+void ProjectController::updateSelectedProjectPath(const QString& path) {
+  LOG() << "Updating path of project" << selected.id << "to" << path;
+  selected.path = path;
+  Database::ExecCmdAsync("UPDATE project SET path=? WHERE id=?",
+                         {selected.path, selected.id});
+  emit displayList();
+}
+
+void ProjectController::displayProjects() {
   Application::Get().view.SetWindowTitle("Open Project");
   IoTask::Run<QList<Project>>(
       this,
@@ -91,51 +160,7 @@ ProjectController::ProjectController(QObject* parent)
           Application::Get().project.SetCurrentProject(*current);
         } else {
           projects->Load();
-          emit selectProject();
+          emit displayList();
         }
       });
-}
-
-void ProjectController::deleteProject(int i) {
-  const Project& project = projects->list[i];
-  LOG() << "Deleting project" << project.path;
-  Database::ExecCmdAsync("DELETE FROM project WHERE id=?", {project.id});
-  projects->list.remove(i);
-  projects->Load();
-}
-
-void ProjectController::openProject(int i) {
-  Project& project = projects->list[i];
-  if (project.is_missing_on_disk) {
-    LOG() << "Project" << project.path
-          << "can't be found on disk and thus can't be opened";
-    return;
-  }
-  LOG() << "Opening project" << project.path;
-  Application::Get().project.SetCurrentProject(project);
-}
-
-void ProjectController::openNewProject(const QString& path) {
-  LOG() << "Creating new project" << path;
-  Project* existing = nullptr;
-  for (Project& project : projects->list) {
-    if (project.path == path) {
-      LOG() << "Attempting to re-open an existing project" << project.path;
-      existing = &project;
-      break;
-    }
-  }
-  if (existing) {
-    Application::Get().project.SetCurrentProject(*existing);
-  } else {
-    Project project;
-    project.id = QUuid::createUuid();
-    project.path = path;
-    project.is_opened = true;
-    project.last_open_time = QDateTime::currentDateTime();
-    Database::ExecCmdAsync(
-        "INSERT INTO project VALUES(?, ?, ?, ?)",
-        {project.id, project.path, project.is_opened, project.last_open_time});
-    Application::Get().project.SetCurrentProject(project);
-  }
 }
