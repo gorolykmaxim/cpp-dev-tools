@@ -5,14 +5,7 @@
 #include <QtQmlIntegration>
 
 #include "qvariant_list_model.h"
-
-struct SqliteFile {
-  explicit SqliteFile(const QString& path = "",
-                      bool is_missing_on_disk = false);
-
-  QString path;
-  bool is_missing_on_disk;
-};
+#include "sqlite_system.h"
 
 class SqliteFileListModel : public QVariantListModel {
  public:

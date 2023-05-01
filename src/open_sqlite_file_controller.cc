@@ -28,28 +28,41 @@ void OpenSqliteFileController::openDatabase(const QString& path) {
   LOG() << "Opening database" << path;
   Application& app = Application::Get();
   QUuid project_id = app.project.GetCurrentProject().id;
-  IoTask::Run<QString>(
+  IoTask::Run<std::pair<SqliteFile, QString>>(
       this,
       [path, project_id] {
-        QSqlDatabase db = QSqlDatabase::database(SqliteSystem::kConnectionName);
-        db.setDatabaseName(path);
-        QString error = Validate(db);
-        if (error.isEmpty()) {
-          Database::ExecCmd(
-              "INSERT OR IGNORE INTO database_file(path, project_id) "
-              "VALUES(?, ?)",
-              {path, project_id});
+        SqliteFile file;
+        QString error;
+        QList<SqliteFile> existing = Database::ExecQueryAndRead<SqliteFile>(
+            "SELECT id, path FROM database_file WHERE path=? AND project_id=?",
+            &SqliteSystem::ReadFromSql, {path, project_id});
+        if (!existing.isEmpty()) {
+          file = existing[0];
+        } else {
+          file.id = QUuid::createUuid();
+          file.path = path;
+          QSqlDatabase db =
+              QSqlDatabase::database(SqliteSystem::kConnectionName);
+          db.setDatabaseName(path);
+          error = Validate(db);
+          if (error.isEmpty()) {
+            Database::ExecCmd(
+                "INSERT INTO database_file(id, path, project_id) "
+                "VALUES(?, ?, ?)",
+                {file.id, file.path, project_id});
+          }
         }
-        return error;
+        return std::make_pair(file, error);
       },
-      [this, path, &app](QString error) {
+      [this, &app](std::pair<SqliteFile, QString> result) {
+        auto [file, error] = result;
         if (error.isEmpty()) {
-          app.sqlite.SetSelectedFile(path);
+          app.sqlite.SetSelectedFile(file);
           emit databaseOpened();
         } else {
-          app.view.DisplayAlertDialog("Failed to open SQLite file",
-                                      "Failed to open " + path + ": " + error,
-                                      true);
+          app.view.DisplayAlertDialog(
+              "Failed to open SQLite file",
+              "Failed to open " + file.path + ": " + error, true);
         }
       });
 }

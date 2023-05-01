@@ -75,10 +75,11 @@ void Database::Initialize() {
       "path TEXT PRIMARY KEY)");
   ExecCmd(
       "CREATE TABLE IF NOT EXISTS database_file("
-      "path TEXT NOT NULL,"
+      "id BLOB NOT NULL,"
       "project_id BLOB NOT NULL,"
+      "path TEXT NOT NULL,"
       "is_selected BOOL DEFAULT FALSE,"
-      "PRIMARY KEY(path, project_id),"
+      "PRIMARY KEY(id, project_id),"
       "FOREIGN KEY(project_id) REFERENCES project(id) ON DELETE CASCADE)");
 }
 

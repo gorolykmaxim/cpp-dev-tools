@@ -45,7 +45,7 @@ void ProjectSystem::SetCurrentProject(Project project) {
     current_project = Project();
     Database::ExecCmdAsync("UPDATE project SET is_opened=false");
     emit currentProjectChanged();
-    app.sqlite.SetSelectedFile("");
+    app.sqlite.SetSelectedFile(SqliteFile());
     app.task.KillAllTasks();
     app.task.ClearTasks();
     app.view.SetCurrentView("SelectProject.qml");

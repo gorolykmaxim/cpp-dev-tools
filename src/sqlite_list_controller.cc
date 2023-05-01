@@ -25,8 +25,9 @@ SqliteFileListModel::SqliteFileListModel(QObject* parent)
 
 static bool Compare(const SqliteFile& a, const SqliteFile& b) {
   Application& app = Application::Get();
-  bool a_selected = a.path == app.sqlite.GetSelectedFile();
-  bool b_selected = b.path == app.sqlite.GetSelectedFile();
+  SqliteFile selected = app.sqlite.GetSelectedFile();
+  bool a_selected = a == selected;
+  bool b_selected = b == selected;
   if (a_selected != b_selected) {
     return a_selected > b_selected;
   } else {
@@ -46,7 +47,7 @@ QVariantList SqliteFileListModel::GetRow(int i) const {
   QString title_color;
   UiIcon icon;
   QString title = Path::GetFileName(file.path);
-  if (app.sqlite.GetSelectedFile() == file.path) {
+  if (app.sqlite.GetSelectedFile() == file) {
     title = "[Selected] " + title;
   }
   if (file.is_missing_on_disk) {
@@ -71,15 +72,11 @@ SqliteListController::SqliteListController(QObject* parent)
   IoTask::Run<QList<SqliteFile>>(
       this,
       [project_id] {
-        QList<QString> paths = Database::ExecQueryAndRead<QString>(
-            "SELECT path FROM database_file WHERE project_id=?",
-            &Database::ReadStringFromSql, {project_id});
-        QList<SqliteFile> files;
-        for (const QString& path : paths) {
-          SqliteFile file;
-          file.path = path;
-          file.is_missing_on_disk = !QFile::exists(path);
-          files.append(file);
+        QList<SqliteFile> files = Database::ExecQueryAndRead<SqliteFile>(
+            "SELECT id, path FROM database_file WHERE project_id=?",
+            &SqliteSystem::ReadFromSql, {project_id});
+        for (SqliteFile& file : files) {
+          file.is_missing_on_disk = !QFile::exists(file.path);
         }
         return files;
       },
@@ -95,24 +92,24 @@ void SqliteListController::selectDatabase(int i) {
     return;
   }
   LOG() << "Selecting database" << file.path;
-  Application::Get().sqlite.SetSelectedFile(file.path);
+  Application::Get().sqlite.SetSelectedFile(file);
   databases->SortAndLoad();
 }
 
 void SqliteListController::removeDatabase(int i) {
-  QString path = databases->list[i].path;
-  LOG() << "Removing database" << path;
+  SqliteFile file = databases->list[i];
+  LOG() << "Removing database" << file.path;
   databases->list.remove(i);
   Application& app = Application::Get();
   QUuid project_id = app.project.GetCurrentProject().id;
   Database::ExecCmdAsync(
-      "DELETE FROM database_file WHERE project_id=? AND path=?",
-      {project_id, path});
-  if (path == app.sqlite.GetSelectedFile()) {
-    QString new_database_to_select;
+      "DELETE FROM database_file WHERE project_id=? AND id=?",
+      {project_id, file.id});
+  if (file == app.sqlite.GetSelectedFile()) {
+    SqliteFile new_database_to_select;
     for (const SqliteFile& file : databases->list) {
       if (!file.is_missing_on_disk) {
-        new_database_to_select = file.path;
+        new_database_to_select = file;
         break;
       }
     }
@@ -120,6 +117,3 @@ void SqliteListController::removeDatabase(int i) {
   }
   databases->SortAndLoad();
 }
-
-SqliteFile::SqliteFile(const QString& path, bool is_missing_on_disk)
-    : path(path), is_missing_on_disk(is_missing_on_disk) {}
