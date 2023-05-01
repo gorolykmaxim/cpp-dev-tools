@@ -23,8 +23,11 @@ class ProjectController : public QObject {
   Q_OBJECT
   QML_ELEMENT
   Q_PROPERTY(ProjectListModel* projects MEMBER projects CONSTANT)
+  Q_PROPERTY(bool isProjectSelected READ IsProjectSelected NOTIFY
+                 selectedProjectChanged)
  public:
   explicit ProjectController(QObject* parent = nullptr);
+  bool IsProjectSelected() const;
 
   ProjectListModel* projects;
 
@@ -42,6 +45,7 @@ class ProjectController : public QObject {
   void displayProjectListView();
   void displayOpenProjectView();
   void displayChangeProjectPathView();
+  void selectedProjectChanged();
 
  private:
   Project selected;

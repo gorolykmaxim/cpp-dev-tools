@@ -61,22 +61,24 @@ static bool Compare(const Project& a, const Project& b) {
 ProjectController::ProjectController(QObject* parent)
     : QObject(parent), projects(new ProjectListModel(this, selected)) {}
 
+bool ProjectController::IsProjectSelected() const { return !selected.IsNull(); }
+
 void ProjectController::selectProject(int i) {
   selected = projects->list[i];
   LOG() << "Selecting project" << selected.path;
+  emit selectedProjectChanged();
 }
 
 void ProjectController::deleteSelectedProject() {
   LOG() << "Deleting project" << selected.path;
   Database::ExecCmdAsync("DELETE FROM project WHERE id=?", {selected.id});
   projects->list.removeAll(selected);
+  selected = Project();
   projects->Load();
 }
 
 void ProjectController::openSelectedProject() {
-  if (selected.is_missing_on_disk) {
-    LOG() << "Project" << selected.path
-          << "can't be found on disk and thus can't be opened";
+  if (selected.IsNull() || selected.is_missing_on_disk) {
     return;
   }
   LOG() << "Opening project" << selected.path;

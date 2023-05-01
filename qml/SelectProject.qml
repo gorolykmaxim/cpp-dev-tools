@@ -68,13 +68,13 @@ Loader {
         }
         MenuItem {
           text: "Change Path"
-          enabled: input.activeFocus
+          enabled: input.activeFocus && controller.isProjectSelected
           shortcut: "Alt+E"
           onTriggered: controller.displayChangeProjectPath()
         }
         MenuItem {
           text: "Remove From List"
-          enabled: input.activeFocus
+          enabled: input.activeFocus && controller.isProjectSelected
           shortcut: "Alt+Shift+D"
           onTriggered: controller.deleteSelectedProject()
         }
