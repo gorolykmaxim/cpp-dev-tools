@@ -14,7 +14,7 @@ SplitView {
   }
   FindInFilesController {
     id: controller
-    onRehighlight: filePreviewArea.rehighlight()
+    onRehighlightBlockByLineNumber: (i) => filePreviewArea.rehighlightBlockByLineNumber(i)
   }
   ColumnLayout {
     SplitView.minimumWidth: 300

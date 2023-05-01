@@ -51,8 +51,13 @@ void FindInFilesController::search() {
 
 void FindInFilesController::selectResult(int i) {
   LOG() << "Selected search result" << i;
+  int old_result_line = -1;
+  if (selected_result >= 0) {
+    old_result_line = search_results->At(selected_result).column - 1;
+  }
   selected_result = i;
   const FileSearchResult& result = search_results->At(selected_result);
+  int new_result_line = result.column - 1;
   formatter->SetResult(result);
   if (selected_file_path != result.file_path) {
     IoTask::Run<QString>(
@@ -74,7 +79,8 @@ void FindInFilesController::selectResult(int i) {
   } else {
     selected_file_cursor_position = result.offset;
     emit selectedResultChanged();
-    emit rehighlight();
+    emit rehighlightBlockByLineNumber(old_result_line);
+    emit rehighlightBlockByLineNumber(new_result_line);
   }
 }
 

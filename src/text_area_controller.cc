@@ -169,7 +169,14 @@ void TextAreaController::goToFileLink(bool next) {
   emit changeCursorPosition(pos);
 }
 
-void TextAreaController::rehighlight() { highlighter.rehighlight(); }
+void TextAreaController::rehighlightBlockByLineNumber(int i) {
+  if (!document) {
+    return;
+  }
+  QTextDocument* doc = document->textDocument();
+  QTextBlock block = doc->findBlockByLineNumber(i);
+  highlighter.rehighlightBlock(block);
+}
 
 void TextAreaController::movePage(const QString& text, bool up) {
   if (cursor_history_index < 0) {

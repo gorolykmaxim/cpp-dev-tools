@@ -138,7 +138,7 @@ class FindInFilesController : public QObject {
   void searchStatusChanged();
   void optionsChanged();
   void selectedResultChanged();
-  void rehighlight();
+  void rehighlightBlockByLineNumber(int i);
 
  private:
   void OnResultFound(QList<FileSearchResult> results);

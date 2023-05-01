@@ -63,8 +63,8 @@ FocusScope {
   function closeSearchBar() {
     searchBar.visible = false;
   }
-  function rehighlight() {
-    controller.rehighlight();
+  function rehighlightBlockByLineNumber(i) {
+    controller.rehighlightBlockByLineNumber(i);
   }
   function getText() {
     return textArea.getText(0, textArea.length)
