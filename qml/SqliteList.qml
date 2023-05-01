@@ -9,14 +9,15 @@ Loader {
   focus: true
   anchors.fill: parent
   sourceComponent: listView
+  SqliteListController {
+    id: controller
+  }
   Component {
     id: listView
     ColumnLayout {
+      Component.onCompleted: controller.displayList()
       anchors.fill: parent
       spacing: 0
-      SqliteListController {
-        id: controller
-      }
       Cdt.Pane {
         Layout.fillWidth: true
         color: Theme.colorBgMedium
@@ -49,8 +50,9 @@ Loader {
           id: databaseList
           model: controller.databases
           anchors.fill: parent
-          onItemLeftClicked: databaseList.ifCurrentItem('idx', controller.selectDatabase)
+          onItemLeftClicked: ifCurrentItem('idx', controller.selectDatabase)
           onItemRightClicked: contextMenu.open()
+          onItemSelected: ifCurrentItem('idx', controller.highlightDatabase)
         }
       }
       Menu {
@@ -60,6 +62,12 @@ Loader {
           enabled: input.activeFocus && (databaseList.currentItem?.itemModel?.existsOnDisk || false)
           shortcut: "Enter"
           onTriggered: databaseList.ifCurrentItem('idx', controller.selectDatabase)
+        }
+        MenuItem {
+          text: "Change Path"
+          enabled: input.activeFocus
+          shortcut: "Alt+E"
+          onTriggered: root.sourceComponent = updateDatabasePathView
         }
         MenuItem {
           text: "Remove From List"
@@ -73,6 +81,15 @@ Loader {
   Component {
     id: openDatabaseView
     Cdt.OpenSqliteFile {
+      onDatabaseOpened: root.sourceComponent = listView
+      onCancelled: root.sourceComponent = listView
+    }
+  }
+  Component {
+    id: updateDatabasePathView
+    Cdt.OpenSqliteFile {
+      title: "Change SQLite Database's Path"
+      fileId: controller.highlightedFileId
       onDatabaseOpened: root.sourceComponent = listView
       onCancelled: root.sourceComponent = listView
     }

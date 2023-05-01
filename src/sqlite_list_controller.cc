@@ -65,7 +65,9 @@ QVariantList SqliteFileListModel::GetRow(int i) const {
 int SqliteFileListModel::GetRowCount() const { return list.size(); }
 
 SqliteListController::SqliteListController(QObject* parent)
-    : QObject(parent), databases(new SqliteFileListModel(this)) {
+    : QObject(parent), databases(new SqliteFileListModel(this)) {}
+
+void SqliteListController::displayList() {
   Application& app = Application::Get();
   app.view.SetWindowTitle("SQLite Databases");
   QUuid project_id = app.project.GetCurrentProject().id;
@@ -116,4 +118,11 @@ void SqliteListController::removeDatabase(int i) {
     app.sqlite.SetSelectedFile(new_database_to_select);
   }
   databases->SortAndLoad();
+}
+
+void SqliteListController::highlightDatabase(int i) {
+  const SqliteFile& file = databases->list[i];
+  LOG() << "Highlighting database" << file.path;
+  highlighted_file_id = file.id;
+  emit highlightedFileIdChanged();
 }
