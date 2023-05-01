@@ -23,23 +23,27 @@ class SqliteListController : public QObject {
   Q_OBJECT
   QML_ELEMENT
   Q_PROPERTY(SqliteFileListModel* databases MEMBER databases CONSTANT)
-  Q_PROPERTY(QUuid highlightedFileId MEMBER highlighted_file_id NOTIFY
-                 highlightedFileIdChanged)
+  Q_PROPERTY(QUuid selectedDatabaseFileId READ GetSelectedDatabaseFileId NOTIFY
+                 selectedDatabaseChanged)
+  Q_PROPERTY(bool isDatabaseSelected READ IsDatabaseSelected NOTIFY
+                 selectedDatabaseChanged)
  public:
   explicit SqliteListController(QObject* parent = nullptr);
+  QUuid GetSelectedDatabaseFileId() const;
+  bool IsDatabaseSelected() const;
 
  public slots:
-  void displayList();
+  void displayDatabaseList();
+  void useSelectedDatabase();
+  void removeSelectedDatabase();
   void selectDatabase(int i);
-  void removeDatabase(int i);
-  void highlightDatabase(int i);
 
  signals:
-  void highlightedFileIdChanged();
+  void selectedDatabaseChanged();
 
  private:
   SqliteFileListModel* databases;
-  QUuid highlighted_file_id;
+  SqliteFile selected;
 };
 
 #endif  // DATABASELISTCONTROLLER_H

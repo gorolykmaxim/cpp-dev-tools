@@ -15,7 +15,7 @@ Loader {
   Component {
     id: listView
     ColumnLayout {
-      Component.onCompleted: controller.displayList()
+      Component.onCompleted: controller.displayDatabaseList()
       anchors.fill: parent
       spacing: 0
       Cdt.Pane {
@@ -33,7 +33,7 @@ Loader {
             list: databaseList
             listModel: controller.databases
             focus: true
-            onEnterPressed: databaseList.ifCurrentItem('idx', controller.selectDatabase)
+            onEnterPressed: controller.useSelectedDatabase()
           }
           Cdt.Button {
             id: addBtn
@@ -50,9 +50,9 @@ Loader {
           id: databaseList
           model: controller.databases
           anchors.fill: parent
-          onItemLeftClicked: ifCurrentItem('idx', controller.selectDatabase)
+          onItemLeftClicked: controller.useSelectedDatabase()
           onItemRightClicked: contextMenu.open()
-          onItemSelected: ifCurrentItem('idx', controller.highlightDatabase)
+          onItemSelected: ifCurrentItem('idx', controller.selectDatabase)
         }
       }
       Menu {
@@ -61,19 +61,19 @@ Loader {
           text: "Select"
           enabled: input.activeFocus && (databaseList.currentItem?.itemModel?.existsOnDisk || false)
           shortcut: "Enter"
-          onTriggered: databaseList.ifCurrentItem('idx', controller.selectDatabase)
+          onTriggered: controller.useSelectedDatabase()
         }
         MenuItem {
           text: "Change Path"
-          enabled: input.activeFocus
+          enabled: input.activeFocus && controller.isDatabaseSelected
           shortcut: "Alt+E"
           onTriggered: root.sourceComponent = updateDatabasePathView
         }
         MenuItem {
           text: "Remove From List"
-          enabled: input.activeFocus
+          enabled: input.activeFocus && controller.isDatabaseSelected
           shortcut: "Alt+Shift+D"
-          onTriggered: databaseList.ifCurrentItem('idx', controller.removeDatabase)
+          onTriggered: controller.removeSelectedDatabase()
         }
       }
     }
@@ -81,6 +81,7 @@ Loader {
   Component {
     id: openDatabaseView
     Cdt.OpenSqliteFile {
+      title: "Open SQLite Database"
       onDatabaseOpened: root.sourceComponent = listView
       onCancelled: root.sourceComponent = listView
     }
@@ -89,7 +90,7 @@ Loader {
     id: updateDatabasePathView
     Cdt.OpenSqliteFile {
       title: "Change SQLite Database's Path"
-      fileId: controller.highlightedFileId
+      fileId: controller.selectedDatabaseFileId
       onDatabaseOpened: root.sourceComponent = listView
       onCancelled: root.sourceComponent = listView
     }

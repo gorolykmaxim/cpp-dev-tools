@@ -67,13 +67,22 @@ int SqliteFileListModel::GetRowCount() const { return list.size(); }
 SqliteListController::SqliteListController(QObject* parent)
     : QObject(parent), databases(new SqliteFileListModel(this)) {}
 
-void SqliteListController::displayList() {
+QUuid SqliteListController::GetSelectedDatabaseFileId() const {
+  return selected.id;
+}
+
+bool SqliteListController::IsDatabaseSelected() const {
+  return !selected.IsNull();
+}
+
+void SqliteListController::displayDatabaseList() {
   Application& app = Application::Get();
   app.view.SetWindowTitle("SQLite Databases");
   QUuid project_id = app.project.GetCurrentProject().id;
   IoTask::Run<QList<SqliteFile>>(
       this,
       [project_id] {
+        LOG() << "Loading database files from database";
         QList<SqliteFile> files = Database::ExecQueryAndRead<SqliteFile>(
             "SELECT id, path FROM database_file WHERE project_id=?",
             &SqliteSystem::ReadFromSql, {project_id});
@@ -88,41 +97,38 @@ void SqliteListController::displayList() {
       });
 }
 
-void SqliteListController::selectDatabase(int i) {
-  const SqliteFile& file = databases->list[i];
-  if (file.is_missing_on_disk) {
+void SqliteListController::useSelectedDatabase() {
+  if (selected.IsNull() || selected.is_missing_on_disk) {
     return;
   }
-  LOG() << "Selecting database" << file.path;
-  Application::Get().sqlite.SetSelectedFile(file);
+  LOG() << "Selecting database" << selected.path << "globally";
+  Application::Get().sqlite.SetSelectedFile(selected);
   databases->SortAndLoad();
 }
 
-void SqliteListController::removeDatabase(int i) {
-  SqliteFile file = databases->list[i];
-  LOG() << "Removing database" << file.path;
-  databases->list.remove(i);
+void SqliteListController::removeSelectedDatabase() {
+  LOG() << "Removing database" << selected.path;
+  databases->list.removeAll(selected);
   Application& app = Application::Get();
   QUuid project_id = app.project.GetCurrentProject().id;
   Database::ExecCmdAsync(
       "DELETE FROM database_file WHERE project_id=? AND id=?",
-      {project_id, file.id});
-  if (file == app.sqlite.GetSelectedFile()) {
-    SqliteFile new_database_to_select;
+      {project_id, selected.id});
+  if (selected == app.sqlite.GetSelectedFile()) {
+    selected = SqliteFile();
     for (const SqliteFile& file : databases->list) {
       if (!file.is_missing_on_disk) {
-        new_database_to_select = file;
+        selected = file;
         break;
       }
     }
-    app.sqlite.SetSelectedFile(new_database_to_select);
+    app.sqlite.SetSelectedFile(selected);
   }
   databases->SortAndLoad();
 }
 
-void SqliteListController::highlightDatabase(int i) {
-  const SqliteFile& file = databases->list[i];
-  LOG() << "Highlighting database" << file.path;
-  highlighted_file_id = file.id;
-  emit highlightedFileIdChanged();
+void SqliteListController::selectDatabase(int i) {
+  selected = databases->list[i];
+  LOG() << "Selecting database" << selected.path;
+  emit selectedDatabaseChanged();
 }

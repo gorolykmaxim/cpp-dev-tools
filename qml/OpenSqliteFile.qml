@@ -5,11 +5,10 @@ import cdt
 Cdt.ChooseFile {
   id: root
   property alias fileId: controller.fileId
-  property string title: "Open SQLite Database"
+  property alias title: controller.title
   signal databaseOpened()
   allowCreating: false
   onFileChosen: (file) => controller.openDatabase(file)
-  Component.onCompleted: viewSystem.windowTitle = title
   OpenSqliteFileController {
     id: controller
     onDatabaseOpened: root.databaseOpened()

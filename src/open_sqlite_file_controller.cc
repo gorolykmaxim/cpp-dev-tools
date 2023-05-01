@@ -19,6 +19,14 @@ static QString Validate(QSqlDatabase& db) {
   return "";
 }
 
+QString OpenSqliteFileController::GetTitle() const { return title; }
+
+void OpenSqliteFileController::SetTitle(const QString& value) {
+  title = value;
+  emit titleChanged();
+  Application::Get().view.SetWindowTitle(title);
+}
+
 void OpenSqliteFileController::openDatabase(const QString& path) {
   LOG() << "Opening database" << path;
   Application& app = Application::Get();
