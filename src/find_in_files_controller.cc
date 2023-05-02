@@ -434,7 +434,7 @@ FileSearchResultFormatter::FileSearchResultFormatter(QObject* parent)
   qml_formats = {
       TextFormat{QRegularExpression("[a-zA-Z0-9.]+\\s{"), function_name_format,
                  -1},
-      TextFormat{QRegularExpression("[a-zA-Z0-9.]+\\s?:"),
+      TextFormat{QRegularExpression("^\\s*[a-zA-Z0-9.]+\\s*:"),
                  language_keyword_format1, -1},
       TextFormat{KeywordsRegExp(kJsKeywords), language_keyword_format1},
       TextFormat{KeywordsRegExp(kQmlKeywords), language_keyword_format2},
