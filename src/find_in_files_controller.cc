@@ -432,11 +432,12 @@ FileSearchResultFormatter::FileSearchResultFormatter(QObject* parent)
       TextFormat{QRegularExpression("--.*$"), comment_format},
   };
   qml_formats = {
-      TextFormat{KeywordsRegExp(kQmlKeywords), language_keyword_format2},
       TextFormat{QRegularExpression("[a-zA-Z0-9.]+\\s{"), function_name_format,
                  -1},
       TextFormat{QRegularExpression("[a-zA-Z0-9.]+\\s?:"),
                  language_keyword_format1, -1},
+      TextFormat{KeywordsRegExp(kJsKeywords), language_keyword_format1},
+      TextFormat{KeywordsRegExp(kQmlKeywords), language_keyword_format2},
       number_format,
       string_format,
       slash_comment_format,
