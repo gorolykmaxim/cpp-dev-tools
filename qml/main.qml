@@ -4,11 +4,7 @@ import cdt
 import "." as Cdt
 
 ApplicationWindow {
-  Component.onCompleted: {
-    if (viewSystem.dimensions.isMaximized) {
-      showMaximized();
-    }
-  }
+  Component.onCompleted: applyShowMode()
   title: viewSystem.windowTitle
   width: viewSystem.dimensions.width
   height: viewSystem.dimensions.height
@@ -19,6 +15,19 @@ ApplicationWindow {
   onXChanged: windowDimensionsDebounce.restart()
   onYChanged: windowDimensionsDebounce.restart()
   visible: true
+  Connections {
+    target: viewSystem
+    function onWindowDimensionsChanaged() {
+      applyShowMode();
+    }
+  }
+  function applyShowMode() {
+    if (viewSystem.dimensions.isMaximized) {
+      showMaximized();
+    } else {
+      showNormal();
+    }
+  }
   Timer {
     id: windowDimensionsDebounce
     interval: 100
