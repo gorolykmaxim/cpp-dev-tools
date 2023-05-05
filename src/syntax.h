@@ -3,6 +3,13 @@
 
 #include "text_area_controller.h"
 
+class Syntax {
+ public:
+  static QList<TextSectionFormat> FindStringsAndComments(
+      const QString &text, const QString &comment_symbol);
+  static bool SectionsContain(const QList<TextSectionFormat> &sections, int i);
+};
+
 class SyntaxFormatter : public TextAreaFormatter {
  public:
   using FormatFunc =

@@ -6,6 +6,7 @@
 
 #include "io_task.h"
 #include "sqlite_system.h"
+#include "syntax.h"
 #include "theme.h"
 
 #define LOG() qDebug() << "[SqliteQueryEditorController]"
@@ -16,42 +17,26 @@ SqliteQueryEditorController::SqliteQueryEditorController(QObject *parent)
       status("Query results with be displayed here"),
       status_color(Theme().kColorSubText) {}
 
-static bool PrevCharEqual(const QString &text, int i, QChar c) {
-  return i > 1 && text[i] == c;
-}
-
 static QString GetSelectedQuery(const QString &text, int cursor) {
-  // TODO: try to simplify
   if (cursor < 0 || cursor > text.size()) {
     return text;
   }
+  QList<TextSectionFormat> strings_and_comments =
+      Syntax::FindStringsAndComments(text, "--");
   int start = 0;
   int end = text.size() - 1;
-  bool is_quote = false;
-  bool is_double_quote = false;
-  bool is_comment = false;
   for (int i = 0; i < text.size(); i++) {
-    if (text[i] == '\'' && !PrevCharEqual(text, i, '\\') && !is_double_quote &&
-        !is_comment) {
-      is_quote = !is_quote;
-    } else if (text[i] == '"' && !PrevCharEqual(text, i, '\\') && !is_quote &&
-               !is_comment) {
-      is_double_quote = !is_double_quote;
-    } else if (text[i] == '-' && PrevCharEqual(text, i, '-') && !is_quote &&
-               !is_double_quote) {
-      is_comment = true;
-    } else if (text[i] == '\n') {
-      is_quote = false;
-      is_double_quote = false;
-      is_comment = false;
+    if (text[i] != ';') {
+      continue;
     }
-    if (text[i] == ';' && !is_quote && !is_double_quote && !is_comment) {
-      if (i == cursor - 1 || i >= cursor) {
-        end = i;
-        break;
-      } else {
-        start = i + 1;
-      }
+    if (Syntax::SectionsContain(strings_and_comments, i)) {
+      continue;
+    }
+    if (i == cursor - 1 || i >= cursor) {
+      end = i;
+      break;
+    } else {
+      start = i + 1;
     }
   }
   return text.sliced(start, end - start);

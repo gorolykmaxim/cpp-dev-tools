@@ -364,15 +364,8 @@ static QList<TextSectionFormat> ParseComments(
     if (i < 0) {
       break;
     }
-    bool inside_string = false;
-    for (const TextSectionFormat &str : strings) {
-      if (str.section.start < i && str.section.end > i) {
-        inside_string = true;
-        break;
-      }
-    }
     pos = i + comment_symbol.size();
-    if (!inside_string) {
+    if (!Syntax::SectionsContain(strings, i)) {
       TextSectionFormat tsf;
       tsf.section.start = i;
       i = text.indexOf('\n', pos);
@@ -477,4 +470,18 @@ void SyntaxFormatter::DetectLanguageByFile(const QString &file_name) {
   } else {
     format = nullptr;
   }
+}
+
+QList<TextSectionFormat> Syntax::FindStringsAndComments(
+    const QString &text, const QString &comment_symbol) {
+  return ParseStringsAndComments(text, comment_symbol);
+}
+
+bool Syntax::SectionsContain(const QList<TextSectionFormat> &sections, int i) {
+  for (const TextSectionFormat &sec : sections) {
+    if (sec.section.start < i && sec.section.end > i) {
+      return true;
+    }
+  }
+  return false;
 }
