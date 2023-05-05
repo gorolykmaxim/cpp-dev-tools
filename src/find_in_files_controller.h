@@ -7,7 +7,7 @@
 #include <atomic>
 
 #include "io_task.h"
-#include "text_area_controller.h"
+#include "syntax.h"
 
 struct FileSearchResult {
   QString match;
@@ -87,12 +87,6 @@ class FindInFilesTask : public BaseIoTask {
   FindInFilesOptions options;
 };
 
-struct TextFormat {
-  QRegularExpression regex;
-  QTextCharFormat format;
-  int match_end_offset = 0;
-};
-
 class FileSearchResultFormatter : public TextAreaFormatter {
  public:
   explicit FileSearchResultFormatter(QObject* parent);
@@ -100,14 +94,9 @@ class FileSearchResultFormatter : public TextAreaFormatter {
   void SetResult(const FileSearchResult& result);
 
  private:
+  SyntaxFormatter* syntax_formatter;
   FileSearchResult result;
   QTextCharFormat result_format;
-  QList<TextFormat> cmake_formats;
-  QList<TextFormat> sql_formats;
-  QList<TextFormat> qml_formats;
-  QList<TextFormat> cpp_formats;
-  QList<TextFormat> js_formats;
-  QList<TextFormat> current_language_formats;
 };
 
 class FindInFilesController : public QObject {

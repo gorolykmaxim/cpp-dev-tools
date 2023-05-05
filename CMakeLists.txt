@@ -63,11 +63,12 @@ qt_add_executable(cpp-dev-tools
   src/sqlite_system.cc
   src/open_sqlite_file_controller.h
   src/open_sqlite_file_controller.cc
-  src/language_keywords.h
   src/sqlite_table_model.h
   src/sqlite_table_model.cc
   src/sqlite_query_editor_controller.h
   src/sqlite_query_editor_controller.cc
+  src/syntax.h
+  src/syntax.cc
   src/main.cc)
 if(NOT MSVC)
   # TODO: figure out how to enable all warnings in MSVC without triggering

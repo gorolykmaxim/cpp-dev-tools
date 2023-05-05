@@ -3,7 +3,6 @@
 #include "application.h"
 #include "database.h"
 #include "git_system.h"
-#include "language_keywords.h"
 #include "path.h"
 #include "theme.h"
 
@@ -377,100 +376,17 @@ bool FindInFilesOptions::operator!=(const FindInFilesOptions& another) const {
   return !(*this == another);
 }
 
-static QTextCharFormat TextColorToFormat(const QString& hex) {
-  QTextCharFormat format;
-  format.setForeground(QBrush(QColor::fromString(hex)));
-  return format;
-}
-
-static bool CompareLength(const QString& a, const QString& b) {
-  return a.size() > b.size();
-}
-
-static QRegularExpression KeywordsRegExp(
-    QStringList words, QRegularExpression::PatternOptions options =
-                           QRegularExpression::NoPatternOption) {
-  std::sort(words.begin(), words.end(), CompareLength);
-  return QRegularExpression("\\b" + words.join("\\b|\\b") + "\\b", options);
-}
-
-static QRegularExpression KeywordsRegExpNoBoundaries(QStringList words) {
-  std::sort(words.begin(), words.end(), CompareLength);
-  return QRegularExpression(words.join('|'));
-}
-
 FileSearchResultFormatter::FileSearchResultFormatter(QObject* parent)
-    : TextAreaFormatter(parent) {
+    : TextAreaFormatter(parent), syntax_formatter(new SyntaxFormatter(this)) {
   Theme theme;
   result_format.setBackground(
       QBrush(QColor::fromString(theme.kColorBgHighlight)));
-  QTextCharFormat function_name_format = TextColorToFormat("#dcdcaa");
-  QTextCharFormat comment_format = TextColorToFormat("#6a9956");
-  QTextCharFormat language_keyword_format1 = TextColorToFormat("#569cd6");
-  QTextCharFormat language_keyword_format2 = TextColorToFormat("#c586c0");
-  TextFormat number_format{QRegularExpression("\\b([0-9.]+|0x[0-9.a-f]+)\\b"),
-                           TextColorToFormat("#b5cea8")};
-  TextFormat string_format{QRegularExpression("(\"|').*?(?<!\\\\)(\"|')"),
-                           TextColorToFormat("#c98e75")};
-  TextFormat slash_comment_format{QRegularExpression("\\/\\/.*$"),
-                                  comment_format};
-  cmake_formats = {
-      TextFormat{QRegularExpression("\\b[a-zA-Z0-9\\_]+\\s?\\("),
-                 function_name_format, -1},
-      number_format,
-      TextFormat{QRegularExpression("#.*$"), comment_format},
-  };
-  sql_formats = {
-      TextFormat{KeywordsRegExp(kSqlKeywords,
-                                QRegularExpression::CaseInsensitiveOption),
-                 language_keyword_format1},
-      TextFormat{KeywordsRegExp({"TRUE", "FALSE"},
-                                QRegularExpression::CaseInsensitiveOption),
-                 language_keyword_format2},
-      number_format,
-      string_format,
-      TextFormat{QRegularExpression("--.*$"), comment_format},
-  };
-  qml_formats = {
-      TextFormat{QRegularExpression("[a-zA-Z0-9.]+\\s{"), function_name_format,
-                 -1},
-      TextFormat{QRegularExpression("^\\s*[a-zA-Z0-9.]+\\s*:"),
-                 language_keyword_format1, -1},
-      TextFormat{KeywordsRegExp(kJsKeywords), language_keyword_format1},
-      TextFormat{KeywordsRegExp(kQmlKeywords), language_keyword_format2},
-      number_format,
-      string_format,
-      slash_comment_format,
-  };
-  cpp_formats = {
-      TextFormat{KeywordsRegExp(kCppKeywords), language_keyword_format1},
-      number_format,
-      TextFormat{KeywordsRegExpNoBoundaries(kCPreprocessorKeywords),
-                 language_keyword_format2},
-      string_format,
-      slash_comment_format,
-  };
-  js_formats = {
-      TextFormat{KeywordsRegExp(kJsKeywords), language_keyword_format1},
-      number_format,
-      string_format,
-      slash_comment_format,
-  };
 }
 
 QList<TextSectionFormat> FileSearchResultFormatter::Format(
     const QString& text, const QTextBlock& block) {
   QList<TextSectionFormat> results;
-  for (const TextFormat& format : current_language_formats) {
-    for (auto it = format.regex.globalMatch(text); it.hasNext();) {
-      QRegularExpressionMatch m = it.next();
-      TextSectionFormat f;
-      f.section.start = m.capturedStart(0);
-      f.section.end = m.capturedEnd(0) - 1 + format.match_end_offset;
-      f.format = format.format;
-      results.append(f);
-    }
-  }
+  results.append(syntax_formatter->Format(text, block));
   if (block.firstLineNumber() == result.column - 1) {
     TextSectionFormat f;
     f.section.start = result.row - 1;
@@ -483,24 +399,5 @@ QList<TextSectionFormat> FileSearchResultFormatter::Format(
 
 void FileSearchResultFormatter::SetResult(const FileSearchResult& result) {
   this->result = result;
-  if (result.file_path.endsWith("CMakeLists.txt") ||
-      result.file_path.endsWith(".cmake")) {
-    current_language_formats = cmake_formats;
-  } else if (result.file_path.endsWith(".sql")) {
-    current_language_formats = sql_formats;
-  } else if (result.file_path.endsWith(".qml")) {
-    current_language_formats = qml_formats;
-  } else if (result.file_path.endsWith(".h") ||
-             result.file_path.endsWith(".hxx") ||
-             result.file_path.endsWith(".hpp") ||
-             result.file_path.endsWith(".c") ||
-             result.file_path.endsWith(".cc") ||
-             result.file_path.endsWith(".cxx") ||
-             result.file_path.endsWith(".cpp")) {
-    current_language_formats = cpp_formats;
-  } else if (result.file_path.endsWith(".js")) {
-    current_language_formats = js_formats;
-  } else {
-    current_language_formats.clear();
-  }
+  syntax_formatter->DetectLanguageByFile(result.file_path);
 }
