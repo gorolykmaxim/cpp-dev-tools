@@ -15,6 +15,14 @@ struct SqliteFile {
   bool is_missing_on_disk = false;
 };
 
+struct SqliteQueryResult {
+  QList<QString> columns;
+  QList<QVariantList> rows;
+  bool is_select = true;
+  int rows_affected = 0;
+  QString error;
+};
+
 class SqliteSystem : public QObject {
   Q_OBJECT
   Q_PROPERTY(QString selectedFileName READ GetSelectedFileName NOTIFY

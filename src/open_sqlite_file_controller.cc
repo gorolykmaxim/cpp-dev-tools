@@ -8,15 +8,22 @@
 
 #define LOG() qDebug() << "[OpenSqliteFileController]"
 
-static QString Validate(QSqlDatabase& db) {
+static bool SetDatabasePath(QSqlDatabase& db, const QString& path,
+                            QString& error) {
+  QString old_path = db.databaseName();
+  db.setDatabaseName(path);
   if (!db.open()) {
-    return db.lastError().text();
+    error = db.lastError().text();
+    db.setDatabaseName(old_path);
+    return false;
   }
   QSqlQuery sql("SELECT * FROM sqlite_schema", db);
   if (!sql.exec()) {
-    return "Specified file is not a SQLite database";
+    error = "Specified file is not a SQLite database";
+    db.setDatabaseName(old_path);
+    return false;
   }
-  return "";
+  return true;
 }
 
 QString OpenSqliteFileController::GetTitle() const { return title; }
@@ -50,9 +57,7 @@ void OpenSqliteFileController::openDatabase(const QString& path) {
             file.path = path;
             QSqlDatabase db =
                 QSqlDatabase::database(SqliteSystem::kConnectionName);
-            db.setDatabaseName(path);
-            error = Validate(db);
-            if (error.isEmpty()) {
+            if (SetDatabasePath(db, path, error)) {
               Database::ExecCmd(
                   "INSERT INTO database_file(id, path, project_id) "
                   "VALUES(?, ?, ?)",
@@ -65,9 +70,7 @@ void OpenSqliteFileController::openDatabase(const QString& path) {
           file.path = path;
           QSqlDatabase db =
               QSqlDatabase::database(SqliteSystem::kConnectionName);
-          db.setDatabaseName(path);
-          error = Validate(db);
-          if (error.isEmpty()) {
+          if (SetDatabasePath(db, path, error)) {
             Database::ExecCmd(
                 "UPDATE database_file SET path=? WHERE id=? AND project_id=?",
                 {file.path, file.id, project_id});
@@ -81,9 +84,10 @@ void OpenSqliteFileController::openDatabase(const QString& path) {
           app.sqlite.SetSelectedFile(file);
           emit databaseOpened();
         } else {
-          app.view.DisplayAlertDialog(
-              "Failed to open SQLite file",
-              "Failed to open " + file.path + ": " + error, true);
+          AlertDialog dialog("Failed to open SQLite file",
+                             "Failed to open " + file.path + ": " + error);
+          dialog.flags = AlertDialog::kError;
+          app.view.DisplayAlertDialog(dialog);
         }
       });
 }

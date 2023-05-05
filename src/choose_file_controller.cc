@@ -106,9 +106,10 @@ void ChooseFileController::openOrCreateFile() {
           emit fileChosen(path);
         } else {
           QString type = choose_folder ? "folder" : "file";
-          app.view.DisplayAlertDialog(
+          AlertDialog dialog(
               "Create new " + type + '?',
-              "Do you want to create a new " + type + ": " + path + "?");
+              "Do you want to create a new " + type + ": " + path + '?');
+          app.view.DisplayAlertDialog(dialog);
           QObject::connect(&app.view, &ViewSystem::alertDialogAccepted, this,
                            &ChooseFileController::CreateFile);
         }

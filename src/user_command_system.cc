@@ -57,6 +57,9 @@ void UserCommandSystem::RegisterCommands() {
   RegisterCommand("View", "SQLite Databases", "Ctrl+Shift+D", [] {
     Application::Get().view.SetCurrentView("SqliteList.qml");
   });
+  RegisterCommand("View", "SQLite Query Editor", "Ctrl+Shift+E", [] {
+    Application::Get().view.SetCurrentView("SqliteQueryEditor.qml");
+  });
   RegisterCommand("Run", "Run Last Task", "Ctrl+R",
                   [] { Application::Get().task.executeTask(0); });
   RegisterCommand("Run", "Run Last Task Until Fails", "Ctrl+Shift+R",

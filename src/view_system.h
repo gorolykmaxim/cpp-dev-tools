@@ -25,6 +25,34 @@ struct WindowDimensions {
 
 QDebug operator<<(QDebug debug, const WindowDimensions& dimensions);
 
+struct AlertDialog {
+  Q_GADGET
+  Q_PROPERTY(QString title MEMBER title CONSTANT)
+  Q_PROPERTY(QString text MEMBER text CONSTANT)
+  Q_PROPERTY(bool isError READ IsError CONSTANT)
+  Q_PROPERTY(bool isCancellable READ IsCancellable CONSTANT)
+  Q_PROPERTY(bool isFullHeight READ IsFullHeight CONSTANT)
+ public:
+  enum Flags {
+    kNoFlags = 0,
+    kError = 1,
+    kCancellable = 2,
+    kFullHeight = 4,
+  };
+  AlertDialog(const QString& title, const QString& text);
+  bool operator==(const AlertDialog& another) const;
+  bool operator!=(const AlertDialog& another) const;
+  bool IsError() const;
+  bool IsCancellable() const;
+  bool IsFullHeight() const;
+
+  QString title;
+  QString text;
+  int flags = kCancellable;
+};
+
+QDebug operator<<(QDebug debug, const AlertDialog& dialog);
+
 class ViewSystem : public QObject {
   Q_OBJECT
   Q_PROPERTY(QString currentView READ GetCurrentView WRITE SetCurrentView NOTIFY
@@ -36,8 +64,7 @@ class ViewSystem : public QObject {
  public:
   void SetCurrentView(const QString& current_view);
   QString GetCurrentView() const;
-  void DisplayAlertDialog(const QString& title, const QString& text,
-                          bool is_error = false);
+  void DisplayAlertDialog(AlertDialog dialog);
   void SetWindowTitle(const QString& title);
   QString GetWindowTitle() const;
   void Initialize();
@@ -52,8 +79,7 @@ class ViewSystem : public QObject {
 
  signals:
   void currentViewChanged();
-  void alertDialogDisplayed(const QString& title, const QString& text,
-                            bool is_error);
+  void alertDialogDisplayed(const AlertDialog& dialog);
   void alertDialogAccepted();
   void alertDialogRejected();
   void searchUserCommandDialogDisplayed();

@@ -45,13 +45,18 @@ void ViewSystem::SetCurrentView(const QString &current_view) {
 
 QString ViewSystem::GetCurrentView() const { return current_view; }
 
-void ViewSystem::DisplayAlertDialog(const QString &title, const QString &text,
-                                    bool is_error) {
+void ViewSystem::DisplayAlertDialog(AlertDialog dialog) {
   emit dialogClosed();
-  LOG() << "Displaying alert dialog";
+  LOG() << "Displaying" << dialog;
   QObject::disconnect(this, &ViewSystem::alertDialogAccepted, nullptr, nullptr);
   QObject::disconnect(this, &ViewSystem::alertDialogRejected, nullptr, nullptr);
-  emit alertDialogDisplayed(title, text, is_error);
+  if (dialog.flags & AlertDialog::kError) {
+    dialog.flags &= ~AlertDialog::kCancellable;
+  }
+  if (dialog.text.count('\n') > 1) {
+    dialog.flags |= AlertDialog::kFullHeight;
+  }
+  emit alertDialogDisplayed(dialog);
 }
 
 void ViewSystem::SetWindowTitle(const QString &title) {
@@ -156,4 +161,28 @@ void ViewSystem::LoadSplitViewStates() {
     split_view_states[state.id] = state.state;
   }
   LOG() << "Loaded split view states:" << split_view_states.keys();
+}
+
+AlertDialog::AlertDialog(const QString &title, const QString &text)
+    : title(title), text(text), flags(kCancellable) {}
+
+bool AlertDialog::operator==(const AlertDialog &another) const {
+  return title == another.title && text == another.text &&
+         flags == another.flags;
+}
+
+bool AlertDialog::operator!=(const AlertDialog &another) const {
+  return !(*this == another);
+}
+
+bool AlertDialog::IsError() const { return flags & kError; }
+
+bool AlertDialog::IsCancellable() const { return flags & kCancellable; }
+
+bool AlertDialog::IsFullHeight() const { return flags & kFullHeight; }
+
+QDebug operator<<(QDebug debug, const AlertDialog &dialog) {
+  QDebugStateSaver saver(debug);
+  return debug.nospace() << "AlertDialog(title=" << dialog.title
+                         << ",flags=" << dialog.flags << ')';
 }
