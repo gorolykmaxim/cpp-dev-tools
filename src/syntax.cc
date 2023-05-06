@@ -80,6 +80,7 @@ static const Regex kSqlKeywords = KeywordsRegExp(
         "DISTINCT",
         "DISTRIBUTE",
         "DO",
+        "DROP",
         "ELSE",
         "END",
         "EXCEPT",

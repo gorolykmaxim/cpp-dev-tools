@@ -79,6 +79,7 @@ void Database::Initialize() {
       "project_id BLOB NOT NULL,"
       "path TEXT NOT NULL,"
       "is_selected BOOL DEFAULT FALSE,"
+      "editor_query TEXT DEFAULT '',"
       "PRIMARY KEY(id, project_id),"
       "FOREIGN KEY(project_id) REFERENCES project(id) ON DELETE CASCADE)");
 }

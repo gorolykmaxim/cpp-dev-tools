@@ -19,6 +19,7 @@ FocusScope {
   property bool detectFileLinks: true
   property alias placeholderText: textArea.placeholderText
   property alias effectiveCursorPosition: textArea.cursorPosition
+  property alias displayText: textArea.text
   property int cursorPosition: -1
   signal ctrlEnterPressed()
   onCursorPositionChanged: textArea.cursorPosition = root.cursorPosition

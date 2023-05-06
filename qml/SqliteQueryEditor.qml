@@ -23,9 +23,11 @@ Cdt.Pane {
       focus: true
       detectFileLinks: false
       searchable: true
+      text: controller.query
       placeholderText: "Enter SQL queries here"
       innerPadding: Theme.basePadding
       formatter: controller.formatter
+      onDisplayTextChanged: controller.query = displayText
       KeyNavigation.right: tableView
       onCtrlEnterPressed: controller.executeQuery(getText(), effectiveCursorPosition)
     }

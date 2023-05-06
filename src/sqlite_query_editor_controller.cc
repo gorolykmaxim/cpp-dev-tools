@@ -5,6 +5,7 @@
 #include <QSqlRecord>
 
 #include "application.h"
+#include "database.h"
 #include "io_task.h"
 #include "syntax.h"
 #include "theme.h"
@@ -17,9 +18,34 @@ SqliteQueryEditorController::SqliteQueryEditorController(QObject *parent)
       status("Query results with be displayed here"),
       status_color(Theme().kColorSubText),
       formatter(new SyntaxFormatter(this)) {
-  Application::Get().view.SetWindowTitle("SQLite Query Editor");
+  Application &app = Application::Get();
+  app.view.SetWindowTitle("SQLite Query Editor");
   formatter->DetectLanguageByFile(".sql");
+  SqliteFile file = app.sqlite.GetSelectedFile();
+  LOG() << "Loading last edited query for database" << file.path;
+  IoTask::Run<QList<QString>>(
+      this,
+      [file] {
+        return Database::ExecQueryAndRead<QString>(
+            "SELECT editor_query FROM database_file WHERE id=?",
+            &Database::ReadStringFromSql, {file.id});
+      },
+      [this](QList<QString> results) {
+        if (!results.isEmpty()) {
+          this->query = results.first();
+          emit queryChanged();
+        }
+      });
 }
+
+void SqliteQueryEditorController::SaveQuery(const QString &query) {
+  SqliteFile file = Application::Get().sqlite.GetSelectedFile();
+  LOG() << "Saving editor query of database" << file.path << ':' << query;
+  Database::ExecCmdAsync("UPDATE database_file SET editor_query=? WHERE id=?",
+                         {query, file.id});
+}
+
+QString SqliteQueryEditorController::GetQuery() const { return query; }
 
 static QString GetSelectedQuery(const QString &text, int cursor) {
   if (cursor < 0 || cursor > text.size()) {
