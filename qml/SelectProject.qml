@@ -46,9 +46,16 @@ Loader {
           }
         }
       }
+      Cdt.PlaceholderText {
+        Layout.fillWidth: true
+        Layout.fillHeight: true
+        visible: projectList.count === 0
+        text: "Open a project by clicking on '" + button.text + "' button"
+      }
       Cdt.Pane {
         Layout.fillWidth: true
         Layout.fillHeight: true
+        visible: projectList.count > 0
         color: Theme.colorBgDark
         Cdt.TextList {
           id: projectList

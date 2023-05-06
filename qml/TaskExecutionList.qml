@@ -5,32 +5,19 @@ import "." as Cdt
 import cdt
 import "Common.js" as Common
 
-RowLayout {
+Cdt.SearchableTextList {
+  id: execList
   anchors.fill: parent
-  spacing: 0
+  searchPlaceholderText: "Search execution"
+  placeholderText: "No tasks have been executed yet"
+  showPlaceholder: controller.executionsEmpty
+  searchableModel: controller.executions
+  focus: true
+  onCurrentItemChanged: ifCurrentItem('id', (id) => taskSystem.selectedExecutionId = id)
+  onItemSelected: controller.openExecutionOutput()
+  onItemRightClicked: Common.handleRightClick(execList, contextMenu)
   TaskExecutionListController {
     id: controller
-  }
-  Cdt.Text {
-    Layout.fillWidth: true
-    Layout.fillHeight: true
-    visible: controller.executionsEmpty
-    text: "No tasks have been executed yet"
-    elide: Text.ElideRight
-    verticalAlignment: Text.AlignVCenter
-    horizontalAlignment: Text.AlignHCenter
-  }
-  Cdt.SearchableTextList {
-    id: execList
-    visible: !controller.executionsEmpty
-    Layout.fillWidth: true
-    Layout.fillHeight: true
-    searchPlaceholderText: "Search execution"
-    searchableModel: controller.executions
-    focus: true
-    onCurrentItemChanged: ifCurrentItem('id', (id) => taskSystem.selectedExecutionId = id)
-    onItemSelected: controller.openExecutionOutput()
-    onItemRightClicked: Common.handleRightClick(execList, contextMenu)
   }
   Menu {
     id: contextMenu

@@ -118,6 +118,7 @@ qt_add_qml_module(cpp-dev-tools URI cdt VERSION 1.0
       qml/SqliteQueryEditor.qml
       qml/TableView.qml
       qml/SqliteFileSelectedChecker.qml
+      qml/PlaceholderText.qml
   RESOURCES
       fonts/MaterialIcons-Regular.ttf
   RESOURCE_PREFIX /)

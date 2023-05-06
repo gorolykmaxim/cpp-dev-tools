@@ -42,10 +42,17 @@ Loader {
           }
         }
       }
+      Cdt.PlaceholderText {
+        Layout.fillWidth: true
+        Layout.fillHeight: true
+        visible: databaseList.count === 0
+        text: "Open databases by clicking on '" + addBtn.text + "' button"
+      }
       Cdt.Pane {
         Layout.fillWidth: true
         Layout.fillHeight: true
         color: Theme.colorBgDark
+        visible: databaseList.count > 0
         Cdt.TextList {
           id: databaseList
           model: controller.databases

@@ -47,10 +47,17 @@ Loader {
           }
         }
       }
+      Cdt.PlaceholderText {
+        Layout.fillWidth: true
+        Layout.fillHeight: true
+        visible: folderList.count === 0
+        text: "Add folders by clicking on '" + addBtn.text + "' button"
+      }
       Cdt.Pane {
         Layout.fillWidth: true
         Layout.fillHeight: true
         color: Theme.colorBgDark
+        visible: folderList.count > 0
         Cdt.TextList {
           id: folderList
           model: foldersModel
