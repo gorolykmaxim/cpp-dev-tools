@@ -33,7 +33,7 @@ void TextAreaController::search(const QString& term, const QString& text,
       result.start = i;
       result.end = i + term.size();
       search_results.append(result);
-      pos = result.end + 1;
+      pos = result.end;
     }
   }
   if (selected_result >= search_results.size() ||
@@ -54,6 +54,21 @@ void TextAreaController::search(const QString& term, const QString& text,
     }
   }
   UpdateSearchResultsCount();
+}
+
+void TextAreaController::replaceSearchResultWith(const QString& text,
+                                                 bool replace_all) {
+  if (search_results.isEmpty()) {
+    return;
+  }
+  if (replace_all) {
+    for (auto it = search_results.rbegin(); it != search_results.rend(); it++) {
+      emit replaceText(it->start, it->end, text);
+    }
+  } else {
+    TextSection result = search_results[selected_result];
+    emit replaceText(result.start, result.end, text);
+  }
 }
 
 void TextAreaController::goToResultWithStartAt(int text_position) {

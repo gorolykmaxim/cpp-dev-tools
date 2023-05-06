@@ -50,6 +50,7 @@ FocusScope {
     }
     const position = textArea.selectionStart;
     searchOutputTextField.text = textArea.selectedText;
+    replaceOutputTextField.text = "";
     searchBar.visible = true;
     // When searchBar open request arrives we need to focus the search bar's
     // input regardless of what else is happenning.
@@ -65,6 +66,10 @@ FocusScope {
   function getText() {
     return textArea.getText(0, textArea.length)
   }
+  function replaceAndSearch(replaceAll) {
+    controller.replaceSearchResultWith(replaceOutputTextField.displayText, replaceAll);
+    controller.search(searchOutputTextField.displayText, root.getText(), true);
+  }
   Timer {
     id: textSetDelay
     interval: 1 // Having it as just 0 does not always trigger "Loading"
@@ -75,9 +80,15 @@ FocusScope {
     document: textArea.textDocument
     detectFileLinks: root.detectFileLinks && root.readonly
     onSelectText: function(start, end) {
-      textArea.selectingText = true;
+      textArea.ignoreTextChange = true;
       textArea.select(start, end);
-      textArea.selectingText = false;
+      textArea.ignoreTextChange = false;
+    }
+    onReplaceText: function(start, end, newText) {
+      textArea.ignoreTextChange = true;
+      textArea.remove(start, end);
+      textArea.insert(start, newText);
+      textArea.ignoreTextChange = false;
     }
     onChangeCursorPosition: pos => textArea.cursorPosition = pos
   }
@@ -103,42 +114,65 @@ FocusScope {
       padding: Theme.basePadding
       visible: false
       Keys.onEscapePressed: closeSearchBar(true)
-      RowLayout {
+      ColumnLayout {
         anchors.fill: parent
-        Cdt.TextField {
-          id: searchOutputTextField
+        RowLayout {
           Layout.fillWidth: true
-          placeholderText: "Search text"
-          onDisplayTextChanged: controller.search(displayText, root.getText(), true)
-          KeyNavigation.down: textArea
-          KeyNavigation.right: searchPrevBtn
-          function goToSearchResult(event) {
-            if (event.modifiers & Qt.ShiftModifier) {
-              controller.goToSearchResult(false);
-            } else {
-              controller.goToSearchResult(true);
-            }
+          Cdt.TextField {
+            id: searchOutputTextField
+            Layout.fillWidth: true
+            placeholderText: "Search text"
+            onDisplayTextChanged: controller.search(displayText, root.getText(), true)
+            KeyNavigation.down: root.readonly ? textArea : replaceOutputTextField
+            KeyNavigation.right: searchPrevBtn
+            Keys.onReturnPressed: e => controller.goToSearchResult(!(e.modifiers & Qt.ShiftModifier))
+            Keys.onEnterPressed: e => controller.goToSearchResult(!(e.modifiers & Qt.ShiftModifier))
           }
-          Keys.onReturnPressed: (event) => goToSearchResult(event)
-          Keys.onEnterPressed: (event) => goToSearchResult(event)
+          Cdt.Text {
+            text: controller.searchResultsCount
+          }
+          Cdt.IconButton {
+            id: searchPrevBtn
+            buttonIcon: "arrow_upward"
+            enabled: !controller.searchResultsEmpty
+            onClicked: controller.goToSearchResult(false)
+            KeyNavigation.down: root.readonly ? textArea : replaceAllBtn
+            KeyNavigation.right: searchNextBtn
+          }
+          Cdt.IconButton {
+            id: searchNextBtn
+            buttonIcon: "arrow_downward"
+            enabled: !controller.searchResultsEmpty
+            onClicked: controller.goToSearchResult(true)
+            KeyNavigation.down: root.readonly ? textArea : replaceAllBtn
+          }
         }
-        Cdt.Text {
-          text: controller.searchResultsCount
-        }
-        Cdt.IconButton {
-          id: searchPrevBtn
-          buttonIcon: "arrow_upward"
-          enabled: !controller.searchResultsEmpty
-          onClicked: controller.goToSearchResult(false)
-          KeyNavigation.down: textArea
-          KeyNavigation.right: searchNextBtn
-        }
-        Cdt.IconButton {
-          id: searchNextBtn
-          buttonIcon: "arrow_downward"
-          enabled: !controller.searchResultsEmpty
-          onClicked: controller.goToSearchResult(true)
-          KeyNavigation.down: textArea
+        RowLayout {
+          visible: !root.readonly
+          Layout.fillWidth: true
+          Cdt.TextField {
+            id: replaceOutputTextField
+            Layout.fillWidth: true
+            placeholderText: "Replace text"
+            KeyNavigation.down: textArea
+            KeyNavigation.right: replaceBtn
+            Keys.onReturnPressed: replaceAndSearch(false)
+            Keys.onEnterPressed: replaceAndSearch(false)
+          }
+          Cdt.Button {
+            id: replaceBtn
+            text: "Replace"
+            onClicked: replaceAndSearch(false)
+            KeyNavigation.up: searchOutputTextField
+            KeyNavigation.right: replaceAllBtn
+            KeyNavigation.down: textArea
+          }
+          Cdt.Button {
+            id: replaceAllBtn
+            text: "Replace All"
+            onClicked: replaceAndSearch(true)
+            KeyNavigation.down: textArea
+          }
         }
       }
     }
@@ -161,7 +195,7 @@ FocusScope {
             Qt.Key_Home,
             Qt.Key_End,
           ])
-          property bool selectingText: false
+          property bool ignoreTextChange: false
           selectByMouse: true
           selectionColor: Theme.colorHighlight
           color: Theme.colorText
@@ -178,9 +212,7 @@ FocusScope {
           wrapMode: Controls.TextArea.WordWrap
           onCursorPositionChanged: controller.saveCursorPosition(textArea.cursorPosition)
           onTextChanged: function () {
-            if (selectingText) {
-              // This signal has been emitted due to selection change,
-              // not an actual text change. Ignoring it.
+            if (ignoreTextChange) {
               return;
             }
             if (root.cursorFollowEnd) {

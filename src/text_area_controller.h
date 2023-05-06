@@ -65,6 +65,7 @@ class TextAreaController : public QObject {
   bool IsCursorOnLink() const;
  public slots:
   void search(const QString& term, const QString& text, bool select_result);
+  void replaceSearchResultWith(const QString& text, bool replace_all);
   void goToResultWithStartAt(int text_position);
   void goToSearchResult(bool next);
   void saveCursorPosition(int position);
@@ -78,6 +79,7 @@ class TextAreaController : public QObject {
 
  signals:
   void selectText(int start, int end);
+  void replaceText(int start, int end, const QString& text);
   void searchResultsCountChanged();
   void changeCursorPosition(int position);
   void documentChanged();
