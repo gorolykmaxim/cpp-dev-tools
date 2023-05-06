@@ -7,7 +7,7 @@ FocusScope {
   id: root
   property var searchableModel: null
   property string searchPlaceholderText: ""
-  property string placeholderText: ""
+  property alias placeholderText: textList.placeholderText
   property bool showPlaceholder: false
   signal itemSelected(selectedItemModel: QtObject)
   signal itemRightClicked(clickedItemModel: QtObject)
@@ -23,12 +23,6 @@ FocusScope {
   ColumnLayout {
     spacing: 0
     anchors.fill: parent
-    Cdt.PlaceholderText {
-      Layout.fillWidth: true
-      Layout.fillHeight: true
-      visible: showPlaceholder
-      text: placeholderText
-    }
     Cdt.Pane {
       Layout.fillWidth: true
       color: Theme.colorBgMedium
@@ -45,20 +39,16 @@ FocusScope {
         onEnterPressed: selectCurrentItemIfPresent()
       }
     }
-    Cdt.Pane {
+    Cdt.TextList {
+      id: textList
       Layout.fillWidth: true
       Layout.fillHeight: true
-      color: Theme.colorBgDark
-      visible: !showPlaceholder
-      Cdt.TextList {
-        id: textList
-        anchors.fill: parent
-        model: searchableModel
-        elide: Text.ElideLeft
-        onItemLeftClicked: selectCurrentItemIfPresent()
-        onItemRightClicked: item => root.itemRightClicked(item)
-        onItemSelected: root.currentItemChanged()
-      }
+      model: searchableModel
+      elide: Text.ElideLeft
+      showPlaceholder: root.showPlaceholder
+      onItemLeftClicked: selectCurrentItemIfPresent()
+      onItemRightClicked: item => root.itemRightClicked(item)
+      onItemSelected: root.currentItemChanged()
     }
   }
 }

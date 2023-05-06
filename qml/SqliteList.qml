@@ -42,25 +42,15 @@ Loader {
           }
         }
       }
-      Cdt.PlaceholderText {
+      Cdt.TextList {
+        id: databaseList
         Layout.fillWidth: true
         Layout.fillHeight: true
-        visible: databaseList.count === 0
-        text: "Open databases by clicking on '" + addBtn.text + "' button"
-      }
-      Cdt.Pane {
-        Layout.fillWidth: true
-        Layout.fillHeight: true
-        color: Theme.colorBgDark
-        visible: databaseList.count > 0
-        Cdt.TextList {
-          id: databaseList
-          model: controller.databases
-          anchors.fill: parent
-          onItemLeftClicked: controller.useSelectedDatabase()
-          onItemRightClicked: contextMenu.open()
-          onItemSelected: ifCurrentItem('idx', controller.selectDatabase)
-        }
+        model: controller.databases
+        placeholderText: "Open databases by clicking on '" + addBtn.text + "' button"
+        onItemLeftClicked: controller.useSelectedDatabase()
+        onItemRightClicked: contextMenu.open()
+        onItemSelected: ifCurrentItem('idx', controller.selectDatabase)
       }
       Menu {
         id: contextMenu

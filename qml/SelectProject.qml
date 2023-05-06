@@ -46,25 +46,15 @@ Loader {
           }
         }
       }
-      Cdt.PlaceholderText {
+      Cdt.TextList {
+        id: projectList
         Layout.fillWidth: true
         Layout.fillHeight: true
-        visible: projectList.count === 0
-        text: "Open a project by clicking on '" + button.text + "' button"
-      }
-      Cdt.Pane {
-        Layout.fillWidth: true
-        Layout.fillHeight: true
-        visible: projectList.count > 0
-        color: Theme.colorBgDark
-        Cdt.TextList {
-          id: projectList
-          anchors.fill: parent
-          model: controller.projects
-          onItemLeftClicked: controller.openSelectedProject()
-          onItemRightClicked: contextMenu.open()
-          onItemSelected: ifCurrentItem('idx', controller.selectProject)
-        }
+        model: controller.projects
+        placeholderText: "Open a project by clicking on '" + button.text + "' button"
+        onItemLeftClicked: controller.openSelectedProject()
+        onItemRightClicked: contextMenu.open()
+        onItemSelected: ifCurrentItem('idx', controller.selectProject)
       }
       Menu {
         id: contextMenu

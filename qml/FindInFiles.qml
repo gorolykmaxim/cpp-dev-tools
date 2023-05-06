@@ -132,33 +132,30 @@ SplitView {
         }
       }
     }
-    Cdt.Pane {
-      color: Theme.colorBgDark
+    Cdt.TextList {
+      id: searchResultsList
       Layout.fillWidth: true
       Layout.fillHeight: true
-      Cdt.TextList {
-        id: searchResultsList
-        anchors.fill: parent
-        model: controller.results
-        elide: Text.ElideRight
-        highlightCurrentItemWithoutFocus: false
-        onItemSelected: ifCurrentItem('idx', controller.selectResult)
-        onItemRightClicked: {
-          forceActiveFocus();
-          contextMenu.open();
-        }
-        Keys.onEnterPressed: controller.openSelectedResultInEditor()
-        Keys.onReturnPressed: controller.openSelectedResultInEditor()
-        KeyNavigation.right: filePreviewArea
-        KeyNavigation.up: fileToExcludeInput.visible ? fileToExcludeInput : searchInput
-        Menu {
-          id: contextMenu
-          MenuItem {
-            text: "Open In Editor"
-            shortcut: "Enter"
-            enabled: searchResultsList.activeFocus
-            onTriggered: controller.openSelectedResultInEditor()
-          }
+      model: controller.results
+      elide: Text.ElideRight
+      highlightCurrentItemWithoutFocus: false
+      showPlaceholder: false
+      onItemSelected: ifCurrentItem('idx', controller.selectResult)
+      onItemRightClicked: {
+        forceActiveFocus();
+        contextMenu.open();
+      }
+      Keys.onEnterPressed: controller.openSelectedResultInEditor()
+      Keys.onReturnPressed: controller.openSelectedResultInEditor()
+      KeyNavigation.right: filePreviewArea
+      KeyNavigation.up: fileToExcludeInput.visible ? fileToExcludeInput : searchInput
+      Menu {
+        id: contextMenu
+        MenuItem {
+          text: "Open In Editor"
+          shortcut: "Enter"
+          enabled: searchResultsList.activeFocus
+          onTriggered: controller.openSelectedResultInEditor()
         }
       }
     }

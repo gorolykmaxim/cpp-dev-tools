@@ -47,23 +47,13 @@ Loader {
           }
         }
       }
-      Cdt.PlaceholderText {
+      Cdt.TextList {
+        id: folderList
+        model: foldersModel
         Layout.fillWidth: true
         Layout.fillHeight: true
-        visible: folderList.count === 0
-        text: "Add folders by clicking on '" + addBtn.text + "' button"
-      }
-      Cdt.Pane {
-        Layout.fillWidth: true
-        Layout.fillHeight: true
-        color: Theme.colorBgDark
-        visible: folderList.count > 0
-        Cdt.TextList {
-          id: folderList
-          model: foldersModel
-          anchors.fill: parent
-          onItemRightClicked: contextMenu.open()
-        }
+        placeholderText: "Add folders by clicking on '" + addBtn.text + "' button"
+        onItemRightClicked: contextMenu.open()
       }
       Menu {
         id: contextMenu

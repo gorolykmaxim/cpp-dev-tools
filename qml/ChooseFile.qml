@@ -49,15 +49,12 @@ ColumnLayout {
       }
     }
   }
-  Cdt.Pane {
+  Cdt.TextList {
+    id: suggestionList
     Layout.fillWidth: true
     Layout.fillHeight: true
-    color: Theme.colorBgDark
-    Cdt.TextList {
-      id: suggestionList
-      anchors.fill: parent
-      model: controller.suggestions
-      onItemLeftClicked: suggestionList.ifCurrentItem('idx', controller.pickSuggestion)
-    }
+    model: controller.suggestions
+    showPlaceholder: false
+    onItemLeftClicked: suggestionList.ifCurrentItem('idx', controller.pickSuggestion)
   }
 }
