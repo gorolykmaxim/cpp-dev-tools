@@ -64,19 +64,17 @@ class TextAreaController : public QObject {
   void SetFormatter(TextAreaFormatter* formatter);
   bool IsCursorOnLink() const;
  public slots:
-  void search(const QString& term, const QString& text);
+  void search(const QString& term, const QString& text, bool select_result);
   void goToResultWithStartAt(int text_position);
-  void nextResult();
-  void previousResult();
+  void goToSearchResult(bool next);
   void saveCursorPosition(int position);
-  void goToPreviousCursorPosition();
-  void goToNextCursorPosition();
+  void goToCursorPosition(bool next);
   void resetCursorPositionHistory();
   void findFileLinks(const QString& text);
   void openFileLinkAtCursor();
   void goToFileLink(bool next);
   void rehighlightBlockByLineNumber(int i);
-  void movePage(const QString& text, bool up);
+  void goToPage(const QString& text, bool up);
 
  signals:
   void selectText(int start, int end);
@@ -91,7 +89,6 @@ class TextAreaController : public QObject {
   void UpdateSearchResultsCount();
   void DisplaySelectedSearchResult();
   void FindFileLinks(const QRegularExpression& regex, const QString& text);
-  void GoToCursorHistoryIndex(int new_history_index);
   int IndexOfFileLinkAtPosition(int position) const;
 
   int selected_result = 0;
@@ -102,5 +99,5 @@ class TextAreaController : public QObject {
   TextAreaHighlighter highlighter;
   QQuickTextDocument* document;
   QList<FileLink> file_links;
-  bool detect_file_links = true;
+  bool detect_file_links;
 };

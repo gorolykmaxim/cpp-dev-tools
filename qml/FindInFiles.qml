@@ -177,12 +177,13 @@ SplitView {
         width: parent.width
       }
     }
-    Cdt.ReadOnlyTextArea {
+    Cdt.TextArea {
       id: filePreviewArea
       color: Theme.colorBgDark
       innerPadding: Theme.basePadding
       detectFileLinks: false
       searchable: true
+      readonly: true
       text: controller.selectedFileContent
       cursorPosition: controller.selectedFileCursorPosition
       formatter: controller.formatter

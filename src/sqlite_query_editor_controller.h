@@ -5,6 +5,7 @@
 #include <QtQmlIntegration>
 
 #include "sqlite_table_model.h"
+#include "syntax.h"
 
 class SqliteQueryEditorController : public QObject {
   Q_OBJECT
@@ -12,6 +13,7 @@ class SqliteQueryEditorController : public QObject {
   Q_PROPERTY(SqliteTableModel* model MEMBER model CONSTANT)
   Q_PROPERTY(QString status MEMBER status NOTIFY statusChanged)
   Q_PROPERTY(QString statusColor MEMBER status_color NOTIFY statusChanged)
+  Q_PROPERTY(SyntaxFormatter* formatter MEMBER formatter CONSTANT)
  public:
   explicit SqliteQueryEditorController(QObject* parent = nullptr);
 
@@ -27,6 +29,7 @@ class SqliteQueryEditorController : public QObject {
   SqliteTableModel* model;
   QString status;
   QString status_color;
+  SyntaxFormatter* formatter;
 };
 
 #endif  // SQLITEQUERYEDITORCONTROLLER_H

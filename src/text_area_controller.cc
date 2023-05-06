@@ -15,7 +15,8 @@ TextAreaController::TextAreaController(QObject* parent)
   UpdateSearchResultsCount();
 }
 
-void TextAreaController::search(const QString& term, const QString& text) {
+void TextAreaController::search(const QString& term, const QString& text,
+                                bool select_result) {
   int prev_start = -1;
   if (selected_result < search_results.size()) {
     prev_start = search_results[selected_result].start;
@@ -45,10 +46,12 @@ void TextAreaController::search(const QString& term, const QString& text) {
       }
     }
   }
-  if (!search_results.isEmpty()) {
-    DisplaySelectedSearchResult();
-  } else {
-    emit selectText(0, 0);
+  if (select_result) {
+    if (!search_results.isEmpty()) {
+      DisplaySelectedSearchResult();
+    } else {
+      emit selectText(0, 0);
+    }
   }
   UpdateSearchResultsCount();
 }
@@ -64,22 +67,14 @@ void TextAreaController::goToResultWithStartAt(int text_position) {
   }
 }
 
-void TextAreaController::nextResult() {
+void TextAreaController::goToSearchResult(bool next) {
   if (search_results.isEmpty()) {
     return;
   }
-  if (++selected_result >= search_results.size()) {
+  selected_result = next ? selected_result + 1 : selected_result - 1;
+  if (selected_result >= search_results.size()) {
     selected_result = 0;
-  }
-  DisplaySelectedSearchResult();
-  UpdateSearchResultsCount();
-}
-
-void TextAreaController::previousResult() {
-  if (search_results.isEmpty()) {
-    return;
-  }
-  if (--selected_result < 0) {
+  } else if (selected_result < 0) {
     selected_result = search_results.size() - 1;
   }
   DisplaySelectedSearchResult();
@@ -103,12 +98,14 @@ void TextAreaController::saveCursorPosition(int position) {
   emit cursorPositionChanged();
 }
 
-void TextAreaController::goToPreviousCursorPosition() {
-  GoToCursorHistoryIndex(cursor_history_index - 1);
-}
-
-void TextAreaController::goToNextCursorPosition() {
-  GoToCursorHistoryIndex(cursor_history_index + 1);
+void TextAreaController::goToCursorPosition(bool next) {
+  int new_index = next ? cursor_history_index + 1 : cursor_history_index - 1;
+  if (new_index < 0 || new_index >= cursor_history.size()) {
+    return;
+  }
+  cursor_history_index = new_index;
+  int pos = cursor_history[cursor_history_index];
+  emit changeCursorPosition(pos);
 }
 
 void TextAreaController::resetCursorPositionHistory() {
@@ -178,7 +175,7 @@ void TextAreaController::rehighlightBlockByLineNumber(int i) {
   highlighter.rehighlightBlock(block);
 }
 
-void TextAreaController::movePage(const QString& text, bool up) {
+void TextAreaController::goToPage(const QString& text, bool up) {
   if (cursor_history_index < 0) {
     return;
   }
@@ -259,15 +256,6 @@ void TextAreaController::FindFileLinks(const QRegularExpression& regex,
     }
     file_links.append(link);
   }
-}
-
-void TextAreaController::GoToCursorHistoryIndex(int new_history_index) {
-  if (new_history_index < 0 || new_history_index >= cursor_history.size()) {
-    return;
-  }
-  cursor_history_index = new_history_index;
-  int pos = cursor_history[cursor_history_index];
-  emit changeCursorPosition(pos);
 }
 
 int TextAreaController::IndexOfFileLinkAtPosition(int position) const {

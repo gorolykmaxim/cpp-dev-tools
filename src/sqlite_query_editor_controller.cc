@@ -15,8 +15,10 @@ SqliteQueryEditorController::SqliteQueryEditorController(QObject *parent)
     : QObject(parent),
       model(new SqliteTableModel(this)),
       status("Query results with be displayed here"),
-      status_color(Theme().kColorSubText) {
+      status_color(Theme().kColorSubText),
+      formatter(new SyntaxFormatter(this)) {
   Application::Get().view.SetWindowTitle("SQLite Query Editor");
+  formatter->DetectLanguageByFile(".sql");
 }
 
 static QString GetSelectedQuery(const QString &text, int cursor) {
@@ -35,13 +37,13 @@ static QString GetSelectedQuery(const QString &text, int cursor) {
       continue;
     }
     if (i == cursor - 1 || i >= cursor) {
-      end = i;
+      end = i - 1;
       break;
     } else {
       start = i + 1;
     }
   }
-  return text.sliced(start, end - start);
+  return text.sliced(start, end - start + 1);
 }
 
 void SqliteQueryEditorController::executeQuery(const QString &text,

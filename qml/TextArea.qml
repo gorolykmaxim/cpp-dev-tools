@@ -1,5 +1,5 @@
 import QtQuick
-import QtQuick.Controls
+import QtQuick.Controls as Controls
 import QtQuick.Layouts
 import Qt.labs.platform
 import cdt
@@ -10,13 +10,17 @@ FocusScope {
   id: root
   property bool cursorFollowEnd: false
   property bool searchable: false
+  property bool readonly: false
   property bool isLoading: false
   property string text: ""
   property string color: "transparent"
   property real innerPadding: 0
   property alias formatter: controller.formatter
-  property alias detectFileLinks: controller.detectFileLinks
+  property bool detectFileLinks: true
+  property alias placeholderText: textArea.placeholderText
+  property alias effectiveCursorPosition: textArea.cursorPosition
   property int cursorPosition: -1
+  signal ctrlEnterPressed()
   onCursorPositionChanged: textArea.cursorPosition = root.cursorPosition
   onTextChanged: {
     controller.resetCursorPositionHistory();
@@ -39,14 +43,6 @@ FocusScope {
     controller.findFileLinks(newText);
     textArea.text = newText;
     isLoading = false;
-    if (cursorFollowEnd) {
-      textArea.cursorPosition = textArea.length - 1;
-    } else if (root.cursorPosition >= 0) {
-      textArea.cursorPosition = root.cursorPosition;
-    }
-    if (searchBar.visible) {
-      controller.search(searchOutputTextField.displayText, root.getText())
-    }
   }
   function openSearchBar() {
     if (!searchable) {
@@ -77,7 +73,12 @@ FocusScope {
   TextAreaController {
     id: controller
     document: textArea.textDocument
-    onSelectText: (start, end) => textArea.select(start, end)
+    detectFileLinks: root.detectFileLinks && root.readonly
+    onSelectText: function(start, end) {
+      textArea.selectingText = true;
+      textArea.select(start, end);
+      textArea.selectingText = false;
+    }
     onChangeCursorPosition: pos => textArea.cursorPosition = pos
   }
   Cdt.Pane {
@@ -108,14 +109,14 @@ FocusScope {
           id: searchOutputTextField
           Layout.fillWidth: true
           placeholderText: "Search text"
-          onDisplayTextChanged: controller.search(displayText, root.getText())
+          onDisplayTextChanged: controller.search(displayText, root.getText(), true)
           KeyNavigation.down: textArea
           KeyNavigation.right: searchPrevBtn
           function goToSearchResult(event) {
             if (event.modifiers & Qt.ShiftModifier) {
-              controller.previousResult();
+              controller.goToSearchResult(false);
             } else {
-              controller.nextResult();
+              controller.goToSearchResult(true);
             }
           }
           Keys.onReturnPressed: (event) => goToSearchResult(event)
@@ -128,7 +129,7 @@ FocusScope {
           id: searchPrevBtn
           buttonIcon: "arrow_upward"
           enabled: !controller.searchResultsEmpty
-          onClicked: controller.previousResult()
+          onClicked: controller.goToSearchResult(false)
           KeyNavigation.down: textArea
           KeyNavigation.right: searchNextBtn
         }
@@ -136,7 +137,7 @@ FocusScope {
           id: searchNextBtn
           buttonIcon: "arrow_downward"
           enabled: !controller.searchResultsEmpty
-          onClicked: controller.nextResult()
+          onClicked: controller.goToSearchResult(true)
           KeyNavigation.down: textArea
         }
       }
@@ -146,13 +147,13 @@ FocusScope {
       Layout.fillHeight: true
       color: root.color
       focus: !searchBar.visible
-      ScrollView {
+      Controls.ScrollView {
         anchors.fill: parent
         focus: true
         Keys.forwardTo: [root]
-        TextArea {
+        Controls.TextArea {
           id: textArea
-          property var allowedKeys: new Set([
+          property var allowedReadonlyKeys: new Set([
             Qt.Key_Left,
             Qt.Key_Right,
             Qt.Key_Up,
@@ -160,7 +161,7 @@ FocusScope {
             Qt.Key_Home,
             Qt.Key_End,
           ])
-
+          property bool selectingText: false
           selectByMouse: true
           selectionColor: Theme.colorHighlight
           color: Theme.colorText
@@ -169,14 +170,28 @@ FocusScope {
           topPadding: root.innerPadding
           bottomPadding: root.innerPadding
           textFormat: TextEdit.PlainText
+          placeholderTextColor: Theme.colorSubText
           focus: true
           background: Rectangle {
             color: "transparent"
           }
-          wrapMode: TextArea.WordWrap
-          onCursorPositionChanged: controller.saveCursorPosition(cursorPosition)
-          // Make text area effectively readOnly but don't hide the cursor and
-          // allow navigating it using the cursor
+          wrapMode: Controls.TextArea.WordWrap
+          onCursorPositionChanged: controller.saveCursorPosition(textArea.cursorPosition)
+          onTextChanged: function () {
+            if (selectingText) {
+              // This signal has been emitted due to selection change,
+              // not an actual text change. Ignoring it.
+              return;
+            }
+            if (root.cursorFollowEnd) {
+              textArea.cursorPosition = length - 1;
+            } else if (root.cursorPosition >= 0) {
+              textArea.cursorPosition = root.cursorPosition;
+            }
+            if (searchBar.visible) {
+              controller.search(searchOutputTextField.displayText, root.getText(), root.readonly)
+            }
+          }
           Keys.onPressed: event => {
             if (event.key === Qt.Key_Escape) {
               if (searchBar.visible) {
@@ -184,14 +199,14 @@ FocusScope {
               } else {
                 textArea.deselect();
               }
-            } else if (event.key === Qt.Key_Return) {
-              controller.openFileLinkAtCursor();
             } else if (event.key === Qt.Key_PageUp) {
-              controller.movePage(root.getText(), true);
+              controller.goToPage(root.getText(), true);
             } else if (event.key === Qt.Key_PageDown) {
-              controller.movePage(root.getText(), false);
+              controller.goToPage(root.getText(), false);
+            } else if ((event.key === Qt.Key_Enter || event.key === Qt.Key_Return) && (event.modifiers & Qt.ControlModifier)) {
+              root.ctrlEnterPressed()
             }
-            if (!allowedKeys.has(event.key) &&
+            if (root.readonly && !allowedReadonlyKeys.has(event.key) &&
                 !event.matches(StandardKey.Copy) &&
                 !event.matches(StandardKey.SelectAll)) {
               event.accepted = true;
@@ -201,10 +216,22 @@ FocusScope {
           Menu {
             id: contextMenu
             MenuItem {
+              text: "Cut"
+              shortcut: "Ctrl+X"
+              enabled: textArea.activeFocus && !root.readonly
+              onTriggered: textArea.cut()
+            }
+            MenuItem {
               text: "Copy"
-              enabled: textArea.activeFocus
               shortcut: "Ctrl+C"
+              enabled: textArea.activeFocus
               onTriggered: textArea.copy()
+            }
+            MenuItem {
+              text: "Paste"
+              shortcut: "Ctrl+V"
+              enabled: textArea.activeFocus && !root.readonly
+              onTriggered: textArea.paste()
             }
             MenuSeparator {}
             MenuItem {
@@ -230,18 +257,18 @@ FocusScope {
               text: "Previous Cursor Position"
               enabled: textArea.activeFocus
               shortcut: "Ctrl+Alt+Left"
-              onTriggered: controller.goToPreviousCursorPosition();
+              onTriggered: controller.goToCursorPosition(false);
             }
             MenuItem {
               text: "Next Cursor Position"
               enabled: textArea.activeFocus
               shortcut: "Ctrl+Alt+Right"
-              onTriggered: controller.goToNextCursorPosition()
+              onTriggered: controller.goToCursorPosition(true)
             }
             MenuItem {
               text: "Open File In Editor"
               enabled: controller.detectFileLinks && textArea.activeFocus && controller.isCursorOnLink
-              shortcut: "Enter"
+              shortcut: "Ctrl+O"
               onTriggered: controller.openFileLinkAtCursor()
             }
             MenuItem {

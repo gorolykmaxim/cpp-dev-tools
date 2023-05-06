@@ -17,24 +17,17 @@ Cdt.Pane {
       viewId: "SqliteQueryEditor"
       view: root
     }
-    ScrollView {
+    Cdt.TextArea {
       SplitView.minimumWidth: 300
       SplitView.fillHeight: true
       focus: true
-      TextArea {
-        textFormat: TextEdit.PlainText
-        color: Theme.colorText
-        focus: true
-        placeholderText: "Enter SQL queries here"
-        placeholderTextColor: Theme.colorSubText
-        wrapMode: TextArea.WordWrap
-        KeyNavigation.right: tableView
-        Keys.onPressed: function (e) {
-          if ((e.key === Qt.Key_Enter || e.key === Qt.Key_Return) && (e.modifiers & Qt.ControlModifier)) {
-            controller.executeQuery(getText(0, length), cursorPosition)
-          }
-        }
-      }
+      detectFileLinks: false
+      searchable: true
+      placeholderText: "Enter SQL queries here"
+      innerPadding: Theme.basePadding
+      formatter: controller.formatter
+      KeyNavigation.right: tableView
+      onCtrlEnterPressed: controller.executeQuery(getText(), effectiveCursorPosition)
     }
     Cdt.Text {
       visible: controller.status

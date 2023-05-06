@@ -42,11 +42,12 @@ ColumnLayout {
     height: 1
     color: Theme.colorBgBlack
   }
-  Cdt.ReadOnlyTextArea {
+  Cdt.TextArea {
     id: execOutputTextArea
     Layout.fillWidth: true
     Layout.fillHeight: true
     focus: true
+    readonly: true
     innerPadding: Theme.basePadding
     color: Theme.colorBgDark
     text: controller.executionOutput
