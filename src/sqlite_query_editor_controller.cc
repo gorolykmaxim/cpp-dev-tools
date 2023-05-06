@@ -4,8 +4,8 @@
 #include <QSqlError>
 #include <QSqlRecord>
 
+#include "application.h"
 #include "io_task.h"
-#include "sqlite_system.h"
 #include "syntax.h"
 #include "theme.h"
 
@@ -15,7 +15,9 @@ SqliteQueryEditorController::SqliteQueryEditorController(QObject *parent)
     : QObject(parent),
       model(new SqliteTableModel(this)),
       status("Query results with be displayed here"),
-      status_color(Theme().kColorSubText) {}
+      status_color(Theme().kColorSubText) {
+  Application::Get().view.SetWindowTitle("SQLite Query Editor");
+}
 
 static QString GetSelectedQuery(const QString &text, int cursor) {
   if (cursor < 0 || cursor > text.size()) {
