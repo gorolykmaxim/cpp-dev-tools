@@ -65,6 +65,8 @@ QString SqliteSystem::GetSelectedFileName() const {
   return Path::GetFileName(selected_file.path);
 }
 
+bool SqliteSystem::IsFileSelected() const { return !selected_file.IsNull(); }
+
 bool SqliteFile::IsNull() const { return id.isNull(); }
 
 bool SqliteFile::operator==(const SqliteFile& another) const {

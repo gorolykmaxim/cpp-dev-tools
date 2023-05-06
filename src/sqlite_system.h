@@ -27,12 +27,14 @@ class SqliteSystem : public QObject {
   Q_OBJECT
   Q_PROPERTY(QString selectedFileName READ GetSelectedFileName NOTIFY
                  selectedFileChanged)
+  Q_PROPERTY(bool isFileSelected READ IsFileSelected NOTIFY selectedFileChanged)
  public:
   static SqliteFile ReadFromSql(QSqlQuery& sql);
   void InitializeSelectedFile();
   void SetSelectedFile(const SqliteFile& file);
   SqliteFile GetSelectedFile() const;
   QString GetSelectedFileName() const;
+  bool IsFileSelected() const;
 
   inline static const QString kConnectionName = "SQLite User Connection";
 

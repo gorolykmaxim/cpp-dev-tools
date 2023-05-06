@@ -12,6 +12,7 @@ FocusScope {
   property bool searchable: false
   property bool readonly: false
   property bool isLoading: false
+  property alias enabled: textArea.enabled
   property string text: ""
   property string color: "transparent"
   property real innerPadding: 0
