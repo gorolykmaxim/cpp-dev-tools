@@ -101,6 +101,7 @@ FocusScope {
       verticalAlignment: Text.AlignVCenter
       horizontalAlignment: Text.AlignHCenter
       text: "Loading..."
+      elide: Text.ElideRight
     }
   }
   ColumnLayout {

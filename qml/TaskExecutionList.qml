@@ -12,9 +12,13 @@ RowLayout {
     id: controller
   }
   Cdt.Text {
-    Layout.alignment: Qt.AlignVCenter | Qt.AlignHCenter
+    Layout.fillWidth: true
+    Layout.fillHeight: true
     visible: controller.executionsEmpty
     text: "No tasks have been executed yet"
+    elide: Text.ElideRight
+    verticalAlignment: Text.AlignVCenter
+    horizontalAlignment: Text.AlignHCenter
   }
   Cdt.SearchableTextList {
     id: execList

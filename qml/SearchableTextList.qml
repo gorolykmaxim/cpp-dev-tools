@@ -24,7 +24,11 @@ FocusScope {
     spacing: 0
     anchors.fill: parent
     Cdt.Text {
-      Layout.alignment: Qt.AlignVCenter | Qt.AlignHCenter
+      Layout.fillWidth: true
+      Layout.fillHeight: true
+      elide: Text.ElideRight
+      verticalAlignment: Text.AlignVCenter
+      horizontalAlignment: Text.AlignHCenter
       visible: showPlaceholder
       text: placeholderText
     }

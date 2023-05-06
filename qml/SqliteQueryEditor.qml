@@ -33,6 +33,7 @@ Cdt.Pane {
       visible: controller.status
       text: controller.status
       color: controller.statusColor
+      elide: Text.ElideRight
       verticalAlignment: Text.AlignVCenter
       horizontalAlignment: Text.AlignHCenter
       SplitView.fillWidth: true
