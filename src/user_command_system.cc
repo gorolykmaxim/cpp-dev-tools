@@ -1,6 +1,7 @@
 #include "user_command_system.h"
 
 #include "application.h"
+#include "os_command.h"
 
 #define LOG() qDebug() << "[UserCommandSystem]"
 
@@ -63,6 +64,8 @@ void UserCommandSystem::RegisterCommands() {
   RegisterCommand("View", "SQLite Query Editor", "Ctrl+Shift+E", [] {
     Application::Get().view.SetCurrentView("SqliteQueryEditor.qml");
   });
+  RegisterCommand("View", "Terminal", "F12",
+                  [] { OsCommand::OpenTerminalInCurrentDir(); });
   RegisterCommand("Run", "Run Last Task", "Ctrl+R",
                   [] { Application::Get().task.executeTask(0); });
   RegisterCommand("Run", "Run Last Task Until Fails", "Ctrl+Shift+R",
