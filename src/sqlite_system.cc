@@ -1,6 +1,8 @@
 #include "sqlite_system.h"
 
 #include <QDebug>
+#include <QSqlError>
+#include <QSqlRecord>
 
 #include "database.h"
 #include "io_task.h"
@@ -38,9 +40,6 @@ void SqliteSystem::SetSelectedFile(const SqliteFile& file) {
   LOG() << "Selecting database file:" << file.path;
   selected_file = file;
   emit selectedFileChanged();
-  if (file.IsNull()) {
-    return;
-  }
   QUuid project_id = Application::Get().project.GetCurrentProject().id;
   IoTask::Run(
       this,
@@ -66,6 +65,50 @@ QString SqliteSystem::GetSelectedFileName() const {
 }
 
 bool SqliteSystem::IsFileSelected() const { return !selected_file.IsNull(); }
+
+void SqliteSystem::ExecuteQuery(
+    QObject* requestor, const QString& query,
+    const std::function<void(SqliteQueryResult)>& callback) {
+  LOG() << "Executing query" << query;
+  IoTask::Run<SqliteQueryResult>(
+      requestor,
+      [query] {
+        SqliteQueryResult result;
+        QSqlDatabase db = QSqlDatabase::database(SqliteSystem::kConnectionName);
+        if (!db.open()) {
+          result.error =
+              "Failed to open database: " + db.lastError().databaseText();
+          return result;
+        }
+        QSqlQuery sql(db);
+        if (sql.exec(query)) {
+          result.is_select = sql.isSelect();
+          if (result.is_select) {
+            while (sql.next()) {
+              if (result.columns.isEmpty()) {
+                QSqlRecord record = sql.record();
+                for (int i = 0; i < record.count(); i++) {
+                  result.columns.append(record.fieldName(i));
+                }
+              }
+              QVariantList row;
+              for (int i = 0; i < result.columns.size(); i++) {
+                row.append(sql.value(i));
+              }
+              result.rows.append(row);
+            }
+          } else {
+            result.rows_affected = sql.numRowsAffected();
+          }
+        } else {
+          result.error =
+              "Failed to execute query: " + sql.lastError().databaseText();
+        }
+        db.close();
+        return result;
+      },
+      callback);
+}
 
 bool SqliteFile::IsNull() const { return id.isNull(); }
 

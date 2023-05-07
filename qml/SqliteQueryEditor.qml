@@ -47,19 +47,11 @@ Loader {
             KeyNavigation.right: tableView
             onCtrlEnterPressed: controller.executeQuery(getText(), effectiveCursorPosition)
           }
-          Cdt.Text {
-            visible: controller.status
-            text: controller.status
-            color: controller.statusColor
-            elide: Text.ElideRight
-            verticalAlignment: Text.AlignVCenter
-            horizontalAlignment: Text.AlignHCenter
-            SplitView.fillWidth: true
-            SplitView.fillHeight: true
-          }
           Cdt.TableView {
             id: tableView
-            visible: !controller.status
+            showPlaceholder: controller.status
+            placeholderText: controller.status
+            placeholderColor: controller.statusColor
             SplitView.fillWidth: true
             SplitView.fillHeight: true
             model: controller.model

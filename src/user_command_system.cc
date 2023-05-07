@@ -57,6 +57,9 @@ void UserCommandSystem::RegisterCommands() {
   RegisterCommand("View", "SQLite Databases", "Ctrl+Shift+D", [] {
     Application::Get().view.SetCurrentView("SqliteList.qml");
   });
+  RegisterCommand("View", "SQLite Tables", "Ctrl+Shift+S", [] {
+    Application::Get().view.SetCurrentView("SqliteTable.qml");
+  });
   RegisterCommand("View", "SQLite Query Editor", "Ctrl+Shift+E", [] {
     Application::Get().view.SetCurrentView("SqliteQueryEditor.qml");
   });

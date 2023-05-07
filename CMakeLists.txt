@@ -69,6 +69,8 @@ qt_add_executable(cpp-dev-tools
   src/sqlite_query_editor_controller.cc
   src/syntax.h
   src/syntax.cc
+  src/sqlite_table_controller.h
+  src/sqlite_table_controller.cc
   src/main.cc)
 if(NOT MSVC)
   # TODO: figure out how to enable all warnings in MSVC without triggering
@@ -119,6 +121,7 @@ qt_add_qml_module(cpp-dev-tools URI cdt VERSION 1.0
       qml/TableView.qml
       qml/SqliteFileSelectedChecker.qml
       qml/PlaceholderText.qml
+      qml/SqliteTable.qml
   RESOURCES
       fonts/MaterialIcons-Regular.ttf
   RESOURCE_PREFIX /)

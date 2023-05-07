@@ -1,9 +1,5 @@
 #include "sqlite_query_editor_controller.h"
 
-#include <QSqlDatabase>
-#include <QSqlError>
-#include <QSqlRecord>
-
 #include "application.h"
 #include "database.h"
 #include "io_task.h"
@@ -75,56 +71,18 @@ static QString GetSelectedQuery(const QString &text, int cursor) {
 void SqliteQueryEditorController::executeQuery(const QString &text,
                                                int cursor) {
   QString query = GetSelectedQuery(text, cursor);
-  LOG() << "Executing query" << query;
   SetStatus("Running query...");
-  IoTask::Run<SqliteQueryResult>(
-      this,
-      [query] {
-        SqliteQueryResult result;
-        QSqlDatabase db = QSqlDatabase::database(SqliteSystem::kConnectionName);
-        if (!db.open()) {
-          result.error =
-              "Failed to open database: " + db.lastError().databaseText();
-          return result;
-        }
-        QSqlQuery sql(db);
-        if (sql.exec(query)) {
-          result.is_select = sql.isSelect();
-          if (result.is_select) {
-            while (sql.next()) {
-              if (result.columns.isEmpty()) {
-                QSqlRecord record = sql.record();
-                for (int i = 0; i < record.count(); i++) {
-                  result.columns.append(record.fieldName(i));
-                }
-              }
-              QVariantList row;
-              for (int i = 0; i < result.columns.size(); i++) {
-                row.append(sql.value(i));
-              }
-              result.rows.append(row);
-            }
-          } else {
-            result.rows_affected = sql.numRowsAffected();
-          }
-        } else {
-          result.error =
-              "Failed to execute query: " + sql.lastError().databaseText();
-        }
-        db.close();
-        return result;
-      },
-      [this](SqliteQueryResult result) {
-        if (!result.error.isEmpty()) {
-          SetStatus(result.error, "red");
-        } else if (result.is_select) {
-          model->SetTable(result.columns, result.rows);
-          SetStatus("");
-        } else {
-          SetStatus("Query executed. Rows affected: " +
-                    QString::number(result.rows_affected));
-        }
-      });
+  SqliteSystem::ExecuteQuery(this, query, [this](SqliteQueryResult result) {
+    if (!result.error.isEmpty()) {
+      SetStatus(result.error, "red");
+    } else if (result.is_select) {
+      model->SetTable(result.columns, result.rows);
+      SetStatus("");
+    } else {
+      SetStatus("Query executed. Rows affected: " +
+                QString::number(result.rows_affected));
+    }
+  });
 }
 
 void SqliteQueryEditorController::SetStatus(const QString &status,

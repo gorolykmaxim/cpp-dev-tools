@@ -6,6 +6,9 @@ import "." as Cdt
 import cdt
 
 QtQuick.FocusScope {
+  property alias placeholderText: placeholder.text
+  property alias placeholderColor: placeholder.textColor
+  property bool showPlaceholder: false
   property alias model: tableView.model
   QtQuick.Connections {
     target: tableView.model
@@ -14,9 +17,15 @@ QtQuick.FocusScope {
       tableView.positionViewAtCell(cell, QtQuick.TableView.Contain, Qt.point(0, 0));
     }
   }
+  Cdt.PlaceholderText {
+    id: placeholder
+    anchors.fill: parent
+    visible: showPlaceholder
+  }
   ColumnLayout {
     spacing: 0
     anchors.fill: parent
+    visible: !showPlaceholder
     HorizontalHeaderView {
       id: horizontalHeaderView
       syncView: tableView
@@ -41,7 +50,7 @@ QtQuick.FocusScope {
       boundsBehavior: QtQuick.Flickable.StopAtBounds
       columnWidthProvider: function(col) {
         const w = explicitColumnWidth(col);
-        return w < 0 ? 150 : w;
+        return w < 0 ? Math.max(tableView.width / tableView.columns, 150) : w;
       }
       delegate: Cdt.Text {
         text: display
@@ -52,7 +61,7 @@ QtQuick.FocusScope {
           anchors.fill: parent
           color: Theme.colorBgDark
           border.width: 1
-          border.color: current ? Theme.colorHighlight : Theme.colorBgMedium
+          border.color: current && tableView.activeFocus ? Theme.colorHighlight : Theme.colorBgMedium
         }
         QtQuick.MouseArea {
           anchors.fill: parent
