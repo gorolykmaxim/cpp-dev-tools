@@ -10,6 +10,7 @@ QtQuick.FocusScope {
   property alias placeholderColor: placeholder.textColor
   property bool showPlaceholder: false
   property alias model: tableView.model
+  enabled: !showPlaceholder
   QtQuick.Connections {
     target: tableView.model
     function onCurrentChanged(i) {
