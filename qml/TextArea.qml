@@ -126,7 +126,10 @@ FocusScope {
             Layout.fillWidth: true
             placeholderText: "Search text"
             onDisplayTextChanged: controller.search(displayText, root.getText(), true)
-            KeyNavigation.down: root.readonly ? textArea : replaceOutputTextField
+            // Don't attach navigation down to TextArea if searchbar is invisible, because in case there
+            // is a component above our Cdt.TextArea - we won't be able to navigation to it via "up",
+            // because "up" of our internal TextArea is searchbar and it is invisible (thus can't be reached).
+            KeyNavigation.down: searchBar.visible ? (root.readonly ? textArea : replaceOutputTextField) : null
             KeyNavigation.right: searchPrevBtn
             Keys.onReturnPressed: e => controller.goToSearchResult(!(e.modifiers & Qt.ShiftModifier))
             Keys.onEnterPressed: e => controller.goToSearchResult(!(e.modifiers & Qt.ShiftModifier))
@@ -139,7 +142,7 @@ FocusScope {
             buttonIcon: "arrow_upward"
             enabled: !controller.searchResultsEmpty
             onClicked: controller.goToSearchResult(false)
-            KeyNavigation.down: root.readonly ? textArea : replaceAllBtn
+            KeyNavigation.down: searchBar.visible ? (root.readonly ? textArea : replaceAllBtn) : null
             KeyNavigation.right: searchNextBtn
           }
           Cdt.IconButton {
@@ -147,7 +150,7 @@ FocusScope {
             buttonIcon: "arrow_downward"
             enabled: !controller.searchResultsEmpty
             onClicked: controller.goToSearchResult(true)
-            KeyNavigation.down: root.readonly ? textArea : replaceAllBtn
+            KeyNavigation.down: searchBar.visible ? (root.readonly ? textArea : replaceAllBtn) : null
           }
         }
         RowLayout {
@@ -157,7 +160,7 @@ FocusScope {
             id: replaceOutputTextField
             Layout.fillWidth: true
             placeholderText: "Replace text"
-            KeyNavigation.down: textArea
+            KeyNavigation.down: searchBar.visible ? textArea : null
             KeyNavigation.right: replaceBtn
             Keys.onReturnPressed: replaceAndSearch(false)
             Keys.onEnterPressed: replaceAndSearch(false)
@@ -168,13 +171,13 @@ FocusScope {
             onClicked: replaceAndSearch(false)
             KeyNavigation.up: searchOutputTextField
             KeyNavigation.right: replaceAllBtn
-            KeyNavigation.down: textArea
+            KeyNavigation.down: searchBar.visible ? textArea : null
           }
           Cdt.Button {
             id: replaceAllBtn
             text: "Replace All"
             onClicked: replaceAndSearch(true)
-            KeyNavigation.down: textArea
+            KeyNavigation.down: searchBar.visible ? textArea : null
           }
         }
       }
