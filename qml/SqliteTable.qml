@@ -28,8 +28,9 @@ Loader {
         focus: dbFile.isSelected
         searchableModel: controller.tables
         searchPlaceholderText: "Search table"
-        showPlaceholder: !controller.tablesFound
-        placeholderText: "No Tables Found"
+        showPlaceholder: controller.status
+        placeholderText: controller.status
+        placeholderColor: controller.statusColor
         onItemSelected: item => controller.displayTable(item.idx)
       }
     }

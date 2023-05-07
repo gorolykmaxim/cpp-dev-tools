@@ -19,13 +19,11 @@ class SqliteTableController : public QObject {
   QML_ELEMENT
   Q_PROPERTY(SimpleQVariantListModel* tables MEMBER tables CONSTANT)
   Q_PROPERTY(SqliteTableModel* table MEMBER table CONSTANT)
-  Q_PROPERTY(bool tablesFound READ AreTablesFound NOTIFY tablesChanged)
   Q_PROPERTY(QString status MEMBER status NOTIFY statusChanged)
   Q_PROPERTY(QString statusColor MEMBER status_color NOTIFY statusChanged)
   Q_PROPERTY(QString limit READ GetLimit NOTIFY displayTableView)
  public:
   explicit SqliteTableController(QObject* parent = nullptr);
-  bool AreTablesFound() const;
   QString GetLimit() const;
  public slots:
   void displayTableList();
@@ -36,7 +34,6 @@ class SqliteTableController : public QObject {
   void setOrderBy(const QString& value);
   void setWhere(const QString& value);
  signals:
-  void tablesChanged();
   void displayTableView();
   void statusChanged();
 

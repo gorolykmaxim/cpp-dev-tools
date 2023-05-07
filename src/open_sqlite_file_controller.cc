@@ -55,7 +55,7 @@ void OpenSqliteFileController::openDatabase(const QString& path) {
             file.id = QUuid::createUuid();
             file.path = path;
             QSqlDatabase db =
-                QSqlDatabase::database(SqliteSystem::kConnectionName);
+                QSqlDatabase::database(SqliteSystem::kConnectionName, false);
             if (SetDatabasePath(db, path, error)) {
               Database::ExecCmd(
                   "INSERT INTO database_file(id, path, project_id) "
@@ -68,7 +68,7 @@ void OpenSqliteFileController::openDatabase(const QString& path) {
           file.id = file_id;
           file.path = path;
           QSqlDatabase db =
-              QSqlDatabase::database(SqliteSystem::kConnectionName);
+              QSqlDatabase::database(SqliteSystem::kConnectionName, false);
           if (SetDatabasePath(db, path, error)) {
             Database::ExecCmd(
                 "UPDATE database_file SET path=? WHERE id=? AND project_id=?",

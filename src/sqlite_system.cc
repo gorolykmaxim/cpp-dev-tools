@@ -74,7 +74,8 @@ void SqliteSystem::ExecuteQuery(
       requestor,
       [query] {
         SqliteQueryResult result;
-        QSqlDatabase db = QSqlDatabase::database(SqliteSystem::kConnectionName);
+        QSqlDatabase db =
+            QSqlDatabase::database(SqliteSystem::kConnectionName, false);
         if (!OpenIfExistsSync(db, result.error)) {
           return result;
         }

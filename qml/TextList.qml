@@ -10,6 +10,7 @@ Cdt.Pane {
   property bool highlightCurrentItemWithoutFocus: true
   property alias model: list.model
   property alias placeholderText: placeholder.text
+  property alias placeholderColor: placeholder.textColor
   property alias currentItem: list.currentItem
   property bool showPlaceholder: list.count === 0
   color: Theme.colorBgDark

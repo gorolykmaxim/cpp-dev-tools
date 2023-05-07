@@ -13,10 +13,6 @@ SqliteTableController::SqliteTableController(QObject* parent)
           {1})),
       table(new SqliteTableModel(this)) {}
 
-bool SqliteTableController::AreTablesFound() const {
-  return !tables->list.isEmpty();
-}
-
 QString SqliteTableController::GetLimit() const { return query.limit; }
 
 void SqliteTableController::displayTableList() {
@@ -24,14 +20,16 @@ void SqliteTableController::displayTableList() {
   app.view.SetWindowTitle("SQLite Tables");
   SqliteFile file = app.sqlite.GetSelectedFile();
   LOG() << "Fetching list of tables from" << file.path;
-  IoTask::Run<QStringList>(
+  SetStatus("Looking for tables...");
+  IoTask::Run<std::pair<QStringList, QString>>(
       this,
       [file] {
         QStringList results;
-        QSqlDatabase db = QSqlDatabase::database(SqliteSystem::kConnectionName);
+        QSqlDatabase db =
+            QSqlDatabase::database(SqliteSystem::kConnectionName, false);
         QString error;
         if (!SqliteSystem::OpenIfExistsSync(db, error)) {
-          return results;
+          return std::make_pair(results, error);
         }
         QSqlQuery sql(db);
         sql.exec(
@@ -41,16 +39,20 @@ void SqliteTableController::displayTableList() {
           results.append(sql.value(0).toString());
         }
         db.close();
-        return results;
+        return std::make_pair(results, error);
       },
-      [this](QStringList results) {
+      [this](std::pair<QStringList, QString> results) {
         tables->list.clear();
-        for (int i = 0; i < results.size(); i++) {
-          const QString& table = results[i];
-          tables->list.append({i, table, "web_asset", table == table_name});
+        if (!results.second.isEmpty()) {
+          SetStatus(results.second, "red");
+        } else {
+          for (int i = 0; i < results.first.size(); i++) {
+            const QString& table = results.first[i];
+            tables->list.append({i, table, "web_asset", table == table_name});
+          }
+          SetStatus(results.first.isEmpty() ? "No Tables Found" : "");
         }
         tables->Load();
-        emit tablesChanged();
       });
 }
 
@@ -64,7 +66,7 @@ void SqliteTableController::displayTable(int i) {
 }
 
 void SqliteTableController::load() {
-  SetStatus("Loading...");
+  SetStatus("Loading table data...");
   QString sql = "SELECT * FROM " + table_name;
   if (!query.where.isEmpty()) {
     sql += " WHERE " + query.where;

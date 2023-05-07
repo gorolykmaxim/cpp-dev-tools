@@ -8,6 +8,7 @@ FocusScope {
   property var searchableModel: null
   property string searchPlaceholderText: ""
   property alias placeholderText: textList.placeholderText
+  property alias placeholderColor: textList.placeholderColor
   property bool showPlaceholder: false
   signal itemSelected(selectedItemModel: QtObject)
   signal itemRightClicked(clickedItemModel: QtObject)
