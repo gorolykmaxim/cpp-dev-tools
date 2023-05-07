@@ -13,19 +13,68 @@ NotificationListController::NotificationListController(QObject *parent)
                      notifications->Load();
                      emit notificationsChanged();
                    });
-  app.notification.MarkAllNotificationsSeenByUser();
 }
 
 bool NotificationListController::AreNotificationsEmpty() const {
   return notifications->GetRowCount() == 0;
 }
 
+QString NotificationListController::GetSelectedNotificationIcon() const {
+  if (selected < 0) {
+    return "";
+  }
+  return NotificationListModel::GetIconOf(notifications->At(selected)).icon;
+}
+
+QString NotificationListController::GetSelectedNotificationIconColor() const {
+  if (selected < 0) {
+    return "";
+  }
+  return NotificationListModel::GetIconOf(notifications->At(selected)).color;
+}
+
+QString NotificationListController::GetSelectedNotificationTitle() const {
+  if (selected < 0) {
+    return "";
+  }
+  return notifications->At(selected).title;
+}
+
+QString NotificationListController::GetSelectedNotificationTitleColor() const {
+  if (selected < 0) {
+    return "";
+  }
+  return notifications->GetTitleColorOf(selected);
+}
+
+QString NotificationListController::GetSelectedNotificationDescription() const {
+  if (selected < 0) {
+    return "";
+  }
+  return notifications->At(selected).description;
+}
+
+void NotificationListController::displayList() {
+  Application::Get().notification.MarkAllNotificationsSeenByUser();
+}
+
+UiIcon NotificationListModel::GetIconOf(const Notification &notification) {
+  UiIcon icon;
+  if (notification.is_error) {
+    icon.icon = "error";
+    icon.color = "red";
+  } else {
+    icon.icon = "info";
+  }
+  return icon;
+}
+
 NotificationListModel::NotificationListModel(QObject *parent)
     : QVariantListModel(parent),
       last_seen_notification(
           Application::Get().notification.IndexOfLastSeenNotification()) {
-  SetRoleNames({{0, "title"},
-                {1, "subTitle"},
+  SetRoleNames({{0, "idx"},
+                {1, "title"},
                 {2, "titleColor"},
                 {3, "icon"},
                 {4, "iconColor"},
@@ -34,28 +83,27 @@ NotificationListModel::NotificationListModel(QObject *parent)
 }
 
 QVariantList NotificationListModel::GetRow(int i) const {
-  static const Theme kTheme;
-  Application &app = Application::Get();
-  const Notification &notification = app.notification.GetNotifications()[i];
-  QString title_color;
-  UiIcon icon;
-  if (i <= last_seen_notification) {
-    title_color = kTheme.kColorSubText;
-  } else {
-    title_color = kTheme.kColorText;
-  }
-  if (notification.is_error) {
-    icon.icon = "error";
-    icon.color = "red";
-  } else {
-    icon.icon = "info";
-  }
+  const Notification &notification = At(i);
+  UiIcon icon = GetIconOf(notification);
+  QString title_color = GetTitleColorOf(i);
   bool is_selected = i == GetRowCount() - 1;
-  return {notification.title, notification.description,
-          title_color,        icon.icon,
-          icon.color,         is_selected};
+  return {i,         notification.title, title_color,
+          icon.icon, icon.color,         is_selected};
 }
 
 int NotificationListModel::GetRowCount() const {
   return Application::Get().notification.GetNotifications().size();
+}
+
+const Notification &NotificationListModel::At(int i) const {
+  return Application::Get().notification.GetNotifications()[i];
+}
+
+QString NotificationListModel::GetTitleColorOf(int i) const {
+  static const Theme kTheme;
+  if (i <= last_seen_notification) {
+    return kTheme.kColorSubText;
+  } else {
+    return kTheme.kColorText;
+  }
 }
