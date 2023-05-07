@@ -197,6 +197,7 @@ FocusScope {
             Qt.Key_Down,
             Qt.Key_Home,
             Qt.Key_End,
+            Qt.Key_Escape,
           ])
           property bool ignoreTextChange: false
           selectByMouse: true
@@ -227,12 +228,15 @@ FocusScope {
               controller.search(searchOutputTextField.displayText, root.getText(), root.readonly)
             }
           }
-          Keys.onPressed: event => {
+          Keys.onPressed: function(event) {
             if (event.key === Qt.Key_Escape) {
+              event.accepted = true;
               if (searchBar.visible) {
                 closeSearchBar(true);
-              } else {
+              } else if (textArea.selectedText) {
                 textArea.deselect();
+              } else {
+                event.accepted = false;
               }
             } else if (event.key === Qt.Key_PageUp) {
               controller.goToPage(root.getText(), true);
