@@ -16,7 +16,7 @@ class NotificationListModel : public QVariantListModel {
   const Notification& At(int i) const;
   QString GetTitleColorOf(int i) const;
 
-  int last_seen_notification;
+  int last_seen_notification = -1;
 
  protected:
   QVariantList GetRow(int i) const override;
@@ -50,6 +50,7 @@ class NotificationListController : public QObject {
 
  public slots:
   void displayList();
+  void clearNotifications();
 
  signals:
   void notificationsChanged();

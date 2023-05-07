@@ -15,6 +15,7 @@ Loader {
   Component {
     id: listView
     Cdt.SearchableTextList {
+      id: list
       Component.onCompleted: controller.displayList()
       anchors.fill: parent
       searchPlaceholderText: "Search notification"
@@ -24,6 +25,16 @@ Loader {
       focus: true
       onCurrentItemChanged: ifCurrentItem('idx', idx => controller.selected = idx)
       onItemSelected: root.sourceComponent = detailsView
+      onItemRightClicked: contextMenu.open()
+      Menu {
+        id: contextMenu
+        MenuItem {
+          text: "Clear Notifications"
+          enabled: list.activeFocus
+          shortcut: "Alt+Shift+D"
+          onTriggered: controller.clearNotifications()
+        }
+      }
     }
   }
   Component {

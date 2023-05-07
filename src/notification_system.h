@@ -24,6 +24,7 @@ class NotificationSystem : public QObject {
   int IndexOfLastSeenNotification() const;
   bool HasNewErrors() const;
   QString GetLastNotSeenNotificationTitle() const;
+  void ClearNotifications();
 
  signals:
   void notificationsChanged();

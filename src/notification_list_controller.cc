@@ -8,6 +8,8 @@ NotificationListController::NotificationListController(QObject *parent)
     : QObject(parent), notifications(new NotificationListModel(this)) {
   Application &app = Application::Get();
   app.view.SetWindowTitle("Notifications");
+  notifications->last_seen_notification =
+      app.notification.IndexOfLastSeenNotification();
   QObject::connect(&app.notification, &NotificationSystem::notificationsChanged,
                    this, [this] {
                      notifications->Load();
@@ -58,6 +60,13 @@ void NotificationListController::displayList() {
   Application::Get().notification.MarkAllNotificationsSeenByUser();
 }
 
+void NotificationListController::clearNotifications() {
+  Application &app = Application::Get();
+  app.notification.ClearNotifications();
+  notifications->last_seen_notification =
+      app.notification.IndexOfLastSeenNotification();
+}
+
 UiIcon NotificationListModel::GetIconOf(const Notification &notification) {
   UiIcon icon;
   if (notification.is_error) {
@@ -70,9 +79,7 @@ UiIcon NotificationListModel::GetIconOf(const Notification &notification) {
 }
 
 NotificationListModel::NotificationListModel(QObject *parent)
-    : QVariantListModel(parent),
-      last_seen_notification(
-          Application::Get().notification.IndexOfLastSeenNotification()) {
+    : QVariantListModel(parent) {
   SetRoleNames({{0, "idx"},
                 {1, "title"},
                 {2, "titleColor"},

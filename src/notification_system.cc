@@ -51,3 +51,10 @@ QString NotificationSystem::GetLastNotSeenNotificationTitle() const {
   }
   return notifications.last().title;
 }
+
+void NotificationSystem::ClearNotifications() {
+  LOG() << "Clear all notifications";
+  last_seen_notification = -1;
+  notifications.clear();
+  emit notificationsChanged();
+}
