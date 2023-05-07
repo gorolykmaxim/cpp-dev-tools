@@ -29,8 +29,8 @@ void SqliteTableController::displayTableList() {
       [file] {
         QStringList results;
         QSqlDatabase db = QSqlDatabase::database(SqliteSystem::kConnectionName);
-        db.open();
-        if (!db.open()) {
+        QString error;
+        if (!SqliteSystem::OpenIfExistsSync(db, error)) {
           return results;
         }
         QSqlQuery sql(db);

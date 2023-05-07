@@ -12,8 +12,7 @@ static bool SetDatabasePath(QSqlDatabase& db, const QString& path,
                             QString& error) {
   QString old_path = db.databaseName();
   db.setDatabaseName(path);
-  if (!db.open()) {
-    error = db.lastError().text();
+  if (!SqliteSystem::OpenIfExistsSync(db, error)) {
     db.setDatabaseName(old_path);
     return false;
   }

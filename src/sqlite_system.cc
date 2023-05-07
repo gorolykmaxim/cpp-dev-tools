@@ -75,9 +75,7 @@ void SqliteSystem::ExecuteQuery(
       [query] {
         SqliteQueryResult result;
         QSqlDatabase db = QSqlDatabase::database(SqliteSystem::kConnectionName);
-        if (!db.open()) {
-          result.error =
-              "Failed to open database: " + db.lastError().databaseText();
+        if (!OpenIfExistsSync(db, result.error)) {
           return result;
         }
         QSqlQuery sql(db);
@@ -108,6 +106,18 @@ void SqliteSystem::ExecuteQuery(
         return result;
       },
       callback);
+}
+
+bool SqliteSystem::OpenIfExistsSync(QSqlDatabase& db, QString& error) {
+  if (!QFile::exists(db.databaseName())) {
+    error = "Database file does not exist";
+    return false;
+  }
+  if (!db.open()) {
+    error = "Failed to open database: " + db.lastError().databaseText();
+    return false;
+  }
+  return true;
 }
 
 bool SqliteFile::IsNull() const { return id.isNull(); }

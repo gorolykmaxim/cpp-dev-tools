@@ -33,6 +33,7 @@ class SqliteSystem : public QObject {
   static void ExecuteQuery(
       QObject* requestor, const QString& query,
       const std::function<void(SqliteQueryResult)>& callback);
+  static bool OpenIfExistsSync(QSqlDatabase& db, QString& error);
   void InitializeSelectedFile();
   void SetSelectedFile(const SqliteFile& file);
   SqliteFile GetSelectedFile() const;
