@@ -44,3 +44,10 @@ bool NotificationSystem::HasNewErrors() const {
   }
   return false;
 }
+
+QString NotificationSystem::GetLastNotSeenNotificationTitle() const {
+  if (GetNotSeenNotificationsCount() == 0) {
+    return "";
+  }
+  return notifications.last().title;
+}

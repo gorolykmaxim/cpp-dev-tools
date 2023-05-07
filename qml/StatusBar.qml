@@ -14,9 +14,16 @@ RowLayout {
   }
   Row {
     padding: Theme.basePadding
-    spacing: interItemSpacing
+    spacing: 0
     Layout.alignment: Qt.AlignRight
+    Cdt.Text {
+      width: Math.min(implicitWidth, 300)
+      text: notificationSystem.lastNotSeenNotificationTitle
+      color: notificationsItem.iconAndTextColor
+      elide: Text.ElideRight
+    }
     Cdt.StatusBarItem {
+      id: notificationsItem
       property string iconAndTextColor: notificationSystem.notSeenNotifications > 0 ?
                                           (notificationSystem.newErrors ? "red" : Theme.colorText) :
                                           Theme.colorSubText
@@ -25,11 +32,13 @@ RowLayout {
       iconColor: iconAndTextColor
       text: notificationSystem.notSeenNotifications > 0 ? notificationSystem.notSeenNotifications : ""
       textColor: iconAndTextColor
+      rightPadding: interItemSpacing
     }
     Cdt.StatusBarItem {
       displayIcon: sqliteSystem.selectedFileName
       iconName: "storage"
       text: sqliteSystem.selectedFileName || ""
+      rightPadding: interItemSpacing
     }
     Cdt.StatusBarItem {
       displayIcon: taskSystem.currentTaskName
