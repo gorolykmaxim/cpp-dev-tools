@@ -17,6 +17,7 @@ ColumnLayout {
   }
   anchors.fill: parent
   spacing: 0
+  Keys.onEscapePressed: cancelled()
   Cdt.Pane {
     Layout.fillWidth: true
     color: Theme.colorBgMedium

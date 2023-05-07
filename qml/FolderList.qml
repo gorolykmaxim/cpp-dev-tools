@@ -18,6 +18,7 @@ Loader {
     ColumnLayout {
       anchors.fill: parent
       spacing: 0
+      Keys.onEscapePressed: root.back()
       Cdt.Pane {
         Layout.fillWidth: true
         color: Theme.colorBgMedium
