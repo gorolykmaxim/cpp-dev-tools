@@ -1,5 +1,6 @@
 #include "text_area_controller.h"
 
+#include <algorithm>
 #include <cmath>
 #include <limits>
 
@@ -191,10 +192,12 @@ void TextAreaController::rehighlightBlockByLineNumber(int i) {
 }
 
 void TextAreaController::goToPage(const QString& text, bool up) {
-  if (cursor_history_index < 0) {
-    return;
+  int pos = 0;
+  if (cursor_history_index >= 0) {
+    pos = cursor_history[cursor_history_index];
+    // TextArea sometimes tends to put cursor outside the text boundaries.
+    pos = std::min(pos, (int)text.size() - 1);
   }
-  int pos = cursor_history[cursor_history_index];
   int line = 0;
   while (!(up && pos <= 0) && !(!up && pos >= text.size() - 1)) {
     if (text[pos] == '\n') {
