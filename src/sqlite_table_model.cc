@@ -38,18 +38,26 @@ QHash<int, QByteArray> SqliteTableModel::roleNames() const {
 void SqliteTableModel::SetTable(const QList<QString> &new_columns,
                                 const QList<QVariantList> &new_rows) {
   QModelIndex i;
-  beginRemoveColumns(i, 0, columns.size() - 1);
-  columns.clear();
-  endRemoveColumns();
-  beginRemoveRows(i, 0, rows.size() - 1);
-  rows.clear();
-  endRemoveRows();
-  beginInsertColumns(i, 0, new_columns.size() - 1);
-  columns = new_columns;
-  endInsertColumns();
-  beginInsertRows(i, 0, new_rows.size() - 1);
-  rows = new_rows;
-  endInsertRows();
+  if (!columns.isEmpty()) {
+    beginRemoveColumns(i, 0, columns.size() - 1);
+    columns.clear();
+    endRemoveColumns();
+  }
+  if (!rows.isEmpty()) {
+    beginRemoveRows(i, 0, rows.size() - 1);
+    rows.clear();
+    endRemoveRows();
+  }
+  if (!new_columns.isEmpty()) {
+    beginInsertColumns(i, 0, new_columns.size() - 1);
+    columns = new_columns;
+    endInsertColumns();
+  }
+  if (!new_rows.isEmpty()) {
+    beginInsertRows(i, 0, new_rows.size() - 1);
+    rows = new_rows;
+    endInsertRows();
+  }
   current = index(0, 0);
 }
 
