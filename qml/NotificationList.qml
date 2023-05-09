@@ -51,7 +51,7 @@ Loader {
           anchors.fill: parent
           Cdt.Icon {
             icon: controller.selectedNotificationIcon
-            color: controller.selectedNotificationIconColor
+            color: controller.selectedNotificationIconColor || Theme.colorText
             Layout.margins: Theme.basePadding
           }
           Cdt.Text {
