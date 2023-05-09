@@ -51,10 +51,6 @@ void OsProcess::WriteToStdin(const QByteArray &data) { process.write(data); }
 
 void OsProcess::FinishWriting() { process.closeWriteChannel(); }
 
-void OsProcess::SetEnvironment(const QProcessEnvironment &environment) {
-  process.setProcessEnvironment(environment);
-}
-
 class OpenTerminalInCurrentDirWin : public QObject {
  public:
   void Run() {
@@ -142,15 +138,14 @@ void OsCommand::Run(const QString &command, const QString &error_title) {
 void OsCommand::OpenTerminalInCurrentDir() {
   LOG() << "Opening terminal in" << QDir::currentPath();
 #if __APPLE__
-  OsProcess *process = new OsProcess("osascript -");
+  OsProcess *process = new OsProcess("osascript", {"-", QDir::currentPath()});
   process->error_title = "Faield to open terminal";
-  QProcessEnvironment env = QProcessEnvironment::systemEnvironment();
-  env.insert("TARGET_DIR", QDir::currentPath());
-  process->SetEnvironment(env);
   process->Run();
   QString osascript =
-      "tell app \"Terminal\" to do script \"cd $TARGET_DIR\"\n"
-      "tell app \"Terminal\" to activate\n";
+      "on run argv\n"
+      "tell app \"Terminal\" to do script \"cd \" & item 1 of argv\n"
+      "tell app \"Terminal\" to activate\n"
+      "end run";
   process->WriteToStdin(osascript.toUtf8());
   process->FinishWriting();
 #else

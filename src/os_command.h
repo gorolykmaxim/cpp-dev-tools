@@ -11,7 +11,6 @@ class OsProcess : public QObject {
   void Run();
   void WriteToStdin(const QByteArray& data);
   void FinishWriting();
-  void SetEnvironment(const QProcessEnvironment& environment);
 
   QString command;
   QStringList args;
