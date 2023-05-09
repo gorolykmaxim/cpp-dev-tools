@@ -16,6 +16,7 @@ class OsProcess : public QObject {
   QStringList args;
   QString output;
   QString error_title;
+  QString success_title;
   int exit_code;
  signals:
   void finished();
@@ -26,7 +27,8 @@ class OsProcess : public QObject {
 
 class OsCommand {
  public:
-  static void Run(const QString& command, const QString& error_title);
+  static void Run(const QString& command, const QString& error_title = "",
+                  const QString& successful_title = "");
   static void OpenTerminalInCurrentDir();
 };
 

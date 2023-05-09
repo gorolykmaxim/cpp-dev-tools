@@ -7,6 +7,7 @@
 
 #include "documentation_system.h"
 #include "editor_system.h"
+#include "git_system.h"
 #include "notification_system.h"
 #include "project_system.h"
 #include "sqlite_system.h"

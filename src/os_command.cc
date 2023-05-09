@@ -31,11 +31,11 @@ void OsProcess::Run() {
   QObject::connect(&process, &QProcess::finished, this, [this](int exit_code) {
     this->exit_code = exit_code;
     emit finished();
-    if (exit_code != 0 && !error_title.isEmpty()) {
-      Notification notification;
-      notification.is_error = true;
-      notification.title = error_title;
-      notification.description = output;
+    Notification notification;
+    notification.is_error = exit_code != 0;
+    notification.title = exit_code != 0 ? error_title : success_title;
+    notification.description = output;
+    if (!notification.title.isEmpty()) {
       Application::Get().notification.Post(notification);
     }
     deleteLater();
@@ -128,9 +128,11 @@ class OpenTerminalInCurrentDirWin : public QObject {
   QStringList opening_failures;
 };
 
-void OsCommand::Run(const QString &command, const QString &error_title) {
+void OsCommand::Run(const QString &command, const QString &error_title,
+                    const QString &successful_title) {
   LOG() << "Executing" << command;
   OsProcess *process = new OsProcess(command);
+  process->success_title = successful_title;
   process->error_title = error_title;
   process->Run();
 }

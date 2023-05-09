@@ -5,6 +5,7 @@
 #include <QTextStream>
 
 #include "application.h"
+#include "os_command.h"
 
 #define LOG() qDebug() << "[GitSystem]"
 
@@ -40,4 +41,8 @@ QList<QString> GitSystem::FindIgnoredPathsSync() {
     }
   }
   return results;
+}
+
+void GitSystem::Pull() {
+  OsCommand::Run("git pull", "git pull failed", "git pull successful");
 }

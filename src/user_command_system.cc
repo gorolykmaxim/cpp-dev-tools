@@ -78,6 +78,7 @@ void UserCommandSystem::RegisterCommands() {
     Application& app = Application::Get();
     app.task.cancelExecution(app.task.GetSelectedExecutionId(), true);
   });
+  RegisterCommand("Git", "Pull", "Ctrl+Shift+U", [] { GitSystem::Pull(); });
   RegisterCommand("Window", "Default Size", "Ctrl+Shift+M",
                   [] { Application::Get().view.SetDefaultWindowSize(); });
   LOG() << "Comitting changes to user command list";
