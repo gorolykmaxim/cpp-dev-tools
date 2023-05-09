@@ -46,3 +46,7 @@ QList<QString> GitSystem::FindIgnoredPathsSync() {
 void GitSystem::Pull() {
   OsCommand::Run("git pull", "git pull failed", "git pull successful");
 }
+
+void GitSystem::Push() {
+  OsCommand::Run("git push", "git push failed", "git push successful");
+}

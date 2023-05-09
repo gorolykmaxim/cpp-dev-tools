@@ -8,6 +8,7 @@ class GitSystem : public QObject {
  public:
   static QList<QString> FindIgnoredPathsSync();
   static void Pull();
+  static void Push();
 };
 
 #endif  // GITSYSTEM_H
