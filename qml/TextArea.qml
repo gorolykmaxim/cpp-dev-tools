@@ -255,6 +255,7 @@ FocusScope {
             }
           }
           onPressed: e => Common.handleRightClick(textArea, contextMenu, e)
+          KeyNavigation.up: searchBar.visible ? (root.readonly ? searchOutputTextField : replaceOutputTextField) : null
           Menu {
             id: contextMenu
             MenuItem {
