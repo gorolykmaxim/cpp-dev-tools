@@ -49,6 +49,14 @@ QString NotificationListController::GetSelectedNotificationTitleColor() const {
   return notifications->GetTitleColorOf(selected);
 }
 
+QString NotificationListController::GetSelectedNotificationTime() const {
+  if (selected < 0) {
+    return "";
+  }
+  return notifications->At(selected).time.toString(
+      Application::kDateTimeFormat);
+}
+
 QString NotificationListController::GetSelectedNotificationDescription() const {
   if (selected < 0) {
     return "";
@@ -83,10 +91,11 @@ NotificationListModel::NotificationListModel(QObject *parent)
   SetRoleNames({{0, "idx"},
                 {1, "title"},
                 {2, "titleColor"},
-                {3, "icon"},
-                {4, "iconColor"},
-                {5, "isSelected"}});
-  searchable_roles = {0, 1};
+                {3, "subTitle"},
+                {4, "icon"},
+                {5, "iconColor"},
+                {6, "isSelected"}});
+  searchable_roles = {1, 3};
 }
 
 QVariantList NotificationListModel::GetRow(int i) const {
@@ -94,8 +103,10 @@ QVariantList NotificationListModel::GetRow(int i) const {
   UiIcon icon = GetIconOf(notification);
   QString title_color = GetTitleColorOf(i);
   bool is_selected = i == GetRowCount() - 1;
-  return {i,         notification.title, title_color,
-          icon.icon, icon.color,         is_selected};
+  return {i,           notification.title,
+          title_color, notification.time.toString(Application::kDateTimeFormat),
+          icon.icon,   icon.color,
+          is_selected};
 }
 
 int NotificationListModel::GetRowCount() const {

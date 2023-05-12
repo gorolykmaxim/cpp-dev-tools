@@ -54,11 +54,21 @@ Loader {
             color: controller.selectedNotificationIconColor || Theme.colorText
             Layout.margins: Theme.basePadding
           }
-          Cdt.Text {
+          ColumnLayout {
+            spacing: 0
             Layout.fillWidth: true
-            elide: Text.ElideLeft
-            text: controller.selectedNotificationTitle
-            color: controller.selectedNotificationTitleColor
+            Layout.fillHeight: true
+            Cdt.Text {
+              Layout.fillWidth: true
+              elide: Text.ElideLeft
+              text: controller.selectedNotificationTitle
+              color: controller.selectedNotificationTitleColor
+            }
+            Cdt.Text {
+              Layout.fillWidth: true
+              text: controller.selectedNotificationTime
+              color: Theme.colorSubText
+            }
           }
           Cdt.Button {
             id: backBtn

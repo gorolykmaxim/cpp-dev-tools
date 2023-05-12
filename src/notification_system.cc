@@ -59,4 +59,5 @@ void NotificationSystem::ClearNotifications() {
   emit notificationsChanged();
 }
 
-Notification::Notification(const QString &title) : title(title) {}
+Notification::Notification(const QString &title)
+    : title(title), time(QDateTime::currentDateTime()) {}

@@ -37,6 +37,8 @@ class NotificationListController : public QObject {
                  NOTIFY selectedChanged)
   Q_PROPERTY(QString selectedNotificationTitleColor READ
                  GetSelectedNotificationTitleColor NOTIFY selectedChanged)
+  Q_PROPERTY(QString selectedNotificationTime READ GetSelectedNotificationTime
+                 NOTIFY selectedChanged)
   Q_PROPERTY(QString selectedNotificationDescription READ
                  GetSelectedNotificationDescription NOTIFY selectedChanged)
  public:
@@ -46,6 +48,7 @@ class NotificationListController : public QObject {
   QString GetSelectedNotificationIconColor() const;
   QString GetSelectedNotificationTitle() const;
   QString GetSelectedNotificationTitleColor() const;
+  QString GetSelectedNotificationTime() const;
   QString GetSelectedNotificationDescription() const;
 
  public slots:

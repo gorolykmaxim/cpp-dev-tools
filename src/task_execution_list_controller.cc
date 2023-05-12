@@ -22,8 +22,12 @@ QVariantList TaskExecutionListModel::GetRow(int i) const {
   const TaskExecution& exec = list[i];
   UiIcon icon = TaskSystem::GetStatusAsIcon(exec);
   bool is_selected = app.task.GetSelectedExecutionId() == exec.id;
-  return {exec.id,   exec.task_name, exec.start_time.toString(),
-          icon.icon, icon.color,     is_selected};
+  return {exec.id,
+          exec.task_name,
+          exec.start_time.toString(Application::kDateTimeFormat),
+          icon.icon,
+          icon.color,
+          is_selected};
 }
 
 int TaskExecutionListModel::GetRowCount() const { return list.size(); }

@@ -37,4 +37,5 @@ class Application {
   QThreadPool io_thread_pool;
 
   static Application* instance;
+  inline static const QString kDateTimeFormat = "yyyy-MM-dd HH:mm:ss";
 };

@@ -1,6 +1,7 @@
 #ifndef NOTIFICATIONSYSTEM_H
 #define NOTIFICATIONSYSTEM_H
 
+#include <QDateTime>
 #include <QObject>
 
 struct Notification {
@@ -9,6 +10,7 @@ struct Notification {
   bool is_error = false;
   QString title;
   QString description;
+  QDateTime time;
 };
 
 class NotificationSystem : public QObject {

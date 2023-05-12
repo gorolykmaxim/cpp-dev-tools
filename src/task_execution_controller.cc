@@ -37,8 +37,9 @@ void TaskExecutionController::LoadExecution(bool include_output) {
           execution_status =
               "Exit Code: <b>" + QString::number(*exec.exit_code) + "</b>";
         }
-        execution_status += "&nbsp;&nbsp;&nbsp;Start Time: <b>" +
-                            exec.start_time.toString() + "</b>";
+        execution_status +=
+            "&nbsp;&nbsp;&nbsp;Start Time: <b>" +
+            exec.start_time.toString(Application::kDateTimeFormat) + "</b>";
         UiIcon icon = TaskSystem::GetStatusAsIcon(exec);
         execution_icon = icon.icon;
         execution_icon_color = icon.color;
