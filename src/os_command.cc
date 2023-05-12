@@ -31,9 +31,8 @@ void OsProcess::Run() {
   QObject::connect(&process, &QProcess::finished, this, [this](int exit_code) {
     this->exit_code = exit_code;
     emit finished();
-    Notification notification;
+    Notification notification(exit_code != 0 ? error_title : success_title);
     notification.is_error = exit_code != 0;
-    notification.title = exit_code != 0 ? error_title : success_title;
     notification.description = output;
     if (!notification.title.isEmpty()) {
       Application::Get().notification.Post(notification);
@@ -107,9 +106,8 @@ class OpenTerminalInCurrentDirWin : public QObject {
       return;
     }
     AppendTerminalOpeningError("Command Prompt");
-    Notification notification;
+    Notification notification("Failed to open terminal");
     notification.is_error = true;
-    notification.title = "Failed to open terminal";
     notification.description = opening_failures.join('\n');
     Application::Get().notification.Post(notification);
   }

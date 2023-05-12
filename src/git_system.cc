@@ -18,9 +18,8 @@ QList<QString> GitSystem::FindIgnoredPathsSync() {
                                   << "--ignored");
   bool failed_to_start = !proc.waitForFinished();
   if (failed_to_start || proc.exitCode() != 0) {
-    Notification notification;
+    Notification notification("Git: Failed to find ignored files");
     notification.is_error = true;
-    notification.title = "Failed to find files ignored by git";
     if (failed_to_start) {
       notification.description = "Failed to execute: " + proc.program() + ' ' +
                                  proc.arguments().join(' ');
@@ -43,14 +42,13 @@ QList<QString> GitSystem::FindIgnoredPathsSync() {
   return results;
 }
 
-static void ExecuteGitCommand(const QString& command) {
-  Notification notification;
-  notification.title = "Executing \"" + command + "\"...";
-  Application::Get().notification.Post(notification);
-  OsCommand::Run(command, '"' + command + "\" failed",
-                 '"' + command + "\" successful");
+void GitSystem::Pull() {
+  Application::Get().notification.Post(Notification("Git: Pulling changes..."));
+  OsCommand::Run("git pull", "Git: Failed to pull changes",
+                 "Git: Changes pulled");
 }
 
-void GitSystem::Pull() { ExecuteGitCommand("git pull"); }
-
-void GitSystem::Push() { ExecuteGitCommand("git push"); }
+void GitSystem::Push() {
+  Application::Get().notification.Post(Notification("Git: Pushing changes..."));
+  OsCommand::Run("git push", "Git: Failed to push changes", "");
+}

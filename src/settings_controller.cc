@@ -52,9 +52,7 @@ void SettingsController::save() {
                             {settings.task_history_limit}));
   Database::ExecCmdsAsync(cmds);
   emit settingsChanged();
-  Notification notification;
-  notification.title = "Settings saved";
-  app.notification.Post(notification);
+  app.notification.Post(Notification("Settings: Changes saved"));
 }
 
 void SettingsController::Load() {

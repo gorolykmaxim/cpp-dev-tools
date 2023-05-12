@@ -4,6 +4,8 @@
 #include <QObject>
 
 struct Notification {
+  explicit Notification(const QString& title = "");
+
   bool is_error = false;
   QString title;
   QString description;

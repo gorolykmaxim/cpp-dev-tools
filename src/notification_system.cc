@@ -58,3 +58,5 @@ void NotificationSystem::ClearNotifications() {
   notifications.clear();
   emit notificationsChanged();
 }
+
+Notification::Notification(const QString &title) : title(title) {}
