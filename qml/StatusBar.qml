@@ -21,6 +21,7 @@ RowLayout {
       text: notificationSystem.lastNotSeenNotificationTitle
       color: notificationsItem.iconAndTextColor
       elide: Text.ElideRight
+      rightPadding: Theme.basePadding
     }
     Cdt.StatusBarItem {
       id: notificationsItem
