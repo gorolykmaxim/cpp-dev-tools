@@ -73,6 +73,8 @@ qt_add_executable(cpp-dev-tools
   src/sqlite_table_controller.cc
   src/os_command.h
   src/os_command.cc
+  src/git_branch_list_controller.h
+  src/git_branch_list_controller.cc
   src/main.cc)
 if(NOT MSVC)
   # TODO: figure out how to enable all warnings in MSVC without triggering
@@ -124,6 +126,7 @@ qt_add_qml_module(cpp-dev-tools URI cdt VERSION 1.0
       qml/SqliteFileSelectedChecker.qml
       qml/PlaceholderText.qml
       qml/SqliteTable.qml
+      qml/GitBranchList.qml
   RESOURCES
       fonts/MaterialIcons-Regular.ttf
   RESOURCE_PREFIX /)
