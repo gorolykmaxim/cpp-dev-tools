@@ -43,10 +43,14 @@ QList<QString> GitSystem::FindIgnoredPathsSync() {
   return results;
 }
 
-void GitSystem::Pull() {
-  OsCommand::Run("git pull", "git pull failed", "git pull successful");
+static void ExecuteGitCommand(const QString& command) {
+  Notification notification;
+  notification.title = "Executing \"" + command + "\"...";
+  Application::Get().notification.Post(notification);
+  OsCommand::Run(command, '"' + command + "\" failed",
+                 '"' + command + "\" successful");
 }
 
-void GitSystem::Push() {
-  OsCommand::Run("git push", "git push failed", "git push successful");
-}
+void GitSystem::Pull() { ExecuteGitCommand("git pull"); }
+
+void GitSystem::Push() { ExecuteGitCommand("git push"); }
