@@ -29,6 +29,7 @@ void OsProcess::Run() {
                      emit process.finished(-1);
                    });
   QObject::connect(&process, &QProcess::finished, this, [this](int exit_code) {
+    output.remove('\r');
     this->exit_code = exit_code;
     emit finished();
     Notification notification(exit_code != 0 ? error_title : success_title);
@@ -73,7 +74,7 @@ class OpenTerminalInCurrentDirWin : public QObject {
   }
 
   void StartGitBash() {
-    static const QString kExpectedGitSuffix = "\\cmd\\git.exe\r\n";
+    static const QString kExpectedGitSuffix = "\\cmd\\git.exe\n";
     if (process->exit_code != 0 ||
         !process->output.endsWith(kExpectedGitSuffix)) {
       process->exit_code = 1;
