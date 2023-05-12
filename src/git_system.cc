@@ -50,5 +50,6 @@ void GitSystem::Pull() {
 
 void GitSystem::Push() {
   Application::Get().notification.Post(Notification("Git: Pushing changes..."));
-  OsCommand::Run("git push", "Git: Failed to push changes", "");
+  OsCommand::Run("git push", "Git: Failed to push changes",
+                 "Git: Changes pushed");
 }
