@@ -8,7 +8,7 @@
 
 SqliteTableController::SqliteTableController(QObject* parent)
     : QObject(parent),
-      tables(new SimpleQVariantListModel(
+      tables(new SimpleTextListModel(
           this, {{0, "idx"}, {1, "title"}, {2, "icon"}, {3, "isSelected"}},
           {1})),
       table(new SqliteTableModel(this)) {}

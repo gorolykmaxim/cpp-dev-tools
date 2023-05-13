@@ -4,7 +4,7 @@
 #include <QObject>
 #include <QtQmlIntegration>
 
-#include "qvariant_list_model.h"
+#include "text_list_model.h"
 
 struct GitBranch {
   QString name;
@@ -12,7 +12,7 @@ struct GitBranch {
   bool is_current = false;
 };
 
-class GitBranchListModel : public QVariantListModel {
+class GitBranchListModel : public TextListModel {
  public:
   explicit GitBranchListModel(QObject* parent);
 

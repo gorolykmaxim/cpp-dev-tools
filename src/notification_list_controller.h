@@ -5,10 +5,10 @@
 #include <QtQmlIntegration>
 
 #include "notification_system.h"
-#include "qvariant_list_model.h"
+#include "text_list_model.h"
 #include "ui_icon.h"
 
-class NotificationListModel : public QVariantListModel {
+class NotificationListModel : public TextListModel {
  public:
   static UiIcon GetIconOf(const Notification& notification);
   explicit NotificationListModel(QObject* parent);

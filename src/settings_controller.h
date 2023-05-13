@@ -5,10 +5,10 @@
 #include <QtQmlIntegration>
 
 #include "database.h"
-#include "qvariant_list_model.h"
+#include "text_list_model.h"
 #include "ui_icon.h"
 
-class FolderListModel : public QVariantListModel {
+class FolderListModel : public TextListModel {
   Q_OBJECT
  public:
   explicit FolderListModel(QObject* parent, const QString& table,

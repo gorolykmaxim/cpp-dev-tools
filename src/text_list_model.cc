@@ -1,4 +1,4 @@
-#include "qvariant_list_model.h"
+#include "text_list_model.h"
 
 #include <QtConcurrent>
 #include <algorithm>
@@ -43,18 +43,18 @@ void UiCommandBuffer::ExecuteCommand() {
   emit commandsReady();
 }
 
-QVariantListModel::QVariantListModel(QObject* parent)
+TextListModel::TextListModel(QObject* parent)
     : QAbstractListModel(parent) {}
 
-int QVariantListModel::rowCount(const QModelIndex&) const {
+int TextListModel::rowCount(const QModelIndex&) const {
   return items.size();
 }
 
-QHash<int, QByteArray> QVariantListModel::roleNames() const {
+QHash<int, QByteArray> TextListModel::roleNames() const {
   return role_names;
 }
 
-QVariant QVariantListModel::data(const QModelIndex& index, int role) const {
+QVariant TextListModel::data(const QModelIndex& index, int role) const {
   if (!index.isValid()) {
     return QVariant();
   }
@@ -202,7 +202,7 @@ static bool CompareRows(const Row& row1, const Row& row2,
   return false;
 }
 
-void QVariantListModel::Load() {
+void TextListModel::Load() {
   SetIsUpdating(true);
   int count = GetRowCount();
   auto not_filtered = QSharedPointer<QList<Row>>::create(count);
@@ -316,7 +316,7 @@ void QVariantListModel::Load() {
   cmd_buffer.RunCommands();
 }
 
-QVariant QVariantListModel::getFieldByRoleName(int row,
+QVariant TextListModel::getFieldByRoleName(int row,
                                                const QString& name) const {
   if (!name_to_role.contains(name)) {
     return QVariant();
@@ -332,14 +332,14 @@ QVariant QVariantListModel::getFieldByRoleName(int row,
   return row_values[role];
 }
 
-bool QVariantListModel::SetFilterIfChanged(const QString& filter) {
+bool TextListModel::SetFilterIfChanged(const QString& filter) {
   if (filter == this->filter) {
     return false;
   }
   return SetFilter(filter);
 }
 
-bool QVariantListModel::SetFilter(const QString& filter) {
+bool TextListModel::SetFilter(const QString& filter) {
   bool should_load = filter.size() >= min_filter_sub_match_length ||
                      (this->filter.size() >= min_filter_sub_match_length &&
                       filter.size() < min_filter_sub_match_length);
@@ -351,13 +351,13 @@ bool QVariantListModel::SetFilter(const QString& filter) {
   return should_load;
 }
 
-QString QVariantListModel::GetFilter() { return filter; }
+QString TextListModel::GetFilter() { return filter; }
 
-QVariantList QVariantListModel::GetRow(int) const { return {}; }
+QVariantList TextListModel::GetRow(int) const { return {}; }
 
-int QVariantListModel::GetRowCount() const { return 0; }
+int TextListModel::GetRowCount() const { return 0; }
 
-void QVariantListModel::SetRoleNames(const QHash<int, QByteArray>& role_names) {
+void TextListModel::SetRoleNames(const QHash<int, QByteArray>& role_names) {
   this->role_names = role_names;
   for (auto it = role_names.begin(); it != role_names.end(); it++) {
     QString name(it.value());
@@ -365,19 +365,19 @@ void QVariantListModel::SetRoleNames(const QHash<int, QByteArray>& role_names) {
   }
 }
 
-void QVariantListModel::SetIsUpdating(bool is_updating) {
+void TextListModel::SetIsUpdating(bool is_updating) {
   this->is_updating = is_updating;
   emit isUpdatingChanged();
 }
 
-SimpleQVariantListModel::SimpleQVariantListModel(
+SimpleTextListModel::SimpleTextListModel(
     QObject* parent, const QHash<int, QByteArray>& role_names,
     const QList<int>& searchable_roles)
-    : QVariantListModel(parent) {
+    : TextListModel(parent) {
   SetRoleNames(role_names);
   this->searchable_roles = searchable_roles;
 }
 
-QVariantList SimpleQVariantListModel::GetRow(int i) const { return list[i]; }
+QVariantList SimpleTextListModel::GetRow(int i) const { return list[i]; }
 
-int SimpleQVariantListModel::GetRowCount() const { return list.size(); }
+int SimpleTextListModel::GetRowCount() const { return list.size(); }

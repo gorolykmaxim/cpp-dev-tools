@@ -3,7 +3,7 @@
 #include <QObject>
 #include <functional>
 
-#include "qvariant_list_model.h"
+#include "text_list_model.h"
 
 struct UserCommand {
   QString GetFormattedShortcut() const;
@@ -14,7 +14,7 @@ struct UserCommand {
   std::function<void()> callback;
 };
 
-class UserCommandListModel : public QVariantListModel {
+class UserCommandListModel : public TextListModel {
  public:
   explicit UserCommandListModel(QObject* parent);
   QVariantList GetRow(int i) const override;

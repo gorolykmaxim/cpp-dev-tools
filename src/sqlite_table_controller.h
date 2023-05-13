@@ -4,7 +4,7 @@
 #include <QObject>
 #include <QtQmlIntegration>
 
-#include "qvariant_list_model.h"
+#include "text_list_model.h"
 #include "sqlite_table_model.h"
 
 struct Query {
@@ -17,7 +17,7 @@ struct Query {
 class SqliteTableController : public QObject {
   Q_OBJECT
   QML_ELEMENT
-  Q_PROPERTY(SimpleQVariantListModel* tables MEMBER tables CONSTANT)
+  Q_PROPERTY(SimpleTextListModel* tables MEMBER tables CONSTANT)
   Q_PROPERTY(SqliteTableModel* table MEMBER table CONSTANT)
   Q_PROPERTY(QString status MEMBER status NOTIFY statusChanged)
   Q_PROPERTY(QString statusColor MEMBER status_color NOTIFY statusChanged)
@@ -40,7 +40,7 @@ class SqliteTableController : public QObject {
  private:
   void SetStatus(const QString& status, const QString& color = "");
 
-  SimpleQVariantListModel* tables;
+  SimpleTextListModel* tables;
   SqliteTableModel* table;
   QString table_name;
   QString status;

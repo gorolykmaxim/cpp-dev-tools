@@ -3,13 +3,13 @@
 #include <QObject>
 #include <QtQmlIntegration>
 
-#include "qvariant_list_model.h"
+#include "text_list_model.h"
 
 class SearchUserCommandController : public QObject {
   Q_OBJECT
   QML_ELEMENT
   Q_PROPERTY(
-      SimpleQVariantListModel* userCommands MEMBER user_commands CONSTANT)
+      SimpleTextListModel* userCommands MEMBER user_commands CONSTANT)
  public:
   explicit SearchUserCommandController(QObject* parent = nullptr);
  public slots:
@@ -20,5 +20,5 @@ class SearchUserCommandController : public QObject {
   void commandExecuted();
 
  private:
-  SimpleQVariantListModel* user_commands;
+  SimpleTextListModel* user_commands;
 };

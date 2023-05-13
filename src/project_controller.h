@@ -5,9 +5,9 @@
 #include <QtQmlIntegration>
 
 #include "project_system.h"
-#include "qvariant_list_model.h"
+#include "text_list_model.h"
 
-class ProjectListModel : public QVariantListModel {
+class ProjectListModel : public TextListModel {
  public:
   explicit ProjectListModel(QObject* parent, Project& selected);
 

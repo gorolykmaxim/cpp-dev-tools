@@ -1,14 +1,14 @@
 #include "search_user_command_controller.h"
 
 #include "application.h"
-#include "qvariant_list_model.h"
+#include "text_list_model.h"
 #include "user_command_system.h"
 
 #define LOG() qDebug() << "[SearchUserCommandController]"
 
 SearchUserCommandController::SearchUserCommandController(QObject* parent)
     : QObject(parent),
-      user_commands(new SimpleQVariantListModel(
+      user_commands(new SimpleTextListModel(
           this, {{0, "title"}, {1, "rightText"}, {2, "index"}}, {0})) {}
 
 void SearchUserCommandController::loadUserCommands() {

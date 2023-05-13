@@ -12,7 +12,7 @@
 #define LOG() qDebug() << "[SqliteListController]"
 
 SqliteFileListModel::SqliteFileListModel(QObject* parent)
-    : QVariantListModel(parent) {
+    : TextListModel(parent) {
   SetRoleNames({{0, "idx"},
                 {1, "title"},
                 {2, "subTitle"},

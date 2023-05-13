@@ -7,7 +7,7 @@
 #define LOG() qDebug() << "[TaskExecutionListController]"
 
 TaskExecutionListModel::TaskExecutionListModel(QObject* parent)
-    : QVariantListModel(parent) {
+    : TextListModel(parent) {
   SetRoleNames({{0, "id"},
                 {1, "title"},
                 {2, "subTitle"},

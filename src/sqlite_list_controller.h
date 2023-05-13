@@ -4,10 +4,10 @@
 #include <QObject>
 #include <QtQmlIntegration>
 
-#include "qvariant_list_model.h"
+#include "text_list_model.h"
 #include "sqlite_system.h"
 
-class SqliteFileListModel : public QVariantListModel {
+class SqliteFileListModel : public TextListModel {
  public:
   explicit SqliteFileListModel(QObject* parent);
   void SortAndLoad();

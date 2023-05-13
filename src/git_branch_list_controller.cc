@@ -9,7 +9,7 @@
 #define LOG() qDebug() << "[GitBranchListController]"
 
 GitBranchListModel::GitBranchListModel(QObject* parent)
-    : QVariantListModel(parent) {
+    : TextListModel(parent) {
   SetRoleNames({{0, "idx"}, {1, "title"}, {2, "titleColor"}, {3, "icon"}});
   searchable_roles = {1};
 }

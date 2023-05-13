@@ -3,14 +3,14 @@
 #include <QObject>
 #include <QtQmlIntegration>
 
-#include "qvariant_list_model.h"
+#include "text_list_model.h"
 
 struct FileSuggestion {
   QString name;
   bool is_dir = false;
 };
 
-class FileSuggestionListModel : public QVariantListModel {
+class FileSuggestionListModel : public TextListModel {
  public:
   explicit FileSuggestionListModel(QObject* parent);
   int IndexOfSuggestionWithName(const QString& name) const;

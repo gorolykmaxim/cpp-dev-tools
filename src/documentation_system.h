@@ -3,14 +3,14 @@
 
 #include <QObject>
 
-#include "qvariant_list_model.h"
+#include "text_list_model.h"
 
 struct Document {
   QString file_name;
   QString path;
 };
 
-class DocumentListModel : public QVariantListModel {
+class DocumentListModel : public TextListModel {
  public:
   explicit DocumentListModel(QObject* parent);
 

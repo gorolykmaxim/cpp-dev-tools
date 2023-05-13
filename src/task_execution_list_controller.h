@@ -3,10 +3,10 @@
 #include <QObject>
 #include <QtQmlIntegration>
 
-#include "qvariant_list_model.h"
+#include "text_list_model.h"
 #include "task_system.h"
 
-class TaskExecutionListModel : public QVariantListModel {
+class TaskExecutionListModel : public TextListModel {
  public:
   TaskExecutionListModel(QObject* parent);
   QVariantList GetRow(int i) const override;

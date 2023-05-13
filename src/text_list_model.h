@@ -25,13 +25,13 @@ class UiCommandBuffer : public QObject {
   QQueue<std::function<void()>> commands;
 };
 
-class QVariantListModel : public QAbstractListModel {
+class TextListModel : public QAbstractListModel {
   Q_OBJECT
   Q_PROPERTY(QString filter READ GetFilter WRITE SetFilterIfChanged NOTIFY
                  filterChanged)
   Q_PROPERTY(bool isUpdating MEMBER is_updating NOTIFY isUpdatingChanged)
  public:
-  explicit QVariantListModel(QObject* parent);
+  explicit TextListModel(QObject* parent);
   int rowCount(const QModelIndex& parent = QModelIndex()) const override;
   QHash<int, QByteArray> roleNames() const override;
   QVariant data(const QModelIndex& index, int role = 0) const override;
@@ -66,9 +66,9 @@ class QVariantListModel : public QAbstractListModel {
   bool is_updating = false;
 };
 
-class SimpleQVariantListModel : public QVariantListModel {
+class SimpleTextListModel : public TextListModel {
  public:
-  SimpleQVariantListModel(QObject* parent,
+  SimpleTextListModel(QObject* parent,
                           const QHash<int, QByteArray>& role_names,
                           const QList<int>& searchable_roles);
   QVariantList GetRow(int i) const override;

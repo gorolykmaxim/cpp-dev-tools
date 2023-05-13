@@ -5,14 +5,14 @@
 #include "application.h"
 #include "database.h"
 #include "io_task.h"
-#include "qvariant_list_model.h"
+#include "text_list_model.h"
 #include "theme.h"
 #include "ui_icon.h"
 
 #define LOG() qDebug() << "[ProjectController]"
 
 ProjectListModel::ProjectListModel(QObject* parent, Project& selected)
-    : QVariantListModel(parent), selected(selected) {
+    : TextListModel(parent), selected(selected) {
   SetRoleNames({{0, "idx"},
                 {1, "title"},
                 {2, "subTitle"},

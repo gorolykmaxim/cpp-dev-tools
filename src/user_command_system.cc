@@ -16,7 +16,7 @@ QString UserCommand::GetFormattedShortcut() const {
 }
 
 UserCommandListModel::UserCommandListModel(QObject* parent)
-    : QVariantListModel(parent) {
+    : TextListModel(parent) {
   SetRoleNames({{0, "group"}, {1, "name"}, {2, "shortcut"}, {3, "index"}});
 }
 

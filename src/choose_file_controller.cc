@@ -3,7 +3,7 @@
 #include "application.h"
 #include "io_task.h"
 #include "path.h"
-#include "qvariant_list_model.h"
+#include "text_list_model.h"
 #include "view_system.h"
 
 #define LOG() qDebug() << "[ChooseFileController]"
@@ -147,7 +147,7 @@ QString ChooseFileController::GetResultPath() const {
 }
 
 FileSuggestionListModel::FileSuggestionListModel(QObject* parent)
-    : QVariantListModel(parent) {
+    : TextListModel(parent) {
   SetRoleNames({{0, "idx"}, {1, "title"}, {2, "icon"}});
   searchable_roles = {1};
 }

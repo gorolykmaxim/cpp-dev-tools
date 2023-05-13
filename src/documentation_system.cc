@@ -11,7 +11,7 @@
 #define LOG() qDebug() << "[DocumentationSystem]"
 
 DocumentListModel::DocumentListModel(QObject* parent)
-    : QVariantListModel(parent) {
+    : TextListModel(parent) {
   SetRoleNames({{0, "idx"}, {1, "title"}, {2, "subTitle"}, {3, "icon"}});
   searchable_roles = {1, 2};
 }

@@ -3,10 +3,10 @@
 #include <QObject>
 #include <QtQmlIntegration>
 
-#include "qvariant_list_model.h"
+#include "text_list_model.h"
 #include "task_system.h"
 
-class TaskListModel : public QVariantListModel {
+class TaskListModel : public TextListModel {
  public:
   explicit TaskListModel(QObject* parent);
 

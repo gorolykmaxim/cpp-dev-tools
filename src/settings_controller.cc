@@ -85,7 +85,7 @@ void SettingsController::Load() {
 
 FolderListModel::FolderListModel(QObject *parent, const QString &table,
                                  const UiIcon &icon)
-    : QVariantListModel(parent), table(table), icon(icon) {
+    : TextListModel(parent), table(table), icon(icon) {
   SetRoleNames({{0, "title"}, {1, "icon"}});
   searchable_roles = {0};
 }

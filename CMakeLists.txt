@@ -16,8 +16,8 @@ qt_add_executable(cpp-dev-tools
   src/project_controller.cc
   src/choose_file_controller.h
   src/choose_file_controller.cc
-  src/qvariant_list_model.h
-  src/qvariant_list_model.cc
+  src/text_list_model.h
+  src/text_list_model.cc
   src/perf_timer.h
   src/perf_timer.cc
   src/user_command_system.h

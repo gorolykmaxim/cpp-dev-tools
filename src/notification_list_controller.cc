@@ -87,7 +87,7 @@ UiIcon NotificationListModel::GetIconOf(const Notification &notification) {
 }
 
 NotificationListModel::NotificationListModel(QObject *parent)
-    : QVariantListModel(parent) {
+    : TextListModel(parent) {
   SetRoleNames({{0, "idx"},
                 {1, "title"},
                 {2, "titleColor"},
