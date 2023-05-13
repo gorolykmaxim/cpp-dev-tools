@@ -13,6 +13,7 @@ Cdt.Pane {
   property alias placeholderColor: placeholder.textColor
   property alias currentItem: list.currentItem
   property bool showPlaceholder: list.count === 0
+  property bool ignoreCurrentIndexChanged: false
   color: Theme.colorBgDark
   signal itemLeftClicked(clickedItemModel: QtObject, event: QtObject);
   signal itemRightClicked(clickedItemModel: QtObject, event: QtObject);
@@ -36,6 +37,10 @@ Cdt.Pane {
     const result = list.currentIndex + 10;
     list.currentIndex = result >= list.count ? list.count - 1 : result;
   }
+  function setAndSelectCurrentIndex(i) {
+    list.currentIndex = i;
+    root.itemSelected();
+  }
   Cdt.PlaceholderText {
     id: placeholder
     anchors.fill: parent
@@ -43,15 +48,8 @@ Cdt.Pane {
   }
   ListView {
     id: list
-    Connections {
-      target: list.model
-      function onPreSelectCurrentIndex(index) {
-        list.currentIndex = index;
-        root.itemSelected();
-      }
-    }
     onCurrentIndexChanged: {
-      if (!model.isUpdating) {
+      if (!ignoreCurrentIndexChanged) {
         root.itemSelected();
       }
     }

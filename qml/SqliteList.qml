@@ -47,10 +47,17 @@ Loader {
         Layout.fillWidth: true
         Layout.fillHeight: true
         model: controller.databases
+        ignoreCurrentIndexChanged: controller.databases.isUpdating
         placeholderText: "Open databases by clicking on '" + addBtn.text + "' button"
         onItemLeftClicked: controller.useSelectedDatabase()
         onItemRightClicked: contextMenu.open()
         onItemSelected: ifCurrentItem('idx', controller.selectDatabase)
+        Connections {
+          target: controller.databases
+          function onPreSelectCurrentIndex(index) {
+            databaseList.setAndSelectCurrentIndex(index);
+          }
+        }
       }
       Menu {
         id: contextMenu

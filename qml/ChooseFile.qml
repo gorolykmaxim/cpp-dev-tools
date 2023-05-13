@@ -55,7 +55,14 @@ ColumnLayout {
     Layout.fillWidth: true
     Layout.fillHeight: true
     model: controller.suggestions
+    ignoreCurrentIndexChanged: controller.suggestions.isUpdating
     showPlaceholder: false
     onItemLeftClicked: suggestionList.ifCurrentItem('idx', controller.pickSuggestion)
+    Connections {
+      target: controller.suggestions
+      function onPreSelectCurrentIndex(index) {
+        suggestionList.setAndSelectCurrentIndex(index);
+      }
+    }
   }
 }
