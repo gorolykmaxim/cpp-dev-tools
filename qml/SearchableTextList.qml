@@ -47,16 +47,9 @@ FocusScope {
       model: searchableModel
       elide: Text.ElideLeft
       showPlaceholder: root.showPlaceholder
-      ignoreCurrentIndexChanged: model.isUpdating
       onItemLeftClicked: selectCurrentItemIfPresent()
       onItemRightClicked: item => root.itemRightClicked(item)
       onItemSelected: root.currentItemChanged()
-      Connections {
-        target: searchableModel
-        function onPreSelectCurrentIndex(index) {
-          textList.setAndSelectCurrentIndex(index);
-        }
-      }
     }
   }
 }

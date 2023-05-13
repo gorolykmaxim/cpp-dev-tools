@@ -51,17 +51,10 @@ Loader {
         Layout.fillWidth: true
         Layout.fillHeight: true
         model: controller.projects
-        ignoreCurrentIndexChanged: controller.projects.isUpdating
         placeholderText: "Open a project by clicking on '" + button.text + "' button"
         onItemLeftClicked: controller.openSelectedProject()
         onItemRightClicked: contextMenu.open()
         onItemSelected: ifCurrentItem('idx', controller.selectProject)
-        Connections {
-          target: controller.projects
-          function onPreSelectCurrentIndex(index) {
-            projectList.setAndSelectCurrentIndex(index);
-          }
-        }
       }
       Menu {
         id: contextMenu

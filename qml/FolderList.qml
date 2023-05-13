@@ -53,15 +53,8 @@ Loader {
         model: foldersModel
         Layout.fillWidth: true
         Layout.fillHeight: true
-        ignoreCurrentIndexChanged: foldersModel.isUpdating
         placeholderText: "Add folders by clicking on '" + addBtn.text + "' button"
         onItemRightClicked: contextMenu.open()
-        Connections {
-          target: foldersModel
-          function onPreSelectCurrentIndex(index) {
-            folderList.setAndSelectCurrentIndex(index);
-          }
-        }
       }
       Menu {
         id: contextMenu

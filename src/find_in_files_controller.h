@@ -19,6 +19,8 @@ struct FileSearchResult {
 };
 
 class FileSearchResultListModel : public QAbstractListModel {
+  Q_OBJECT
+  Q_PROPERTY(bool isUpdating MEMBER is_updating CONSTANT)
  public:
   explicit FileSearchResultListModel(QObject* parent);
   int rowCount(const QModelIndex& parent) const override;
@@ -29,7 +31,11 @@ class FileSearchResultListModel : public QAbstractListModel {
   int CountUniqueFiles() const;
   const FileSearchResult& At(int i) const;
 
+ signals:
+  void preSelectCurrentIndex(int);
+
  private:
+  bool is_updating = false;
   QSet<QString> unique_file_paths;
   QList<FileSearchResult> list;
 };
