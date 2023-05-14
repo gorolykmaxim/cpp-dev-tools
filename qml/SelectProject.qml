@@ -54,7 +54,6 @@ Loader {
         placeholderText: "Open a project by clicking on '" + button.text + "' button"
         onItemLeftClicked: controller.openSelectedProject()
         onItemRightClicked: contextMenu.open()
-        onItemSelected: ifCurrentItem('idx', controller.selectProject)
       }
       Menu {
         id: contextMenu
@@ -65,13 +64,13 @@ Loader {
         }
         MenuItem {
           text: "Change Path"
-          enabled: input.activeFocus && controller.isProjectSelected
+          enabled: input.activeFocus
           shortcut: "Alt+E"
           onTriggered: controller.displayChangeProjectPath()
         }
         MenuItem {
           text: "Remove From List"
-          enabled: input.activeFocus && controller.isProjectSelected
+          enabled: input.activeFocus
           shortcut: "Alt+Shift+D"
           onTriggered: controller.deleteSelectedProject()
         }

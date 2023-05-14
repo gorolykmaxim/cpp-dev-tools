@@ -11,17 +11,23 @@
 
 #define LOG() qDebug() << "[ProjectController]"
 
-ProjectListModel::ProjectListModel(QObject* parent, Project& selected)
-    : TextListModel(parent), selected(selected) {
-  SetRoleNames({{0, "idx"},
-                {1, "title"},
-                {2, "subTitle"},
-                {3, "existsOnDisk"},
-                {4, "titleColor"},
-                {5, "icon"},
-                {6, "iconColor"},
-                {7, "isSelected"}});
-  searchable_roles = {1, 2};
+ProjectListModel::ProjectListModel(QObject* parent) : TextListModel(parent) {
+  SetRoleNames({{0, "title"},
+                {1, "subTitle"},
+                {2, "existsOnDisk"},
+                {3, "titleColor"},
+                {4, "icon"},
+                {5, "iconColor"}});
+  searchable_roles = {0, 1};
+}
+
+Project ProjectListModel::GetSelected() const {
+  int i = GetSelectedItemIndex();
+  if (i < 0) {
+    return Project();
+  } else {
+    return list[i];
+  }
 }
 
 QVariantList ProjectListModel::GetRow(int i) const {
@@ -38,14 +44,12 @@ QVariantList ProjectListModel::GetRow(int i) const {
   } else {
     icon.icon = "widgets";
   }
-  return {i,
-          name,
+  return {name,
           project.GetPathRelativeToHome(),
           !project.is_missing_on_disk,
           title_color,
           icon.icon,
-          icon.color,
-          project == selected};
+          icon.color};
 }
 
 int ProjectListModel::GetRowCount() const { return list.size(); }
@@ -59,25 +63,25 @@ static bool Compare(const Project& a, const Project& b) {
 }
 
 ProjectController::ProjectController(QObject* parent)
-    : QObject(parent), projects(new ProjectListModel(this, selected)) {}
+    : QObject(parent), projects(new ProjectListModel(this)) {}
 
-bool ProjectController::IsProjectSelected() const { return !selected.IsNull(); }
-
-void ProjectController::selectProject(int i) {
-  selected = projects->list[i];
-  LOG() << "Selecting project" << selected.path;
-  emit selectedProjectChanged();
+bool ProjectController::IsProjectSelected() const {
+  return !projects->GetSelected().IsNull();
 }
 
 void ProjectController::deleteSelectedProject() {
+  Project selected = projects->GetSelected();
+  if (selected.IsNull()) {
+    return;
+  }
   LOG() << "Deleting project" << selected.path;
   Database::ExecCmdAsync("DELETE FROM project WHERE id=?", {selected.id});
   projects->list.removeAll(selected);
-  selected = Project();
   projects->Load();
 }
 
 void ProjectController::openSelectedProject() {
+  Project selected = projects->GetSelected();
   if (selected.IsNull() || selected.is_missing_on_disk) {
     return;
   }
@@ -116,11 +120,15 @@ void ProjectController::displayOpenProject() {
 }
 
 void ProjectController::displayChangeProjectPath() {
+  if (projects->GetSelected().IsNull()) {
+    return;
+  }
   Application::Get().view.SetWindowTitle("Change Project's Path");
   emit displayChangeProjectPathView();
 }
 
 void ProjectController::changeSelectedProjectPath(const QString& path) {
+  Project selected = projects->GetSelected();
   LOG() << "Updating path of project" << selected.id << "to" << path;
   selected.path = path;
   Database::ExecCmdAsync("UPDATE project SET path=? WHERE id=?",
