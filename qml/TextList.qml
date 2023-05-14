@@ -52,6 +52,7 @@ Cdt.Pane {
     }
     onCurrentIndexChanged: {
       if (!model.isUpdating) {
+        model.selectItemByIndex(list.currentIndex);
         root.itemSelected();
       }
     }

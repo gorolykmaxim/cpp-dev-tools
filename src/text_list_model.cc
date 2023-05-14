@@ -43,16 +43,11 @@ void UiCommandBuffer::ExecuteCommand() {
   emit commandsReady();
 }
 
-TextListModel::TextListModel(QObject* parent)
-    : QAbstractListModel(parent) {}
+TextListModel::TextListModel(QObject* parent) : QAbstractListModel(parent) {}
 
-int TextListModel::rowCount(const QModelIndex&) const {
-  return items.size();
-}
+int TextListModel::rowCount(const QModelIndex&) const { return items.size(); }
 
-QHash<int, QByteArray> TextListModel::roleNames() const {
-  return role_names;
-}
+QHash<int, QByteArray> TextListModel::roleNames() const { return role_names; }
 
 QVariant TextListModel::data(const QModelIndex& index, int role) const {
   if (!index.isValid()) {
@@ -61,9 +56,9 @@ QVariant TextListModel::data(const QModelIndex& index, int role) const {
   if (index.row() < 0 || index.row() >= items.size()) {
     return QVariant();
   }
-  const QVariantList& row = items[index.row()];
-  Q_ASSERT(role >= 0 && role < row.size());
-  return row[role];
+  const TextListItem& item = items[index.row()];
+  Q_ASSERT(role >= 0 && role < item.fields.size());
+  return item.fields[role];
 }
 
 struct HighlightResult {
@@ -75,6 +70,7 @@ struct HighlightResult {
 };
 
 struct Row {
+  int index;
   QVariantList columns;
   QList<HighlightResult> highlights;
   bool matches = false;
@@ -230,6 +226,7 @@ void TextListModel::Load() {
             ranges, [this, not_filtered](std::pair<int, int> range) {
               for (int i = range.first; i < range.second; i++) {
                 Row& row = (*not_filtered)[i];
+                row.index = i;
                 row.columns = GetRow(i);
                 if (filter.size() < min_filter_sub_match_length) {
                   row.matches = true;
@@ -267,9 +264,9 @@ void TextListModel::Load() {
                   return CompareRows(row1, row2, searchable_roles);
                 });
     }
-    QList<QVariantList> new_items;
+    QList<TextListItem> new_items;
     for (const Row& row : *filtered) {
-      new_items.append(row.columns);
+      new_items.append(TextListItem{row.index, row.columns});
     }
     int diff = new_items.size() - items.size();
     cmd_buffer.Clear();
@@ -303,12 +300,14 @@ void TextListModel::Load() {
       if (name_to_role.contains("isSelected")) {
         int role = name_to_role["isSelected"];
         for (int i = 0; i < items.size(); i++) {
-          if (items[i][role].toBool()) {
+          const TextListItem& item = items[i];
+          if (item.fields[role].toBool()) {
             current_index = i;
             break;
           }
         }
       }
+      selectItemByIndex(current_index);
       emit preSelectCurrentIndex(current_index);
       SetIsUpdating(false);
     });
@@ -316,8 +315,9 @@ void TextListModel::Load() {
   cmd_buffer.RunCommands();
 }
 
-QVariant TextListModel::getFieldByRoleName(int row,
-                                               const QString& name) const {
+int TextListModel::GetSelectedItemIndex() const { return selected_item_index; }
+
+QVariant TextListModel::getFieldByRoleName(int row, const QString& name) const {
   if (!name_to_role.contains(name)) {
     return QVariant();
   }
@@ -325,11 +325,21 @@ QVariant TextListModel::getFieldByRoleName(int row,
   if (row < 0 || row >= items.size()) {
     return QVariant();
   }
-  const QVariantList& row_values = items[row];
-  if (role < 0 || role >= row_values.size()) {
+  const TextListItem& item = items[row];
+  if (role < 0 || role >= item.fields.size()) {
     return QVariant();
   }
-  return row_values[role];
+  return item.fields[role];
+}
+
+void TextListModel::selectItemByIndex(int i) {
+  if (i < 0 || i >= items.size()) {
+    selected_item_index = -1;
+  } else {
+    const TextListItem& item = items[i];
+    selected_item_index = item.index;
+  }
+  emit selectedItemChanged();
 }
 
 bool TextListModel::SetFilterIfChanged(const QString& filter) {

@@ -25,6 +25,11 @@ class UiCommandBuffer : public QObject {
   QQueue<std::function<void()>> commands;
 };
 
+struct TextListItem {
+  int index = 0;
+  QVariantList fields;
+};
+
 class TextListModel : public QAbstractListModel {
   Q_OBJECT
   Q_PROPERTY(QString filter READ GetFilter WRITE SetFilterIfChanged NOTIFY
@@ -36,12 +41,14 @@ class TextListModel : public QAbstractListModel {
   QHash<int, QByteArray> roleNames() const override;
   QVariant data(const QModelIndex& index, int role = 0) const override;
   void Load();
+  int GetSelectedItemIndex() const;
 
  public:
   int min_filter_sub_match_length = 2;
 
  public slots:
   QVariant getFieldByRoleName(int row, const QString& name) const;
+  void selectItemByIndex(int i);
   bool SetFilterIfChanged(const QString& filter);
   bool SetFilter(const QString& filter);
   QString GetFilter();
@@ -50,6 +57,7 @@ class TextListModel : public QAbstractListModel {
   void filterChanged();
   void preSelectCurrentIndex(int index);
   void isUpdatingChanged();
+  void selectedItemChanged();
 
  protected:
   virtual QVariantList GetRow(int i) const;
@@ -58,19 +66,19 @@ class TextListModel : public QAbstractListModel {
   void SetIsUpdating(bool is_updating);
 
   QString filter;
-  QList<QVariantList> items;
+  QList<TextListItem> items;
   QList<int> searchable_roles;
   QHash<int, QByteArray> role_names;
   QHash<QString, int> name_to_role;
   UiCommandBuffer cmd_buffer;
   bool is_updating = false;
+  int selected_item_index = -1;
 };
 
 class SimpleTextListModel : public TextListModel {
  public:
-  SimpleTextListModel(QObject* parent,
-                          const QHash<int, QByteArray>& role_names,
-                          const QList<int>& searchable_roles);
+  SimpleTextListModel(QObject* parent, const QHash<int, QByteArray>& role_names,
+                      const QList<int>& searchable_roles);
   QVariantList GetRow(int i) const override;
   int GetRowCount() const override;
 
