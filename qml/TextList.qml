@@ -16,7 +16,6 @@ Cdt.Pane {
   color: Theme.colorBgDark
   signal itemLeftClicked(clickedItemModel: QtObject, event: QtObject);
   signal itemRightClicked(clickedItemModel: QtObject, event: QtObject);
-  signal itemSelected();
   function ifCurrentItem(field, fn) {
     if (list.currentItem) {
       fn(list.currentItem.itemModel[field]);
@@ -49,13 +48,11 @@ Cdt.Pane {
       function onPreSelectCurrentIndex(index) {
         list.currentIndex = index;
         list.currentIndexPreSelected = true;
-        root.itemSelected();
       }
     }
     onCurrentIndexChanged: {
       if (!model.isUpdating && list.currentIndexPreSelected) {
         model.selectItemByIndex(list.currentIndex);
-        root.itemSelected();
       }
     }
     Keys.onPressed: e => {

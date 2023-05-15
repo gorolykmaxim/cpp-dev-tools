@@ -12,7 +12,6 @@ FocusScope {
   property bool showPlaceholder: false
   signal itemSelected(selectedItemModel: QtObject)
   signal itemRightClicked(clickedItemModel: QtObject)
-  signal currentItemChanged()
   function ifCurrentItem(field, callback) {
     textList.ifCurrentItem(field, callback);
   }
@@ -49,7 +48,6 @@ FocusScope {
       showPlaceholder: root.showPlaceholder
       onItemLeftClicked: selectCurrentItemIfPresent()
       onItemRightClicked: item => root.itemRightClicked(item)
-      onItemSelected: root.currentItemChanged()
     }
   }
 }
