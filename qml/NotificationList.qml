@@ -23,7 +23,6 @@ Loader {
       placeholderText: "No Notifications Found"
       searchableModel: controller.notifications
       focus: true
-      onCurrentItemChanged: ifCurrentItem('idx', idx => controller.selected = idx)
       onItemSelected: root.sourceComponent = detailsView
       onItemRightClicked: contextMenu.open()
       Menu {

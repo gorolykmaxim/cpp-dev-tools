@@ -13,8 +13,9 @@ class NotificationListModel : public TextListModel {
   static UiIcon GetIconOf(const Notification& notification);
   explicit NotificationListModel(QObject* parent);
   int GetRowCount() const override;
-  const Notification& At(int i) const;
   QString GetTitleColorOf(int i) const;
+  const Notification* GetSelected() const;
+  const Notification& At(int i) const;
 
   int last_seen_notification = -1;
 
@@ -28,7 +29,6 @@ class NotificationListController : public QObject {
   Q_PROPERTY(NotificationListModel* notifications MEMBER notifications CONSTANT)
   Q_PROPERTY(bool areNotificationsEmpty READ AreNotificationsEmpty NOTIFY
                  notificationsChanged)
-  Q_PROPERTY(int selected MEMBER selected NOTIFY selectedChanged)
   Q_PROPERTY(QString selectedNotificationIcon READ GetSelectedNotificationIcon
                  NOTIFY selectedChanged)
   Q_PROPERTY(QString selectedNotificationIconColor READ
@@ -61,7 +61,6 @@ class NotificationListController : public QObject {
 
  private:
   NotificationListModel* notifications;
-  int selected = -1;
 };
 
 #endif  // NOTIFICATIONLISTCONTROLLER_H
