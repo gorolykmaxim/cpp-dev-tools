@@ -5,20 +5,29 @@
 
 #include "text_list_model.h"
 
+class SearchUserCommandListModel : public TextListModel {
+ public:
+  explicit SearchUserCommandListModel(QObject* parent);
+
+ protected:
+  QVariantList GetRow(int i) const;
+  int GetRowCount() const;
+};
+
 class SearchUserCommandController : public QObject {
   Q_OBJECT
   QML_ELEMENT
   Q_PROPERTY(
-      SimpleTextListModel* userCommands MEMBER user_commands CONSTANT)
+      SearchUserCommandListModel* userCommands MEMBER user_commands CONSTANT)
  public:
   explicit SearchUserCommandController(QObject* parent = nullptr);
  public slots:
   void loadUserCommands();
-  void executeCommand(int i);
+  void executeSelectedCommand();
 
  signals:
   void commandExecuted();
 
  private:
-  SimpleTextListModel* user_commands;
+  SearchUserCommandListModel* user_commands;
 };

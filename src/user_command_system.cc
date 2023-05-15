@@ -92,6 +92,9 @@ const QList<UserCommand>& UserCommandSystem::GetUserCommands() const {
 }
 
 void UserCommandSystem::executeCommand(int i) {
+  if (i < 0 || i >= user_commands->list.size()) {
+    return;
+  }
   UserCommand& cmd = user_commands->list[i];
   LOG() << "Executing user command" << cmd.group << cmd.name;
   cmd.callback();
