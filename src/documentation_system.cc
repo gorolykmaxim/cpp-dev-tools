@@ -10,15 +10,14 @@
 
 #define LOG() qDebug() << "[DocumentationSystem]"
 
-DocumentListModel::DocumentListModel(QObject* parent)
-    : TextListModel(parent) {
-  SetRoleNames({{0, "idx"}, {1, "title"}, {2, "subTitle"}, {3, "icon"}});
-  searchable_roles = {1, 2};
+DocumentListModel::DocumentListModel(QObject* parent) : TextListModel(parent) {
+  SetRoleNames({{0, "title"}, {1, "subTitle"}, {2, "icon"}});
+  searchable_roles = {0, 1};
 }
 
 QVariantList DocumentListModel::GetRow(int i) const {
   const Document& doc = list[i];
-  return {i, doc.file_name, doc.path, "help_outline"};
+  return {doc.file_name, doc.path, "help_outline"};
 }
 
 int DocumentListModel::GetRowCount() const { return list.size(); }
@@ -78,7 +77,11 @@ void DocumentationSystem::displayDocumentation() {
       });
 }
 
-void DocumentationSystem::openDocument(int i) {
+void DocumentationSystem::openSelectedDocument() {
+  int i = documents->GetSelectedItemIndex();
+  if (i < 0) {
+    return;
+  }
   const Document& doc = documents->list[i];
   QUrl url("file:///" + doc.path);
   LOG() << "Opening document" << url;

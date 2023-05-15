@@ -33,7 +33,7 @@ class DocumentationSystem : public QObject {
   bool IsLoading() const;
  public slots:
   void displayDocumentation();
-  void openDocument(int i);
+  void openSelectedDocument();
  signals:
   void isLoadingChanged();
 

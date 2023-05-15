@@ -13,12 +13,12 @@ Cdt.SearchableTextList {
   searchableModel: documentationSystem.documents
   focus: true
   onItemRightClicked: contextMenu.open()
-  onItemSelected: item => documentationSystem.openDocument(item.idx)
+  onItemSelected: documentationSystem.openSelectedDocument()
   Menu {
     id: contextMenu
     MenuItem {
       text: "Open"
-      onTriggered: list.ifCurrentItem('idx', idx => documentationSystem.openDocument(idx))
+      onTriggered: documentationSystem.openSelectedDocument()
     }
   }
 }
