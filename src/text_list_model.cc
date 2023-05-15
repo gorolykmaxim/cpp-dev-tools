@@ -400,26 +400,14 @@ void TextListModel::SetIsUpdating(bool is_updating) {
 
 void TextListModel::ReSelectItem(int index) {
   int current_index = 0;
-  if (name_to_role.contains("isSelected")) {
-    // TODO: remove after transition is complete
-    int role = name_to_role["isSelected"];
-    for (int i = 0; i < items.size(); i++) {
-      const TextListItem& item = items[i];
-      if (item.fields[role].toBool()) {
-        current_index = i;
-        break;
-      }
-    }
-  } else {
-    int item_index = index;
-    if (item_index < 0) {
-      item_index = selected_item_index;
-    }
-    for (int i = 0; i < items.size(); i++) {
-      if (items[i].index == item_index) {
-        current_index = i;
-        break;
-      }
+  int item_index = index;
+  if (item_index < 0) {
+    item_index = selected_item_index;
+  }
+  for (int i = 0; i < items.size(); i++) {
+    if (items[i].index == item_index) {
+      current_index = i;
+      break;
     }
   }
   selectItemByIndex(current_index);
