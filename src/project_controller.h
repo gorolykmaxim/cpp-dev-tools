@@ -25,7 +25,6 @@ class ProjectController : public QObject {
   Q_PROPERTY(ProjectListModel* projects MEMBER projects CONSTANT)
  public:
   explicit ProjectController(QObject* parent = nullptr);
-  bool IsProjectSelected() const;
 
   ProjectListModel* projects;
 

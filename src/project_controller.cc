@@ -65,10 +65,6 @@ static bool Compare(const Project& a, const Project& b) {
 ProjectController::ProjectController(QObject* parent)
     : QObject(parent), projects(new ProjectListModel(this)) {}
 
-bool ProjectController::IsProjectSelected() const {
-  return !projects->GetSelected().IsNull();
-}
-
 void ProjectController::deleteSelectedProject() {
   Project selected = projects->GetSelected();
   if (selected.IsNull()) {
