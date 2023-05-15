@@ -38,7 +38,7 @@ class ChooseFileController : public QObject {
   bool CanOpen() const;
 
  public slots:
-  void pickSuggestion(int i);
+  void pickSelectedSuggestion();
   void openOrCreateFile();
   void initialize();
 

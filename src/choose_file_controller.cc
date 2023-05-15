@@ -80,7 +80,11 @@ void ChooseFileController::SetPath(const QString& path) {
   emit pathChanged();
 }
 
-void ChooseFileController::pickSuggestion(int i) {
+void ChooseFileController::pickSelectedSuggestion() {
+  int i = suggestions->GetSelectedItemIndex();
+  if (i < 0) {
+    return;
+  }
   const FileSuggestion& suggestion = suggestions->list[i];
   QString path = folder + suggestion.name;
   if (suggestion.is_dir) {
@@ -148,8 +152,8 @@ QString ChooseFileController::GetResultPath() const {
 
 FileSuggestionListModel::FileSuggestionListModel(QObject* parent)
     : TextListModel(parent) {
-  SetRoleNames({{0, "idx"}, {1, "title"}, {2, "icon"}});
-  searchable_roles = {1};
+  SetRoleNames({{0, "title"}, {1, "icon"}});
+  searchable_roles = {0};
 }
 
 int FileSuggestionListModel::IndexOfSuggestionWithName(
@@ -170,7 +174,7 @@ QVariantList FileSuggestionListModel::GetRow(int i) const {
   } else {
     icon = "insert_drive_file";
   }
-  return {i, suggestion.name, icon};
+  return {suggestion.name, icon};
 }
 
 int FileSuggestionListModel::GetRowCount() const { return list.size(); }

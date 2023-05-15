@@ -33,7 +33,7 @@ ColumnLayout {
         focus: true
         KeyNavigation.right: openBtn
         onDisplayTextChanged: controller.path = displayText
-        onEnterPressed: suggestionList.ifCurrentItem('idx', controller.pickSuggestion)
+        onEnterPressed: controller.pickSelectedSuggestion()
         onCtrlEnterPressed: controller.openOrCreateFile()
       }
       Cdt.Button {
@@ -56,6 +56,6 @@ ColumnLayout {
     Layout.fillHeight: true
     model: controller.suggestions
     showPlaceholder: false
-    onItemLeftClicked: suggestionList.ifCurrentItem('idx', controller.pickSuggestion)
+    onItemLeftClicked: controller.pickSelectedSuggestion()
   }
 }
