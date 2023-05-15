@@ -198,7 +198,7 @@ static bool CompareRows(const Row& row1, const Row& row2,
   return false;
 }
 
-void TextListModel::Load() {
+void TextListModel::Load(int item_to_select) {
   SetIsUpdating(true);
   int count = GetRowCount();
   auto not_filtered = QSharedPointer<QList<Row>>::create(count);
@@ -253,7 +253,7 @@ void TextListModel::Load() {
           }
         }
       });
-  cmd_buffer.ScheduleCommand([this, filtered] {
+  cmd_buffer.ScheduleCommand([this, filtered, item_to_select] {
     // Sort filtered results and schedule updates to UI.
     if (filter.size() >= min_filter_sub_match_length &&
         !searchable_roles.isEmpty()) {
@@ -295,27 +295,15 @@ void TextListModel::Load() {
                                   }
                                   emit dataChanged(index(first), index(last));
                                 });
-    cmd_buffer.ScheduleCommand([this] {
-      int current_index = 0;
-      if (name_to_role.contains("isSelected")) {
-        int role = name_to_role["isSelected"];
-        for (int i = 0; i < items.size(); i++) {
-          const TextListItem& item = items[i];
-          if (item.fields[role].toBool()) {
-            current_index = i;
-            break;
-          }
-        }
-      }
-      selectItemByIndex(current_index);
-      emit preSelectCurrentIndex(current_index);
+    cmd_buffer.ScheduleCommand([this, item_to_select] {
+      ReSelectItem(item_to_select);
       SetIsUpdating(false);
     });
   });
   cmd_buffer.RunCommands();
 }
 
-void TextListModel::LoadNew(int starting_from) {
+void TextListModel::LoadNew(int starting_from, int item_to_select) {
   if (starting_from >= GetRowCount()) {
     return;
   }
@@ -328,6 +316,7 @@ void TextListModel::LoadNew(int starting_from) {
       items.append(TextListItem{i, GetRow(i)});
     }
     endInsertRows();
+    ReSelectItem(item_to_select);
   }
 }
 
@@ -401,6 +390,34 @@ void TextListModel::SetRoleNames(const QHash<int, QByteArray>& role_names) {
 void TextListModel::SetIsUpdating(bool is_updating) {
   this->is_updating = is_updating;
   emit isUpdatingChanged();
+}
+
+void TextListModel::ReSelectItem(int index) {
+  int current_index = 0;
+  if (name_to_role.contains("isSelected")) {
+    // TODO: remove after transition is complete
+    int role = name_to_role["isSelected"];
+    for (int i = 0; i < items.size(); i++) {
+      const TextListItem& item = items[i];
+      if (item.fields[role].toBool()) {
+        current_index = i;
+        break;
+      }
+    }
+  } else {
+    int item_index = index;
+    if (item_index < 0) {
+      item_index = selected_item_index;
+    }
+    for (int i = 0; i < items.size(); i++) {
+      if (items[i].index == item_index) {
+        current_index = i;
+        break;
+      }
+    }
+  }
+  selectItemByIndex(current_index);
+  emit preSelectCurrentIndex(current_index);
 }
 
 SimpleTextListModel::SimpleTextListModel(

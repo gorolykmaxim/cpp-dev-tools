@@ -40,12 +40,11 @@ class TextListModel : public QAbstractListModel {
   int rowCount(const QModelIndex& parent = QModelIndex()) const override;
   QHash<int, QByteArray> roleNames() const override;
   QVariant data(const QModelIndex& index, int role = 0) const override;
-  void Load();
-  void LoadNew(int starting_from);
+  void Load(int item_to_select = 0);
+  void LoadNew(int starting_from, int item_to_select = 0);
   void LoadRemoved(int count);
   int GetSelectedItemIndex() const;
 
- public:
   int min_filter_sub_match_length = 2;
 
  public slots:
@@ -75,6 +74,9 @@ class TextListModel : public QAbstractListModel {
   UiCommandBuffer cmd_buffer;
   bool is_updating = false;
   int selected_item_index = -1;
+
+ private:
+  void ReSelectItem(int index);
 };
 
 class SimpleTextListModel : public TextListModel {

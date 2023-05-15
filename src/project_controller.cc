@@ -165,7 +165,7 @@ void ProjectController::displayProjectList() {
           LOG() << "Opening last opened project" << current->path;
           Application::Get().project.SetCurrentProject(*current);
         } else {
-          projects->Load();
+          projects->Load(-1);
           emit displayProjectListView();
         }
       });
