@@ -57,8 +57,6 @@ class TaskSystem : public QObject {
   Q_OBJECT
   Q_PROPERTY(
       QString currentTaskName READ GetCurrentTaskName NOTIFY taskListRefreshed)
-  Q_PROPERTY(QUuid selectedExecutionId READ GetSelectedExecutionId WRITE
-                 SetSelectedExecutionId NOTIFY selectedExecutionChanged)
  public:
   static QString GetName(const Task& task);
   static UiIcon GetStatusAsIcon(const TaskExecution& exec);
@@ -82,7 +80,7 @@ class TaskSystem : public QObject {
 
  public slots:
   void executeTask(int i, bool repeat_until_fail = false);
-  void cancelExecution(QUuid execution_id, bool forcefully);
+  void cancelSelectedExecution(bool forcefully);
 
  signals:
   void executionOutputChanged(QUuid exec_id);

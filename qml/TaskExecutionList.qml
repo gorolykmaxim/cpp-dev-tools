@@ -13,7 +13,6 @@ Cdt.SearchableTextList {
   showPlaceholder: controller.executionsEmpty
   searchableModel: controller.executions
   focus: true
-  onCurrentItemChanged: ifCurrentItem('id', (id) => taskSystem.selectedExecutionId = id)
   onItemSelected: controller.openExecutionOutput()
   onItemRightClicked: Common.handleRightClick(execList, contextMenu)
   TaskExecutionListController {
@@ -43,13 +42,13 @@ Cdt.SearchableTextList {
       text: "Terminate"
       enabled: execList.activeFocus && controller.executionRunning
       shortcut: "Alt+Shift+T"
-      onTriggered: execList.ifCurrentItem('id', (id) => taskSystem.cancelExecution(id, false))
+      onTriggered: taskSystem.cancelSelectedExecution(id, false)
     }
     MenuItem {
       text: "Kill"
       enabled: execList.activeFocus && controller.executionRunning
       shortcut: "Alt+Shift+K"
-      onTriggered: execList.ifCurrentItem('id', (id) => taskSystem.cancelExecution(id, true))
+      onTriggered: taskSystem.cancelSelectedExecution(id, true)
     }
     MenuItem {
       text: "Remove Finished Executions"

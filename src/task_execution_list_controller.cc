@@ -8,29 +8,34 @@
 
 TaskExecutionListModel::TaskExecutionListModel(QObject* parent)
     : TextListModel(parent) {
-  SetRoleNames({{0, "id"},
-                {1, "title"},
-                {2, "subTitle"},
-                {3, "icon"},
-                {4, "iconColor"},
-                {5, "isSelected"}});
-  searchable_roles = {1, 2};
+  SetRoleNames({{0, "title"}, {1, "subTitle"}, {2, "icon"}, {3, "iconColor"}});
+  searchable_roles = {0, 1};
 }
 
 QVariantList TaskExecutionListModel::GetRow(int i) const {
-  Application& app = Application::Get();
   const TaskExecution& exec = list[i];
   UiIcon icon = TaskSystem::GetStatusAsIcon(exec);
-  bool is_selected = app.task.GetSelectedExecutionId() == exec.id;
-  return {exec.id,
-          exec.task_name,
-          exec.start_time.toString(Application::kDateTimeFormat),
-          icon.icon,
-          icon.color,
-          is_selected};
+  return {exec.task_name,
+          exec.start_time.toString(Application::kDateTimeFormat), icon.icon,
+          icon.color};
 }
 
 int TaskExecutionListModel::GetRowCount() const { return list.size(); }
+
+const TaskExecution* TaskExecutionListModel::GetToBeSelected() const {
+  int i = GetSelectedItemIndex();
+  return i < 0 ? nullptr : &list[i];
+}
+
+int TaskExecutionListModel::IndexOfCurrentlySelected() const {
+  QUuid id = Application::Get().task.GetSelectedExecutionId();
+  for (int i = 0; i < list.size(); i++) {
+    if (list[i].id == id) {
+      return i;
+    }
+  }
+  return -1;
+}
 
 TaskExecutionListController::TaskExecutionListController(QObject* parent)
     : QObject(parent), executions(new TaskExecutionListModel(this)) {
@@ -40,6 +45,12 @@ TaskExecutionListController::TaskExecutionListController(QObject* parent)
                    [this](QUuid) { LoadExecutions(); });
   QObject::connect(&app.task, &TaskSystem::selectedExecutionChanged, this,
                    [this] { emit executionChanged(); });
+  QObject::connect(
+      executions, &TextListModel::selectedItemChanged, this, [this] {
+        if (const TaskExecution* exec = executions->GetToBeSelected()) {
+          Application::Get().task.SetSelectedExecutionId(exec->id);
+        }
+      });
   LoadExecutions();
 }
 
@@ -77,14 +88,15 @@ void TaskExecutionListController::LoadExecutions() {
             !executions->list.isEmpty()) {
           app.task.SetSelectedExecutionId(executions->list.last().id);
         }
-        executions->Load();
+        executions->Load(executions->IndexOfCurrentlySelected());
         emit executionsChanged();
       });
 }
 
 int TaskExecutionListController::IndexOfExecutionTask() const {
-  QUuid execution_id = Application::Get().task.GetSelectedExecutionId();
-  const QList<Task>& tasks = Application::Get().task.GetTasks();
+  Application& app = Application::Get();
+  QUuid execution_id = app.task.GetSelectedExecutionId();
+  const QList<Task>& tasks = app.task.GetTasks();
   for (const TaskExecution& exec : executions->list) {
     if (exec.id != execution_id) {
       continue;

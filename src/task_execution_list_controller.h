@@ -3,14 +3,16 @@
 #include <QObject>
 #include <QtQmlIntegration>
 
-#include "text_list_model.h"
 #include "task_system.h"
+#include "text_list_model.h"
 
 class TaskExecutionListModel : public TextListModel {
  public:
   TaskExecutionListModel(QObject* parent);
   QVariantList GetRow(int i) const override;
   int GetRowCount() const override;
+  const TaskExecution* GetToBeSelected() const;
+  int IndexOfCurrentlySelected() const;
 
   QList<TaskExecution> list;
 };

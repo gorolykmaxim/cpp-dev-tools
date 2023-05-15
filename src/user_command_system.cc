@@ -71,12 +71,10 @@ void UserCommandSystem::RegisterCommands() {
   RegisterCommand("Run", "Run Last Task Until Fails", "Ctrl+Shift+R",
                   [] { Application::Get().task.executeTask(0, true); });
   RegisterCommand("Run", "Terminate Task Execution", "Ctrl+Shift+T", [] {
-    Application& app = Application::Get();
-    app.task.cancelExecution(app.task.GetSelectedExecutionId(), false);
+    Application::Get().task.cancelSelectedExecution(false);
   });
   RegisterCommand("Run", "Kill Task Execution", "Ctrl+Shift+K", [] {
-    Application& app = Application::Get();
-    app.task.cancelExecution(app.task.GetSelectedExecutionId(), true);
+    Application::Get().task.cancelSelectedExecution(true);
   });
   RegisterCommand("Git", "Pull", "Ctrl+Shift+U", [] { GitSystem::Pull(); });
   RegisterCommand("Git", "Push", "Ctrl+Shift+P", [] { GitSystem::Push(); });

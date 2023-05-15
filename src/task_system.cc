@@ -283,13 +283,13 @@ bool TaskSystem::IsExecutionRunning(QUuid execution_id) const {
   return active_executions.contains(execution_id);
 }
 
-void TaskSystem::cancelExecution(QUuid execution_id, bool forcefully) {
-  if (!active_commands.contains(execution_id)) {
+void TaskSystem::cancelSelectedExecution(bool forcefully) {
+  if (!active_commands.contains(selected_execution_id)) {
     return;
   }
-  LOG() << "Attempting to cancel execution" << execution_id
+  LOG() << "Attempting to cancel execution" << selected_execution_id
         << "forcefully:" << forcefully;
-  active_commands[execution_id]->Cancel(forcefully);
+  active_commands[selected_execution_id]->Cancel(forcefully);
 }
 
 static TaskExecution ReadTaskExecutionStartTime(QSqlQuery& query) {
