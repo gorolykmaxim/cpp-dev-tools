@@ -13,14 +13,13 @@
 
 SqliteFileListModel::SqliteFileListModel(QObject* parent)
     : TextListModel(parent) {
-  SetRoleNames({{0, "idx"},
-                {1, "title"},
-                {2, "subTitle"},
-                {3, "existsOnDisk"},
-                {4, "titleColor"},
-                {5, "icon"},
-                {6, "iconColor"}});
-  searchable_roles = {1, 2};
+  SetRoleNames({{0, "title"},
+                {1, "subTitle"},
+                {2, "existsOnDisk"},
+                {3, "titleColor"},
+                {4, "icon"},
+                {5, "iconColor"}});
+  searchable_roles = {0, 1};
 }
 
 static bool Compare(const SqliteFile& a, const SqliteFile& b) {
@@ -38,6 +37,11 @@ static bool Compare(const SqliteFile& a, const SqliteFile& b) {
 void SqliteFileListModel::SortAndLoad() {
   std::sort(list.begin(), list.end(), Compare);
   Load();
+}
+
+SqliteFile SqliteFileListModel::GetSelected() const {
+  int i = GetSelectedItemIndex();
+  return i < 0 ? SqliteFile() : list[i];
 }
 
 QVariantList SqliteFileListModel::GetRow(int i) const {
@@ -58,21 +62,24 @@ QVariantList SqliteFileListModel::GetRow(int i) const {
   } else {
     icon.icon = "storage";
   }
-  return {i,           title,     file.path, !file.is_missing_on_disk,
+  return {title,       file.path, !file.is_missing_on_disk,
           title_color, icon.icon, icon.color};
 }
 
 int SqliteFileListModel::GetRowCount() const { return list.size(); }
 
 SqliteListController::SqliteListController(QObject* parent)
-    : QObject(parent), databases(new SqliteFileListModel(this)) {}
+    : QObject(parent), databases(new SqliteFileListModel(this)) {
+  QObject::connect(databases, &TextListModel::selectedItemChanged, this,
+                   [this] { emit selectedDatabaseChanged(); });
+}
 
 QUuid SqliteListController::GetSelectedDatabaseFileId() const {
-  return selected.id;
+  return databases->GetSelected().id;
 }
 
 bool SqliteListController::IsDatabaseSelected() const {
-  return !selected.IsNull();
+  return !databases->GetSelected().IsNull();
 }
 
 void SqliteListController::displayDatabaseList() {
@@ -98,6 +105,7 @@ void SqliteListController::displayDatabaseList() {
 }
 
 void SqliteListController::useSelectedDatabase() {
+  SqliteFile selected = databases->GetSelected();
   if (selected.IsNull() || selected.is_missing_on_disk) {
     return;
   }
@@ -107,6 +115,7 @@ void SqliteListController::useSelectedDatabase() {
 }
 
 void SqliteListController::removeSelectedDatabase() {
+  SqliteFile selected = databases->GetSelected();
   LOG() << "Removing database" << selected.path;
   databases->list.removeAll(selected);
   Application& app = Application::Get();
@@ -125,10 +134,4 @@ void SqliteListController::removeSelectedDatabase() {
     app.sqlite.SetSelectedFile(selected);
   }
   databases->SortAndLoad();
-}
-
-void SqliteListController::selectDatabase(int i) {
-  selected = databases->list[i];
-  LOG() << "Selecting database" << selected.path;
-  emit selectedDatabaseChanged();
 }

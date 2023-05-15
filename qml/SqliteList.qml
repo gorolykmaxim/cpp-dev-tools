@@ -50,7 +50,6 @@ Loader {
         placeholderText: "Open databases by clicking on '" + addBtn.text + "' button"
         onItemLeftClicked: controller.useSelectedDatabase()
         onItemRightClicked: contextMenu.open()
-        onItemSelected: ifCurrentItem('idx', controller.selectDatabase)
       }
       Menu {
         id: contextMenu

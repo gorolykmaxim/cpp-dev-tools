@@ -4,13 +4,14 @@
 #include <QObject>
 #include <QtQmlIntegration>
 
-#include "text_list_model.h"
 #include "sqlite_system.h"
+#include "text_list_model.h"
 
 class SqliteFileListModel : public TextListModel {
  public:
   explicit SqliteFileListModel(QObject* parent);
   void SortAndLoad();
+  SqliteFile GetSelected() const;
 
   QList<SqliteFile> list;
 
@@ -36,14 +37,12 @@ class SqliteListController : public QObject {
   void displayDatabaseList();
   void useSelectedDatabase();
   void removeSelectedDatabase();
-  void selectDatabase(int i);
 
  signals:
   void selectedDatabaseChanged();
 
  private:
   SqliteFileListModel* databases;
-  SqliteFile selected;
 };
 
 #endif  // DATABASELISTCONTROLLER_H
