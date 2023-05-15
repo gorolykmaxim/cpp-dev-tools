@@ -43,15 +43,17 @@ Cdt.Pane {
   }
   ListView {
     id: list
+    property bool currentIndexPreSelected: false
     Connections {
       target: list.model
       function onPreSelectCurrentIndex(index) {
         list.currentIndex = index;
+        list.currentIndexPreSelected = true;
         root.itemSelected();
       }
     }
     onCurrentIndexChanged: {
-      if (!model.isUpdating) {
+      if (!model.isUpdating && list.currentIndexPreSelected) {
         model.selectItemByIndex(list.currentIndex);
         root.itemSelected();
       }
