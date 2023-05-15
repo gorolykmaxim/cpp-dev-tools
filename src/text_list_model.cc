@@ -381,10 +381,6 @@ bool TextListModel::SetFilter(const QString& filter) {
 
 QString TextListModel::GetFilter() { return filter; }
 
-QVariantList TextListModel::GetRow(int) const { return {}; }
-
-int TextListModel::GetRowCount() const { return 0; }
-
 void TextListModel::SetRoleNames(const QHash<int, QByteArray>& role_names) {
   this->role_names = role_names;
   for (auto it = role_names.begin(); it != role_names.end(); it++) {

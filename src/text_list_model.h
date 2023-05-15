@@ -61,8 +61,8 @@ class TextListModel : public QAbstractListModel {
   void selectedItemChanged();
 
  protected:
-  virtual QVariantList GetRow(int i) const;
-  virtual int GetRowCount() const;
+  virtual QVariantList GetRow(int i) const = 0;
+  virtual int GetRowCount() const = 0;
   void SetRoleNames(const QHash<int, QByteArray>& role_names);
   void SetIsUpdating(bool is_updating);
 
