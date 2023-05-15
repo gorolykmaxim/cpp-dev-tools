@@ -41,6 +41,8 @@ class TextListModel : public QAbstractListModel {
   QHash<int, QByteArray> roleNames() const override;
   QVariant data(const QModelIndex& index, int role = 0) const override;
   void Load();
+  void LoadNew(int starting_from);
+  void LoadRemoved(int count);
   int GetSelectedItemIndex() const;
 
  public:

@@ -12,10 +12,11 @@ FindInFilesController::FindInFilesController(QObject* parent)
     : QObject(parent),
       find_task(nullptr),
       search_results(new FileSearchResultListModel(this)),
-      selected_result(-1),
       selected_file_cursor_position(-1),
       formatter(new FileSearchResultFormatter(this)) {
   Application::Get().view.SetWindowTitle("Find In Files");
+  QObject::connect(search_results, &TextListModel::selectedItemChanged, this,
+                   &FindInFilesController::OnSelectedResultChanged);
 }
 
 FindInFilesController::~FindInFilesController() { CancelSearchIfRunning(); }
@@ -31,7 +32,7 @@ QString FindInFilesController::GetSearchStatus() const {
 
 void FindInFilesController::search() {
   LOG() << "Searching for" << search_term;
-  selected_result = -1;
+  prev_selected_result = -1;
   selected_file_path.clear();
   selected_file_content.clear();
   selected_file_cursor_position = -1;
@@ -50,13 +51,17 @@ void FindInFilesController::search() {
   find_task->Run();
 }
 
-void FindInFilesController::selectResult(int i) {
-  LOG() << "Selected search result" << i;
-  int old_result_line = -1;
-  if (selected_result >= 0) {
-    old_result_line = search_results->At(selected_result).column - 1;
+void FindInFilesController::OnSelectedResultChanged() {
+  int selected_result = search_results->GetSelectedItemIndex();
+  if (selected_result < 0) {
+    return;
   }
-  selected_result = i;
+  LOG() << "Selected search result" << selected_result;
+  int old_result_line = -1;
+  if (prev_selected_result >= 0) {
+    old_result_line = search_results->At(prev_selected_result).column - 1;
+  }
+  prev_selected_result = selected_result;
   const FileSearchResult& result = search_results->At(selected_result);
   int new_result_line = result.column - 1;
   formatter->SetResult(result);
@@ -88,6 +93,7 @@ void FindInFilesController::selectResult(int i) {
 }
 
 void FindInFilesController::openSelectedResultInEditor() {
+  int selected_result = search_results->GetSelectedItemIndex();
   if (selected_result < 0) {
     return;
   }
@@ -302,55 +308,30 @@ QList<FileSearchResult> FindInFilesTask::FindRegex(
 }
 
 FileSearchResultListModel::FileSearchResultListModel(QObject* parent)
-    : QAbstractListModel(parent) {}
-
-int FileSearchResultListModel::rowCount(const QModelIndex&) const {
-  return list.size();
-}
-
-QHash<int, QByteArray> FileSearchResultListModel::roleNames() const {
-  return {{0, "idx"}, {1, "title"}, {2, "subTitle"}};
-}
-
-QVariant FileSearchResultListModel::data(const QModelIndex& index,
-                                         int role) const {
-  if (!index.isValid()) {
-    return QVariant();
-  }
-  if (index.row() < 0 || index.row() >= list.size()) {
-    return QVariant();
-  }
-  Q_ASSERT(roleNames().contains(role));
-  const FileSearchResult& result = list[index.row()];
-  if (role == 0) {
-    return index.row();
-  } else if (role == 1) {
-    return result.match;
-  } else {
-    return Path::GetFileName(result.file_path);
-  }
+    : TextListModel(parent) {
+  SetRoleNames({{0, "title"}, {1, "subTitle"}});
 }
 
 void FileSearchResultListModel::Clear() {
   if (list.isEmpty()) {
     return;
   }
-  beginRemoveRows(QModelIndex(), 0, list.size() - 1);
+  int count = list.size();
   list.clear();
   unique_file_paths.clear();
-  endRemoveRows();
+  LoadRemoved(count);
 }
 
 void FileSearchResultListModel::Append(const QList<FileSearchResult>& items) {
   if (items.isEmpty()) {
     return;
   }
-  beginInsertRows(QModelIndex(), list.size(), list.size() + items.size() - 1);
+  int first = list.size();
   list.append(items);
   for (const FileSearchResult& result : items) {
     unique_file_paths.insert(result.file_path);
   }
-  endInsertRows();
+  LoadNew(first);
 }
 
 int FileSearchResultListModel::CountUniqueFiles() const {
@@ -360,6 +341,13 @@ int FileSearchResultListModel::CountUniqueFiles() const {
 const FileSearchResult& FileSearchResultListModel::At(int i) const {
   return list[i];
 }
+
+QVariantList FileSearchResultListModel::GetRow(int i) const {
+  const FileSearchResult& result = list[i];
+  return {result.match, Path::GetFileName(result.file_path)};
+}
+
+int FileSearchResultListModel::GetRowCount() const { return list.size(); }
 
 bool FindInFilesOptions::operator==(const FindInFilesOptions& another) const {
   return match_case == another.match_case &&

@@ -315,6 +315,29 @@ void TextListModel::Load() {
   cmd_buffer.RunCommands();
 }
 
+void TextListModel::LoadNew(int starting_from) {
+  if (starting_from >= GetRowCount()) {
+    return;
+  }
+  if (filter.size() >= min_filter_sub_match_length &&
+      !searchable_roles.isEmpty()) {
+    Load();
+  } else {
+    beginInsertRows(QModelIndex(), starting_from, GetRowCount() - 1);
+    for (int i = starting_from; i < GetRowCount(); i++) {
+      items.append(TextListItem{i, GetRow(i)});
+    }
+    endInsertRows();
+  }
+}
+
+void TextListModel::LoadRemoved(int count) {
+  int starting_from = items.size() - count;
+  beginRemoveRows(QModelIndex(), starting_from, items.size() - 1);
+  items.remove(starting_from, count);
+  endRemoveRows();
+}
+
 int TextListModel::GetSelectedItemIndex() const { return selected_item_index; }
 
 QVariant TextListModel::getFieldByRoleName(int row, const QString& name) const {
