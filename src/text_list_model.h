@@ -78,13 +78,3 @@ class TextListModel : public QAbstractListModel {
  private:
   void ReSelectItem(int index);
 };
-
-class SimpleTextListModel : public TextListModel {
- public:
-  SimpleTextListModel(QObject* parent, const QHash<int, QByteArray>& role_names,
-                      const QList<int>& searchable_roles);
-  QVariantList GetRow(int i) const override;
-  int GetRowCount() const override;
-
-  QList<QVariantList> list;
-};

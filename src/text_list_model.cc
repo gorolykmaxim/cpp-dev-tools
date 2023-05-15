@@ -413,15 +413,3 @@ void TextListModel::ReSelectItem(int index) {
   selectItemByIndex(current_index);
   emit preSelectCurrentIndex(current_index);
 }
-
-SimpleTextListModel::SimpleTextListModel(
-    QObject* parent, const QHash<int, QByteArray>& role_names,
-    const QList<int>& searchable_roles)
-    : TextListModel(parent) {
-  SetRoleNames(role_names);
-  this->searchable_roles = searchable_roles;
-}
-
-QVariantList SimpleTextListModel::GetRow(int i) const { return list[i]; }
-
-int SimpleTextListModel::GetRowCount() const { return list.size(); }
