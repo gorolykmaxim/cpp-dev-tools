@@ -81,7 +81,7 @@ Cdt.Pane {
       property var itemModel: model
       width: list.width
       height: row.height
-      color: (isSelected || mouseArea.containsMouse) && !(mouseArea.pressedButtons & Qt.LeftButton) ? Theme.colorBgMedium : "transparent"
+      color: (ListView.isCurrentItem || mouseArea.containsMouse) && !(mouseArea.pressedButtons & Qt.LeftButton) ? Theme.colorBgMedium : "transparent"
       RowLayout {
         id: row
         width: parent.width
