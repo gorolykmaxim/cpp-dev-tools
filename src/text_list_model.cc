@@ -4,6 +4,8 @@
 #include <algorithm>
 #include <limits>
 
+#define LOG() qDebug() << "[TextListModel]"
+
 UiCommandBuffer::UiCommandBuffer() : QObject() {
   QObject::connect(this, &UiCommandBuffer::commandsReady, this,
                    &UiCommandBuffer::ExecuteCommand, Qt::QueuedConnection);
@@ -345,13 +347,17 @@ QVariant TextListModel::getFieldByRoleName(int row, const QString& name) const {
 }
 
 void TextListModel::selectItemByIndex(int i) {
+  int old_index = selected_item_index;
   if (i < 0 || i >= items.size()) {
     selected_item_index = -1;
   } else {
     const TextListItem& item = items[i];
     selected_item_index = item.index;
   }
-  emit selectedItemChanged();
+  if (old_index != selected_item_index) {
+    LOG() << "Selected item index changed:" << selected_item_index;
+    emit selectedItemChanged();
+  }
 }
 
 bool TextListModel::SetFilterIfChanged(const QString& filter) {

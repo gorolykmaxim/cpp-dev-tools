@@ -331,7 +331,7 @@ void FileSearchResultListModel::Append(const QList<FileSearchResult>& items) {
   for (const FileSearchResult& result : items) {
     unique_file_paths.insert(result.file_path);
   }
-  LoadNew(first);
+  LoadNew(first, -1);
 }
 
 int FileSearchResultListModel::CountUniqueFiles() const {
