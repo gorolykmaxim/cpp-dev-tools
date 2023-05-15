@@ -10,8 +10,8 @@
 
 GitBranchListModel::GitBranchListModel(QObject* parent)
     : TextListModel(parent) {
-  SetRoleNames({{0, "idx"}, {1, "title"}, {2, "titleColor"}, {3, "icon"}});
-  searchable_roles = {1};
+  SetRoleNames({{0, "title"}, {1, "titleColor"}, {2, "icon"}});
+  searchable_roles = {0};
 }
 
 QVariantList GitBranchListModel::GetRow(int i) const {
@@ -25,7 +25,7 @@ QVariantList GitBranchListModel::GetRow(int i) const {
   if (b.is_current) {
     title = "[Current] " + title;
   }
-  return {i, title, title_color, "call_split"};
+  return {title, title_color, "call_split"};
 }
 
 int GitBranchListModel::GetRowCount() const { return list.size(); }
