@@ -8,9 +8,7 @@
 
 SqliteTableController::SqliteTableController(QObject* parent)
     : QObject(parent),
-      tables(new SimpleTextListModel(
-          this, {{0, "idx"}, {1, "title"}, {2, "icon"}, {3, "isSelected"}},
-          {1})),
+      tables(new TableListModel(this)),
       table(new SqliteTableModel(this)) {}
 
 QString SqliteTableController::GetLimit() const { return query.limit; }
@@ -46,18 +44,18 @@ void SqliteTableController::displayTableList() {
         if (!results.second.isEmpty()) {
           SetStatus(results.second, "red");
         } else {
-          for (int i = 0; i < results.first.size(); i++) {
-            const QString& table = results.first[i];
-            tables->list.append({i, table, "web_asset", table == table_name});
-          }
+          tables->list = results.first;
           SetStatus(results.first.isEmpty() ? "No Tables Found" : "");
         }
-        tables->Load();
+        tables->Load(-1);
       });
 }
 
-void SqliteTableController::displayTable(int i) {
-  table_name = tables->list[i][1].toString();
+void SqliteTableController::displaySelectedTable() {
+  QString table_name = tables->GetSelected();
+  if (table_name.isEmpty()) {
+    return;
+  }
   LOG() << "Table" << table_name << "selected";
   Application::Get().view.SetWindowTitle("SQLite Table '" + table_name + '\'');
   query = Query();
@@ -67,7 +65,7 @@ void SqliteTableController::displayTable(int i) {
 
 void SqliteTableController::load() {
   SetStatus("Loading table data...");
-  QString sql = "SELECT * FROM " + table_name;
+  QString sql = "SELECT * FROM " + tables->GetSelected();
   if (!query.where.isEmpty()) {
     sql += " WHERE " + query.where;
   }
@@ -113,3 +111,19 @@ void SqliteTableController::SetStatus(const QString& status,
   this->status_color = color.isEmpty() ? kTheme.kColorText : color;
   emit statusChanged();
 }
+
+TableListModel::TableListModel(QObject* parent) : TextListModel(parent) {
+  SetRoleNames({{0, "title"}, {1, "icon"}});
+  searchable_roles = {0};
+}
+
+QString TableListModel::GetSelected() const {
+  int i = GetSelectedItemIndex();
+  return i < 0 ? "" : list[i];
+}
+
+QVariantList TableListModel::GetRow(int i) const {
+  return {list[i], "web_asset"};
+}
+
+int TableListModel::GetRowCount() const { return list.size(); }

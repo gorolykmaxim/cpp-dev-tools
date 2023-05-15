@@ -31,7 +31,7 @@ Loader {
         showPlaceholder: controller.status
         placeholderText: controller.status
         placeholderColor: controller.statusColor
-        onItemSelected: item => controller.displayTable(item.idx)
+        onItemSelected: item => controller.displaySelectedTable()
       }
     }
   }
