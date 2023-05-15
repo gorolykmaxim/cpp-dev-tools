@@ -4,7 +4,6 @@
 #include <QtQmlIntegration>
 
 #include "text_list_model.h"
-#include "task_system.h"
 
 class TaskListModel : public TextListModel {
  public:
@@ -21,16 +20,20 @@ class TaskListController : public QObject {
   Q_PROPERTY(
       bool showPlaceholder READ ShouldShowPlaceholder NOTIFY isLoadingChanged)
   Q_PROPERTY(bool isLoading READ IsLoading NOTIFY isLoadingChanged)
+  Q_PROPERTY(int selectedTaskIndex READ GetSelectedTaskIndex NOTIFY
+                 selectedTaskIndexChanged)
   Q_PROPERTY(TaskListModel* tasks MEMBER tasks CONSTANT)
  public:
   explicit TaskListController(QObject* parent = nullptr);
   bool ShouldShowPlaceholder() const;
   bool IsLoading() const;
+  int GetSelectedTaskIndex() const;
 
   TaskListModel* tasks;
 
  signals:
   void isLoadingChanged();
+  void selectedTaskIndexChanged();
 
  private:
   void SetIsLoading(bool value);

@@ -5,8 +5,8 @@
 #define LOG() qDebug() << "[TaskListController]"
 
 TaskListModel::TaskListModel(QObject *parent) : TextListModel(parent) {
-  SetRoleNames({{0, "idx"}, {1, "title"}, {2, "subTitle"}, {3, "icon"}});
-  searchable_roles = {1, 2};
+  SetRoleNames({{0, "title"}, {1, "subTitle"}, {2, "icon"}});
+  searchable_roles = {0, 1};
 }
 
 QVariantList TaskListModel::GetRow(int i) const {
@@ -18,7 +18,7 @@ QVariantList TaskListModel::GetRow(int i) const {
   } else {
     details = task.id;
   }
-  return {i, name, details, "code"};
+  return {name, details, "code"};
 }
 
 int TaskListModel::GetRowCount() const {
@@ -32,6 +32,8 @@ TaskListController::TaskListController(QObject *parent)
     tasks->Load();
     SetIsLoading(false);
   });
+  QObject::connect(tasks, &TextListModel::selectedItemChanged, this,
+                   [this] { emit selectedTaskIndexChanged(); });
   app.view.SetWindowTitle("Tasks");
   app.task.FindTasks();
 }
@@ -41,6 +43,10 @@ bool TaskListController::ShouldShowPlaceholder() const {
 }
 
 bool TaskListController::IsLoading() const { return is_loading; }
+
+int TaskListController::GetSelectedTaskIndex() const {
+  return tasks->GetSelectedItemIndex();
+}
 
 void TaskListController::SetIsLoading(bool value) {
   is_loading = value;
