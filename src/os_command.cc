@@ -144,8 +144,15 @@ void OsCommand::OpenTerminalInCurrentDir() {
   process->Run();
   QString osascript =
       "on run argv\n"
-      "tell app \"Terminal\" to do script \"cd \" & item 1 of argv\n"
-      "tell app \"Terminal\" to activate\n"
+      " set cmd to \"cd \" & item 1 of argv\n"
+      " tell app \"Terminal\"\n"
+      "     activate\n"
+      "     if (count of windows) = 0 then\n"
+      "         do script cmd\n"
+      "     else\n"
+      "         do script cmd in selected tab of front window\n"
+      "     end if\n"
+      " end tell\n"
       "end run";
   process->WriteToStdin(osascript.toUtf8());
   process->FinishWriting();
