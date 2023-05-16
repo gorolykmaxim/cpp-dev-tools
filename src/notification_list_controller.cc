@@ -14,14 +14,9 @@ NotificationListController::NotificationListController(QObject *parent)
       &app.notification, &NotificationSystem::notificationsChanged, this,
       [this, &app] {
         notifications->Load(app.notification.GetNotifications().size() - 1);
-        emit notificationsChanged();
       });
   QObject::connect(notifications, &TextListModel::selectedItemChanged, this,
                    [this] { emit selectedChanged(); });
-}
-
-bool NotificationListController::AreNotificationsEmpty() const {
-  return notifications->GetRowCount() == 0;
 }
 
 QString NotificationListController::GetSelectedNotificationIcon() const {
@@ -96,6 +91,7 @@ NotificationListModel::NotificationListModel(QObject *parent)
                 {3, "icon"},
                 {4, "iconColor"}});
   searchable_roles = {0, 2};
+  SetEmptyListPlaceholder(Placeholder("No Notifications Found"));
 }
 
 QVariantList NotificationListModel::GetRow(int i) const {

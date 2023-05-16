@@ -4,6 +4,8 @@
 #include <algorithm>
 #include <limits>
 
+#include "theme.h"
+
 #define LOG() qDebug() << "[TextListModel]"
 
 UiCommandBuffer::UiCommandBuffer() : QObject() {
@@ -300,6 +302,7 @@ void TextListModel::Load(int item_to_select) {
     cmd_buffer.ScheduleCommand([this, item_to_select] {
       ReSelectItem(item_to_select);
       SetIsUpdating(false);
+      emit placeholderChanged();
     });
   });
   cmd_buffer.RunCommands();
@@ -319,6 +322,7 @@ void TextListModel::LoadNew(int starting_from, int item_to_select) {
     }
     endInsertRows();
     ReSelectItem(item_to_select);
+    emit placeholderChanged();
   }
 }
 
@@ -327,9 +331,44 @@ void TextListModel::LoadRemoved(int count) {
   beginRemoveRows(QModelIndex(), starting_from, items.size() - 1);
   items.remove(starting_from, count);
   endRemoveRows();
+  emit placeholderChanged();
 }
 
 int TextListModel::GetSelectedItemIndex() const { return selected_item_index; }
+
+QString TextListModel::GetPlaceholderText() const {
+  if (!placeholder.IsNull()) {
+    return placeholder.text;
+  } else if (!empty_list_placeholder.IsNull() && GetRowCount() == 0) {
+    return empty_list_placeholder.text;
+  } else {
+    return "";
+  }
+}
+
+QString TextListModel::GetPlaceholderColor() const {
+  static const Theme kTheme;
+  QString color;
+  if (!placeholder.IsNull()) {
+    color = placeholder.color;
+  } else if (!empty_list_placeholder.IsNull() && GetRowCount() == 0) {
+    color = empty_list_placeholder.color;
+  }
+  if (color.isEmpty()) {
+    color = kTheme.kColorText;
+  }
+  return color;
+}
+
+void TextListModel::SetEmptyListPlaceholder(const Placeholder& placeholder) {
+  empty_list_placeholder = placeholder;
+  emit placeholderChanged();
+}
+
+void TextListModel::SetPlaceholder(const Placeholder& placeholder) {
+  this->placeholder = placeholder;
+  emit placeholderChanged();
+}
 
 QVariant TextListModel::getFieldByRoleName(int row, const QString& name) const {
   if (!name_to_role.contains(name)) {
@@ -409,3 +448,8 @@ void TextListModel::ReSelectItem(int index) {
   selectItemByIndex(current_index);
   emit preSelectCurrentIndex(current_index);
 }
+
+Placeholder::Placeholder(const QString& text, const QString& color)
+    : text(text), color(color) {}
+
+bool Placeholder::IsNull() const { return text.isEmpty(); }

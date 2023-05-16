@@ -27,8 +27,6 @@ class NotificationListController : public QObject {
   Q_OBJECT
   QML_ELEMENT
   Q_PROPERTY(NotificationListModel* notifications MEMBER notifications CONSTANT)
-  Q_PROPERTY(bool areNotificationsEmpty READ AreNotificationsEmpty NOTIFY
-                 notificationsChanged)
   Q_PROPERTY(QString selectedNotificationIcon READ GetSelectedNotificationIcon
                  NOTIFY selectedChanged)
   Q_PROPERTY(QString selectedNotificationIconColor READ
@@ -43,7 +41,6 @@ class NotificationListController : public QObject {
                  GetSelectedNotificationDescription NOTIFY selectedChanged)
  public:
   explicit NotificationListController(QObject* parent = nullptr);
-  bool AreNotificationsEmpty() const;
   QString GetSelectedNotificationIcon() const;
   QString GetSelectedNotificationIconColor() const;
   QString GetSelectedNotificationTitle() const;
@@ -56,7 +53,6 @@ class NotificationListController : public QObject {
   void clearNotifications();
 
  signals:
-  void notificationsChanged();
   void selectedChanged();
 
  private:

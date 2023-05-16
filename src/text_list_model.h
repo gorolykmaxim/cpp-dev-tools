@@ -25,6 +25,14 @@ class UiCommandBuffer : public QObject {
   QQueue<std::function<void()>> commands;
 };
 
+struct Placeholder {
+  explicit Placeholder(const QString& text = "", const QString& color = "");
+  bool IsNull() const;
+
+  QString text;
+  QString color;
+};
+
 struct TextListItem {
   int index = 0;
   QVariantList fields;
@@ -35,6 +43,10 @@ class TextListModel : public QAbstractListModel {
   Q_PROPERTY(QString filter READ GetFilter WRITE SetFilterIfChanged NOTIFY
                  filterChanged)
   Q_PROPERTY(bool isUpdating MEMBER is_updating NOTIFY isUpdatingChanged)
+  Q_PROPERTY(
+      QString placeholderText READ GetPlaceholderText NOTIFY placeholderChanged)
+  Q_PROPERTY(QString placeholderColor READ GetPlaceholderColor NOTIFY
+                 placeholderChanged)
  public:
   explicit TextListModel(QObject* parent);
   int rowCount(const QModelIndex& parent = QModelIndex()) const override;
@@ -44,6 +56,10 @@ class TextListModel : public QAbstractListModel {
   void LoadNew(int starting_from, int item_to_select = 0);
   void LoadRemoved(int count);
   int GetSelectedItemIndex() const;
+  QString GetPlaceholderText() const;
+  QString GetPlaceholderColor() const;
+  void SetEmptyListPlaceholder(const Placeholder& placeholder);
+  void SetPlaceholder(const Placeholder& placeholder);
 
   int min_filter_sub_match_length = 2;
 
@@ -59,6 +75,7 @@ class TextListModel : public QAbstractListModel {
   void preSelectCurrentIndex(int index);
   void isUpdatingChanged();
   void selectedItemChanged();
+  void placeholderChanged();
 
  protected:
   virtual QVariantList GetRow(int i) const = 0;
@@ -77,4 +94,7 @@ class TextListModel : public QAbstractListModel {
 
  private:
   void ReSelectItem(int index);
+
+  Placeholder empty_list_placeholder;
+  Placeholder placeholder;
 };

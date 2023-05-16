@@ -19,8 +19,6 @@ Loader {
       Component.onCompleted: controller.displayList()
       anchors.fill: parent
       searchPlaceholderText: "Search notification"
-      showPlaceholder: controller.areNotificationsEmpty
-      placeholderText: "No Notifications Found"
       searchableModel: controller.notifications
       focus: true
       onItemSelected: root.sourceComponent = detailsView
