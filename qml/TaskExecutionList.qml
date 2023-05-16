@@ -9,8 +9,6 @@ Cdt.SearchableTextList {
   id: execList
   anchors.fill: parent
   searchPlaceholderText: "Search execution"
-  placeholderText: "No tasks have been executed yet"
-  showPlaceholder: controller.executionsEmpty
   searchableModel: controller.executions
   focus: true
   onItemSelected: controller.openExecutionOutput()

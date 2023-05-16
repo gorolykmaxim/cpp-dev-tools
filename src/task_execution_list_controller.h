@@ -20,8 +20,6 @@ class TaskExecutionListModel : public TextListModel {
 class TaskExecutionListController : public QObject {
   Q_OBJECT
   QML_ELEMENT
-  Q_PROPERTY(
-      bool executionsEmpty READ AreExecutionsEmpty NOTIFY executionsChanged)
   Q_PROPERTY(TaskExecutionListModel* executions MEMBER executions CONSTANT)
   Q_PROPERTY(bool executionRunning READ IsSelectedExecutionRunning NOTIFY
                  executionChanged)
@@ -29,7 +27,6 @@ class TaskExecutionListController : public QObject {
       int executionTaskIndex READ IndexOfExecutionTask NOTIFY executionChanged)
  public:
   explicit TaskExecutionListController(QObject* parent = nullptr);
-  bool AreExecutionsEmpty() const;
   bool IsSelectedExecutionRunning() const;
   int IndexOfExecutionTask() const;
 
@@ -38,7 +35,6 @@ class TaskExecutionListController : public QObject {
   void openExecutionOutput() const;
 
  signals:
-  void executionsChanged();
   void executionChanged();
 
  private:

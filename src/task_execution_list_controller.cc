@@ -10,6 +10,7 @@ TaskExecutionListModel::TaskExecutionListModel(QObject* parent)
     : TextListModel(parent) {
   SetRoleNames({{0, "title"}, {1, "subTitle"}, {2, "icon"}, {3, "iconColor"}});
   searchable_roles = {0, 1};
+  SetEmptyListPlaceholder(Placeholder("No tasks have been executed yet"));
 }
 
 QVariantList TaskExecutionListModel::GetRow(int i) const {
@@ -54,10 +55,6 @@ TaskExecutionListController::TaskExecutionListController(QObject* parent)
   LoadExecutions();
 }
 
-bool TaskExecutionListController::AreExecutionsEmpty() const {
-  return executions->list.size() == 0;
-}
-
 bool TaskExecutionListController::IsSelectedExecutionRunning() const {
   Application& app = Application::Get();
   QUuid id = app.task.GetSelectedExecutionId();
@@ -89,7 +86,6 @@ void TaskExecutionListController::LoadExecutions() {
           app.task.SetSelectedExecutionId(executions->list.last().id);
         }
         executions->Load(executions->IndexOfCurrentlySelected());
-        emit executionsChanged();
       });
 }
 
