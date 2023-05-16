@@ -57,11 +57,13 @@ Loader {
           color: Theme.colorBgMedium
           padding: Theme.basePadding
           Layout.fillWidth: true
+          focus: !table.enabled
           RowLayout {
             anchors.fill: parent
             spacing: Theme.basePadding
             Cdt.IconButton {
               id: backBtn
+              focus: true
               buttonIcon: "keyboard_backspace"
               onClicked: root.sourceComponent = tableListView
               KeyNavigation.right: reloadBtn
@@ -132,7 +134,7 @@ Loader {
           Layout.fillWidth: true
           Layout.fillHeight: true
           model: controller.table
-          focus: true
+          focus: enabled
         }
       }
     }

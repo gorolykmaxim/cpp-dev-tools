@@ -62,7 +62,13 @@ void SqliteTableModel::SetTable(const QList<QString> &new_columns,
 }
 
 QString SqliteTableModel::GetPlaceholderText() const {
-  return placeholder.text;
+  if (!placeholder.IsNull()) {
+    return placeholder.text;
+  } else if (rows.isEmpty()) {
+    return "No results found";
+  } else {
+    return "";
+  }
 }
 
 QString SqliteTableModel::GetPlaceholderColor() const {
