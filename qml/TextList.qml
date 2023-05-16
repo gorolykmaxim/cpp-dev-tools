@@ -9,10 +9,7 @@ Cdt.Pane {
   property int elide: Text.ElideNone
   property bool highlightCurrentItemWithoutFocus: true
   property alias model: list.model
-  property string placeholderText: ""
-  property string placeholderColor: ""
   property alias currentItem: list.currentItem
-  property bool showPlaceholder: list.count === 0
   color: Theme.colorBgDark
   signal itemLeftClicked(clickedItemModel: QtObject, event: QtObject);
   signal itemRightClicked(clickedItemModel: QtObject, event: QtObject);
@@ -38,9 +35,9 @@ Cdt.Pane {
   Cdt.PlaceholderText {
     id: placeholder
     anchors.fill: parent
-    visible: list.model.placeholderText || root.showPlaceholder
-    text: root.placeholderText || list.model.placeholderText
-    textColor: root.placeholderColor || list.model.placeholderColor
+    visible: list.model.placeholderText
+    text: list.model.placeholderText
+    textColor: list.model.placeholderColor
   }
   ListView {
     id: list
@@ -68,7 +65,7 @@ Cdt.Pane {
       }
     }
     anchors.fill: parent
-    visible: !(list.model.placeholderText || root.showPlaceholder)
+    visible: !list.model.placeholderText
     focus: true
     clip: true
     boundsBehavior: ListView.StopAtBounds

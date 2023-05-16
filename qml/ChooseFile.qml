@@ -55,7 +55,6 @@ ColumnLayout {
     Layout.fillWidth: true
     Layout.fillHeight: true
     model: controller.suggestions
-    showPlaceholder: false
     onItemLeftClicked: controller.pickSelectedSuggestion()
   }
 }

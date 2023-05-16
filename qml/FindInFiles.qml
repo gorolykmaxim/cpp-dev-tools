@@ -141,7 +141,6 @@ SplitView {
       model: controller.results
       elide: Text.ElideRight
       highlightCurrentItemWithoutFocus: false
-      showPlaceholder: false
       onItemRightClicked: {
         forceActiveFocus();
         contextMenu.open();

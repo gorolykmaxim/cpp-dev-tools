@@ -5,11 +5,8 @@ import "." as Cdt
 
 FocusScope {
   id: root
-  property var searchableModel: null
+  property var searchableModel
   property string searchPlaceholderText: ""
-  property alias placeholderText: textList.placeholderText
-  property alias placeholderColor: textList.placeholderColor
-  property bool showPlaceholder: false
   signal itemSelected(selectedItemModel: QtObject)
   signal itemRightClicked(clickedItemModel: QtObject)
   function ifCurrentItem(field, callback) {
@@ -27,7 +24,7 @@ FocusScope {
       Layout.fillWidth: true
       color: Theme.colorBgMedium
       padding: Theme.basePadding
-      visible: !showPlaceholder
+      visible: !searchableModel.placeholderText
       focus: true
       Cdt.ListSearch {
         id: input
@@ -45,7 +42,6 @@ FocusScope {
       Layout.fillHeight: true
       model: searchableModel
       elide: Text.ElideLeft
-      showPlaceholder: root.showPlaceholder
       onItemLeftClicked: selectCurrentItemIfPresent()
       onItemRightClicked: item => root.itemRightClicked(item)
     }
