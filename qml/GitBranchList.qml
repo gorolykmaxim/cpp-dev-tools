@@ -19,7 +19,13 @@ Cdt.SearchableTextList {
       text: "Delete"
       shortcut: "Alt+D"
       enabled: list.activeFocus && controller.isLocalBranchSelected
-      onTriggered: controller.deleteSelectedBranch()
+      onTriggered: controller.deleteSelectedBranch(false)
+    }
+    MenuItem {
+      text: "Force Delete"
+      shortcut: "Alt+Shift+D"
+      enabled: list.activeFocus && controller.isLocalBranchSelected
+      onTriggered: controller.deleteSelectedBranch(true)
     }
   }
 }

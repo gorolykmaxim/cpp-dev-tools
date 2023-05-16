@@ -52,13 +52,14 @@ bool GitBranchListController::IsLocalBranchSelected() const {
   }
 }
 
-void GitBranchListController::deleteSelectedBranch() {
+void GitBranchListController::deleteSelectedBranch(bool force) {
   const GitBranch* branch = branches->GetSelected();
   if (!branch) {
     return;
   }
-  LOG() << "Deleting branch" << branch->name;
-  auto delete_branch = new OsProcess("git", {"branch", "-d", branch->name});
+  LOG() << "Deleting branch" << branch->name << "force:" << force;
+  QString del_arg = force ? "-D" : "-d";
+  auto delete_branch = new OsProcess("git", {"branch", del_arg, branch->name});
   delete_branch->error_title =
       "Git: Failed to delete branch '" + branch->name + '\'';
   delete_branch->success_title = "Git: Deleted branch '" + branch->name + '\'';
@@ -131,7 +132,7 @@ void GitBranchListController::FindBranches() {
                        if (*child_processes == 0) {
                          std::sort(branches->list.begin(), branches->list.end(),
                                    Compare);
-                         branches->Load();
+                         branches->Load(-1);
                          branches->SetPlaceholder();
                        }
                      });

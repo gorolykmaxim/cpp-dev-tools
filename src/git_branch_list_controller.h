@@ -35,7 +35,7 @@ class GitBranchListController : public QObject {
   bool IsLocalBranchSelected() const;
 
  public slots:
-  void deleteSelectedBranch();
+  void deleteSelectedBranch(bool force);
 
  signals:
   void selectedBranchChanged();
