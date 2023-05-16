@@ -31,8 +31,6 @@ class SqliteTableController : public QObject {
   QML_ELEMENT
   Q_PROPERTY(TableListModel* tables MEMBER tables CONSTANT)
   Q_PROPERTY(SqliteTableModel* table MEMBER table CONSTANT)
-  Q_PROPERTY(QString status MEMBER status NOTIFY statusChanged)
-  Q_PROPERTY(QString statusColor MEMBER status_color NOTIFY statusChanged)
   Q_PROPERTY(QString limit READ GetLimit NOTIFY displayTableView)
  public:
   explicit SqliteTableController(QObject* parent = nullptr);
@@ -47,15 +45,10 @@ class SqliteTableController : public QObject {
   void setWhere(const QString& value);
  signals:
   void displayTableView();
-  void statusChanged();
 
  private:
-  void SetStatus(const QString& status, const QString& color = "");
-
   TableListModel* tables;
   SqliteTableModel* table;
-  QString status;
-  QString status_color;
   Query query;
 };
 

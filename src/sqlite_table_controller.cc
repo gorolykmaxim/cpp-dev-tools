@@ -2,7 +2,6 @@
 
 #include "application.h"
 #include "io_task.h"
-#include "theme.h"
 
 #define LOG() qDebug() << "[SqliteTableController]"
 
@@ -18,7 +17,7 @@ void SqliteTableController::displayTableList() {
   app.view.SetWindowTitle("SQLite Tables");
   SqliteFile file = app.sqlite.GetSelectedFile();
   LOG() << "Fetching list of tables from" << file.path;
-  SetStatus("Looking for tables...");
+  tables->SetPlaceholder("Looking for tables...");
   IoTask::Run<std::pair<QStringList, QString>>(
       this,
       [file] {
@@ -42,10 +41,10 @@ void SqliteTableController::displayTableList() {
       [this](std::pair<QStringList, QString> results) {
         tables->list.clear();
         if (!results.second.isEmpty()) {
-          SetStatus(results.second, "red");
+          tables->SetPlaceholder(results.second, "red");
         } else {
           tables->list = results.first;
-          SetStatus(results.first.isEmpty() ? "No Tables Found" : "");
+          tables->SetPlaceholder();
         }
         tables->Load(-1);
       });
@@ -64,7 +63,7 @@ void SqliteTableController::displaySelectedTable() {
 }
 
 void SqliteTableController::load() {
-  SetStatus("Loading table data...");
+  table->SetPlaceholder("Loading table data...");
   QString sql = "SELECT * FROM " + tables->GetSelected();
   if (!query.where.isEmpty()) {
     sql += " WHERE " + query.where;
@@ -80,10 +79,10 @@ void SqliteTableController::load() {
   }
   SqliteSystem::ExecuteQuery(this, sql, [this](SqliteQueryResult result) {
     if (!result.error.isEmpty()) {
-      SetStatus(result.error, "red");
+      table->SetPlaceholder(result.error, "red");
     } else {
       table->SetTable(result.columns, result.rows);
-      SetStatus("");
+      table->SetPlaceholder();
     }
   });
 }
@@ -104,17 +103,10 @@ void SqliteTableController::setWhere(const QString& value) {
   query.where = value;
 }
 
-void SqliteTableController::SetStatus(const QString& status,
-                                      const QString& color) {
-  static const Theme kTheme;
-  this->status = status;
-  this->status_color = color.isEmpty() ? kTheme.kColorText : color;
-  emit statusChanged();
-}
-
 TableListModel::TableListModel(QObject* parent) : TextListModel(parent) {
   SetRoleNames({{0, "title"}, {1, "icon"}});
   searchable_roles = {0};
+  SetEmptyListPlaceholder("No tables found");
 }
 
 QString TableListModel::GetSelected() const {

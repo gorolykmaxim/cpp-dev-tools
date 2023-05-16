@@ -28,9 +28,6 @@ Loader {
         focus: dbFile.isSelected
         searchableModel: controller.tables
         searchPlaceholderText: "Search table"
-        showPlaceholder: controller.status
-        placeholderText: controller.status
-        placeholderColor: controller.statusColor
         onItemSelected: item => controller.displaySelectedTable()
       }
     }
@@ -136,9 +133,6 @@ Loader {
           Layout.fillHeight: true
           model: controller.table
           focus: true
-          showPlaceholder: controller.status
-          placeholderText: controller.status
-          placeholderColor: controller.statusColor
         }
       }
     }
