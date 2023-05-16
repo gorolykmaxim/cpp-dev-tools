@@ -8,8 +8,6 @@ Cdt.SearchableTextList {
   id: list
   anchors.fill: parent
   searchPlaceholderText: "Search documentation"
-  showPlaceholder: documentationSystem.showPlaceholder
-  placeholderText: documentationSystem.isLoading ? "Looking for documentation..." : "No documentation found"
   searchableModel: documentationSystem.documents
   focus: true
   onItemRightClicked: contextMenu.open()

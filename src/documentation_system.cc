@@ -13,6 +13,7 @@
 DocumentListModel::DocumentListModel(QObject* parent) : TextListModel(parent) {
   SetRoleNames({{0, "title"}, {1, "subTitle"}, {2, "icon"}});
   searchable_roles = {0, 1};
+  SetEmptyListPlaceholder(Placeholder("No documentation found"));
 }
 
 QVariantList DocumentListModel::GetRow(int i) const {
@@ -23,15 +24,7 @@ QVariantList DocumentListModel::GetRow(int i) const {
 int DocumentListModel::GetRowCount() const { return list.size(); }
 
 DocumentationSystem::DocumentationSystem()
-    : QObject(nullptr),
-      is_loading(false),
-      documents(new DocumentListModel(this)) {}
-
-bool DocumentationSystem::ShouldShowPlaceholder() const {
-  return is_loading || documents->list.isEmpty();
-}
-
-bool DocumentationSystem::IsLoading() const { return is_loading; }
+    : QObject(nullptr), documents(new DocumentListModel(this)) {}
 
 struct DocumentationSearch {
   QSet<QString> documentation_folders;
@@ -40,7 +33,7 @@ struct DocumentationSearch {
 
 void DocumentationSystem::displayDocumentation() {
   Application::Get().view.SetWindowTitle("Documentation");
-  SetIsLoading(true);
+  documents->SetPlaceholder(Placeholder("Looking for documentation..."));
   QSet<QString> old_folders = documentation_folders;
   IoTask::Run<DocumentationSearch>(
       this,
@@ -73,7 +66,7 @@ void DocumentationSystem::displayDocumentation() {
           documents->list = result.documents;
           documents->Load();
         }
-        SetIsLoading(false);
+        documents->SetPlaceholder(Placeholder());
       });
 }
 
@@ -86,9 +79,4 @@ void DocumentationSystem::openSelectedDocument() {
   QUrl url("file:///" + doc.path);
   LOG() << "Opening document" << url;
   QDesktopServices::openUrl(url);
-}
-
-void DocumentationSystem::SetIsLoading(bool value) {
-  is_loading = value;
-  emit isLoadingChanged();
 }

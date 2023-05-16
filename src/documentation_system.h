@@ -23,24 +23,14 @@ class DocumentListModel : public TextListModel {
 
 class DocumentationSystem : public QObject {
   Q_OBJECT
-  Q_PROPERTY(
-      bool showPlaceholder READ ShouldShowPlaceholder NOTIFY isLoadingChanged)
-  Q_PROPERTY(bool isLoading READ IsLoading NOTIFY isLoadingChanged)
   Q_PROPERTY(DocumentListModel* documents MEMBER documents CONSTANT)
  public:
   DocumentationSystem();
-  bool ShouldShowPlaceholder() const;
-  bool IsLoading() const;
  public slots:
   void displayDocumentation();
   void openSelectedDocument();
- signals:
-  void isLoadingChanged();
 
  private:
-  void SetIsLoading(bool value);
-
-  bool is_loading;
   DocumentListModel* documents;
   QSet<QString> documentation_folders;
 };
