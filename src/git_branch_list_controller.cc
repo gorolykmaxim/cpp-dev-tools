@@ -15,6 +15,11 @@ GitBranchListModel::GitBranchListModel(QObject* parent)
   SetEmptyListPlaceholder("No branches found");
 }
 
+const GitBranch* GitBranchListModel::GetSelected() const {
+  int i = GetSelectedItemIndex();
+  return i < 0 ? nullptr : &list[i];
+}
+
 QVariantList GitBranchListModel::GetRow(int i) const {
   static const Theme kTheme;
   const GitBranch& b = list[i];
@@ -31,64 +36,39 @@ QVariantList GitBranchListModel::GetRow(int i) const {
 
 int GitBranchListModel::GetRowCount() const { return list.size(); }
 
-static bool Compare(const GitBranch& a, const GitBranch& b) {
-  if (a.is_current != b.is_current) {
-    return a.is_current > b.is_current;
-  } else if (a.is_remote != b.is_remote) {
-    return a.is_remote < b.is_remote;
-  } else {
-    return a.name < b.name;
-  }
-}
-
 GitBranchListController::GitBranchListController(QObject* parent)
     : QObject(parent), branches(new GitBranchListModel(this)) {
   Application::Get().view.SetWindowTitle("Git Branches");
-  auto find = new FindGitBranches(this);
-  QObject::connect(find, &FindGitBranches::finished, this, [this, find] {
-    branches->list = find->branches;
-    std::sort(branches->list.begin(), branches->list.end(), Compare);
-    branches->Load();
-    branches->SetPlaceholder();
-  });
-  branches->SetPlaceholder("Looking for branches...");
-  find->Run();
+  QObject::connect(branches, &TextListModel::selectedItemChanged, this,
+                   [this] { emit selectedBranchChanged(); });
+  FindBranches();
 }
 
-FindGitBranches::FindGitBranches(QObject* parent) : QObject(parent) {}
-
-void FindGitBranches::Run() {
-  LOG() << "Querying list of branches";
-  child_processes = 2;
-  for (int i = 0; i < child_processes; i++) {
-    bool find_local = i == 0;
-    OsProcess* process = new OsProcess("git", {"branch"});
-    if (find_local) {
-      process->error_title = "Git: Failed to find local branches";
-    } else {
-      process->args.append("-r");
-      process->error_title = "Git: Failed to find remote branches";
-    }
-    QObject::connect(process, &OsProcess::finished, this,
-                     [this, process, find_local] {
-                       child_processes--;
-                       if (process->exit_code == 0) {
-                         if (find_local) {
-                           ParseLocalBranches(process->output);
-                         } else {
-                           ParseRemoteBranches(process->output);
-                         }
-                       }
-                       if (child_processes == 0) {
-                         emit finished();
-                         deleteLater();
-                       }
-                     });
-    process->Run();
+bool GitBranchListController::IsLocalBranchSelected() const {
+  if (const GitBranch* b = branches->GetSelected()) {
+    return !b->is_remote;
+  } else {
+    return false;
   }
 }
 
-void FindGitBranches::ParseLocalBranches(const QString& output) {
+void GitBranchListController::deleteSelectedBranch() {
+  const GitBranch* branch = branches->GetSelected();
+  if (!branch) {
+    return;
+  }
+  LOG() << "Deleting branch" << branch->name;
+  auto delete_branch = new OsProcess("git", {"branch", "-d", branch->name});
+  delete_branch->error_title =
+      "Git: Failed to delete branch '" + branch->name + '\'';
+  delete_branch->success_title = "Git: Deleted branch '" + branch->name + '\'';
+  QObject::connect(delete_branch, &OsProcess::finished, this,
+                   &GitBranchListController::FindBranches);
+  delete_branch->Run();
+}
+
+static void ParseLocalBranches(const QString& output,
+                               QList<GitBranch>& branches) {
   for (QString line : output.split('\n', Qt::SkipEmptyParts)) {
     GitBranch b;
     b.is_current = line.startsWith('*');
@@ -100,7 +80,8 @@ void FindGitBranches::ParseLocalBranches(const QString& output) {
   }
 }
 
-void FindGitBranches::ParseRemoteBranches(const QString& output) {
+static void ParseRemoteBranches(const QString& output,
+                                QList<GitBranch>& branches) {
   for (QString line : output.split('\n', Qt::SkipEmptyParts)) {
     line = line.trimmed();
     if (line.startsWith("origin/HEAD")) {
@@ -110,5 +91,50 @@ void FindGitBranches::ParseRemoteBranches(const QString& output) {
     b.is_remote = true;
     b.name = line;
     branches.append(b);
+  }
+}
+
+static bool Compare(const GitBranch& a, const GitBranch& b) {
+  if (a.is_current != b.is_current) {
+    return a.is_current > b.is_current;
+  } else if (a.is_remote != b.is_remote) {
+    return a.is_remote < b.is_remote;
+  } else {
+    return a.name < b.name;
+  }
+}
+
+void GitBranchListController::FindBranches() {
+  LOG() << "Querying list of branches";
+  branches->list.clear();
+  branches->SetPlaceholder("Looking for branches...");
+  auto child_processes = QSharedPointer<int>::create(2);
+  for (int i = 0; i < *child_processes; i++) {
+    bool find_local = i == 0;
+    OsProcess* process = new OsProcess("git", {"branch"});
+    if (find_local) {
+      process->error_title = "Git: Failed to find local branches";
+    } else {
+      process->args.append("-r");
+      process->error_title = "Git: Failed to find remote branches";
+    }
+    QObject::connect(process, &OsProcess::finished, this,
+                     [this, process, find_local, child_processes] {
+                       (*child_processes)--;
+                       if (process->exit_code == 0) {
+                         if (find_local) {
+                           ParseLocalBranches(process->output, branches->list);
+                         } else {
+                           ParseRemoteBranches(process->output, branches->list);
+                         }
+                       }
+                       if (*child_processes == 0) {
+                         std::sort(branches->list.begin(), branches->list.end(),
+                                   Compare);
+                         branches->Load();
+                         branches->SetPlaceholder();
+                       }
+                     });
+    process->Run();
   }
 }

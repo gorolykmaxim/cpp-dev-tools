@@ -15,6 +15,7 @@ struct GitBranch {
 class GitBranchListModel : public TextListModel {
  public:
   explicit GitBranchListModel(QObject* parent);
+  const GitBranch* GetSelected() const;
 
   QList<GitBranch> list;
 
@@ -23,31 +24,25 @@ class GitBranchListModel : public TextListModel {
   int GetRowCount() const;
 };
 
-class FindGitBranches : public QObject {
-  Q_OBJECT
- public:
-  explicit FindGitBranches(QObject* parent);
-  void Run();
-
-  QList<GitBranch> branches;
- signals:
-  void finished();
-
- private:
-  void ParseLocalBranches(const QString& output);
-  void ParseRemoteBranches(const QString& output);
-
-  int child_processes = 0;
-};
-
 class GitBranchListController : public QObject {
   Q_OBJECT
   QML_ELEMENT
   Q_PROPERTY(GitBranchListModel* branches MEMBER branches CONSTANT)
+  Q_PROPERTY(bool isLocalBranchSelected READ IsLocalBranchSelected NOTIFY
+                 selectedBranchChanged)
  public:
   explicit GitBranchListController(QObject* parent = nullptr);
+  bool IsLocalBranchSelected() const;
+
+ public slots:
+  void deleteSelectedBranch();
+
+ signals:
+  void selectedBranchChanged();
 
  private:
+  void FindBranches();
+
   GitBranchListModel* branches;
 };
 
