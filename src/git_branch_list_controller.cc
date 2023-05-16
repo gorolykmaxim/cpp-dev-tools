@@ -12,6 +12,7 @@ GitBranchListModel::GitBranchListModel(QObject* parent)
     : TextListModel(parent) {
   SetRoleNames({{0, "title"}, {1, "titleColor"}, {2, "icon"}});
   searchable_roles = {0};
+  SetEmptyListPlaceholder("No branches found");
 }
 
 QVariantList GitBranchListModel::GetRow(int i) const {
@@ -48,19 +49,10 @@ GitBranchListController::GitBranchListController(QObject* parent)
     branches->list = find->branches;
     std::sort(branches->list.begin(), branches->list.end(), Compare);
     branches->Load();
-    SetIsLoading(false);
+    branches->SetPlaceholder();
   });
-  SetIsLoading(true);
+  branches->SetPlaceholder("Looking for branches...");
   find->Run();
-}
-
-bool GitBranchListController::ShouldShowPlaceholder() const {
-  return is_loading || branches->list.isEmpty();
-}
-
-void GitBranchListController::SetIsLoading(bool value) {
-  is_loading = value;
-  emit isLoadingChanged();
 }
 
 FindGitBranches::FindGitBranches(QObject* parent) : QObject(parent) {}

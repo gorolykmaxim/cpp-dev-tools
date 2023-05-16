@@ -43,21 +43,11 @@ class FindGitBranches : public QObject {
 class GitBranchListController : public QObject {
   Q_OBJECT
   QML_ELEMENT
-  Q_PROPERTY(
-      bool showPlaceholder READ ShouldShowPlaceholder NOTIFY isLoadingChanged)
-  Q_PROPERTY(bool isLoading MEMBER is_loading NOTIFY isLoadingChanged)
   Q_PROPERTY(GitBranchListModel* branches MEMBER branches CONSTANT)
  public:
   explicit GitBranchListController(QObject* parent = nullptr);
-  bool ShouldShowPlaceholder() const;
-
- signals:
-  void isLoadingChanged();
 
  private:
-  void SetIsLoading(bool value);
-
-  bool is_loading = false;
   GitBranchListModel* branches;
 };
 
