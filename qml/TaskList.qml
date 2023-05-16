@@ -7,8 +7,6 @@ Cdt.SearchableTextList {
   id: list
   anchors.fill: parent
   searchPlaceholderText: "Search task"
-  showPlaceholder: controller.showPlaceholder
-  placeholderText: controller.isLoading ? "Looking for tasks..." : "No tasks found"
   searchableModel: controller.tasks
   focus: true
   onItemRightClicked: contextMenu.open()

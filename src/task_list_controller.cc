@@ -7,6 +7,7 @@
 TaskListModel::TaskListModel(QObject *parent) : TextListModel(parent) {
   SetRoleNames({{0, "title"}, {1, "subTitle"}, {2, "icon"}});
   searchable_roles = {0, 1};
+  SetEmptyListPlaceholder(Placeholder("No Tasks Found"));
 }
 
 QVariantList TaskListModel::GetRow(int i) const {
@@ -26,29 +27,19 @@ int TaskListModel::GetRowCount() const {
 }
 
 TaskListController::TaskListController(QObject *parent)
-    : QObject(parent), tasks(new TaskListModel(this)), is_loading(true) {
+    : QObject(parent), tasks(new TaskListModel(this)) {
   Application &app = Application::Get();
   QObject::connect(&app.task, &TaskSystem::taskListRefreshed, this, [this] {
     tasks->Load();
-    SetIsLoading(false);
+    tasks->SetPlaceholder(Placeholder());
   });
   QObject::connect(tasks, &TextListModel::selectedItemChanged, this,
                    [this] { emit selectedTaskIndexChanged(); });
   app.view.SetWindowTitle("Tasks");
+  tasks->SetPlaceholder(Placeholder("Looking for tasks..."));
   app.task.FindTasks();
 }
 
-bool TaskListController::ShouldShowPlaceholder() const {
-  return is_loading || Application::Get().task.GetTasks().isEmpty();
-}
-
-bool TaskListController::IsLoading() const { return is_loading; }
-
 int TaskListController::GetSelectedTaskIndex() const {
   return tasks->GetSelectedItemIndex();
-}
-
-void TaskListController::SetIsLoading(bool value) {
-  is_loading = value;
-  emit isLoadingChanged();
 }
