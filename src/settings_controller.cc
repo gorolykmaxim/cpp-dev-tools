@@ -88,6 +88,8 @@ FolderListModel::FolderListModel(QObject *parent, const QString &table,
     : TextListModel(parent), table(table), icon(icon) {
   SetRoleNames({{0, "title"}, {1, "icon"}});
   searchable_roles = {0};
+  SetEmptyListPlaceholder(
+      Placeholder("Add folders by clicking on 'Add Folder' button"));
 }
 
 void FolderListModel::SetFolders(QStringList &folders) {

@@ -53,7 +53,6 @@ Loader {
         model: foldersModel
         Layout.fillWidth: true
         Layout.fillHeight: true
-        placeholderText: "Add folders by clicking on '" + addBtn.text + "' button"
         onItemRightClicked: contextMenu.open()
       }
       Menu {
