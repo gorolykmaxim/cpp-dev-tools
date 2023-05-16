@@ -47,7 +47,6 @@ Loader {
         Layout.fillWidth: true
         Layout.fillHeight: true
         model: controller.databases
-        placeholderText: "Open databases by clicking on '" + addBtn.text + "' button"
         onItemLeftClicked: controller.useSelectedDatabase()
         onItemRightClicked: contextMenu.open()
       }
