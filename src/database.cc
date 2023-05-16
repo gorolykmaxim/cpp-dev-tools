@@ -82,6 +82,19 @@ void Database::Initialize() {
       "editor_query TEXT DEFAULT '',"
       "PRIMARY KEY(id, project_id),"
       "FOREIGN KEY(project_id) REFERENCES project(id) ON DELETE CASCADE)");
+  ExecCmd(
+      "CREATE TABLE IF NOT EXISTS find_in_files_context("
+      "project_id BLOB PRIMARY KEY, "
+      "search_term TEXT, "
+      "match_case BOOL DEFAULT FALSE, "
+      "match_whole_word BOOL DEFAULT FALSE, "
+      "regexp BOOL DEFAULT FALSE, "
+      "include_external_search_folders BOOL DEFAULT FALSE, "
+      "exclude_git_ignored_files BOOL DEFAULT TRUE, "
+      "expanded BOOL DEFAULT FALSE, "
+      "files_to_include TEXT, "
+      "files_to_exclude TEXT, "
+      "FOREIGN KEY(project_id) REFERENCES project(id) ON DELETE CASCADE)");
 }
 
 void Database::ExecQuery(QSqlQuery &sql, const QString &query,

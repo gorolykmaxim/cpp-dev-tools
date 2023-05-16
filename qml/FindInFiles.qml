@@ -53,6 +53,8 @@ SplitView {
             id: advancedBtn
             buttonIcon: "more_vert"
             checkable: true
+            checked: controller.options.expanded
+            onCheckedChanged: controller.options.expanded = checked
             KeyNavigation.down: matchCaseCheck.visible ? matchCaseCheck : searchResultsList
             KeyNavigation.right: filePreviewArea
           }

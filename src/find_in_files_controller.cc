@@ -8,15 +8,50 @@
 
 #define LOG() qDebug() << "[FindInFilesController]"
 
+static std::pair<QString, FindInFilesOptions> ReadFromSql(QSqlQuery& sql) {
+  QString search_term = sql.value(1).toString();
+  FindInFilesOptions options;
+  options.match_case = sql.value(2).toBool();
+  options.match_whole_word = sql.value(3).toBool();
+  options.regexp = sql.value(4).toBool();
+  options.include_external_search_folders = sql.value(5).toBool();
+  options.exclude_git_ignored_files = sql.value(6).toBool();
+  options.expanded = sql.value(7).toBool();
+  options.files_to_include = sql.value(8).toString();
+  options.files_to_exclude = sql.value(9).toString();
+  return std::make_pair(search_term, options);
+}
+
 FindInFilesController::FindInFilesController(QObject* parent)
     : QObject(parent),
       find_task(nullptr),
       search_results(new FileSearchResultListModel(this)),
       selected_file_cursor_position(-1),
       formatter(new FileSearchResultFormatter(this)) {
-  Application::Get().view.SetWindowTitle("Find In Files");
+  Application& app = Application::Get();
+  app.view.SetWindowTitle("Find In Files");
   QObject::connect(search_results, &TextListModel::selectedItemChanged, this,
                    &FindInFilesController::OnSelectedResultChanged);
+  QObject::connect(this, &FindInFilesController::optionsChanged, this,
+                   &FindInFilesController::SaveSearchTermAndOptions);
+  QUuid project_id = app.project.GetCurrentProject().id;
+  using Result = std::pair<QString, FindInFilesOptions>;
+  IoTask::Run<QList<Result>>(
+      this,
+      [project_id] {
+        return Database::ExecQueryAndRead<Result>(
+            "SELECT * FROM find_in_files_context WHERE project_id=?",
+            ReadFromSql, {project_id});
+      },
+      [this](QList<Result> results) {
+        if (results.isEmpty()) {
+          return;
+        }
+        search_term = results[0].first;
+        options = results[0].second;
+        emit searchTermChanged();
+        emit optionsChanged();
+      });
 }
 
 FindInFilesController::~FindInFilesController() { CancelSearchIfRunning(); }
@@ -40,6 +75,7 @@ void FindInFilesController::search() {
   search_results->Clear();
   CancelSearchIfRunning();
   emit searchStatusChanged();
+  SaveSearchTermAndOptions();
   if (search_term.isEmpty()) {
     return;
   }
@@ -90,6 +126,18 @@ void FindInFilesController::OnSelectedResultChanged() {
     }
     emit rehighlightBlockByLineNumber(new_result_line);
   }
+}
+
+void FindInFilesController::SaveSearchTermAndOptions() {
+  QUuid project_id = Application::Get().project.GetCurrentProject().id;
+  Database::ExecCmdAsync(
+      "INSERT OR REPLACE INTO find_in_files_context "
+      "VALUES(?, ?, ?, ?, ?, ?, "
+      "?, ?, ?, ?)",
+      {project_id, search_term, options.match_case, options.match_whole_word,
+       options.regexp, options.include_external_search_folders,
+       options.exclude_git_ignored_files, options.expanded,
+       options.files_to_include, options.files_to_exclude});
 }
 
 void FindInFilesController::openSelectedResultInEditor() {
@@ -357,7 +405,8 @@ bool FindInFilesOptions::operator==(const FindInFilesOptions& another) const {
              another.include_external_search_folders &&
          files_to_include == another.files_to_include &&
          files_to_exclude == another.files_to_exclude &&
-         exclude_git_ignored_files == another.exclude_git_ignored_files;
+         exclude_git_ignored_files == another.exclude_git_ignored_files &&
+         expanded == another.expanded;
 }
 
 bool FindInFilesOptions::operator!=(const FindInFilesOptions& another) const {

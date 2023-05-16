@@ -45,6 +45,7 @@ struct FindInFilesOptions {
   Q_PROPERTY(QString filesToInclude MEMBER files_to_include)
   Q_PROPERTY(QString filesToExclude MEMBER files_to_exclude)
   Q_PROPERTY(bool excludeGitIgnoredFiles MEMBER exclude_git_ignored_files)
+  Q_PROPERTY(bool expanded MEMBER expanded)
  public:
   bool match_case = false;
   bool match_whole_word = false;
@@ -53,6 +54,7 @@ struct FindInFilesOptions {
   QString files_to_include;
   QString files_to_exclude;
   bool exclude_git_ignored_files = true;
+  bool expanded = false;
 
   bool operator==(const FindInFilesOptions& another) const;
   bool operator!=(const FindInFilesOptions& another) const;
@@ -128,6 +130,7 @@ class FindInFilesController : public QObject {
   void OnSearchComplete();
   void CancelSearchIfRunning();
   void OnSelectedResultChanged();
+  void SaveSearchTermAndOptions();
 
   QString search_term;
   FindInFilesTask* find_task;
