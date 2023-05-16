@@ -7,6 +7,8 @@
 #include <QQueue>
 #include <functional>
 
+#include "placeholder.h"
+
 class UiCommandBuffer : public QObject {
   Q_OBJECT
  public:
@@ -23,14 +25,6 @@ class UiCommandBuffer : public QObject {
   void ExecuteCommand();
 
   QQueue<std::function<void()>> commands;
-};
-
-struct Placeholder {
-  explicit Placeholder(const QString& text = "", const QString& color = "");
-  bool IsNull() const;
-
-  QString text;
-  QString color;
 };
 
 struct TextListItem {

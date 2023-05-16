@@ -61,6 +61,20 @@ void SqliteTableModel::SetTable(const QList<QString> &new_columns,
   current = index(0, 0);
 }
 
+QString SqliteTableModel::GetPlaceholderText() const {
+  return placeholder.text;
+}
+
+QString SqliteTableModel::GetPlaceholderColor() const {
+  return placeholder.color;
+}
+
+void SqliteTableModel::SetPlaceholder(const QString &text,
+                                      const QString &color) {
+  placeholder = Placeholder(text, color);
+  emit placeholderChanged();
+}
+
 bool SqliteTableModel::moveCurrent(int key, int rows_visible) {
   QModelIndex next;
   switch (key) {

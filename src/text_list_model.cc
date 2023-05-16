@@ -348,14 +348,11 @@ QString TextListModel::GetPlaceholderText() const {
 
 QString TextListModel::GetPlaceholderColor() const {
   static const Theme kTheme;
-  QString color;
+  QString color = kTheme.kColorText;
   if (!placeholder.IsNull()) {
     color = placeholder.color;
   } else if (!empty_list_placeholder.IsNull() && GetRowCount() == 0) {
     color = empty_list_placeholder.color;
-  }
-  if (color.isEmpty()) {
-    color = kTheme.kColorText;
   }
   return color;
 }
@@ -448,8 +445,3 @@ void TextListModel::ReSelectItem(int index) {
   selectItemByIndex(current_index);
   emit preSelectCurrentIndex(current_index);
 }
-
-Placeholder::Placeholder(const QString& text, const QString& color)
-    : text(text), color(color) {}
-
-bool Placeholder::IsNull() const { return text.isEmpty(); }

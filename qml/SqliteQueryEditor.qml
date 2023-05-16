@@ -49,9 +49,6 @@ Loader {
           }
           Cdt.TableView {
             id: tableView
-            showPlaceholder: controller.status
-            placeholderText: controller.status
-            placeholderColor: controller.statusColor
             SplitView.fillWidth: true
             SplitView.fillHeight: true
             model: controller.model

@@ -11,14 +11,14 @@
 SqliteQueryEditorController::SqliteQueryEditorController(QObject *parent)
     : QObject(parent),
       model(new SqliteTableModel(this)),
-      status("Query results with be displayed here"),
-      status_color(Theme().kColorSubText),
       formatter(new SyntaxFormatter(this)) {
   Application &app = Application::Get();
   app.view.SetWindowTitle("SQLite Query Editor");
   formatter->DetectLanguageByFile(".sql");
   SqliteFile file = app.sqlite.GetSelectedFile();
   LOG() << "Loading last edited query for database" << file.path;
+  model->SetPlaceholder("Query results with be displayed here",
+                        Theme().kColorSubText);
   IoTask::Run<QList<QString>>(
       this,
       [file] {
@@ -71,24 +71,16 @@ static QString GetSelectedQuery(const QString &text, int cursor) {
 void SqliteQueryEditorController::executeQuery(const QString &text,
                                                int cursor) {
   QString query = GetSelectedQuery(text, cursor);
-  SetStatus("Running query...");
+  model->SetPlaceholder("Running query...");
   SqliteSystem::ExecuteQuery(this, query, [this](SqliteQueryResult result) {
     if (!result.error.isEmpty()) {
-      SetStatus(result.error, "red");
+      model->SetPlaceholder(result.error, "red");
     } else if (result.is_select) {
       model->SetTable(result.columns, result.rows);
-      SetStatus("");
+      model->SetPlaceholder();
     } else {
-      SetStatus("Query executed. Rows affected: " +
-                QString::number(result.rows_affected));
+      model->SetPlaceholder("Query executed. Rows affected: " +
+                            QString::number(result.rows_affected));
     }
   });
-}
-
-void SqliteQueryEditorController::SetStatus(const QString &status,
-                                            const QString &color) {
-  static const Theme kTheme;
-  this->status = status;
-  this->status_color = color.isEmpty() ? kTheme.kColorText : color;
-  emit statusChanged();
 }
