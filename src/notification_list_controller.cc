@@ -91,7 +91,7 @@ NotificationListModel::NotificationListModel(QObject *parent)
                 {3, "icon"},
                 {4, "iconColor"}});
   searchable_roles = {0, 2};
-  SetEmptyListPlaceholder(Placeholder("No Notifications Found"));
+  SetEmptyListPlaceholder(Placeholder("No notifications found"));
 }
 
 QVariantList NotificationListModel::GetRow(int i) const {
