@@ -6,11 +6,8 @@ import "." as Cdt
 import cdt
 
 QtQuick.FocusScope {
-  property string placeholderText: ""
-  property string placeholderColor: ""
-  property bool showPlaceholder: false
   property alias model: tableView.model
-  enabled: !showPlaceholder
+  enabled: !tableView.model.placeholderText
   QtQuick.Connections {
     target: tableView.model
     function onCurrentChanged(i) {
@@ -21,14 +18,14 @@ QtQuick.FocusScope {
   Cdt.PlaceholderText {
     id: placeholder
     anchors.fill: parent
-    visible: showPlaceholder || tableView.model.placeholderText
-    text: placeholderText || tableView.model.placeholderText
-    textColor: placeholderColor || tableView.model.placeholderColor
+    visible: tableView.model.placeholderText
+    text: tableView.model.placeholderText
+    textColor: tableView.model.placeholderColor
   }
   ColumnLayout {
     spacing: 0
     anchors.fill: parent
-    visible: !(showPlaceholder || tableView.model.placeholderText)
+    visible: !tableView.model.placeholderText
     HorizontalHeaderView {
       id: horizontalHeaderView
       syncView: tableView
