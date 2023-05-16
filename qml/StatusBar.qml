@@ -28,7 +28,7 @@ RowLayout {
       property string iconAndTextColor: notificationSystem.notSeenNotifications > 0 ?
                                           (notificationSystem.newErrors ? "red" : Theme.colorText) :
                                           Theme.colorSubText
-      displayIcon: true
+      displayIcon: projectSystem.currentProjectShortPath
       iconName: notificationSystem.notSeenNotifications > 0 ? "notifications" : "notifications_none"
       iconColor: iconAndTextColor
       text: notificationSystem.notSeenNotifications > 0 ? notificationSystem.notSeenNotifications : ""
