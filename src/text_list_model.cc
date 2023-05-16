@@ -357,13 +357,14 @@ QString TextListModel::GetPlaceholderColor() const {
   return color;
 }
 
-void TextListModel::SetEmptyListPlaceholder(const Placeholder& placeholder) {
-  empty_list_placeholder = placeholder;
+void TextListModel::SetEmptyListPlaceholder(const QString& text,
+                                            const QString& color) {
+  empty_list_placeholder = Placeholder(text, color);
   emit placeholderChanged();
 }
 
-void TextListModel::SetPlaceholder(const Placeholder& placeholder) {
-  this->placeholder = placeholder;
+void TextListModel::SetPlaceholder(const QString& text, const QString& color) {
+  this->placeholder = Placeholder(text, color);
   emit placeholderChanged();
 }
 

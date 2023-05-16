@@ -13,7 +13,7 @@
 DocumentListModel::DocumentListModel(QObject* parent) : TextListModel(parent) {
   SetRoleNames({{0, "title"}, {1, "subTitle"}, {2, "icon"}});
   searchable_roles = {0, 1};
-  SetEmptyListPlaceholder(Placeholder("No documentation found"));
+  SetEmptyListPlaceholder("No documentation found");
 }
 
 QVariantList DocumentListModel::GetRow(int i) const {
@@ -33,7 +33,7 @@ struct DocumentationSearch {
 
 void DocumentationSystem::displayDocumentation() {
   Application::Get().view.SetWindowTitle("Documentation");
-  documents->SetPlaceholder(Placeholder("Looking for documentation..."));
+  documents->SetPlaceholder("Looking for documentation...");
   QSet<QString> old_folders = documentation_folders;
   IoTask::Run<DocumentationSearch>(
       this,
@@ -66,7 +66,7 @@ void DocumentationSystem::displayDocumentation() {
           documents->list = result.documents;
           documents->Load();
         }
-        documents->SetPlaceholder(Placeholder());
+        documents->SetPlaceholder();
       });
 }
 

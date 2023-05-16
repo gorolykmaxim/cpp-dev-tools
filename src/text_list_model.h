@@ -52,8 +52,9 @@ class TextListModel : public QAbstractListModel {
   int GetSelectedItemIndex() const;
   QString GetPlaceholderText() const;
   QString GetPlaceholderColor() const;
-  void SetEmptyListPlaceholder(const Placeholder& placeholder);
-  void SetPlaceholder(const Placeholder& placeholder);
+  void SetEmptyListPlaceholder(const QString& text = "",
+                               const QString& color = "");
+  void SetPlaceholder(const QString& text = "", const QString& color = "");
 
   int min_filter_sub_match_length = 2;
 

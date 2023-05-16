@@ -7,7 +7,7 @@
 TaskListModel::TaskListModel(QObject *parent) : TextListModel(parent) {
   SetRoleNames({{0, "title"}, {1, "subTitle"}, {2, "icon"}});
   searchable_roles = {0, 1};
-  SetEmptyListPlaceholder(Placeholder("No tasks found"));
+  SetEmptyListPlaceholder("No tasks found");
 }
 
 QVariantList TaskListModel::GetRow(int i) const {
@@ -31,12 +31,12 @@ TaskListController::TaskListController(QObject *parent)
   Application &app = Application::Get();
   QObject::connect(&app.task, &TaskSystem::taskListRefreshed, this, [this] {
     tasks->Load();
-    tasks->SetPlaceholder(Placeholder());
+    tasks->SetPlaceholder();
   });
   QObject::connect(tasks, &TextListModel::selectedItemChanged, this,
                    [this] { emit selectedTaskIndexChanged(); });
   app.view.SetWindowTitle("Tasks");
-  tasks->SetPlaceholder(Placeholder("Looking for tasks..."));
+  tasks->SetPlaceholder("Looking for tasks...");
   app.task.FindTasks();
 }
 

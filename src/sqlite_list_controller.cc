@@ -21,7 +21,7 @@ SqliteFileListModel::SqliteFileListModel(QObject* parent)
                 {5, "iconColor"}});
   searchable_roles = {0, 1};
   SetEmptyListPlaceholder(
-      Placeholder("Open databases by clicking on 'Add Database' button"));
+      "Open databases by clicking on 'Add Database' button");
 }
 
 static bool Compare(const SqliteFile& a, const SqliteFile& b) {

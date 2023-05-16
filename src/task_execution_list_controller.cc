@@ -10,7 +10,7 @@ TaskExecutionListModel::TaskExecutionListModel(QObject* parent)
     : TextListModel(parent) {
   SetRoleNames({{0, "title"}, {1, "subTitle"}, {2, "icon"}, {3, "iconColor"}});
   searchable_roles = {0, 1};
-  SetEmptyListPlaceholder(Placeholder("No tasks have been executed yet"));
+  SetEmptyListPlaceholder("No tasks have been executed yet");
 }
 
 QVariantList TaskExecutionListModel::GetRow(int i) const {
