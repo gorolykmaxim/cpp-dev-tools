@@ -19,6 +19,7 @@ ProjectListModel::ProjectListModel(QObject* parent) : TextListModel(parent) {
                 {4, "icon"},
                 {5, "iconColor"}});
   searchable_roles = {0, 1};
+  SetEmptyListPlaceholder("Open a project by clicking on 'New Project' button");
 }
 
 Project ProjectListModel::GetSelected() const {

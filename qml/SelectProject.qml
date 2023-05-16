@@ -51,7 +51,6 @@ Loader {
         Layout.fillWidth: true
         Layout.fillHeight: true
         model: controller.projects
-        placeholderText: "Open a project by clicking on '" + button.text + "' button"
         onItemLeftClicked: controller.openSelectedProject()
         onItemRightClicked: contextMenu.open()
       }
