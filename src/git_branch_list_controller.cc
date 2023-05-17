@@ -58,14 +58,15 @@ void GitBranchListController::deleteSelected(bool force) {
     return;
   }
   LOG() << "Deleting branch" << branch->name << "force:" << force;
-  QString del_arg = force ? "-D" : "-d";
-  auto delete_branch = new OsProcess("git", {"branch", del_arg, branch->name});
-  delete_branch->error_title =
-      "Git: Failed to delete branch '" + branch->name + '\'';
-  delete_branch->success_title = "Git: Deleted branch '" + branch->name + '\'';
-  QObject::connect(delete_branch, &OsProcess::finished, this,
-                   &GitBranchListController::FindBranches);
-  delete_branch->Run();
+  QStringList args = {"branch", branch->name};
+  if (force) {
+    args.insert(1, "-D");
+  } else {
+    args.insert(1, "-d");
+  }
+  ExecuteGitCommand(args,
+                    "Git: Failed to delete branch '" + branch->name + '\'',
+                    "Git: Deleted branch '" + branch->name + '\'');
 }
 
 void GitBranchListController::checkoutSelected() {
@@ -74,13 +75,31 @@ void GitBranchListController::checkoutSelected() {
     return;
   }
   LOG() << "Checking out branch" << branch->name;
-  auto checkout = new OsProcess("git", {"checkout", branch->name});
-  checkout->error_title =
-      "Git: Failed to checkout branch '" + branch->name + '\'';
-  checkout->success_title = "Git: Branch '" + branch->name + "\' checked-out";
-  QObject::connect(checkout, &OsProcess::finished, this,
+  QStringList args;
+  if (branch->is_remote) {
+    const QString kOriginPrefix = "origin/";
+    QString local_name = branch->name;
+    if (local_name.startsWith(kOriginPrefix)) {
+      local_name.remove(0, kOriginPrefix.size());
+    }
+    args = {"checkout", "-b", local_name, branch->name};
+  } else {
+    args = {"checkout", branch->name};
+  }
+  ExecuteGitCommand(args,
+                    "Git: Failed to checkout branch '" + branch->name + '\'',
+                    "Git: Branch '" + branch->name + "\' checked-out");
+}
+
+void GitBranchListController::ExecuteGitCommand(const QStringList& args,
+                                                const QString& error,
+                                                const QString& success) {
+  auto cmd = new OsProcess("git", args);
+  cmd->error_title = error;
+  cmd->success_title = success;
+  QObject::connect(cmd, &OsProcess::finished, this,
                    &GitBranchListController::FindBranches);
-  checkout->Run();
+  cmd->Run();
 }
 
 static void ParseLocalBranches(const QString& output,

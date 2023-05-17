@@ -42,6 +42,8 @@ class GitBranchListController : public QObject {
   void selectedBranchChanged();
 
  private:
+  void ExecuteGitCommand(const QStringList& args, const QString& error,
+                         const QString& success);
   void FindBranches();
 
   GitBranchListModel* branches;
