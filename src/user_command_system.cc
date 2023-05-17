@@ -78,7 +78,8 @@ void UserCommandSystem::RegisterCommands() {
   });
   RegisterCommand("Git", "Pull", "Ctrl+Shift+U",
                   [] { Application::Get().git.Pull(); });
-  RegisterCommand("Git", "Push", "Ctrl+Shift+P", [] { GitSystem::Push(); });
+  RegisterCommand("Git", "Push", "Ctrl+Shift+P",
+                  [] { Application::Get().git.Push(); });
   RegisterCommand("Git", "Branches", "Ctrl+B", [] {
     Application::Get().view.SetCurrentView("GitBranchList.qml");
   });

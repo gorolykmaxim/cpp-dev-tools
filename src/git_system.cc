@@ -50,8 +50,10 @@ void GitSystem::Pull() {
 
 void GitSystem::Push() {
   Application::Get().notification.Post(Notification("Git: Pushing changes..."));
-  OsCommand::Run("git push", "Git: Failed to push changes",
-                 "Git: Changes pushed");
+  auto cmd = new OsProcess("git", {"push", "origin", GetCurrentBranchName()});
+  cmd->error_title = "Git: Failed to push changes";
+  cmd->success_title = "Git: Changes pushed";
+  cmd->Run();
 }
 
 static void ParseLocalBranches(const QString& output,
