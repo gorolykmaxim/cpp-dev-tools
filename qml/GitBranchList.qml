@@ -10,22 +10,28 @@ Cdt.SearchableTextList {
   searchableModel: controller.branches
   focus: true
   onItemRightClicked: contextMenu.open()
+  onItemSelected: controller.checkoutSelected()
   GitBranchListController {
     id: controller
   }
   Menu {
     id: contextMenu
     MenuItem {
+      text: "Checkout"
+      enabled: list.activeFocus
+      onTriggered: controller.checkoutSelected()
+    }
+    MenuItem {
       text: "Delete"
       shortcut: "Alt+D"
       enabled: list.activeFocus && controller.isLocalBranchSelected
-      onTriggered: controller.deleteSelectedBranch(false)
+      onTriggered: controller.deleteSelected(false)
     }
     MenuItem {
       text: "Force Delete"
       shortcut: "Alt+Shift+D"
       enabled: list.activeFocus && controller.isLocalBranchSelected
-      onTriggered: controller.deleteSelectedBranch(true)
+      onTriggered: controller.deleteSelected(true)
     }
   }
 }

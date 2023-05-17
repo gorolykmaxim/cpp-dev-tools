@@ -52,7 +52,7 @@ bool GitBranchListController::IsLocalBranchSelected() const {
   }
 }
 
-void GitBranchListController::deleteSelectedBranch(bool force) {
+void GitBranchListController::deleteSelected(bool force) {
   const GitBranch* branch = branches->GetSelected();
   if (!branch) {
     return;
@@ -66,6 +66,21 @@ void GitBranchListController::deleteSelectedBranch(bool force) {
   QObject::connect(delete_branch, &OsProcess::finished, this,
                    &GitBranchListController::FindBranches);
   delete_branch->Run();
+}
+
+void GitBranchListController::checkoutSelected() {
+  const GitBranch* branch = branches->GetSelected();
+  if (!branch) {
+    return;
+  }
+  LOG() << "Checking out branch" << branch->name;
+  auto checkout = new OsProcess("git", {"checkout", branch->name});
+  checkout->error_title =
+      "Git: Failed to checkout branch '" + branch->name + '\'';
+  checkout->success_title = "Git: Branch '" + branch->name + "\' checked-out";
+  QObject::connect(checkout, &OsProcess::finished, this,
+                   &GitBranchListController::FindBranches);
+  checkout->Run();
 }
 
 static void ParseLocalBranches(const QString& output,
@@ -132,7 +147,7 @@ void GitBranchListController::FindBranches() {
                        if (*child_processes == 0) {
                          std::sort(branches->list.begin(), branches->list.end(),
                                    Compare);
-                         branches->Load(-1);
+                         branches->Load();
                          branches->SetPlaceholder();
                        }
                      });
