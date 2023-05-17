@@ -45,6 +45,12 @@ RowLayout {
       displayIcon: taskSystem.currentTaskName
       iconName: "code"
       text: taskSystem.currentTaskName || ""
+      rightPadding: interItemSpacing
+    }
+    Cdt.StatusBarItem {
+      displayIcon: gitSystem.currentBranch
+      iconName: "call_split"
+      text: gitSystem.currentBranch || ""
     }
   }
 }

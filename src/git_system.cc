@@ -93,6 +93,7 @@ static bool Compare(const GitBranch& a, const GitBranch& b) {
 
 void GitSystem::FindBranches() {
   LOG() << "Querying list of branches";
+  QString prev_name = GetCurrentBranchName();
   branches.clear();
   is_looking_for_branches = true;
   emit isLookingForBranchesChanged();
@@ -107,7 +108,7 @@ void GitSystem::FindBranches() {
       process->error_title = "Git: Failed to find remote branches";
     }
     QObject::connect(process, &OsProcess::finished, this,
-                     [this, process, find_local, child_processes] {
+                     [this, process, find_local, child_processes, prev_name] {
                        (*child_processes)--;
                        if (process->exit_code == 0) {
                          if (find_local) {
@@ -121,6 +122,9 @@ void GitSystem::FindBranches() {
                          std::sort(branches.begin(), branches.end(), Compare);
                          is_looking_for_branches = false;
                          emit isLookingForBranchesChanged();
+                         if (prev_name != GetCurrentBranchName()) {
+                           emit currentBranchChanged();
+                         }
                        }
                      });
     process->Run();
@@ -134,6 +138,7 @@ const QList<GitBranch>& GitSystem::GetBranches() const { return branches; }
 void GitSystem::ClearBranches() {
   LOG() << "Clearing list of branches";
   branches.clear();
+  emit currentBranchChanged();
 }
 
 void GitSystem::CheckoutBranch(int i) {
@@ -172,6 +177,15 @@ void GitSystem::DeleteBranch(int i, bool force) {
   }
   ExecuteGitCommand(args, "Git: Failed to delete branch '" + branch.name + '\'',
                     "Git: Deleted branch '" + branch.name + '\'');
+}
+
+QString GitSystem::GetCurrentBranchName() const {
+  for (const GitBranch& branch : branches) {
+    if (branch.is_current) {
+      return branch.name;
+    }
+  }
+  return "";
 }
 
 void GitSystem::ExecuteGitCommand(const QStringList& args, const QString& error,

@@ -11,6 +11,8 @@ struct GitBranch {
 
 class GitSystem : public QObject {
   Q_OBJECT
+  Q_PROPERTY(QString currentBranch READ GetCurrentBranchName NOTIFY
+                 currentBranchChanged)
  public:
   static QList<QString> FindIgnoredPathsSync();
   static void Push();
@@ -21,9 +23,11 @@ class GitSystem : public QObject {
   void ClearBranches();
   void CheckoutBranch(int i);
   void DeleteBranch(int i, bool force);
+  QString GetCurrentBranchName() const;
 
  signals:
   void isLookingForBranchesChanged();
+  void currentBranchChanged();
 
  private:
   void ExecuteGitCommand(const QStringList& args, const QString& error,
