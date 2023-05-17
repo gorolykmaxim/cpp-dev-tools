@@ -49,6 +49,7 @@ void ProjectSystem::SetCurrentProject(Project project) {
     app.task.KillAllTasks();
     app.task.ClearTasks();
     app.git.ClearBranches();
+    app.notification.ClearNotifications();
     app.view.SetCurrentView("SelectProject.qml");
   } else {
     LOG() << "Changing current project to" << project.path;
