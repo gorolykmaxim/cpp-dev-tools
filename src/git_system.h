@@ -3,6 +3,8 @@
 
 #include <QObject>
 
+#include "os_command.h"
+
 struct GitBranch {
   QString name;
   bool is_remote = false;
@@ -23,6 +25,7 @@ class GitSystem : public QObject {
   void CheckoutBranch(int i);
   void DeleteBranch(int i, bool force);
   QString GetCurrentBranchName() const;
+  OsProcess* CreateBranch(const QString& name, const QString& basis);
 
  public slots:
   void findBranches();
@@ -32,8 +35,8 @@ class GitSystem : public QObject {
   void currentBranchChanged();
 
  private:
-  void ExecuteGitCommand(const QStringList& args, const QString& error,
-                         const QString& success);
+  OsProcess* ExecuteGitCommand(const QStringList& args, const QString& error,
+                               const QString& success);
 
   QList<GitBranch> branches;
   bool is_looking_for_branches = false;

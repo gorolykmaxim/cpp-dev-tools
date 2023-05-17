@@ -77,6 +77,8 @@ qt_add_executable(cpp-dev-tools
   src/git_branch_list_controller.cc
   src/placeholder.h
   src/placeholder.cc
+  src/new_git_branch_controller.h
+  src/new_git_branch_controller.cc
   src/main.cc)
 if(NOT MSVC)
   # TODO: figure out how to enable all warnings in MSVC without triggering
@@ -129,6 +131,7 @@ qt_add_qml_module(cpp-dev-tools URI cdt VERSION 1.0
       qml/PlaceholderText.qml
       qml/SqliteTable.qml
       qml/GitBranchList.qml
+      qml/NewGitBranch.qml
   RESOURCES
       fonts/MaterialIcons-Regular.ttf
   RESOURCE_PREFIX /)

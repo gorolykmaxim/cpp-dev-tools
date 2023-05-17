@@ -94,12 +94,15 @@ static bool Compare(const GitBranch& a, const GitBranch& b) {
 }
 
 void GitSystem::findBranches() {
+  if (is_looking_for_branches) {
+    return;
+  }
   LOG() << "Querying list of branches";
   QString prev_name = GetCurrentBranchName();
-  branches.clear();
+  auto child_processes = QSharedPointer<int>::create(2);
+  auto new_branches = QSharedPointer<QList<GitBranch>>::create();
   is_looking_for_branches = true;
   emit isLookingForBranchesChanged();
-  auto child_processes = QSharedPointer<int>::create(2);
   for (int i = 0; i < *child_processes; i++) {
     bool find_local = i == 0;
     OsProcess* process = new OsProcess("git", {"branch"});
@@ -109,28 +112,35 @@ void GitSystem::findBranches() {
       process->args.append("-r");
       process->error_title = "Git: Failed to find remote branches";
     }
-    QObject::connect(process, &OsProcess::finished, this,
-                     [this, process, find_local, child_processes, prev_name] {
-                       (*child_processes)--;
-                       if (process->exit_code == 0) {
-                         if (find_local) {
-                           ParseLocalBranches(process->output, branches);
-                         } else {
-                           ParseRemoteBranches(process->output, branches);
-                         }
-                       }
-                       if (*child_processes == 0) {
-                         LOG() << "Found" << branches.size() << "branches";
-                         std::sort(branches.begin(), branches.end(), Compare);
-                         is_looking_for_branches = false;
-                         emit isLookingForBranchesChanged();
-                         if (prev_name != GetCurrentBranchName()) {
-                           emit currentBranchChanged();
-                         }
-                       }
-                     });
+    QObject::connect(
+        process, &OsProcess::finished, this,
+        [this, process, find_local, child_processes, prev_name, new_branches] {
+          (*child_processes)--;
+          if (process->exit_code == 0) {
+            if (find_local) {
+              ParseLocalBranches(process->output, *new_branches);
+            } else {
+              ParseRemoteBranches(process->output, *new_branches);
+            }
+          }
+          if (*child_processes == 0) {
+            LOG() << "Found" << new_branches->size() << "branches";
+            std::sort(new_branches->begin(), new_branches->end(), Compare);
+            branches = *new_branches;
+            is_looking_for_branches = false;
+            emit isLookingForBranchesChanged();
+            if (prev_name != GetCurrentBranchName()) {
+              emit currentBranchChanged();
+            }
+          }
+        });
     process->Run();
   }
+}
+
+OsProcess* GitSystem::CreateBranch(const QString& name, const QString& basis) {
+  return ExecuteGitCommand({"checkout", "-b", name, basis}, "",
+                           "Git: Branch '" + name + "' created");
 }
 
 bool GitSystem::IsLookingForBranches() const { return is_looking_for_branches; }
@@ -190,11 +200,17 @@ QString GitSystem::GetCurrentBranchName() const {
   return "";
 }
 
-void GitSystem::ExecuteGitCommand(const QStringList& args, const QString& error,
-                                  const QString& success) {
+OsProcess* GitSystem::ExecuteGitCommand(const QStringList& args,
+                                        const QString& error,
+                                        const QString& success) {
   auto cmd = new OsProcess("git", args);
   cmd->error_title = error;
   cmd->success_title = success;
-  QObject::connect(cmd, &OsProcess::finished, this, &GitSystem::findBranches);
+  QObject::connect(cmd, &OsProcess::finished, this, [this, cmd] {
+    if (cmd->exit_code == 0) {
+      findBranches();
+    }
+  });
   cmd->Run();
+  return cmd;
 }

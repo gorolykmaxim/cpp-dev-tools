@@ -22,7 +22,15 @@ GitBranchListModel::GitBranchListModel(QObject* parent)
                        SetPlaceholder();
                      }
                    });
-  git.findBranches();
+}
+
+const GitBranch* GitBranchListModel::GetSelected() const {
+  int i = GetSelectedItemIndex();
+  if (i < 0) {
+    return nullptr;
+  } else {
+    return &Application::Get().git.GetBranches()[i];
+  }
 }
 
 QVariantList GitBranchListModel::GetRow(int i) const {
@@ -46,15 +54,24 @@ int GitBranchListModel::GetRowCount() const {
 
 GitBranchListController::GitBranchListController(QObject* parent)
     : QObject(parent), branches(new GitBranchListModel(this)) {
-  Application::Get().view.SetWindowTitle("Git Branches");
   QObject::connect(branches, &TextListModel::selectedItemChanged, this,
                    [this] { emit selectedBranchChanged(); });
 }
 
 bool GitBranchListController::IsLocalBranchSelected() const {
-  int i = branches->GetSelectedItemIndex();
-  const QList<GitBranch> branches = Application::Get().git.GetBranches();
-  return i < 0 ? false : !branches[i].is_remote;
+  if (const GitBranch* b = branches->GetSelected()) {
+    return !b->is_remote;
+  } else {
+    return false;
+  }
+}
+
+QString GitBranchListController::GetSelectedBranchName() const {
+  if (const GitBranch* b = branches->GetSelected()) {
+    return b->name;
+  } else {
+    return "";
+  }
 }
 
 void GitBranchListController::deleteSelected(bool force) {
@@ -63,4 +80,10 @@ void GitBranchListController::deleteSelected(bool force) {
 
 void GitBranchListController::checkoutSelected() {
   Application::Get().git.CheckoutBranch(branches->GetSelectedItemIndex());
+}
+
+void GitBranchListController::displayList() {
+  Application& app = Application::Get();
+  app.view.SetWindowTitle("Git Branches");
+  app.git.findBranches();
 }
