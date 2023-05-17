@@ -27,7 +27,7 @@ Dialog {
         dialog.reject();
       }
   }
-  width: 500
+  width: Theme.centeredViewWidth
   height: isFullHeight ? parent.height * 0.8 : Math.min(contentHeight + padding * 2, parent.height * 0.8)
   padding: Theme.basePadding * 2
   modal: true

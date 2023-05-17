@@ -15,7 +15,7 @@ Dialog {
         dialog.reject();
       }
   }
-  width: 500
+  width: Theme.centeredViewWidth
   height: parent.height * 0.8
   padding: 0
   modal: true
