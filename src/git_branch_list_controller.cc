@@ -3,7 +3,6 @@
 #include <algorithm>
 
 #include "application.h"
-#include "os_command.h"
 #include "theme.h"
 
 #define LOG() qDebug() << "[GitBranchListController]"
@@ -13,16 +12,23 @@ GitBranchListModel::GitBranchListModel(QObject* parent)
   SetRoleNames({{0, "title"}, {1, "titleColor"}, {2, "icon"}});
   searchable_roles = {0};
   SetEmptyListPlaceholder("No branches found");
-}
-
-const GitBranch* GitBranchListModel::GetSelected() const {
-  int i = GetSelectedItemIndex();
-  return i < 0 ? nullptr : &list[i];
+  GitSystem& git = Application::Get().git;
+  QObject::connect(&git, &GitSystem::isLookingForBranchesChanged, this,
+                   [this, &git] {
+                     if (git.IsLookingForBranches()) {
+                       SetPlaceholder("Looking for branches...");
+                     } else {
+                       Load();
+                       SetPlaceholder();
+                     }
+                   });
+  git.FindBranches();
 }
 
 QVariantList GitBranchListModel::GetRow(int i) const {
   static const Theme kTheme;
-  const GitBranch& b = list[i];
+  Application& app = Application::Get();
+  const GitBranch& b = app.git.GetBranches()[i];
   QString title = b.name;
   QString title_color;
   if (b.is_remote) {
@@ -34,142 +40,27 @@ QVariantList GitBranchListModel::GetRow(int i) const {
   return {title, title_color, "call_split"};
 }
 
-int GitBranchListModel::GetRowCount() const { return list.size(); }
+int GitBranchListModel::GetRowCount() const {
+  return Application::Get().git.GetBranches().size();
+}
 
 GitBranchListController::GitBranchListController(QObject* parent)
     : QObject(parent), branches(new GitBranchListModel(this)) {
   Application::Get().view.SetWindowTitle("Git Branches");
   QObject::connect(branches, &TextListModel::selectedItemChanged, this,
                    [this] { emit selectedBranchChanged(); });
-  FindBranches();
 }
 
 bool GitBranchListController::IsLocalBranchSelected() const {
-  if (const GitBranch* b = branches->GetSelected()) {
-    return !b->is_remote;
-  } else {
-    return false;
-  }
+  int i = branches->GetSelectedItemIndex();
+  const QList<GitBranch> branches = Application::Get().git.GetBranches();
+  return i < 0 ? false : !branches[i].is_remote;
 }
 
 void GitBranchListController::deleteSelected(bool force) {
-  const GitBranch* branch = branches->GetSelected();
-  if (!branch) {
-    return;
-  }
-  LOG() << "Deleting branch" << branch->name << "force:" << force;
-  QStringList args = {"branch", branch->name};
-  if (force) {
-    args.insert(1, "-D");
-  } else {
-    args.insert(1, "-d");
-  }
-  ExecuteGitCommand(args,
-                    "Git: Failed to delete branch '" + branch->name + '\'',
-                    "Git: Deleted branch '" + branch->name + '\'');
+  Application::Get().git.DeleteBranch(branches->GetSelectedItemIndex(), force);
 }
 
 void GitBranchListController::checkoutSelected() {
-  const GitBranch* branch = branches->GetSelected();
-  if (!branch) {
-    return;
-  }
-  LOG() << "Checking out branch" << branch->name;
-  QStringList args;
-  if (branch->is_remote) {
-    const QString kOriginPrefix = "origin/";
-    QString local_name = branch->name;
-    if (local_name.startsWith(kOriginPrefix)) {
-      local_name.remove(0, kOriginPrefix.size());
-    }
-    args = {"checkout", "-b", local_name, branch->name};
-  } else {
-    args = {"checkout", branch->name};
-  }
-  ExecuteGitCommand(args,
-                    "Git: Failed to checkout branch '" + branch->name + '\'',
-                    "Git: Branch '" + branch->name + "\' checked-out");
-}
-
-void GitBranchListController::ExecuteGitCommand(const QStringList& args,
-                                                const QString& error,
-                                                const QString& success) {
-  auto cmd = new OsProcess("git", args);
-  cmd->error_title = error;
-  cmd->success_title = success;
-  QObject::connect(cmd, &OsProcess::finished, this,
-                   &GitBranchListController::FindBranches);
-  cmd->Run();
-}
-
-static void ParseLocalBranches(const QString& output,
-                               QList<GitBranch>& branches) {
-  for (QString line : output.split('\n', Qt::SkipEmptyParts)) {
-    GitBranch b;
-    b.is_current = line.startsWith('*');
-    if (b.is_current) {
-      line = line.sliced(1);
-    }
-    b.name = line.trimmed();
-    branches.append(b);
-  }
-}
-
-static void ParseRemoteBranches(const QString& output,
-                                QList<GitBranch>& branches) {
-  for (QString line : output.split('\n', Qt::SkipEmptyParts)) {
-    line = line.trimmed();
-    if (line.startsWith("origin/HEAD")) {
-      continue;
-    }
-    GitBranch b;
-    b.is_remote = true;
-    b.name = line;
-    branches.append(b);
-  }
-}
-
-static bool Compare(const GitBranch& a, const GitBranch& b) {
-  if (a.is_current != b.is_current) {
-    return a.is_current > b.is_current;
-  } else if (a.is_remote != b.is_remote) {
-    return a.is_remote < b.is_remote;
-  } else {
-    return a.name < b.name;
-  }
-}
-
-void GitBranchListController::FindBranches() {
-  LOG() << "Querying list of branches";
-  branches->list.clear();
-  branches->SetPlaceholder("Looking for branches...");
-  auto child_processes = QSharedPointer<int>::create(2);
-  for (int i = 0; i < *child_processes; i++) {
-    bool find_local = i == 0;
-    OsProcess* process = new OsProcess("git", {"branch"});
-    if (find_local) {
-      process->error_title = "Git: Failed to find local branches";
-    } else {
-      process->args.append("-r");
-      process->error_title = "Git: Failed to find remote branches";
-    }
-    QObject::connect(process, &OsProcess::finished, this,
-                     [this, process, find_local, child_processes] {
-                       (*child_processes)--;
-                       if (process->exit_code == 0) {
-                         if (find_local) {
-                           ParseLocalBranches(process->output, branches->list);
-                         } else {
-                           ParseRemoteBranches(process->output, branches->list);
-                         }
-                       }
-                       if (*child_processes == 0) {
-                         std::sort(branches->list.begin(), branches->list.end(),
-                                   Compare);
-                         branches->Load();
-                         branches->SetPlaceholder();
-                       }
-                     });
-    process->Run();
-  }
+  Application::Get().git.CheckoutBranch(branches->GetSelectedItemIndex());
 }

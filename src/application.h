@@ -32,6 +32,7 @@ class Application {
   NotificationSystem notification;
   DocumentationSystem documentation;
   SqliteSystem sqlite;
+  GitSystem git;
   QGuiApplication gui_app;
   QQmlApplicationEngine qml_engine;
   QThreadPool io_thread_pool;

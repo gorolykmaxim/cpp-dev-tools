@@ -48,6 +48,7 @@ void ProjectSystem::SetCurrentProject(Project project) {
     app.sqlite.SetSelectedFile(SqliteFile());
     app.task.KillAllTasks();
     app.task.ClearTasks();
+    app.git.ClearBranches();
     app.view.SetCurrentView("SelectProject.qml");
   } else {
     LOG() << "Changing current project to" << project.path;
@@ -60,6 +61,7 @@ void ProjectSystem::SetCurrentProject(Project project) {
     current_project = project;
     emit currentProjectChanged();
     app.sqlite.InitializeSelectedFile();
+    app.git.FindBranches();
     app.view.SetCurrentView("TaskList.qml");
   }
 }

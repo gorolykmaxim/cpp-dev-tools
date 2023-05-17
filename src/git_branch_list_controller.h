@@ -6,18 +6,9 @@
 
 #include "text_list_model.h"
 
-struct GitBranch {
-  QString name;
-  bool is_remote = false;
-  bool is_current = false;
-};
-
 class GitBranchListModel : public TextListModel {
  public:
   explicit GitBranchListModel(QObject* parent);
-  const GitBranch* GetSelected() const;
-
-  QList<GitBranch> list;
 
  protected:
   QVariantList GetRow(int i) const;
@@ -42,10 +33,6 @@ class GitBranchListController : public QObject {
   void selectedBranchChanged();
 
  private:
-  void ExecuteGitCommand(const QStringList& args, const QString& error,
-                         const QString& success);
-  void FindBranches();
-
   GitBranchListModel* branches;
 };
 
