@@ -22,7 +22,7 @@ GitBranchListModel::GitBranchListModel(QObject* parent)
                        SetPlaceholder();
                      }
                    });
-  git.FindBranches();
+  git.findBranches();
 }
 
 QVariantList GitBranchListModel::GetRow(int i) const {

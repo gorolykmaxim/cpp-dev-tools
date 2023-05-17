@@ -17,13 +17,15 @@ class GitSystem : public QObject {
   static QList<QString> FindIgnoredPathsSync();
   static void Push();
   void Pull();
-  void FindBranches();
   bool IsLookingForBranches() const;
   const QList<GitBranch>& GetBranches() const;
   void ClearBranches();
   void CheckoutBranch(int i);
   void DeleteBranch(int i, bool force);
   QString GetCurrentBranchName() const;
+
+ public slots:
+  void findBranches();
 
  signals:
   void isLookingForBranchesChanged();

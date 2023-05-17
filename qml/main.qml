@@ -15,6 +15,12 @@ ApplicationWindow {
   onXChanged: windowDimensionsDebounce.restart()
   onYChanged: windowDimensionsDebounce.restart()
   visible: true
+  onActiveChanged: {
+    if (active) {
+      // The window has regained focus
+      gitSystem.findBranches();
+    }
+  }
   Connections {
     target: viewSystem
     function onWindowDimensionsChanaged() {

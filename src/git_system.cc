@@ -91,7 +91,7 @@ static bool Compare(const GitBranch& a, const GitBranch& b) {
   }
 }
 
-void GitSystem::FindBranches() {
+void GitSystem::findBranches() {
   LOG() << "Querying list of branches";
   QString prev_name = GetCurrentBranchName();
   branches.clear();
@@ -193,6 +193,6 @@ void GitSystem::ExecuteGitCommand(const QStringList& args, const QString& error,
   auto cmd = new OsProcess("git", args);
   cmd->error_title = error;
   cmd->success_title = success;
-  QObject::connect(cmd, &OsProcess::finished, this, &GitSystem::FindBranches);
+  QObject::connect(cmd, &OsProcess::finished, this, &GitSystem::findBranches);
   cmd->Run();
 }
