@@ -44,8 +44,8 @@ QList<QString> GitSystem::FindIgnoredPathsSync() {
 
 void GitSystem::Pull() {
   Application::Get().notification.Post(Notification("Git: Pulling changes..."));
-  OsCommand::Run("git pull", "Git: Failed to pull changes",
-                 "Git: Changes pulled");
+  ExecuteGitCommand({"pull"}, "Git: Failed to pull changes",
+                    "Git: Changes pulled");
 }
 
 void GitSystem::Push() {
