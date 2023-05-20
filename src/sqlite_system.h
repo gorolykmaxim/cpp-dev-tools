@@ -30,9 +30,8 @@ class SqliteSystem : public QObject {
   Q_PROPERTY(bool isFileSelected READ IsFileSelected NOTIFY selectedFileChanged)
  public:
   static SqliteFile ReadFromSql(QSqlQuery& sql);
-  static void ExecuteQuery(
-      QObject* requestor, const QString& query,
-      const std::function<void(SqliteQueryResult)>& callback);
+  static void ExecuteQuery(QObject* requestor, const QString& query,
+                           std::function<void(SqliteQueryResult)>&& callback);
   static bool OpenIfExistsSync(QSqlDatabase& db, QString& error);
   void InitializeSelectedFile();
   void SetSelectedFile(const SqliteFile& file);

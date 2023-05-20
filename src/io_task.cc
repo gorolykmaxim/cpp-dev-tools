@@ -1,14 +1,18 @@
 #include "io_task.h"
 
-void IoTask::Run(QObject *requestor, const std::function<void()> &on_io_thread,
-                 const std::function<void()> &on_ui_thread) {
-  Application &app = Application::Get();
+void IoTask::Then(QFuture<void> future, QObject *requestor,
+                  std::function<void()> &&callback) {
   auto watcher = new QFutureWatcher<void>(requestor);
   QObject::connect(watcher, &QFutureWatcher<void>::finished, requestor,
-                   [on_ui_thread, watcher] {
-                     on_ui_thread();
+                   [callback = std::move(callback), watcher] {
+                     callback();
                      watcher->deleteLater();
                    });
-  QFuture<void> future = QtConcurrent::run(&app.io_thread_pool, on_io_thread);
   watcher->setFuture(future);
+}
+
+void IoTask::Run(QObject *requestor, std::function<void()> &&on_io_thread,
+                 std::function<void()> &&on_ui_thread) {
+  QFuture<void> future = Run(std::move(on_io_thread));
+  Then(future, requestor, std::move(on_ui_thread));
 }

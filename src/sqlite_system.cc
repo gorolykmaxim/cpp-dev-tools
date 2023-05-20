@@ -68,7 +68,7 @@ bool SqliteSystem::IsFileSelected() const { return !selected_file.IsNull(); }
 
 void SqliteSystem::ExecuteQuery(
     QObject* requestor, const QString& query,
-    const std::function<void(SqliteQueryResult)>& callback) {
+    std::function<void(SqliteQueryResult)>&& callback) {
   LOG() << "Executing query" << query;
   IoTask::Run<SqliteQueryResult>(
       requestor,
@@ -106,7 +106,7 @@ void SqliteSystem::ExecuteQuery(
         db.close();
         return result;
       },
-      callback);
+      std::move(callback));
 }
 
 bool SqliteSystem::OpenIfExistsSync(QSqlDatabase& db, QString& error) {
