@@ -2,6 +2,7 @@
 
 #include <QByteArray>
 #include <QDateTime>
+#include <QFuture>
 #include <QList>
 #include <QObject>
 #include <QProcess>
@@ -61,12 +62,9 @@ class TaskSystem : public QObject {
   static QString GetName(const Task& task);
   static UiIcon GetStatusAsIcon(const TaskExecution& exec);
   void KillAllTasks();
-  void FetchExecutions(
-      QObject* requestor, QUuid project_id,
-      const std::function<void(const QList<TaskExecution>&)>& callback) const;
-  void FetchExecution(
-      QObject* requestor, QUuid execution_id, bool include_output,
-      const std::function<void(const TaskExecution&)>& callback) const;
+  QFuture<QList<TaskExecution>> FetchExecutions(QUuid project_id) const;
+  QFuture<TaskExecution> FetchExecution(QUuid execution_id,
+                                        bool include_output) const;
   bool IsExecutionRunning(QUuid execution_id) const;
   void FindTasks();
   void ClearTasks();

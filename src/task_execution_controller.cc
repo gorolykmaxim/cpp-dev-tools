@@ -1,6 +1,7 @@
 #include "task_execution_controller.h"
 
 #include "application.h"
+#include "io_task.h"
 
 #define LOG() qDebug() << "[TaskExecutionController]"
 
@@ -28,9 +29,9 @@ void TaskExecutionController::LoadExecution(bool include_output) {
   LOG() << "Reloading selected execution including output:" << include_output;
   Application& app = Application::Get();
   QUuid id = app.task.GetSelectedExecutionId();
-  app.task.FetchExecution(
-      this, id, include_output,
-      [this, include_output](const TaskExecution& exec) {
+  QFuture<TaskExecution> result = app.task.FetchExecution(id, include_output);
+  IoTask::Then<TaskExecution>(
+      result, this, [this, include_output](const TaskExecution& exec) {
         execution_name = exec.task_name;
         execution_status = "<b>Running...</b>";
         if (exec.exit_code) {

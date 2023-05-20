@@ -220,63 +220,49 @@ void TaskSystem::FinishExecution(QUuid id, int exit_code) {
   emit executionFinished(id);
 }
 
-void TaskSystem::FetchExecutions(
-    QObject* requestor, QUuid project_id,
-    const std::function<void(const QList<TaskExecution>&)>& callback) const {
+QFuture<QList<TaskExecution>> TaskSystem::FetchExecutions(
+    QUuid project_id) const {
   LOG() << "Fetching executions for project" << project_id;
-  QList<TaskExecution> execs;
-  for (const TaskExecution& exec : active_executions) {
-    execs.append(exec);
-  }
+  QList<TaskExecution> execs = active_executions.values();
   std::sort(execs.begin(), execs.end(),
             [](const TaskExecution& a, const TaskExecution& b) {
               return a.start_time < b.start_time;
             });
-  IoTask::Run<QList<TaskExecution>>(
-      requestor,
-      [project_id] {
-        return Database::ExecQueryAndRead<TaskExecution>(
-            "SELECT id, start_time, task_id, task_name, exit_code FROM "
-            "task_execution "
-            "WHERE project_id=? ORDER BY start_time",
-            MakeReadExecutionFromSql(false), {project_id});
-      },
-      [execs, callback](QList<TaskExecution> result) {
-        for (const TaskExecution& exec : execs) {
-          // Due to possible races between threads and callback scheduling
-          // on the main thread, some of "execs" might have already been
-          // inserted into the database and might be included in "result".
-          if (!result.contains(exec)) {
-            result.append(exec);
-          }
-        }
-        callback(result);
-      });
+  return IoTask::Run<QList<TaskExecution>>([project_id, execs] {
+    QList<TaskExecution> result = Database::ExecQueryAndRead<TaskExecution>(
+        "SELECT id, start_time, task_id, task_name, exit_code FROM "
+        "task_execution "
+        "WHERE project_id=? ORDER BY start_time",
+        MakeReadExecutionFromSql(false), {project_id});
+    for (const TaskExecution& exec : execs) {
+      // Due to possible races between threads and callback scheduling
+      // on the main thread, some of "execs" might have already been
+      // inserted into the database and might be included in "result".
+      if (!result.contains(exec)) {
+        result.append(exec);
+      }
+    }
+    return result;
+  });
 }
 
-void TaskSystem::FetchExecution(
-    QObject* requestor, QUuid execution_id, bool include_output,
-    const std::function<void(const TaskExecution&)>& callback) const {
+QFuture<TaskExecution> TaskSystem::FetchExecution(QUuid execution_id,
+                                                  bool include_output) const {
   LOG() << "Fetching execution" << execution_id
         << "including output:" << include_output;
   if (active_executions.contains(execution_id)) {
-    callback(active_executions[execution_id]);
-    return;
+    return QtFuture::makeReadyFuture(active_executions[execution_id]);
   }
-  IoTask::Run<QList<TaskExecution>>(
-      requestor,
-      [execution_id, include_output] {
-        QString query = "SELECT id, start_time, task_id, task_name, exit_code";
-        if (include_output) {
-          query += ", stderr_line_indices, output";
-        }
-        query += " FROM task_execution WHERE id=?";
-        return Database::ExecQueryAndRead<TaskExecution>(
-            query, MakeReadExecutionFromSql(include_output), {execution_id});
-      },
-      [callback](QList<TaskExecution> result) {
-        callback(result.isEmpty() ? TaskExecution() : result[0]);
-      });
+  return IoTask::Run<TaskExecution>([execution_id, include_output] {
+    QString query = "SELECT id, start_time, task_id, task_name, exit_code";
+    if (include_output) {
+      query += ", stderr_line_indices, output";
+    }
+    query += " FROM task_execution WHERE id=?";
+    QList<TaskExecution> results = Database::ExecQueryAndRead<TaskExecution>(
+        query, MakeReadExecutionFromSql(include_output), {execution_id});
+    return results.isEmpty() ? TaskExecution() : results[0];
+  });
 }
 
 bool TaskSystem::IsExecutionRunning(QUuid execution_id) const {
