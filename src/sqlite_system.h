@@ -1,6 +1,7 @@
 #ifndef SQLITE_SYSTEM_H
 #define SQLITE_SYSTEM_H
 
+#include <QFuture>
 #include <QObject>
 #include <QSqlQuery>
 #include <QUuid>
@@ -30,8 +31,7 @@ class SqliteSystem : public QObject {
   Q_PROPERTY(bool isFileSelected READ IsFileSelected NOTIFY selectedFileChanged)
  public:
   static SqliteFile ReadFromSql(QSqlQuery& sql);
-  static void ExecuteQuery(QObject* requestor, const QString& query,
-                           std::function<void(SqliteQueryResult)>&& callback);
+  static QFuture<SqliteQueryResult> ExecuteQuery(const QString& query);
   static bool OpenIfExistsSync(QSqlDatabase& db, QString& error);
   void InitializeSelectedFile();
   void SetSelectedFile(const SqliteFile& file);

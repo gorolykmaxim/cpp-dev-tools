@@ -66,47 +66,42 @@ QString SqliteSystem::GetSelectedFileName() const {
 
 bool SqliteSystem::IsFileSelected() const { return !selected_file.IsNull(); }
 
-void SqliteSystem::ExecuteQuery(
-    QObject* requestor, const QString& query,
-    std::function<void(SqliteQueryResult)>&& callback) {
-  LOG() << "Executing query" << query;
-  IoTask::Run<SqliteQueryResult>(
-      requestor,
-      [query] {
-        SqliteQueryResult result;
-        QSqlDatabase db =
-            QSqlDatabase::database(SqliteSystem::kConnectionName, false);
-        if (!OpenIfExistsSync(db, result.error)) {
-          return result;
-        }
-        QSqlQuery sql(db);
-        if (sql.exec(query)) {
-          result.is_select = sql.isSelect();
-          if (result.is_select) {
-            while (sql.next()) {
-              if (result.columns.isEmpty()) {
-                QSqlRecord record = sql.record();
-                for (int i = 0; i < record.count(); i++) {
-                  result.columns.append(record.fieldName(i));
-                }
-              }
-              QVariantList row;
-              for (int i = 0; i < result.columns.size(); i++) {
-                row.append(sql.value(i));
-              }
-              result.rows.append(row);
+QFuture<SqliteQueryResult> SqliteSystem::ExecuteQuery(const QString& query) {
+  return IoTask::Run<SqliteQueryResult>([query] {
+    LOG() << "Executing query" << query;
+    SqliteQueryResult result;
+    QSqlDatabase db =
+        QSqlDatabase::database(SqliteSystem::kConnectionName, false);
+    if (!OpenIfExistsSync(db, result.error)) {
+      return result;
+    }
+    QSqlQuery sql(db);
+    if (sql.exec(query)) {
+      result.is_select = sql.isSelect();
+      if (result.is_select) {
+        while (sql.next()) {
+          if (result.columns.isEmpty()) {
+            QSqlRecord record = sql.record();
+            for (int i = 0; i < record.count(); i++) {
+              result.columns.append(record.fieldName(i));
             }
-          } else {
-            result.rows_affected = sql.numRowsAffected();
           }
-        } else {
-          result.error =
-              "Failed to execute query: " + sql.lastError().databaseText();
+          QVariantList row;
+          for (int i = 0; i < result.columns.size(); i++) {
+            row.append(sql.value(i));
+          }
+          result.rows.append(row);
         }
-        db.close();
-        return result;
-      },
-      std::move(callback));
+      } else {
+        result.rows_affected = sql.numRowsAffected();
+      }
+    } else {
+      result.error =
+          "Failed to execute query: " + sql.lastError().databaseText();
+    }
+    db.close();
+    return result;
+  });
 }
 
 bool SqliteSystem::OpenIfExistsSync(QSqlDatabase& db, QString& error) {

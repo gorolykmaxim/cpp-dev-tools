@@ -72,15 +72,17 @@ void SqliteQueryEditorController::executeQuery(const QString &text,
                                                int cursor) {
   QString query = GetSelectedQuery(text, cursor);
   model->SetPlaceholder("Running query...");
-  SqliteSystem::ExecuteQuery(this, query, [this](SqliteQueryResult result) {
-    if (!result.error.isEmpty()) {
-      model->SetPlaceholder(result.error, "red");
-    } else if (result.is_select) {
-      model->SetTable(result.columns, result.rows);
-      model->SetPlaceholder();
-    } else {
-      model->SetPlaceholder("Query executed. Rows affected: " +
-                            QString::number(result.rows_affected));
-    }
-  });
+  QFuture<SqliteQueryResult> result = SqliteSystem::ExecuteQuery(query);
+  IoTask::Then<SqliteQueryResult>(
+      result, this, [this](SqliteQueryResult result) {
+        if (!result.error.isEmpty()) {
+          model->SetPlaceholder(result.error, "red");
+        } else if (result.is_select) {
+          model->SetTable(result.columns, result.rows);
+          model->SetPlaceholder();
+        } else {
+          model->SetPlaceholder("Query executed. Rows affected: " +
+                                QString::number(result.rows_affected));
+        }
+      });
 }
