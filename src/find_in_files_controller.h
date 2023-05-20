@@ -5,7 +5,6 @@
 #include <QtQmlIntegration>
 #include <atomic>
 
-#include "io_task.h"
 #include "syntax.h"
 #include "text_list_model.h"
 
@@ -60,30 +59,6 @@ struct FindInFilesOptions {
   bool operator!=(const FindInFilesOptions& another) const;
 };
 
-class FindInFilesTask : public BaseIoTask {
-  Q_OBJECT
- public:
-  FindInFilesTask(const QString& search_term, FindInFilesOptions options);
-
-  std::atomic<bool> is_cancelled = false;
- signals:
-  void resultsFound(QList<FileSearchResult> result);
-
- protected:
-  void RunInBackground() override;
-
- private:
-  QList<FileSearchResult> Find(const QString& line, int column, int offset,
-                               const QString& file_name) const;
-  QList<FileSearchResult> FindRegex(const QString& line, int column, int offset,
-                                    const QString& file_name) const;
-
-  QString search_term;
-  QRegularExpression search_term_regex;
-  QString folder;
-  FindInFilesOptions options;
-};
-
 class FileSearchResultFormatter : public TextAreaFormatter {
  public:
   explicit FileSearchResultFormatter(QObject* parent);
@@ -126,14 +101,12 @@ class FindInFilesController : public QObject {
   void rehighlightBlockByLineNumber(int i);
 
  private:
-  void OnResultFound(QList<FileSearchResult> results);
+  void OnResultFound(int i);
   void OnSearchComplete();
-  void CancelSearchIfRunning();
   void OnSelectedResultChanged();
   void SaveSearchTermAndOptions();
 
   QString search_term;
-  FindInFilesTask* find_task;
   FileSearchResultListModel* search_results;
   int prev_selected_result = -1;
   QString selected_file_path;
@@ -141,6 +114,7 @@ class FindInFilesController : public QObject {
   int selected_file_cursor_position;
   FindInFilesOptions options;
   FileSearchResultFormatter* formatter;
+  QFutureWatcher<QList<FileSearchResult>> search_result_watcher;
 };
 
 #endif  // FINDINFILESCONTROLLER_H

@@ -3,10 +3,13 @@
 #include "application.h"
 #include "database.h"
 #include "git_system.h"
+#include "io_task.h"
 #include "path.h"
 #include "theme.h"
 
 #define LOG() qDebug() << "[FindInFilesController]"
+
+using ResultBatch = QList<FileSearchResult>;
 
 static std::pair<QString, FindInFilesOptions> ReadFromSql(QSqlQuery& sql) {
   QString search_term = sql.value(1).toString();
@@ -24,16 +27,19 @@ static std::pair<QString, FindInFilesOptions> ReadFromSql(QSqlQuery& sql) {
 
 FindInFilesController::FindInFilesController(QObject* parent)
     : QObject(parent),
-      find_task(nullptr),
       search_results(new FileSearchResultListModel(this)),
       selected_file_cursor_position(-1),
       formatter(new FileSearchResultFormatter(this)) {
   Application& app = Application::Get();
   app.view.SetWindowTitle("Find In Files");
-  QObject::connect(search_results, &TextListModel::selectedItemChanged, this,
-                   &FindInFilesController::OnSelectedResultChanged);
-  QObject::connect(this, &FindInFilesController::optionsChanged, this,
-                   &FindInFilesController::SaveSearchTermAndOptions);
+  connect(search_results, &TextListModel::selectedItemChanged, this,
+          &FindInFilesController::OnSelectedResultChanged);
+  connect(this, &FindInFilesController::optionsChanged, this,
+          &FindInFilesController::SaveSearchTermAndOptions);
+  connect(&search_result_watcher, &QFutureWatcher<ResultBatch>::resultReadyAt,
+          this, &FindInFilesController::OnResultFound);
+  connect(&search_result_watcher, &QFutureWatcher<ResultBatch>::finished, this,
+          &FindInFilesController::OnSearchComplete);
   QUuid project_id = app.project.GetCurrentProject().id;
   using Result = std::pair<QString, FindInFilesOptions>;
   IoTask::Run<QList<Result>>(
@@ -54,15 +60,130 @@ FindInFilesController::FindInFilesController(QObject* parent)
       });
 }
 
-FindInFilesController::~FindInFilesController() { CancelSearchIfRunning(); }
+FindInFilesController::~FindInFilesController() {
+  search_result_watcher.cancel();
+}
 
 QString FindInFilesController::GetSearchStatus() const {
   QString result;
   result += QString::number(search_results->rowCount(QModelIndex())) +
             " results in " +
             QString::number(search_results->CountUniqueFiles()) + " files. ";
-  result += !find_task ? "Complete." : "Searching...";
+  result += search_result_watcher.isRunning() ? "Searching..." : "Complete.";
   return result;
+}
+
+static bool IsBinaryFile(const QString& line, bool& seen_replacement_char,
+                         bool& seen_null) {
+  if (line.contains("\uFFFD")) {
+    seen_replacement_char = true;
+  }
+  if (line.contains('\0')) {
+    seen_null = true;
+  }
+  return seen_replacement_char && seen_null;
+}
+
+static bool MatchesWildcard(const QString& str, const QString& pattern) {
+  QStringList parts = pattern.split('*');
+  int pos = 0;
+  for (int i = 0; i < parts.size(); i++) {
+    const QString& part = parts[i];
+    if (part.isEmpty()) {
+      continue;
+    }
+    int j = str.indexOf(part, pos, Qt::CaseSensitive);
+    if (j < 0) {
+      return false;
+    }
+    if (i == 0 && j != 0) {
+      return false;
+    } else if (i == parts.size() - 1 && part.size() + j != str.size()) {
+      return false;
+    }
+    pos = part.size() + j + 1;
+  }
+  return true;
+}
+
+static QString HighlightMatch(const QString& line, int match_pos,
+                              int match_length) {
+  const static int kMaxLength = 200;
+  QString before = line.sliced(0, match_pos).toHtmlEscaped();
+  QString match = line.sliced(match_pos, match_length).toHtmlEscaped();
+  QString after = line.sliced(match_pos + match_length,
+                              line.size() - match_pos - match_length)
+                      .toHtmlEscaped();
+  int padding = match_length < kMaxLength ? (kMaxLength - match.size()) / 2 : 0;
+  if (before.size() > padding) {
+    before = "..." + before.sliced(before.size() - padding);
+  }
+  if (after.size() > padding) {
+    after = after.sliced(0, padding) + "...";
+  }
+  return before + "<b>" + match + "</b>" + after;
+}
+
+static ResultBatch Find(const FindInFilesOptions& options,
+                        const QString& search_term,
+                        const QPromise<ResultBatch>& promise,
+                        const QString& line, int column, int offset,
+                        const QString& file_name) {
+  ResultBatch results;
+  int pos = 0;
+  while (true) {
+    Qt::CaseSensitivity sensitivity;
+    if (options.match_case) {
+      sensitivity = Qt::CaseSensitive;
+    } else {
+      sensitivity = Qt::CaseInsensitive;
+    }
+    int row = line.indexOf(search_term, pos, sensitivity);
+    if (row < 0) {
+      break;
+    }
+    bool letter_before = row > 0 && line[row - 1].isLetter();
+    bool letter_after = row + search_term.size() < line.size() &&
+                        line[row + search_term.size()].isLetter();
+    if (!options.match_whole_word || (!letter_before && !letter_after)) {
+      FileSearchResult result;
+      result.file_path = file_name;
+      result.match = HighlightMatch(line, row, search_term.size());
+      result.column = column;
+      result.row = row + 1;
+      result.offset = offset + row;
+      result.match_length = search_term.size();
+      results.append(result);
+    }
+    pos = row + search_term.size() + 1;
+    if (promise.isCanceled()) {
+      break;
+    }
+  }
+  return results;
+}
+
+static ResultBatch FindRegex(const QRegularExpression& search_term_regex,
+                             const QPromise<ResultBatch>& promise,
+                             const QString& line, int column, int offset,
+                             const QString& file_name) {
+  ResultBatch results;
+  for (auto it = search_term_regex.globalMatch(line); it.hasNext();) {
+    QRegularExpressionMatch match = it.next();
+    FileSearchResult result;
+    result.file_path = file_name;
+    result.match =
+        HighlightMatch(line, match.capturedStart(0), match.capturedLength(0));
+    result.column = column;
+    result.row = match.capturedStart(0) + 1;
+    result.offset = offset + match.capturedStart(0);
+    result.match_length = match.capturedLength(0);
+    results.append(result);
+    if (promise.isCanceled()) {
+      break;
+    }
+  }
+  return results;
 }
 
 void FindInFilesController::search() {
@@ -73,18 +194,99 @@ void FindInFilesController::search() {
   selected_file_cursor_position = -1;
   emit selectedResultChanged();
   search_results->Clear();
-  CancelSearchIfRunning();
+  search_result_watcher.cancel();
   emit searchStatusChanged();
   SaveSearchTermAndOptions();
   if (search_term.isEmpty()) {
     return;
   }
-  find_task = new FindInFilesTask(search_term, options);
-  QObject::connect(find_task, &FindInFilesTask::finished, this,
-                   &FindInFilesController::OnSearchComplete);
-  QObject::connect(find_task, &FindInFilesTask::resultsFound, this,
-                   &FindInFilesController::OnResultFound);
-  find_task->Run();
+  Application& app = Application::Get();
+  QString folder = app.project.GetCurrentProject().path;
+  QString search_term = this->search_term;
+  FindInFilesOptions options = this->options;
+  QFuture<ResultBatch> future = QtConcurrent::run(
+      &app.io_thread_pool,
+      [options, search_term, folder](QPromise<ResultBatch>& promise) {
+        QRegularExpression search_term_regex;
+        if (options.regexp) {
+          QRegularExpression::PatternOptions regex_opts =
+              QRegularExpression::NoPatternOption;
+          if (!options.match_case) {
+            regex_opts |= QRegularExpression::CaseInsensitiveOption;
+          }
+          QString pattern = search_term;
+          if (options.match_whole_word) {
+            pattern = "\\b" + pattern + "\\b";
+          }
+          search_term_regex = QRegularExpression(pattern, regex_opts);
+        }
+        QList<QString> folders = {folder};
+        if (options.include_external_search_folders) {
+          QList<QString> external = Database::ExecQueryAndRead<QString>(
+              "SELECT * FROM external_search_folder",
+              &Database::ReadStringFromSql);
+          folders.append(external);
+        }
+        QList<QString> paths_to_exclude;
+        if (options.exclude_git_ignored_files) {
+          paths_to_exclude = GitSystem::FindIgnoredPathsSync();
+        }
+        for (const QString& folder : folders) {
+          QDirIterator it(folder, QDir::Files, QDirIterator::Subdirectories);
+          while (it.hasNext()) {
+            QFile file(it.next());
+            bool file_excluded = false;
+            for (const QString& excluded_path : paths_to_exclude) {
+              if (file.fileName().startsWith(excluded_path)) {
+                file_excluded = true;
+                break;
+              }
+            }
+            bool not_included =
+                !options.files_to_include.isEmpty() &&
+                !MatchesWildcard(file.fileName(), options.files_to_include);
+            bool excluded =
+                !options.files_to_exclude.isEmpty() &&
+                MatchesWildcard(file.fileName(), options.files_to_exclude);
+            if (file_excluded || not_included || excluded ||
+                !file.open(QIODevice::ReadOnly)) {
+              continue;
+            }
+            QTextStream stream(&file);
+            ResultBatch file_results;
+            bool seen_replacement_char = false;
+            bool seen_null = false;
+            int column = 1;
+            int line_offset = 0;
+            while (!stream.atEnd()) {
+              QString line = stream.readLine();
+              if (IsBinaryFile(line, seen_replacement_char, seen_null)) {
+                LOG() << "Skipping binary file" << file.fileName();
+                file_results.clear();
+                break;
+              }
+              if (options.regexp) {
+                file_results.append(FindRegex(search_term_regex, promise, line,
+                                              column, line_offset,
+                                              file.fileName()));
+              } else {
+                file_results.append(Find(options, search_term, promise, line,
+                                         column, line_offset, file.fileName()));
+              }
+              if (promise.isCanceled()) {
+                LOG() << "Searching for" << search_term << "has been cancelled";
+                return;
+              }
+              column++;
+              line_offset += line.size() + 1;
+            }
+            if (!file_results.isEmpty()) {
+              promise.addResult(file_results);
+            }
+          }
+        }
+      });
+  search_result_watcher.setFuture(future);
 }
 
 void FindInFilesController::OnSelectedResultChanged() {
@@ -150,209 +352,15 @@ void FindInFilesController::openSelectedResultInEditor() {
                                      result.row);
 }
 
-void FindInFilesController::OnResultFound(QList<FileSearchResult> results) {
+void FindInFilesController::OnResultFound(int i) {
+  ResultBatch results = search_result_watcher.resultAt(i);
   search_results->Append(results);
   emit searchStatusChanged();
 }
 
 void FindInFilesController::OnSearchComplete() {
   LOG() << "Search is complete";
-  find_task = nullptr;
   emit searchStatusChanged();
-}
-
-void FindInFilesController::CancelSearchIfRunning() {
-  if (find_task) {
-    find_task->is_cancelled = true;
-  }
-}
-
-static bool MatchesWildcard(const QString& str, const QString& pattern) {
-  QStringList parts = pattern.split('*');
-  int pos = 0;
-  for (int i = 0; i < parts.size(); i++) {
-    const QString& part = parts[i];
-    if (part.isEmpty()) {
-      continue;
-    }
-    int j = str.indexOf(part, pos, Qt::CaseSensitive);
-    if (j < 0) {
-      return false;
-    }
-    if (i == 0 && j != 0) {
-      return false;
-    } else if (i == parts.size() - 1 && part.size() + j != str.size()) {
-      return false;
-    }
-    pos = part.size() + j + 1;
-  }
-  return true;
-}
-
-FindInFilesTask::FindInFilesTask(const QString& search_term,
-                                 FindInFilesOptions options)
-    : BaseIoTask(), search_term(search_term), options(options) {
-  folder = Application::Get().project.GetCurrentProject().path;
-  if (options.regexp) {
-    QRegularExpression::PatternOptions regex_opts =
-        QRegularExpression::NoPatternOption;
-    if (!options.match_case) {
-      regex_opts |= QRegularExpression::CaseInsensitiveOption;
-    }
-    QString pattern = search_term;
-    if (options.match_whole_word) {
-      pattern = "\\b" + pattern + "\\b";
-    }
-    search_term_regex = QRegularExpression(pattern, regex_opts);
-  }
-}
-
-static QString HighlightMatch(const QString& line, int match_pos,
-                              int match_length) {
-  const static int kMaxLength = 200;
-  QString before = line.sliced(0, match_pos).toHtmlEscaped();
-  QString match = line.sliced(match_pos, match_length).toHtmlEscaped();
-  QString after = line.sliced(match_pos + match_length,
-                              line.size() - match_pos - match_length)
-                      .toHtmlEscaped();
-  int padding = match_length < kMaxLength ? (kMaxLength - match.size()) / 2 : 0;
-  if (before.size() > padding) {
-    before = "..." + before.sliced(before.size() - padding);
-  }
-  if (after.size() > padding) {
-    after = after.sliced(0, padding) + "...";
-  }
-  return before + "<b>" + match + "</b>" + after;
-}
-
-void FindInFilesTask::RunInBackground() {
-  QList<QString> folders = {folder};
-  if (options.include_external_search_folders) {
-    QList<QString> external = Database::ExecQueryAndRead<QString>(
-        "SELECT * FROM external_search_folder", &Database::ReadStringFromSql);
-    folders.append(external);
-  }
-  QList<QString> paths_to_exclude;
-  if (options.exclude_git_ignored_files) {
-    paths_to_exclude = GitSystem::FindIgnoredPathsSync();
-  }
-  for (const QString& folder : folders) {
-    QDirIterator it(folder, QDir::Files, QDirIterator::Subdirectories);
-    while (it.hasNext()) {
-      QFile file(it.next());
-      bool file_excluded = false;
-      for (const QString& excluded_path : paths_to_exclude) {
-        if (file.fileName().startsWith(excluded_path)) {
-          file_excluded = true;
-          break;
-        }
-      }
-      bool not_included =
-          !options.files_to_include.isEmpty() &&
-          !MatchesWildcard(file.fileName(), options.files_to_include);
-      bool excluded =
-          !options.files_to_exclude.isEmpty() &&
-          MatchesWildcard(file.fileName(), options.files_to_exclude);
-      if (file_excluded || not_included || excluded ||
-          !file.open(QIODevice::ReadOnly)) {
-        continue;
-      }
-      QTextStream stream(&file);
-      QList<FileSearchResult> file_results;
-      bool seen_replacement_char = false;
-      bool seen_null = false;
-      int column = 1;
-      int line_offset = 0;
-      while (!stream.atEnd()) {
-        QString line = stream.readLine();
-        if (line.contains("\uFFFD")) {
-          seen_replacement_char = true;
-        }
-        if (line.contains('\0')) {
-          seen_null = true;
-        }
-        if (seen_replacement_char && seen_null) {
-          LOG() << "Skipping binary file" << file.fileName();
-          file_results.clear();
-          break;
-        }
-        if (options.regexp) {
-          file_results.append(
-              FindRegex(line, column, line_offset, file.fileName()));
-        } else {
-          file_results.append(Find(line, column, line_offset, file.fileName()));
-        }
-        if (is_cancelled) {
-          LOG() << "Searching for" << search_term << "has been cancelled";
-          return;
-        }
-        column++;
-        line_offset += line.size() + 1;
-      }
-      if (!file_results.isEmpty()) {
-        emit resultsFound(file_results);
-      }
-    }
-  }
-}
-
-QList<FileSearchResult> FindInFilesTask::Find(const QString& line, int column,
-                                              int offset,
-                                              const QString& file_name) const {
-  QList<FileSearchResult> results;
-  int pos = 0;
-  while (true) {
-    Qt::CaseSensitivity sensitivity;
-    if (options.match_case) {
-      sensitivity = Qt::CaseSensitive;
-    } else {
-      sensitivity = Qt::CaseInsensitive;
-    }
-    int row = line.indexOf(search_term, pos, sensitivity);
-    if (row < 0) {
-      break;
-    }
-    bool letter_before = row > 0 && line[row - 1].isLetter();
-    bool letter_after = row + search_term.size() < line.size() &&
-                        line[row + search_term.size()].isLetter();
-    if (!options.match_whole_word || (!letter_before && !letter_after)) {
-      FileSearchResult result;
-      result.file_path = file_name;
-      result.match = HighlightMatch(line, row, search_term.size());
-      result.column = column;
-      result.row = row + 1;
-      result.offset = offset + row;
-      result.match_length = search_term.size();
-      results.append(result);
-    }
-    pos = row + search_term.size() + 1;
-    if (is_cancelled) {
-      break;
-    }
-  }
-  return results;
-}
-
-QList<FileSearchResult> FindInFilesTask::FindRegex(
-    const QString& line, int column, int offset,
-    const QString& file_name) const {
-  QList<FileSearchResult> results;
-  for (auto it = search_term_regex.globalMatch(line); it.hasNext();) {
-    QRegularExpressionMatch match = it.next();
-    FileSearchResult result;
-    result.file_path = file_name;
-    result.match =
-        HighlightMatch(line, match.capturedStart(0), match.capturedLength(0));
-    result.column = column;
-    result.row = match.capturedStart(0) + 1;
-    result.offset = offset + match.capturedStart(0);
-    result.match_length = match.capturedLength(0);
-    results.append(result);
-    if (is_cancelled) {
-      break;
-    }
-  }
-  return results;
 }
 
 FileSearchResultListModel::FileSearchResultListModel(QObject* parent)
@@ -370,7 +378,7 @@ void FileSearchResultListModel::Clear() {
   LoadRemoved(count);
 }
 
-void FileSearchResultListModel::Append(const QList<FileSearchResult>& items) {
+void FileSearchResultListModel::Append(const ResultBatch& items) {
   if (items.isEmpty()) {
     return;
   }
