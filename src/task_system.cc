@@ -28,81 +28,6 @@ bool TaskExecution::operator!=(const TaskExecution& another) const {
   return !(*this == another);
 }
 
-class RunExecutableCommand : public RunTaskCommand {
- public:
-  RunExecutableCommand(const Task& task) : executable(task.executable) {
-    QObject::connect(
-        &process, &QProcess::readyReadStandardOutput, this,
-        [this] { emit outputWritten(process.readAllStandardOutput(), false); });
-    QObject::connect(&process, &QProcess::readyReadStandardError, this, [this] {
-      emit outputWritten(process.readAllStandardError(), true);
-    });
-    QObject::connect(&process, &QProcess::errorOccurred, this,
-                     [this](QProcess::ProcessError error) {
-                       if (error != QProcess::FailedToStart) {
-                         return;
-                       }
-                       emit outputWritten("Failed to start executable\n", true);
-                       emit finished(-1);
-                     });
-    QObject::connect(&process, &QProcess::finished, this,
-                     [this](int exit_code, QProcess::ExitStatus) {
-                       emit finished(exit_code);
-                     });
-  }
-
-  virtual void Start() override {
-    process.startCommand(executable.path);
-    emit outputWritten(executable.path + '\n', false);
-  }
-
-  virtual void Cancel(bool forcefully) override {
-    if (forcefully) {
-      process.kill();
-    } else {
-      process.terminate();
-    }
-  }
-
- private:
-  QProcess process;
-  ExecutableTask executable;
-};
-
-class RunUntilFailCommand : public RunTaskCommand {
- public:
-  RunUntilFailCommand(Ptr<RunTaskCommand> target, QUuid execution_id,
-                      QHash<QUuid, TaskExecution>& executions)
-      : target(target), execution_id(execution_id), executions(executions) {
-    QObject::connect(target.get(), &RunTaskCommand::outputWritten, this,
-                     [this](const QString& output, bool is_stderr) {
-                       emit outputWritten(output, is_stderr);
-                     });
-    QObject::connect(target.get(), &RunTaskCommand::finished, this,
-                     &RunUntilFailCommand::HandleTargetFinished);
-  }
-
-  virtual void Start() override { target->Start(); }
-
-  virtual void Cancel(bool forcefully) override { target->Cancel(forcefully); }
-
- private:
-  void HandleTargetFinished(int exit_code) {
-    if (exit_code != 0) {
-      emit finished(exit_code);
-    } else {
-      TaskExecution& exec = executions[execution_id];
-      exec.output.clear();
-      exec.stderr_line_indices.clear();
-      target->Start();
-    }
-  }
-
-  Ptr<RunTaskCommand> target;
-  QUuid execution_id;
-  QHash<QUuid, TaskExecution>& executions;
-};
-
 QString TaskSystem::GetName(const Task& task) {
   if (!task.executable.IsNull()) {
     return Path::GetFileName(task.executable.path);
@@ -123,22 +48,11 @@ void TaskSystem::executeTask(int i, bool repeat_until_fail) {
   exec.start_time = QDateTime::currentDateTime();
   exec.task_id = task.id;
   exec.task_name = GetName(task);
-  Ptr<RunTaskCommand> cmd = Ptr<RunExecutableCommand>::create(task);
+  ProcessExitCallback cb = CreateExecutableProcess(exec_id, task);
   if (repeat_until_fail) {
-    cmd = Ptr<RunUntilFailCommand>::create(cmd, exec_id, active_executions);
+    cb = CreateRepeatableProcess(exec_id, std::move(cb));
   }
-  active_commands[exec_id] = cmd;
-  QObject::connect(
-      cmd.get(), &RunTaskCommand::outputWritten, this,
-      [this, exec_id](const QString& output, bool is_stderr) {
-        AppendToExecutionOutput(exec_id, output, is_stderr);
-      },
-      Qt::QueuedConnection);
-  QObject::connect(
-      cmd.get(), &RunTaskCommand::finished, this,
-      [this, exec_id](int exit_code) { FinishExecution(exec_id, exit_code); },
-      Qt::QueuedConnection);
-  cmd->Start();
+  SetupAndRunProcess(exec_id, std::move(cb));
   tasks.move(i, 0);
   emit taskListRefreshed();
   SetSelectedExecutionId(exec_id);
@@ -147,11 +61,11 @@ void TaskSystem::executeTask(int i, bool repeat_until_fail) {
 
 void TaskSystem::KillAllTasks() {
   LOG() << "Killing all tasks";
-  for (Ptr<RunTaskCommand> cmd : qAsConst(active_commands)) {
-    cmd->Cancel(true);
+  for (ProcessPtr proc : qAsConst(active_processes)) {
+    proc->kill();
   }
   active_executions.clear();
-  active_commands.clear();
+  active_processes.clear();
 }
 
 static std::function<TaskExecution(QSqlQuery&)> MakeReadExecutionFromSql(
@@ -174,13 +88,27 @@ static std::function<TaskExecution(QSqlQuery&)> MakeReadExecutionFromSql(
   };
 }
 
+void TaskSystem::AppendToExecutionOutput(QUuid id, bool is_stderr) {
+  if (!active_processes.contains(id)) {
+    return;
+  }
+  ProcessPtr proc = active_processes[id];
+  QString data;
+  if (is_stderr) {
+    data = proc->readAllStandardError();
+  } else {
+    data = proc->readAllStandardOutput();
+  }
+  AppendToExecutionOutput(id, data, is_stderr);
+}
+
 void TaskSystem::AppendToExecutionOutput(QUuid id, QString data,
                                          bool is_stderr) {
   if (!active_executions.contains(id)) {
     return;
   }
-  data.remove('\r');
   TaskExecution& exec = active_executions[id];
+  data.remove('\r');
   if (is_stderr) {
     int lines_before = exec.output.count('\n');
     for (int i = 0; i < data.count('\n'); i++) {
@@ -216,7 +144,7 @@ void TaskSystem::FinishExecution(QUuid id, int exit_code) {
   }
   Database::ExecCmdsAsync(cmds);
   active_executions.remove(id);
-  active_commands.remove(id);
+  active_processes.remove(id);
   emit executionFinished(id);
 }
 
@@ -270,12 +198,69 @@ bool TaskSystem::IsExecutionRunning(QUuid execution_id) const {
 }
 
 void TaskSystem::cancelSelectedExecution(bool forcefully) {
-  if (!active_commands.contains(selected_execution_id)) {
+  if (!active_processes.contains(selected_execution_id)) {
     return;
   }
   LOG() << "Attempting to cancel execution" << selected_execution_id
         << "forcefully:" << forcefully;
-  active_commands[selected_execution_id]->Cancel(forcefully);
+  ProcessPtr p = active_processes[selected_execution_id];
+  if (forcefully) {
+    p->kill();
+  } else {
+    p->terminate();
+  }
+}
+
+ProcessExitCallback TaskSystem::CreateExecutableProcess(QUuid id,
+                                                        const Task& task) {
+  ProcessPtr p = ProcessPtr::create();
+  p->setProgram(task.executable.path);
+  active_processes[id] = p;
+  AppendToExecutionOutput(id, task.executable.path + '\n', false);
+  return [id, this](int exit_code, QProcess::ExitStatus) {
+    FinishExecution(id, exit_code);
+  };
+}
+
+ProcessExitCallback TaskSystem::CreateRepeatableProcess(
+    QUuid id, ProcessExitCallback&& cb) {
+  return [id, cb = std::move(cb), this](int exit_code,
+                                        QProcess::ExitStatus status) {
+    if (exit_code != 0) {
+      cb(exit_code, status);
+    } else {
+      TaskExecution& exec = active_executions[id];
+      exec.output.clear();
+      exec.stderr_line_indices.clear();
+      ProcessPtr p = active_processes[id];
+      AppendToExecutionOutput(id, p->program() + '\n', false);
+      p->start();
+    }
+  };
+}
+
+void TaskSystem::SetupAndRunProcess(QUuid id, ProcessExitCallback&& cb) {
+  ProcessPtr p = active_processes[id];
+  connect(
+      p.get(), &QProcess::readyReadStandardError, this,
+      [id, this] { AppendToExecutionOutput(id, true); }, Qt::QueuedConnection);
+  connect(
+      p.get(), &QProcess::readyReadStandardOutput, this,
+      [id, this] { AppendToExecutionOutput(id, false); }, Qt::QueuedConnection);
+  connect(
+      p.get(), &QProcess::errorOccurred, this,
+      [id, this](QProcess::ProcessError error) {
+        if (error != QProcess::FailedToStart ||
+            !active_processes.contains(id)) {
+          return;
+        }
+        AppendToExecutionOutput(id, "Failed to start executable\n", true);
+        emit active_processes[id]->finished(-1);
+      },
+      Qt::QueuedConnection);
+  connect(p.get(), &QProcess::finished, this, std::move(cb),
+          Qt::QueuedConnection);
+  p->start();
 }
 
 static TaskExecution ReadTaskExecutionStartTime(QSqlQuery& query) {

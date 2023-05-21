@@ -43,16 +43,8 @@ struct TaskExecution {
   bool operator!=(const TaskExecution& another) const;
 };
 
-class RunTaskCommand : public QObject {
-  Q_OBJECT
- public:
-  virtual void Start() = 0;
-  virtual void Cancel(bool forcefully) = 0;
-
- signals:
-  void outputWritten(const QString& data, bool is_stderr);
-  void finished(int exit_code);
-};
+using ProcessExitCallback = std::function<void(int, QProcess::ExitStatus)>;
+using ProcessPtr = QSharedPointer<QProcess>;
 
 class TaskSystem : public QObject {
   Q_OBJECT
@@ -87,11 +79,16 @@ class TaskSystem : public QObject {
   void selectedExecutionChanged();
 
  private:
+  ProcessExitCallback CreateExecutableProcess(QUuid id, const Task& task);
+  ProcessExitCallback CreateRepeatableProcess(QUuid id,
+                                              ProcessExitCallback&& cb);
+  void SetupAndRunProcess(QUuid id, ProcessExitCallback&& cb);
+  void AppendToExecutionOutput(QUuid id, bool is_stderr);
   void AppendToExecutionOutput(QUuid id, QString data, bool is_stderr);
   void FinishExecution(QUuid id, int exit_code);
 
   QHash<QUuid, TaskExecution> active_executions;
-  QHash<QUuid, QSharedPointer<RunTaskCommand>> active_commands;
+  QHash<QUuid, ProcessPtr> active_processes;
   QList<Task> tasks;
   QUuid selected_execution_id;
 };
