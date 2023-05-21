@@ -77,16 +77,14 @@ void SqliteTableController::load() {
   if (!query.offset.isEmpty()) {
     sql += " OFFSET " + query.offset;
   }
-  QFuture<SqliteQueryResult> result = SqliteSystem::ExecuteQuery(sql);
-  IoTask::Then<SqliteQueryResult>(
-      result, this, [this](SqliteQueryResult result) {
-        if (!result.error.isEmpty()) {
-          table->SetPlaceholder(result.error, "red");
-        } else {
-          table->SetTable(result.columns, result.rows);
-          table->SetPlaceholder();
-        }
-      });
+  SqliteSystem::ExecuteQuery(sql).Then(this, [this](SqliteQueryResult result) {
+    if (!result.error.isEmpty()) {
+      table->SetPlaceholder(result.error, "red");
+    } else {
+      table->SetTable(result.columns, result.rows);
+      table->SetPlaceholder();
+    }
+  });
 }
 
 void SqliteTableController::setLimit(const QString& value) {

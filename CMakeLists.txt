@@ -49,7 +49,6 @@ qt_add_executable(cpp-dev-tools
   src/notification_list_controller.cc
   src/ui_icon.h
   src/io_task.h
-  src/io_task.cc
   src/find_in_files_controller.h
   src/find_in_files_controller.cc
   src/git_system.h
@@ -80,6 +79,7 @@ qt_add_executable(cpp-dev-tools
   src/placeholder.cc
   src/new_git_branch_controller.h
   src/new_git_branch_controller.cc
+  src/promise.h
   src/main.cc)
 if(NOT MSVC)
   # TODO: figure out how to enable all warnings in MSVC without triggering

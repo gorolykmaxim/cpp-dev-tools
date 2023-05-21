@@ -77,10 +77,8 @@ void TaskExecutionListController::LoadExecutions() {
   LOG() << "Refreshing history of executions";
   Application& app = Application::Get();
   const Project& current_project = app.project.GetCurrentProject();
-  QFuture<QList<TaskExecution>> result =
-      app.task.FetchExecutions(current_project.id);
-  IoTask::Then<QList<TaskExecution>>(
-      result, this, [this, &app](const QList<TaskExecution>& result) {
+  app.task.FetchExecutions(current_project.id)
+      .Then(this, [this, &app](const QList<TaskExecution>& result) {
         executions->list = result;
         if (app.task.GetSelectedExecutionId().isNull() &&
             !executions->list.isEmpty()) {

@@ -2,7 +2,6 @@
 
 #include <QByteArray>
 #include <QDateTime>
-#include <QFuture>
 #include <QList>
 #include <QObject>
 #include <QProcess>
@@ -12,6 +11,7 @@
 #include <entt.hpp>
 #include <optional>
 
+#include "promise.h"
 #include "ui_icon.h"
 
 struct ExecutableTask {
@@ -53,8 +53,8 @@ class TaskSystem : public QObject {
   }
 
   void KillAllTasks();
-  QFuture<QList<TaskExecution>> FetchExecutions(QUuid project_id) const;
-  QFuture<TaskExecution> FetchExecution(QUuid execution_id,
+  Promise<QList<TaskExecution>> FetchExecutions(QUuid project_id) const;
+  Promise<TaskExecution> FetchExecution(QUuid execution_id,
                                         bool include_output) const;
   bool IsExecutionRunning(QUuid execution_id) const;
   void FindTasks();

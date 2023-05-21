@@ -66,7 +66,7 @@ QString SqliteSystem::GetSelectedFileName() const {
 
 bool SqliteSystem::IsFileSelected() const { return !selected_file.IsNull(); }
 
-QFuture<SqliteQueryResult> SqliteSystem::ExecuteQuery(const QString& query) {
+Promise<SqliteQueryResult> SqliteSystem::ExecuteQuery(const QString& query) {
   return IoTask::Run<SqliteQueryResult>([query] {
     LOG() << "Executing query" << query;
     SqliteQueryResult result;

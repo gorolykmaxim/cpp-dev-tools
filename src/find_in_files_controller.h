@@ -3,7 +3,6 @@
 
 #include <QObject>
 #include <QtQmlIntegration>
-#include <atomic>
 
 #include "syntax.h"
 #include "text_list_model.h"

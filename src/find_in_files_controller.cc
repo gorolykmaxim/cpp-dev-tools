@@ -200,12 +200,10 @@ void FindInFilesController::search() {
   if (search_term.isEmpty()) {
     return;
   }
-  Application& app = Application::Get();
-  QString folder = app.project.GetCurrentProject().path;
+  QString folder = Application::Get().project.GetCurrentProject().path;
   QString search_term = this->search_term;
   FindInFilesOptions options = this->options;
-  QFuture<ResultBatch> future = QtConcurrent::run(
-      &app.io_thread_pool,
+  QFuture<ResultBatch> future = IoTask::Run<ResultBatch>(
       [options, search_term, folder](QPromise<ResultBatch>& promise) {
         QRegularExpression search_term_regex;
         if (options.regexp) {

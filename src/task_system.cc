@@ -155,7 +155,7 @@ const TaskExecution* TaskSystem::FindExecutionById(QUuid id) const {
   return nullptr;
 }
 
-QFuture<QList<TaskExecution>> TaskSystem::FetchExecutions(
+Promise<QList<TaskExecution>> TaskSystem::FetchExecutions(
     QUuid project_id) const {
   LOG() << "Fetching executions for project" << project_id;
   QList<TaskExecution> execs;
@@ -184,7 +184,7 @@ QFuture<QList<TaskExecution>> TaskSystem::FetchExecutions(
   });
 }
 
-QFuture<TaskExecution> TaskSystem::FetchExecution(QUuid execution_id,
+Promise<TaskExecution> TaskSystem::FetchExecution(QUuid execution_id,
                                                   bool include_output) const {
   LOG() << "Fetching execution" << execution_id
         << "including output:" << include_output;
