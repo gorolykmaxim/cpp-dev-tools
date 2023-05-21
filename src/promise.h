@@ -9,6 +9,7 @@
 template <typename T>
 class Promise : public QFuture<T> {
  public:
+  Promise() : QFuture<T>() {}
   explicit Promise(const T& t) : QFuture<T>(QtFuture::makeReadyFuture(t)) {}
   explicit Promise(T&& t) : QFuture<T>(QtFuture::makeReadyFuture(t)) {}
   Promise(const QFuture<T>& another) : QFuture<T>(another) {}

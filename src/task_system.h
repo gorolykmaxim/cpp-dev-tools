@@ -34,9 +34,6 @@ struct TaskExecution {
   bool operator!=(const TaskExecution& another) const;
 };
 
-using ProcessExitCallback = std::function<void(int, QProcess::ExitStatus)>;
-using ProcessPtr = QSharedPointer<QProcess>;
-
 class TaskSystem : public QObject {
   Q_OBJECT
   Q_PROPERTY(
@@ -79,11 +76,9 @@ class TaskSystem : public QObject {
   void selectedExecutionChanged();
 
  private:
-  ProcessExitCallback CreateExecutableProcess(entt::entity entity,
-                                              int task_index);
-  ProcessExitCallback CreateRepeatableProcess(entt::entity entity,
-                                              ProcessExitCallback&& cb);
-  void SetupAndRunProcess(entt::entity entity, ProcessExitCallback&& cb);
+  Promise<int> RunTask(entt::entity e, int i);
+  Promise<int> RunTaskUntilFail(entt::entity e, int i);
+  Promise<int> RunProcess(entt::entity e);
   void AppendToExecutionOutput(entt::entity entity, bool is_stderr);
   void AppendToExecutionOutput(entt::entity entity, QString data,
                                bool is_stderr);

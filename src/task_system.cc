@@ -46,11 +46,16 @@ void TaskSystem::executeTask(int i, bool repeat_until_fail) {
   exec.start_time = QDateTime::currentDateTime();
   exec.task_id = task_id;
   exec.task_name = GetTaskName(i);
-  ProcessExitCallback cb = CreateExecutableProcess(entity, i);
+  registry.emplace<QProcess>(entity);
+  Promise<int> proc;
   if (repeat_until_fail) {
-    cb = CreateRepeatableProcess(entity, std::move(cb));
+    proc = RunTaskUntilFail(entity, i);
+  } else {
+    proc = RunTask(entity, i);
   }
-  SetupAndRunProcess(entity, std::move(cb));
+  proc.Then(this, [this, entity](int exit_code) {
+    FinishExecution(entity, exit_code);
+  });
   tasks.move(i, 0);
   emit taskListRefreshed();
   SetSelectedExecutionId(exec.id);
@@ -189,7 +194,7 @@ Promise<TaskExecution> TaskSystem::FetchExecution(QUuid execution_id,
   LOG() << "Fetching execution" << execution_id
         << "including output:" << include_output;
   if (const TaskExecution* exec = FindExecutionById(execution_id)) {
-    return QtFuture::makeReadyFuture(*exec);
+    return Promise<TaskExecution>(*exec);
   }
   return IoTask::Run<TaskExecution>([execution_id, include_output] {
     QString query = "SELECT id, start_time, task_id, task_name, exit_code";
@@ -223,58 +228,54 @@ void TaskSystem::cancelSelectedExecution(bool forcefully) {
   }
 }
 
-ProcessExitCallback TaskSystem::CreateExecutableProcess(entt::entity entity,
-                                                        int task_index) {
-  auto& t = GetTask<const ExecutableTask>(task_index);
-  auto& p = registry.emplace<QProcess>(entity);
-  p.setProgram(t.path);
-  AppendToExecutionOutput(entity, t.path + '\n', false);
-  return [entity, this](int exit_code, QProcess::ExitStatus) {
-    FinishExecution(entity, exit_code);
-  };
+Promise<int> TaskSystem::RunTask(entt::entity e, int i) {
+  auto& t = GetTask<const ExecutableTask>(i);
+  registry.get<QProcess>(e).setProgram(t.path);
+  AppendToExecutionOutput(e, t.path + '\n', false);
+  return RunProcess(e);
 }
 
-ProcessExitCallback TaskSystem::CreateRepeatableProcess(
-    entt::entity entity, ProcessExitCallback&& cb) {
-  return [entity, cb = std::move(cb), this](int exit_code,
-                                            QProcess::ExitStatus status) {
+Promise<int> TaskSystem::RunTaskUntilFail(entt::entity e, int i) {
+  return RunTask(e, i).Then<int>(this, [e, this, i](int exit_code) {
     if (exit_code != 0) {
-      cb(exit_code, status);
+      return Promise<int>(exit_code);
     } else {
-      auto& exec = registry.get<TaskExecution>(entity);
+      auto& exec = registry.get<TaskExecution>(e);
       exec.output.clear();
       exec.stderr_line_indices.clear();
-      auto& p = registry.get<QProcess>(entity);
-      AppendToExecutionOutput(entity, p.program() + '\n', false);
-      p.start();
+      return RunTaskUntilFail(e, i);
     }
-  };
+  });
 }
 
-void TaskSystem::SetupAndRunProcess(entt::entity entity,
-                                    ProcessExitCallback&& cb) {
-  auto& p = registry.get<QProcess>(entity);
+Promise<int> TaskSystem::RunProcess(entt::entity e) {
+  auto promise = QSharedPointer<QPromise<int>>::create();
+  auto& p = registry.get<QProcess>(e);
   connect(
       &p, &QProcess::readyReadStandardError, this,
-      [entity, this] { AppendToExecutionOutput(entity, true); },
-      Qt::QueuedConnection);
+      [e, this] { AppendToExecutionOutput(e, true); }, Qt::QueuedConnection);
   connect(
       &p, &QProcess::readyReadStandardOutput, this,
-      [entity, this] { AppendToExecutionOutput(entity, false); },
-      Qt::QueuedConnection);
+      [e, this] { AppendToExecutionOutput(e, false); }, Qt::QueuedConnection);
   connect(
       &p, &QProcess::errorOccurred, this,
-      [entity, this](QProcess::ProcessError error) {
-        if (error != QProcess::FailedToStart ||
-            !registry.all_of<QProcess>(entity)) {
+      [e, this](QProcess::ProcessError error) {
+        if (error != QProcess::FailedToStart || !registry.all_of<QProcess>(e)) {
           return;
         }
-        AppendToExecutionOutput(entity, "Failed to start executable\n", true);
-        emit registry.get<QProcess>(entity).finished(-1);
+        AppendToExecutionOutput(e, "Failed to start executable\n", true);
+        emit registry.get<QProcess>(e).finished(-1);
       },
       Qt::QueuedConnection);
-  connect(&p, &QProcess::finished, this, std::move(cb), Qt::QueuedConnection);
+  connect(
+      &p, &QProcess::finished, this,
+      [promise](int exit_code, QProcess::ExitStatus) {
+        promise->addResult(exit_code);
+        promise->finish();
+      },
+      Qt::QueuedConnection);
   p.start();
+  return promise->future();
 }
 
 static TaskExecution ReadTaskExecutionStartTime(QSqlQuery& query) {
