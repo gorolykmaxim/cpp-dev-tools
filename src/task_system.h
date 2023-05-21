@@ -9,26 +9,16 @@
 #include <QSqlQuery>
 #include <QString>
 #include <QUuid>
+#include <entt.hpp>
 #include <optional>
 
 #include "ui_icon.h"
 
 struct ExecutableTask {
   QString path;
-
-  bool IsNull() const;
 };
 
-using TaskId = QString;
-
-struct Task {
-  TaskId id;
-  ExecutableTask executable;
-
-  explicit Task(const TaskId& id);
-};
-
-QDebug operator<<(QDebug debug, const Task& task);
+typedef QString TaskId;
 
 struct TaskExecution {
   QUuid id;
@@ -39,6 +29,7 @@ struct TaskExecution {
   QSet<int> stderr_line_indices;
   QString output;
 
+  UiIcon GetStatusAsIcon() const;
   bool operator==(const TaskExecution& another) const;
   bool operator!=(const TaskExecution& another) const;
 };
@@ -51,8 +42,16 @@ class TaskSystem : public QObject {
   Q_PROPERTY(
       QString currentTaskName READ GetCurrentTaskName NOTIFY taskListRefreshed)
  public:
-  static QString GetName(const Task& task);
-  static UiIcon GetStatusAsIcon(const TaskExecution& exec);
+  template <typename T>
+  T& GetTask(int i) {
+    return registry.get<T>(tasks[i]);
+  }
+
+  template <typename T>
+  bool IsTask(int i) {
+    return registry.all_of<T>(tasks[i]);
+  }
+
   void KillAllTasks();
   QFuture<QList<TaskExecution>> FetchExecutions(QUuid project_id) const;
   QFuture<TaskExecution> FetchExecution(QUuid execution_id,
@@ -60,7 +59,8 @@ class TaskSystem : public QObject {
   bool IsExecutionRunning(QUuid execution_id) const;
   void FindTasks();
   void ClearTasks();
-  const QList<Task>& GetTasks() const;
+  QString GetTaskName(int i) const;
+  int GetTaskCount() const;
   QString GetCurrentTaskName() const;
   void SetSelectedExecutionId(QUuid id);
   QUuid GetSelectedExecutionId() const;
@@ -79,16 +79,18 @@ class TaskSystem : public QObject {
   void selectedExecutionChanged();
 
  private:
-  ProcessExitCallback CreateExecutableProcess(QUuid id, const Task& task);
-  ProcessExitCallback CreateRepeatableProcess(QUuid id,
+  ProcessExitCallback CreateExecutableProcess(entt::entity entity,
+                                              int task_index);
+  ProcessExitCallback CreateRepeatableProcess(entt::entity entity,
                                               ProcessExitCallback&& cb);
-  void SetupAndRunProcess(QUuid id, ProcessExitCallback&& cb);
-  void AppendToExecutionOutput(QUuid id, bool is_stderr);
-  void AppendToExecutionOutput(QUuid id, QString data, bool is_stderr);
-  void FinishExecution(QUuid id, int exit_code);
+  void SetupAndRunProcess(entt::entity entity, ProcessExitCallback&& cb);
+  void AppendToExecutionOutput(entt::entity entity, bool is_stderr);
+  void AppendToExecutionOutput(entt::entity entity, QString data,
+                               bool is_stderr);
+  void FinishExecution(entt::entity entity, int exit_code);
+  const TaskExecution* FindExecutionById(QUuid id) const;
 
-  QHash<QUuid, TaskExecution> active_executions;
-  QHash<QUuid, ProcessPtr> active_processes;
-  QList<Task> tasks;
+  entt::registry registry;
+  QList<entt::entity> tasks;
   QUuid selected_execution_id;
 };

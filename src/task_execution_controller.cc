@@ -41,7 +41,7 @@ void TaskExecutionController::LoadExecution(bool include_output) {
         execution_status +=
             "&nbsp;&nbsp;&nbsp;Start Time: <b>" +
             exec.start_time.toString(Application::kDateTimeFormat) + "</b>";
-        UiIcon icon = TaskSystem::GetStatusAsIcon(exec);
+        UiIcon icon = exec.GetStatusAsIcon();
         execution_icon = icon.icon;
         execution_icon_color = icon.color;
         if (include_output) {

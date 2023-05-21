@@ -15,7 +15,7 @@ TaskExecutionListModel::TaskExecutionListModel(QObject* parent)
 
 QVariantList TaskExecutionListModel::GetRow(int i) const {
   const TaskExecution& exec = list[i];
-  UiIcon icon = TaskSystem::GetStatusAsIcon(exec);
+  UiIcon icon = exec.GetStatusAsIcon();
   return {exec.task_name,
           exec.start_time.toString(Application::kDateTimeFormat), icon.icon,
           icon.color};
@@ -93,13 +93,12 @@ void TaskExecutionListController::LoadExecutions() {
 int TaskExecutionListController::IndexOfExecutionTask() const {
   Application& app = Application::Get();
   QUuid execution_id = app.task.GetSelectedExecutionId();
-  const QList<Task>& tasks = app.task.GetTasks();
   for (const TaskExecution& exec : executions->list) {
     if (exec.id != execution_id) {
       continue;
     }
-    for (int i = 0; i < tasks.size(); i++) {
-      if (exec.task_id == tasks[i].id) {
+    for (int i = 0; i < app.task.GetTaskCount(); i++) {
+      if (exec.task_id == app.task.GetTask<TaskId>(i)) {
         return i;
       }
     }

@@ -8,16 +8,22 @@
 
 #define LOG() qDebug() << "[TaskSystem]"
 
-template <typename T>
-using Ptr = QSharedPointer<T>;
-
-bool ExecutableTask::IsNull() const { return path.isEmpty(); }
-
-Task::Task(const TaskId& id) : id(id) {}
-
-QDebug operator<<(QDebug debug, const Task& task) {
-  QDebugStateSaver saver(debug);
-  return debug.nospace() << "Task(id=" << task.id << ')';
+UiIcon TaskExecution::GetStatusAsIcon() const {
+  static const Theme kTheme;
+  UiIcon icon;
+  if (!exit_code) {
+    icon.icon = "autorenew";
+    icon.color = "green";
+  } else {
+    if (*exit_code == 0) {
+      icon.icon = "check";
+      icon.color = kTheme.kColorText;
+    } else {
+      icon.icon = "error";
+      icon.color = "red";
+    }
+  }
+  return icon;
 }
 
 bool TaskExecution::operator==(const TaskExecution& another) const {
@@ -28,44 +34,37 @@ bool TaskExecution::operator!=(const TaskExecution& another) const {
   return !(*this == another);
 }
 
-QString TaskSystem::GetName(const Task& task) {
-  if (!task.executable.IsNull()) {
-    return Path::GetFileName(task.executable.path);
-  } else {
-    return task.id;
-  }
-}
-
 void TaskSystem::executeTask(int i, bool repeat_until_fail) {
   if (i < 0 || i >= tasks.size()) {
     return;
   }
-  const Task& task = tasks[i];
-  LOG() << "Executing" << task;
-  QUuid exec_id = QUuid::createUuid();
-  TaskExecution& exec = active_executions[exec_id];
-  exec.id = exec_id;
+  auto& task_id = GetTask<TaskId>(i);
+  LOG() << "Executing" << task_id;
+  entt::entity entity = registry.create();
+  auto& exec = registry.emplace<TaskExecution>(entity);
+  exec.id = QUuid::createUuid();
   exec.start_time = QDateTime::currentDateTime();
-  exec.task_id = task.id;
-  exec.task_name = GetName(task);
-  ProcessExitCallback cb = CreateExecutableProcess(exec_id, task);
+  exec.task_id = task_id;
+  exec.task_name = GetTaskName(i);
+  ProcessExitCallback cb = CreateExecutableProcess(entity, i);
   if (repeat_until_fail) {
-    cb = CreateRepeatableProcess(exec_id, std::move(cb));
+    cb = CreateRepeatableProcess(entity, std::move(cb));
   }
-  SetupAndRunProcess(exec_id, std::move(cb));
+  SetupAndRunProcess(entity, std::move(cb));
   tasks.move(i, 0);
   emit taskListRefreshed();
-  SetSelectedExecutionId(exec_id);
+  SetSelectedExecutionId(exec.id);
   Application::Get().view.SetCurrentView("TaskExecution.qml");
 }
 
 void TaskSystem::KillAllTasks() {
   LOG() << "Killing all tasks";
-  for (ProcessPtr proc : qAsConst(active_processes)) {
-    proc->kill();
+  QList<entt::entity> to_destroy;
+  for (auto [entity, proc] : registry.view<QProcess>().each()) {
+    proc.kill();
+    to_destroy.append(entity);
   }
-  active_executions.clear();
-  active_processes.clear();
+  registry.destroy(to_destroy.begin(), to_destroy.end());
 }
 
 static std::function<TaskExecution(QSqlQuery&)> MakeReadExecutionFromSql(
@@ -88,26 +87,26 @@ static std::function<TaskExecution(QSqlQuery&)> MakeReadExecutionFromSql(
   };
 }
 
-void TaskSystem::AppendToExecutionOutput(QUuid id, bool is_stderr) {
-  if (!active_processes.contains(id)) {
+void TaskSystem::AppendToExecutionOutput(entt::entity entity, bool is_stderr) {
+  if (!registry.all_of<QProcess>(entity)) {
     return;
   }
-  ProcessPtr proc = active_processes[id];
+  auto& proc = registry.get<QProcess>(entity);
   QString data;
   if (is_stderr) {
-    data = proc->readAllStandardError();
+    data = proc.readAllStandardError();
   } else {
-    data = proc->readAllStandardOutput();
+    data = proc.readAllStandardOutput();
   }
-  AppendToExecutionOutput(id, data, is_stderr);
+  AppendToExecutionOutput(entity, data, is_stderr);
 }
 
-void TaskSystem::AppendToExecutionOutput(QUuid id, QString data,
+void TaskSystem::AppendToExecutionOutput(entt::entity entity, QString data,
                                          bool is_stderr) {
-  if (!active_executions.contains(id)) {
+  if (!registry.all_of<TaskExecution>(entity)) {
     return;
   }
-  TaskExecution& exec = active_executions[id];
+  auto& exec = registry.get<TaskExecution>(entity);
   data.remove('\r');
   if (is_stderr) {
     int lines_before = exec.output.count('\n');
@@ -116,16 +115,16 @@ void TaskSystem::AppendToExecutionOutput(QUuid id, QString data,
     }
   }
   exec.output += data;
-  emit executionOutputChanged(id);
+  emit executionOutputChanged(exec.id);
 }
 
-void TaskSystem::FinishExecution(QUuid id, int exit_code) {
-  if (!active_executions.contains(id)) {
+void TaskSystem::FinishExecution(entt::entity entity, int exit_code) {
+  if (!registry.all_of<TaskExecution>(entity)) {
     return;
   }
-  TaskExecution& exec = active_executions[id];
+  auto exec = registry.get<TaskExecution>(entity);
   exec.exit_code = exit_code;
-  LOG() << "Task execution" << id << "finished with code" << exit_code;
+  LOG() << "Task execution" << exec.id << "finished with code" << exit_code;
   const Project& project = Application::Get().project.GetCurrentProject();
   QStringList indices;
   for (int i : qAsConst(exec.stderr_line_indices)) {
@@ -143,15 +142,26 @@ void TaskSystem::FinishExecution(QUuid id, int exit_code) {
                       {history_limit}));
   }
   Database::ExecCmdsAsync(cmds);
-  active_executions.remove(id);
-  active_processes.remove(id);
-  emit executionFinished(id);
+  registry.destroy(entity);
+  emit executionFinished(exec.id);
+}
+
+const TaskExecution* TaskSystem::FindExecutionById(QUuid id) const {
+  for (auto [_, exec] : registry.view<TaskExecution>().each()) {
+    if (exec.id == id) {
+      return &exec;
+    }
+  }
+  return nullptr;
 }
 
 QFuture<QList<TaskExecution>> TaskSystem::FetchExecutions(
     QUuid project_id) const {
   LOG() << "Fetching executions for project" << project_id;
-  QList<TaskExecution> execs = active_executions.values();
+  QList<TaskExecution> execs;
+  for (auto [_, exec] : registry.view<const TaskExecution>().each()) {
+    execs.append(exec);
+  }
   std::sort(execs.begin(), execs.end(),
             [](const TaskExecution& a, const TaskExecution& b) {
               return a.start_time < b.start_time;
@@ -178,8 +188,8 @@ QFuture<TaskExecution> TaskSystem::FetchExecution(QUuid execution_id,
                                                   bool include_output) const {
   LOG() << "Fetching execution" << execution_id
         << "including output:" << include_output;
-  if (active_executions.contains(execution_id)) {
-    return QtFuture::makeReadyFuture(active_executions[execution_id]);
+  if (const TaskExecution* exec = FindExecutionById(execution_id)) {
+    return QtFuture::makeReadyFuture(*exec);
   }
   return IoTask::Run<TaskExecution>([execution_id, include_output] {
     QString query = "SELECT id, start_time, task_id, task_name, exit_code";
@@ -194,73 +204,77 @@ QFuture<TaskExecution> TaskSystem::FetchExecution(QUuid execution_id,
 }
 
 bool TaskSystem::IsExecutionRunning(QUuid execution_id) const {
-  return active_executions.contains(execution_id);
+  return FindExecutionById(execution_id);
 }
 
 void TaskSystem::cancelSelectedExecution(bool forcefully) {
-  if (!active_processes.contains(selected_execution_id)) {
-    return;
-  }
-  LOG() << "Attempting to cancel execution" << selected_execution_id
-        << "forcefully:" << forcefully;
-  ProcessPtr p = active_processes[selected_execution_id];
-  if (forcefully) {
-    p->kill();
-  } else {
-    p->terminate();
+  for (auto [_, exec, proc] :
+       registry.view<const TaskExecution, QProcess>().each()) {
+    if (exec.id != selected_execution_id) {
+      continue;
+    }
+    LOG() << "Attempting to cancel execution" << selected_execution_id
+          << "forcefully:" << forcefully;
+    if (forcefully) {
+      proc.kill();
+    } else {
+      proc.terminate();
+    }
   }
 }
 
-ProcessExitCallback TaskSystem::CreateExecutableProcess(QUuid id,
-                                                        const Task& task) {
-  ProcessPtr p = ProcessPtr::create();
-  p->setProgram(task.executable.path);
-  active_processes[id] = p;
-  AppendToExecutionOutput(id, task.executable.path + '\n', false);
-  return [id, this](int exit_code, QProcess::ExitStatus) {
-    FinishExecution(id, exit_code);
+ProcessExitCallback TaskSystem::CreateExecutableProcess(entt::entity entity,
+                                                        int task_index) {
+  auto& t = GetTask<const ExecutableTask>(task_index);
+  auto& p = registry.emplace<QProcess>(entity);
+  p.setProgram(t.path);
+  AppendToExecutionOutput(entity, t.path + '\n', false);
+  return [entity, this](int exit_code, QProcess::ExitStatus) {
+    FinishExecution(entity, exit_code);
   };
 }
 
 ProcessExitCallback TaskSystem::CreateRepeatableProcess(
-    QUuid id, ProcessExitCallback&& cb) {
-  return [id, cb = std::move(cb), this](int exit_code,
-                                        QProcess::ExitStatus status) {
+    entt::entity entity, ProcessExitCallback&& cb) {
+  return [entity, cb = std::move(cb), this](int exit_code,
+                                            QProcess::ExitStatus status) {
     if (exit_code != 0) {
       cb(exit_code, status);
     } else {
-      TaskExecution& exec = active_executions[id];
+      auto& exec = registry.get<TaskExecution>(entity);
       exec.output.clear();
       exec.stderr_line_indices.clear();
-      ProcessPtr p = active_processes[id];
-      AppendToExecutionOutput(id, p->program() + '\n', false);
-      p->start();
+      auto& p = registry.get<QProcess>(entity);
+      AppendToExecutionOutput(entity, p.program() + '\n', false);
+      p.start();
     }
   };
 }
 
-void TaskSystem::SetupAndRunProcess(QUuid id, ProcessExitCallback&& cb) {
-  ProcessPtr p = active_processes[id];
+void TaskSystem::SetupAndRunProcess(entt::entity entity,
+                                    ProcessExitCallback&& cb) {
+  auto& p = registry.get<QProcess>(entity);
   connect(
-      p.get(), &QProcess::readyReadStandardError, this,
-      [id, this] { AppendToExecutionOutput(id, true); }, Qt::QueuedConnection);
+      &p, &QProcess::readyReadStandardError, this,
+      [entity, this] { AppendToExecutionOutput(entity, true); },
+      Qt::QueuedConnection);
   connect(
-      p.get(), &QProcess::readyReadStandardOutput, this,
-      [id, this] { AppendToExecutionOutput(id, false); }, Qt::QueuedConnection);
+      &p, &QProcess::readyReadStandardOutput, this,
+      [entity, this] { AppendToExecutionOutput(entity, false); },
+      Qt::QueuedConnection);
   connect(
-      p.get(), &QProcess::errorOccurred, this,
-      [id, this](QProcess::ProcessError error) {
+      &p, &QProcess::errorOccurred, this,
+      [entity, this](QProcess::ProcessError error) {
         if (error != QProcess::FailedToStart ||
-            !active_processes.contains(id)) {
+            !registry.all_of<QProcess>(entity)) {
           return;
         }
-        AppendToExecutionOutput(id, "Failed to start executable\n", true);
-        emit active_processes[id]->finished(-1);
+        AppendToExecutionOutput(entity, "Failed to start executable\n", true);
+        emit registry.get<QProcess>(entity).finished(-1);
       },
       Qt::QueuedConnection);
-  connect(p.get(), &QProcess::finished, this, std::move(cb),
-          Qt::QueuedConnection);
-  p->start();
+  connect(&p, &QProcess::finished, this, std::move(cb), Qt::QueuedConnection);
+  p.start();
 }
 
 static TaskExecution ReadTaskExecutionStartTime(QSqlQuery& query) {
@@ -273,22 +287,31 @@ static TaskExecution ReadTaskExecutionStartTime(QSqlQuery& query) {
 void TaskSystem::FindTasks() {
   QString project_path = Application::Get().project.GetCurrentProject().path;
   LOG() << "Refreshing task list";
-  QList<TaskExecution> active_execs = active_executions.values();
-  IoTask::Run<QList<Task>>(
+  QList<TaskExecution> active_execs;
+  for (auto [_, exec] : registry.view<const TaskExecution>().each()) {
+    active_execs.append(exec);
+  }
+  auto task_entities = QSharedPointer<QList<entt::entity>>::create();
+  auto task_registry = QSharedPointer<entt::registry>::create();
+  IoTask::Run(
       this,
-      [project_path, active_execs] {
-        QList<Task> results;
+      [project_path, active_execs, task_entities, task_registry] {
         QDirIterator it(project_path, QDir::Files | QDir::Executable,
                         QDirIterator::Subdirectories);
         while (it.hasNext()) {
           QString path = it.next();
           path.replace(project_path, ".");
-          Task task("exec:" + path);
-          task.executable.path = path;
-          results.append(task);
+          entt::entity entity = task_registry->create();
+          task_registry->emplace<TaskId>(entity, "exec:" + path);
+          auto& t = task_registry->emplace<ExecutableTask>(entity);
+          t.path = path;
+          task_entities->append(entity);
         }
-        std::sort(results.begin(), results.end(),
-                  [](const Task& a, const Task& b) { return a.id < b.id; });
+        std::sort(task_entities->begin(), task_entities->end(),
+                  [&task_registry](entt::entity a, entt::entity b) {
+                    return task_registry->get<TaskId>(a) <
+                           task_registry->get<TaskId>(b);
+                  });
         // Move executed tasks to the beginning so the most recently executed
         // task is first.
         QList<TaskExecution> execs = Database::ExecQueryAndRead<TaskExecution>(
@@ -319,36 +342,55 @@ void TaskSystem::FindTasks() {
                   });
         for (const TaskExecution& exec : execs) {
           int index = -1;
-          for (int i = 0; i < results.size(); i++) {
-            if (results[i].id == exec.task_id) {
+          for (int i = 0; i < task_entities->size(); i++) {
+            auto& task_id = task_registry->get<TaskId>(task_entities->at(i));
+            if (task_id == exec.task_id) {
               index = i;
               break;
             }
           }
           if (index >= 0) {
-            results.move(index, 0);
+            task_entities->move(index, 0);
           }
         }
-        return results;
       },
-      [this](QList<Task> results) {
-        tasks = std::move(results);
+      [this, task_entities, task_registry]() {
+        registry.destroy(tasks.begin(), tasks.end());
+        tasks.clear();
+        for (entt::entity entity : *task_entities) {
+          entt::entity e = registry.create();
+          tasks.append(e);
+          registry.emplace<TaskId>(e, task_registry->get<TaskId>(entity));
+          registry.emplace<ExecutableTask>(
+              e, task_registry->get<ExecutableTask>(entity));
+        }
         emit taskListRefreshed();
       });
 }
 
 void TaskSystem::ClearTasks() {
+  registry.destroy(tasks.begin(), tasks.end());
   tasks.clear();
   emit taskListRefreshed();
 }
 
-const QList<Task>& TaskSystem::GetTasks() const { return tasks; }
+QString TaskSystem::GetTaskName(int i) const {
+  entt::entity e = tasks[i];
+  if (registry.any_of<ExecutableTask>(e)) {
+    auto& t = registry.get<const ExecutableTask>(e);
+    return Path::GetFileName(t.path);
+  } else {
+    return registry.get<TaskId>(e);
+  }
+}
+
+int TaskSystem::GetTaskCount() const { return tasks.size(); }
 
 QString TaskSystem::GetCurrentTaskName() const {
   if (tasks.isEmpty()) {
     return "";
   }
-  return GetName(tasks[0]);
+  return GetTaskName(0);
 }
 
 void TaskSystem::SetSelectedExecutionId(QUuid id) {
@@ -368,22 +410,4 @@ void TaskSystem::Initialize() {
           "SELECT history_limit FROM task_context", &Database::ReadIntFromSql)
           .constFirst();
   LOG() << "Task history limit:" << history_limit;
-}
-
-UiIcon TaskSystem::GetStatusAsIcon(const TaskExecution& exec) {
-  Theme theme;
-  UiIcon icon;
-  if (!exec.exit_code) {
-    icon.icon = "autorenew";
-    icon.color = "green";
-  } else {
-    if (*exec.exit_code == 0) {
-      icon.icon = "check";
-      icon.color = theme.kColorText;
-    } else {
-      icon.icon = "error";
-      icon.color = "red";
-    }
-  }
-  return icon;
 }
