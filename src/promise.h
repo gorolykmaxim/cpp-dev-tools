@@ -9,6 +9,25 @@
 template <typename T>
 class Promise : public QFuture<T> {
  public:
+  template <typename... Promises>
+  static Promise<QList<T>> All(QObject* ctx, Promises&&... args) {
+    QList<Promise<T>> ps = {args...};
+    auto i = QSharedPointer<int>::create(ps.size());
+    auto result = QSharedPointer<QList<T>>::create();
+    auto qp = QSharedPointer<QPromise<QList<T>>>::create();
+    for (const Promise<T>& p : ps) {
+      p.Then(ctx, [i, qp, result](T t) {
+        (*i)--;
+        result->append(std::move(t));
+        if (*i == 0) {
+          qp->addResult(*result);
+          qp->finish();
+        }
+      });
+    }
+    return qp->future();
+  }
+
   Promise() : QFuture<T>() {}
   explicit Promise(const T& t) : QFuture<T>(QtFuture::makeReadyFuture(t)) {}
   explicit Promise(T&& t) : QFuture<T>(QtFuture::makeReadyFuture(t)) {}
@@ -57,6 +76,22 @@ class Promise : public QFuture<T> {
 template <>
 class Promise<void> : public QFuture<void> {
  public:
+  template <typename... Promises>
+  static Promise<void> All(QObject* ctx, Promises&&... args) {
+    QList<Promise<void>> ps = {args...};
+    auto i = QSharedPointer<int>::create(ps.size());
+    auto qp = QSharedPointer<QPromise<void>>::create();
+    for (const Promise<void>& p : ps) {
+      p.Then(ctx, [i, qp] {
+        (*i)--;
+        if (*i == 0) {
+          qp->finish();
+        }
+      });
+    }
+    return qp->future();
+  }
+
   Promise(const QFuture<void>& another) : QFuture<void>(another) {}
 
   void Then(QObject* ctx, std::function<void()>&& cb) const {

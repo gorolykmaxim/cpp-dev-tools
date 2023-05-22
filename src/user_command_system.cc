@@ -1,7 +1,6 @@
 #include "user_command_system.h"
 
 #include "application.h"
-#include "os_command.h"
 
 #define LOG() qDebug() << "[UserCommandSystem]"
 

@@ -9,12 +9,11 @@ NewGitBranchController::NewGitBranchController(QObject* parent)
 
 void NewGitBranchController::createBranch(const QString& name) {
   Application& app = Application::Get();
-  OsProcess* process = app.git.CreateBranch(name, branch_basis);
-  QObject::connect(process, &OsProcess::finished, this, [this, process] {
-    if (process->exit_code == 0) {
+  app.git.CreateBranch(name, branch_basis).Then(this, [this](OsProcess proc) {
+    if (proc.exit_code == 0) {
       emit success();
     } else {
-      error = process->output;
+      error = proc.output;
       emit errorChanged();
     }
   });

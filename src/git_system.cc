@@ -50,10 +50,8 @@ void GitSystem::Pull() {
 
 void GitSystem::Push() {
   Application::Get().notification.Post(Notification("Git: Pushing changes..."));
-  auto cmd = new OsProcess("git", {"push", "origin", GetCurrentBranchName()});
-  cmd->error_title = "Git: Failed to push changes";
-  cmd->success_title = "Git: Changes pushed";
-  cmd->Run();
+  OsCommand::Run("git", {"push", "origin", GetCurrentBranchName()}, "",
+                 "Git: Failed to push changes", "Git: Changes pushed");
 }
 
 static void ParseLocalBranches(const QString& output,
@@ -99,46 +97,38 @@ void GitSystem::findBranches() {
   }
   LOG() << "Querying list of branches";
   QString prev_name = GetCurrentBranchName();
-  auto child_processes = QSharedPointer<int>::create(2);
   auto new_branches = QSharedPointer<QList<GitBranch>>::create();
   is_looking_for_branches = true;
   emit isLookingForBranchesChanged();
-  for (int i = 0; i < *child_processes; i++) {
-    bool find_local = i == 0;
-    OsProcess* process = new OsProcess("git", {"branch"});
-    if (find_local) {
-      process->error_title = "Git: Failed to find local branches";
-    } else {
-      process->args.append("-r");
-      process->error_title = "Git: Failed to find remote branches";
-    }
-    QObject::connect(
-        process, &OsProcess::finished, this,
-        [this, process, find_local, child_processes, prev_name, new_branches] {
-          (*child_processes)--;
-          if (process->exit_code == 0) {
-            if (find_local) {
-              ParseLocalBranches(process->output, *new_branches);
-            } else {
-              ParseRemoteBranches(process->output, *new_branches);
-            }
-          }
-          if (*child_processes == 0) {
-            LOG() << "Found" << new_branches->size() << "branches";
-            std::sort(new_branches->begin(), new_branches->end(), Compare);
-            branches = *new_branches;
-            is_looking_for_branches = false;
-            emit isLookingForBranchesChanged();
-            if (prev_name != GetCurrentBranchName()) {
-              emit currentBranchChanged();
-            }
-          }
-        });
-    process->Run();
-  }
+  Promise<OsProcess> local =
+      OsCommand::Run("git", {"branch"}, "",
+                     "Git: Failed to find local branches")
+          .Then<OsProcess>(this, [new_branches](OsProcess proc) {
+            ParseLocalBranches(proc.output, *new_branches);
+            return Promise<OsProcess>(proc);
+          });
+  Promise<OsProcess> remote =
+      OsCommand::Run("git", {"branch", "-r"}, "",
+                     "Git: Failed to find remote branches")
+          .Then<OsProcess>(this, [new_branches](OsProcess proc) {
+            ParseRemoteBranches(proc.output, *new_branches);
+            return Promise<OsProcess>(proc);
+          });
+  Promise<OsProcess>::All(this, local, remote)
+      .Then(this, [new_branches, this, prev_name](QList<OsProcess>) {
+        LOG() << "Found" << new_branches->size() << "branches";
+        std::sort(new_branches->begin(), new_branches->end(), Compare);
+        branches = *new_branches;
+        is_looking_for_branches = false;
+        emit isLookingForBranchesChanged();
+        if (prev_name != GetCurrentBranchName()) {
+          emit currentBranchChanged();
+        }
+      });
 }
 
-OsProcess* GitSystem::CreateBranch(const QString& name, const QString& basis) {
+Promise<OsProcess> GitSystem::CreateBranch(const QString& name,
+                                           const QString& basis) {
   return ExecuteGitCommand({"checkout", "-b", name, basis}, "",
                            "Git: Branch '" + name + "' created");
 }
@@ -200,17 +190,14 @@ QString GitSystem::GetCurrentBranchName() const {
   return "";
 }
 
-OsProcess* GitSystem::ExecuteGitCommand(const QStringList& args,
-                                        const QString& error,
-                                        const QString& success) {
-  auto cmd = new OsProcess("git", args);
-  cmd->error_title = error;
-  cmd->success_title = success;
-  QObject::connect(cmd, &OsProcess::finished, this, [this, cmd] {
-    if (cmd->exit_code == 0) {
-      findBranches();
-    }
-  });
-  cmd->Run();
-  return cmd;
+Promise<OsProcess> GitSystem::ExecuteGitCommand(const QStringList& args,
+                                                const QString& error,
+                                                const QString& success) {
+  return OsCommand::Run("git", args, "", error, success)
+      .Then<OsProcess>(this, [this](OsProcess proc) {
+        if (proc.exit_code == 0) {
+          findBranches();
+        }
+        return Promise<OsProcess>(proc);
+      });
 }

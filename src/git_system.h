@@ -4,6 +4,7 @@
 #include <QObject>
 
 #include "os_command.h"
+#include "promise.h"
 
 struct GitBranch {
   QString name;
@@ -25,7 +26,7 @@ class GitSystem : public QObject {
   void CheckoutBranch(int i);
   void DeleteBranch(int i, bool force);
   QString GetCurrentBranchName() const;
-  OsProcess* CreateBranch(const QString& name, const QString& basis);
+  Promise<OsProcess> CreateBranch(const QString& name, const QString& basis);
 
  public slots:
   void findBranches();
@@ -35,8 +36,9 @@ class GitSystem : public QObject {
   void currentBranchChanged();
 
  private:
-  OsProcess* ExecuteGitCommand(const QStringList& args, const QString& error,
-                               const QString& success);
+  Promise<OsProcess> ExecuteGitCommand(const QStringList& args,
+                                       const QString& error,
+                                       const QString& success);
 
   QList<GitBranch> branches;
   bool is_looking_for_branches = false;
