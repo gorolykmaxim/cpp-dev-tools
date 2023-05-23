@@ -5,22 +5,25 @@
 #include <QFutureWatcher>
 #include <QPromise>
 #include <QSharedPointer>
+#include <type_traits>
 
 template <typename T>
 class Promise : public QFuture<T> {
+  template <class U>
+  using DisableForVoid = std::enable_if_t<!std::is_same_v<U, void>, bool>;
+  template <class U>
+  using EnableForVoid = std::enable_if_t<std::is_same_v<U, void>, bool>;
+
  public:
   template <typename... Promises>
-  static Promise<QList<T>> All(QObject* ctx, Promises&&... args) {
-    QList<Promise<T>> ps = {args...};
+  static Promise<void> All(QObject* ctx, Promises&&... args) {
+    QList<Promise<void>> ps = {args...};
     auto i = QSharedPointer<int>::create(ps.size());
-    auto result = QSharedPointer<QList<T>>::create();
-    auto qp = QSharedPointer<QPromise<QList<T>>>::create();
-    for (const Promise<T>& p : ps) {
-      p.Then(ctx, [i, qp, result](T t) {
+    auto qp = QSharedPointer<QPromise<void>>::create();
+    for (const Promise<void>& p : ps) {
+      p.Then(ctx, [i, qp]() {
         (*i)--;
-        result->append(std::move(t));
         if (*i == 0) {
-          qp->addResult(*result);
           qp->finish();
         }
       });
@@ -29,11 +32,17 @@ class Promise : public QFuture<T> {
   }
 
   Promise() : QFuture<T>() {}
-  explicit Promise(const T& t) : QFuture<T>(QtFuture::makeReadyFuture(t)) {}
-  explicit Promise(T&& t) : QFuture<T>(QtFuture::makeReadyFuture(t)) {}
+
+  template <typename V, typename U = T, DisableForVoid<U> = true>
+  explicit Promise(const V& v) : QFuture<T>(QtFuture::makeReadyFuture(v)) {}
+
+  template <typename V, typename U = T, DisableForVoid<U> = true>
+  explicit Promise(V&& v) : QFuture<T>(QtFuture::makeReadyFuture(v)) {}
+
   Promise(const QFuture<T>& another) : QFuture<T>(another) {}
 
-  void Then(QObject* ctx, std::function<void(T)>&& cb) const {
+  template <class Function, typename U = T, DisableForVoid<U> = true>
+  void Then(QObject* ctx, Function&& cb) const {
     if (QFuture<T>::isFinished()) {
       cb(QFuture<T>::result());
       return;
@@ -47,8 +56,26 @@ class Promise : public QFuture<T> {
     w->setFuture(*this);
   }
 
-  template <typename D>
-  Promise<D> Then(QObject* ctx, std::function<QFuture<D>(T)>&& cb) const {
+  template <class Function, typename U = T, EnableForVoid<U> = true>
+  void Then(QObject* ctx, Function&& cb) const {
+    if (QFuture<T>::isFinished()) {
+      cb();
+      return;
+    }
+    auto w = new QFutureWatcher<T>(ctx);
+    QObject::connect(w, &QFutureWatcher<T>::finished, ctx,
+                     [cb = std::move(cb), w] {
+                       cb();
+                       w->deleteLater();
+                     });
+    w->setFuture(*this);
+  }
+
+  template <
+      typename D, class Function, typename U = T,
+      std::enable_if_t<!std::is_same_v<U, void> && !std::is_same_v<D, void>,
+                       bool> = true>
+  Promise<D> Then(QObject* ctx, Function&& cb) const {
     auto qpd = QSharedPointer<QPromise<D>>::create();
     if (QFuture<T>::isFinished()) {
       Promise<D> d = cb(QFuture<T>::result());
@@ -71,47 +98,36 @@ class Promise : public QFuture<T> {
     w->setFuture(*this);
     return qpd->future();
   }
-};
 
-template <>
-class Promise<void> : public QFuture<void> {
- public:
-  template <typename... Promises>
-  static Promise<void> All(QObject* ctx, Promises&&... args) {
-    QList<Promise<void>> ps = {args...};
-    auto i = QSharedPointer<int>::create(ps.size());
-    auto qp = QSharedPointer<QPromise<void>>::create();
-    for (const Promise<void>& p : ps) {
-      p.Then(ctx, [i, qp] {
-        (*i)--;
-        if (*i == 0) {
-          qp->finish();
-        }
-      });
+  template <
+      typename D, class Function, typename U = T,
+      std::enable_if_t<!std::is_same_v<U, void> && std::is_same_v<D, void>,
+                       bool> = true>
+  Promise<D> Then(QObject* ctx, Function&& cb) const {
+    auto qpd = QSharedPointer<QPromise<D>>::create();
+    if (QFuture<T>::isFinished()) {
+      Promise<D> d = cb(QFuture<T>::result());
+      d.Then(ctx, [qpd]() { qpd->finish(); });
+      return qpd->future();
     }
-    return qp->future();
-  }
-
-  Promise(const QFuture<void>& another) : QFuture<void>(another) {}
-
-  void Then(QObject* ctx, std::function<void()>&& cb) const {
-    if (QFuture<void>::isFinished()) {
-      cb();
-      return;
-    }
-    auto w = new QFutureWatcher<void>(ctx);
-    QObject::connect(w, &QFutureWatcher<void>::finished, ctx,
-                     [cb = std::move(cb), w] {
-                       cb();
+    auto w = new QFutureWatcher<T>(ctx);
+    QObject::connect(w, &QFutureWatcher<T>::finished, ctx,
+                     [cb = std::move(cb), qpd, w, ctx]() {
+                       Promise<D> d = cb(w->result());
+                       d.Then(ctx, [qpd]() { qpd->finish(); });
                        w->deleteLater();
                      });
     w->setFuture(*this);
+    return qpd->future();
   }
 
-  template <typename D>
-  Promise<D> Then(QObject* ctx, std::function<QFuture<D>()>&& cb) const {
+  template <
+      typename D, class Function, typename U = T,
+      std::enable_if_t<std::is_same_v<U, void> && !std::is_same_v<D, void>,
+                       bool> = true>
+  Promise<D> Then(QObject* ctx, Function&& cb) const {
     auto qpd = QSharedPointer<QPromise<D>>::create();
-    if (QFuture<void>::isFinished()) {
+    if (QFuture<T>::isFinished()) {
       Promise<D> d = cb();
       d.Then(ctx, [qpd](D d) {
         qpd->addResult(std::move(d));
@@ -119,14 +135,35 @@ class Promise<void> : public QFuture<void> {
       });
       return qpd->future();
     }
-    auto w = new QFutureWatcher<void>(ctx);
-    QObject::connect(w, &QFutureWatcher<void>::finished, ctx,
+    auto w = new QFutureWatcher<T>(ctx);
+    QObject::connect(w, &QFutureWatcher<T>::finished, ctx,
                      [cb = std::move(cb), qpd, w, ctx]() {
                        Promise<D> d = cb();
                        d.Then(ctx, [qpd](D d) {
                          qpd->addResult(std::move(d));
                          qpd->finish();
                        });
+                       w->deleteLater();
+                     });
+    w->setFuture(*this);
+    return qpd->future();
+  }
+
+  template <typename D, class Function, typename U = T,
+            std::enable_if_t<std::is_same_v<U, void> && std::is_same_v<D, void>,
+                             bool> = true>
+  Promise<D> Then(QObject* ctx, Function&& cb) const {
+    auto qpd = QSharedPointer<QPromise<D>>::create();
+    if (QFuture<T>::isFinished()) {
+      Promise<D> d = cb();
+      d.Then(ctx, [qpd]() { qpd->finish(); });
+      return qpd->future();
+    }
+    auto w = new QFutureWatcher<T>(ctx);
+    QObject::connect(w, &QFutureWatcher<T>::finished, ctx,
+                     [cb = std::move(cb), qpd, w, ctx]() {
+                       Promise<D> d = cb();
+                       d.Then(ctx, [qpd]() { qpd->finish(); });
                        w->deleteLater();
                      });
     w->setFuture(*this);

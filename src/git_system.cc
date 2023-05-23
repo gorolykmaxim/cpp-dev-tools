@@ -100,22 +100,20 @@ void GitSystem::findBranches() {
   auto new_branches = QSharedPointer<QList<GitBranch>>::create();
   is_looking_for_branches = true;
   emit isLookingForBranchesChanged();
-  Promise<OsProcess> local =
-      OsCommand::Run("git", {"branch"}, "",
-                     "Git: Failed to find local branches")
-          .Then<OsProcess>(this, [new_branches](OsProcess proc) {
-            ParseLocalBranches(proc.output, *new_branches);
-            return Promise<OsProcess>(proc);
-          });
-  Promise<OsProcess> remote =
-      OsCommand::Run("git", {"branch", "-r"}, "",
-                     "Git: Failed to find remote branches")
-          .Then<OsProcess>(this, [new_branches](OsProcess proc) {
-            ParseRemoteBranches(proc.output, *new_branches);
-            return Promise<OsProcess>(proc);
-          });
-  Promise<OsProcess>::All(this, local, remote)
-      .Then(this, [new_branches, this, prev_name](QList<OsProcess>) {
+  Promise<void> local = OsCommand::Run("git", {"branch"}, "",
+                                       "Git: Failed to find local branches")
+                            .Then<void>(this, [new_branches](OsProcess proc) {
+                              ParseLocalBranches(proc.output, *new_branches);
+                              return QtFuture::makeReadyFuture();
+                            });
+  Promise<void> remote = OsCommand::Run("git", {"branch", "-r"}, "",
+                                        "Git: Failed to find remote branches")
+                             .Then<void>(this, [new_branches](OsProcess proc) {
+                               ParseRemoteBranches(proc.output, *new_branches);
+                               return QtFuture::makeReadyFuture();
+                             });
+  Promise<void>::All(this, local, remote)
+      .Then(this, [new_branches, this, prev_name]() {
         LOG() << "Found" << new_branches->size() << "branches";
         std::sort(new_branches->begin(), new_branches->end(), Compare);
         branches = *new_branches;
