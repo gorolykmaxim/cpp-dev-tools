@@ -116,6 +116,7 @@ static const Regex kSqlKeywords = KeywordsRegExp(
         "INTERVAL",
         "INTO",
         "IS",
+        "JOIN",
         "LEADING",
         "LEFT",
         "LIKE",

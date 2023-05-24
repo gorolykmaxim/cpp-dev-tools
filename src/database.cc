@@ -19,6 +19,7 @@ void Database::Initialize() {
   db.setDatabaseName(db_file);
   bool db_opened = db.open();
   Q_ASSERT(db_opened);
+  ExecCmd("PRAGMA foreign_keys = ON");
   ExecCmd(
       "CREATE TABLE IF NOT EXISTS project("
       "id BLOB PRIMARY KEY, "
