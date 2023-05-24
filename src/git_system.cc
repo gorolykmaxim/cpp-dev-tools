@@ -112,8 +112,8 @@ void GitSystem::findBranches() {
                                ParseRemoteBranches(proc.output, *new_branches);
                                return QtFuture::makeReadyFuture();
                              });
-  Promise<void>::All(this, local, remote)
-      .Then(this, [new_branches, this, prev_name]() {
+  Promises::All<void>(this, local, remote)
+      .Then(this, [new_branches, this, prev_name](QList<Promise<void>>) {
         LOG() << "Found" << new_branches->size() << "branches";
         std::sort(new_branches->begin(), new_branches->end(), Compare);
         branches = *new_branches;
