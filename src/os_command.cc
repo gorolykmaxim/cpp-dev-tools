@@ -97,7 +97,7 @@ void OsCommand::OpenTerminalInCurrentDir() {
           ctx,
           [LogError, ctx](OsProcess proc) {
             if (proc.exit_code == 0) {
-              return Promise<OsProcess>(proc);
+              return Promise<OsProcess>();
             }
             LogError("Microsoft Terminal", proc);
             return Run("where", {"git"})
@@ -116,7 +116,7 @@ void OsCommand::OpenTerminalInCurrentDir() {
       .Then<OsProcess>(ctx,
                        [LogError](OsProcess proc) {
                          if (proc.exit_code == 0) {
-                           return Promise<OsProcess>(proc);
+                           return Promise<OsProcess>();
                          }
                          LogError("git-bash", proc);
                          return Run("cmd", {"/c", "start"});
