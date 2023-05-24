@@ -27,9 +27,10 @@ class GitSystem : public QObject {
   void DeleteBranch(int i, bool force);
   QString GetCurrentBranchName() const;
   Promise<OsProcess> CreateBranch(const QString& name, const QString& basis);
+  void FindBranches();
 
  public slots:
-  void findBranches();
+  void refreshBranchesIfProjectSelected();
 
  signals:
   void isLookingForBranchesChanged();

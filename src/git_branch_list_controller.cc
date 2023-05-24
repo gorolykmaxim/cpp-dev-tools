@@ -85,5 +85,5 @@ void GitBranchListController::checkoutSelected() {
 void GitBranchListController::displayList() {
   Application& app = Application::Get();
   app.view.SetWindowTitle("Git Branches");
-  app.git.findBranches();
+  app.git.FindBranches();
 }

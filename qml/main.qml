@@ -18,7 +18,7 @@ ApplicationWindow {
   onActiveChanged: {
     if (active) {
       // The window has regained focus
-      gitSystem.findBranches();
+      gitSystem.refreshBranchesIfProjectSelected();
     }
   }
   Connections {

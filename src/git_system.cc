@@ -91,7 +91,7 @@ static bool Compare(const GitBranch& a, const GitBranch& b) {
   }
 }
 
-void GitSystem::findBranches() {
+void GitSystem::FindBranches() {
   if (is_looking_for_branches) {
     return;
   }
@@ -123,6 +123,13 @@ void GitSystem::findBranches() {
           emit currentBranchChanged();
         }
       });
+}
+
+void GitSystem::refreshBranchesIfProjectSelected() {
+  if (!Application::Get().project.IsProjectOpened()) {
+    return;
+  }
+  FindBranches();
 }
 
 Promise<OsProcess> GitSystem::CreateBranch(const QString& name,
@@ -194,7 +201,7 @@ Promise<OsProcess> GitSystem::ExecuteGitCommand(const QStringList& args,
   return OsCommand::Run("git", args, "", error, success)
       .Then<OsProcess>(this, [this](OsProcess proc) {
         if (proc.exit_code == 0) {
-          findBranches();
+          FindBranches();
         }
         return Promise<OsProcess>(proc);
       });
