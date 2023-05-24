@@ -24,19 +24,28 @@ class Promise : public QFuture<T> {
 
   Promise(QFuture<T>&& another) : QFuture<T>(another) {}
 
+  /**
+   * When a callback inside Then() returns Promise<T>() (which is cancelled) -
+   * the whole chain of Thens after it gets cancelled (their callbacks don't get
+   * executed). Though the QFutureWatchers allocated inside downstream Thens do
+   * get de-allocated: When our QFutureWatcher gets its finished() triggered by
+   * a cancelled future, we don't trigger our callback and just return. When we
+   * return - we de-allocate the last reference to our QPromise, which triggers
+   * it's destruction. When QPromise gets deleted its destructor cancels the
+   * underlying future, thus all downstream Then() will have their
+   * QFutureWatcher::finished triggered by this "destruction" cancel.
+   */
   template <class Function, typename U = T,
             std::enable_if_t<!std::is_same_v<U, void>, bool> = true>
   void Then(QObject* ctx, Function&& cb) const {
-    OnFinished(
-        ctx, [cb = std::move(cb)](const Promise<T>& f) { cb(f.result()); },
-        [] {});
+    OnFinished(ctx,
+               [cb = std::move(cb)](const Promise<T>& f) { cb(f.result()); });
   }
 
   template <class Function, typename U = T,
             std::enable_if_t<std::is_same_v<U, void>, bool> = true>
   void Then(QObject* ctx, Function&& cb) const {
-    OnFinished(
-        ctx, [cb = std::move(cb)](const Promise<T>&) { cb(); }, [] {});
+    OnFinished(ctx, [cb = std::move(cb)](const Promise<T>&) { cb(); });
   }
 
   template <
@@ -45,16 +54,13 @@ class Promise : public QFuture<T> {
                        bool> = true>
   Promise<D> Then(QObject* ctx, Function&& cb) const {
     auto qpd = QSharedPointer<QPromise<D>>::create();
-    OnFinished(
-        ctx,
-        [cb = std::move(cb), qpd, ctx](const Promise<T>& f) {
-          Promise<D> d = cb(f.result());
-          d.Then(ctx, [qpd](D d) {
-            qpd->addResult(std::move(d));
-            qpd->finish();
-          });
-        },
-        [qpd] { qpd->future().cancel(); });
+    OnFinished(ctx, [cb = std::move(cb), qpd, ctx](const Promise<T>& f) {
+      Promise<D> d = cb(f.result());
+      d.Then(ctx, [qpd](D d) {
+        qpd->addResult(std::move(d));
+        qpd->finish();
+      });
+    });
     return qpd->future();
   }
 
@@ -64,13 +70,10 @@ class Promise : public QFuture<T> {
                        bool> = true>
   Promise<D> Then(QObject* ctx, Function&& cb) const {
     auto qpd = QSharedPointer<QPromise<D>>::create();
-    OnFinished(
-        ctx,
-        [cb = std::move(cb), qpd, ctx](const Promise<T>& f) {
-          Promise<D> d = cb(f.result());
-          d.Then(ctx, [qpd]() { qpd->finish(); });
-        },
-        [qpd] { qpd->future().cancel(); });
+    OnFinished(ctx, [cb = std::move(cb), qpd, ctx](const Promise<T>& f) {
+      Promise<D> d = cb(f.result());
+      d.Then(ctx, [qpd]() { qpd->finish(); });
+    });
     return qpd->future();
   }
 
@@ -80,16 +83,13 @@ class Promise : public QFuture<T> {
                        bool> = true>
   Promise<D> Then(QObject* ctx, Function&& cb) const {
     auto qpd = QSharedPointer<QPromise<D>>::create();
-    OnFinished(
-        ctx,
-        [cb = std::move(cb), qpd, ctx](const Promise<T>&) {
-          Promise<D> d = cb();
-          d.Then(ctx, [qpd](D d) {
-            qpd->addResult(std::move(d));
-            qpd->finish();
-          });
-        },
-        [qpd] { qpd->future().cancel(); });
+    OnFinished(ctx, [cb = std::move(cb), qpd, ctx](const Promise<T>&) {
+      Promise<D> d = cb();
+      d.Then(ctx, [qpd](D d) {
+        qpd->addResult(std::move(d));
+        qpd->finish();
+      });
+    });
     return qpd->future();
   }
 
@@ -98,41 +98,29 @@ class Promise : public QFuture<T> {
                              bool> = true>
   Promise<D> Then(QObject* ctx, Function&& cb) const {
     auto qpd = QSharedPointer<QPromise<D>>::create();
-    OnFinished(
-        ctx,
-        [cb = std::move(cb), qpd, ctx](const Promise<T>&) {
-          Promise<D> d = cb();
-          // TODO: if this promise represents a chain in and of itself (we are
-          // inside Then() cb and we create a brand new Then() chain inside and
-          // return its result. If one of the Then() from that chain cancels -
-          // the promise we have here will get cancelled asynchronously. BUT we
-          // won't cancel our QPromise and leak it and all that is hanging on
-          // it.
-          d.Then(ctx, [qpd]() { qpd->finish(); });
-        },
-        [qpd] { qpd->future().cancel(); });
+    OnFinished(ctx, [cb = std::move(cb), qpd, ctx](const Promise<T>&) {
+      Promise<D> d = cb();
+      d.Then(ctx, [qpd]() { qpd->finish(); });
+    });
     return qpd->future();
   }
 
  private:
   void OnFinished(QObject* ctx, std::function<void(const Promise<T>&)>&& cb,
-                  std::function<void()>&& cancel_cb) const {
-    if (QFuture<T>::isCanceled()) {
-      cancel_cb();
-    } else if (QFuture<T>::isFinished()) {
-      cb(*this);
+                  bool cb_on_cancel = false) const {
+    if (QFuture<T>::isFinished()) {
+      if (!QFuture<T>::isCanceled() || cb_on_cancel) {
+        cb(*this);
+      }
     } else {
       auto w = new QFutureWatcher<T>(ctx);
-      QObject::connect(
-          w, &QFutureWatcher<T>::finished, ctx,
-          [cb = std::move(cb), cancel_cb = std::move(cancel_cb), w]() {
-            if (w->isCanceled()) {
-              cancel_cb();
-            } else {
-              cb(Promise<T>(w->future()));
-            }
-            w->deleteLater();
-          });
+      QObject::connect(w, &QFutureWatcher<T>::finished, ctx,
+                       [cb = std::move(cb), cb_on_cancel, w]() {
+                         if (!w->isCanceled() || cb_on_cancel) {
+                           cb(Promise<T>(w->future()));
+                         }
+                         w->deleteLater();
+                       });
       w->setFuture(*this);
     }
   }
@@ -159,10 +147,7 @@ class Promises {
               qp->finish();
             }
           },
-          [i, data, p] {
-            (*i)--;
-            data->append(p);
-          });
+          true);
     }
     return qp->future();
   }
