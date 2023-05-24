@@ -23,15 +23,15 @@ class GitSystem : public QObject {
   bool IsLookingForBranches() const;
   const QList<GitBranch>& GetBranches() const;
   void ClearBranches();
-  void CheckoutBranch(int i);
-  void MergeBranchIntoCurrent(int i);
-  void DeleteBranch(int i, bool force);
   QString GetCurrentBranchName() const;
   Promise<OsProcess> CreateBranch(const QString& name, const QString& basis);
   void FindBranches();
 
  public slots:
   void refreshBranchesIfProjectSelected();
+  void checkoutBranch(int i);
+  void mergeBranchIntoCurrent(int i);
+  void deleteBranch(int i, bool force);
 
  signals:
   void isLookingForBranchesChanged();

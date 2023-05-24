@@ -20,14 +20,14 @@ Loader {
       searchableModel: controller.branches
       focus: true
       onItemRightClicked: contextMenu.open()
-      onItemSelected: controller.checkoutSelected()
+      onItemSelected: gitSystem.checkoutBranch(controller.selectedBranchIndex)
       Component.onCompleted: controller.displayList()
       Menu {
         id: contextMenu
         MenuItem {
           text: "Checkout"
           enabled: list.activeFocus
-          onTriggered: controller.checkoutSelected()
+          onTriggered: gitSystem.checkoutBranch(controller.selectedBranchIndex)
         }
         MenuItem {
           text: "New Branch"
@@ -39,19 +39,19 @@ Loader {
           text: "Merge Into Current"
           shortcut: "Alt+M"
           enabled: list.activeFocus
-          onTriggered: controller.mergeSelected()
+          onTriggered: gitSystem.mergeBranchIntoCurrent(controller.selectedBranchIndex)
         }
         MenuItem {
           text: "Delete"
           shortcut: "Alt+D"
           enabled: list.activeFocus && controller.isLocalBranchSelected
-          onTriggered: controller.deleteSelected(false)
+          onTriggered: gitSystem.deleteBranch(controller.selectedBranchIndex, false)
         }
         MenuItem {
           text: "Force Delete"
           shortcut: "Alt+Shift+D"
           enabled: list.activeFocus && controller.isLocalBranchSelected
-          onTriggered: controller.deleteSelected(true)
+          onTriggered: gitSystem.deleteBranch(controller.selectedBranchIndex, true)
         }
       }
     }

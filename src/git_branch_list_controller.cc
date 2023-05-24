@@ -74,17 +74,8 @@ QString GitBranchListController::GetSelectedBranchName() const {
   }
 }
 
-void GitBranchListController::deleteSelected(bool force) {
-  Application::Get().git.DeleteBranch(branches->GetSelectedItemIndex(), force);
-}
-
-void GitBranchListController::checkoutSelected() {
-  Application::Get().git.CheckoutBranch(branches->GetSelectedItemIndex());
-}
-
-void GitBranchListController::mergeSelected() {
-  Application::Get().git.MergeBranchIntoCurrent(
-      branches->GetSelectedItemIndex());
+int GitBranchListController::GetSelectedBranchIndex() const {
+  return branches->GetSelectedItemIndex();
 }
 
 void GitBranchListController::displayList() {

@@ -148,7 +148,7 @@ void GitSystem::ClearBranches() {
   emit currentBranchChanged();
 }
 
-void GitSystem::CheckoutBranch(int i) {
+void GitSystem::checkoutBranch(int i) {
   static const QString kOriginPrefix = "origin/";
   if (i < 0 || i >= branches.size()) {
     return;
@@ -170,7 +170,7 @@ void GitSystem::CheckoutBranch(int i) {
                     "Git: Branch '" + branch.name + "\' checked-out");
 }
 
-void GitSystem::MergeBranchIntoCurrent(int i) {
+void GitSystem::mergeBranchIntoCurrent(int i) {
   if (i < 0 || i >= branches.size()) {
     return;
   }
@@ -182,7 +182,7 @@ void GitSystem::MergeBranchIntoCurrent(int i) {
       "Git: Branch '" + branch.name + "' is merged into current");
 }
 
-void GitSystem::DeleteBranch(int i, bool force) {
+void GitSystem::deleteBranch(int i, bool force) {
   if (i < 0 || i >= branches.size()) {
     return;
   }

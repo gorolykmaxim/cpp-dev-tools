@@ -25,15 +25,15 @@ class GitBranchListController : public QObject {
                  selectedBranchChanged)
   Q_PROPERTY(QString selectedBranchName READ GetSelectedBranchName NOTIFY
                  selectedBranchChanged)
+  Q_PROPERTY(int selectedBranchIndex READ GetSelectedBranchIndex NOTIFY
+                 selectedBranchChanged)
  public:
   explicit GitBranchListController(QObject* parent = nullptr);
   bool IsLocalBranchSelected() const;
   QString GetSelectedBranchName() const;
+  int GetSelectedBranchIndex() const;
 
  public slots:
-  void deleteSelected(bool force);
-  void checkoutSelected();
-  void mergeSelected();
   void displayList();
 
  signals:
