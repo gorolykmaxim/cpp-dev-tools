@@ -53,14 +53,14 @@ FocusScope {
     const position = textArea.selectionStart;
     searchOutputTextField.text = textArea.selectedText;
     replaceOutputTextField.text = "";
-    searchBar.visible = true;
+    searchBar.displaySearchBar = true;
     // When searchBar open request arrives we need to focus the search bar's
     // input regardless of what else is happenning.
     searchOutputTextField.forceActiveFocus();
     controller.goToResultWithStartAt(position);
   }
   function closeSearchBar() {
-    searchBar.visible = false;
+    searchBar.displaySearchBar = false;
   }
   function rehighlightBlockByLineNumber(i) {
     controller.rehighlightBlockByLineNumber(i);
@@ -112,10 +112,11 @@ FocusScope {
     spacing: 0
     Cdt.Pane {
       id: searchBar
+      property bool displaySearchBar: false
       Layout.fillWidth: true
       color: Theme.colorBgMedium
       padding: Theme.basePadding
-      visible: false
+      visible: displaySearchBar
       Keys.onEscapePressed: closeSearchBar(true)
       ColumnLayout {
         anchors.fill: parent
@@ -129,7 +130,7 @@ FocusScope {
             // Don't attach navigation down to TextArea if searchbar is invisible, because in case there
             // is a component above our Cdt.TextArea - we won't be able to navigation to it via "up",
             // because "up" of our internal TextArea is searchbar and it is invisible (thus can't be reached).
-            KeyNavigation.down: searchBar.visible ? (root.readonly ? textArea : replaceOutputTextField) : null
+            KeyNavigation.down: searchBar.displaySearchBar ? (root.readonly ? textArea : replaceOutputTextField) : null
             KeyNavigation.right: searchPrevBtn
             Keys.onReturnPressed: e => controller.goToSearchResult(!(e.modifiers & Qt.ShiftModifier))
             Keys.onEnterPressed: e => controller.goToSearchResult(!(e.modifiers & Qt.ShiftModifier))
@@ -142,7 +143,7 @@ FocusScope {
             buttonIcon: "arrow_upward"
             enabled: !controller.searchResultsEmpty
             onClicked: controller.goToSearchResult(false)
-            KeyNavigation.down: searchBar.visible ? (root.readonly ? textArea : replaceAllBtn) : null
+            KeyNavigation.down: searchBar.displaySearchBar ? (root.readonly ? textArea : replaceAllBtn) : null
             KeyNavigation.right: searchNextBtn
           }
           Cdt.IconButton {
@@ -150,7 +151,7 @@ FocusScope {
             buttonIcon: "arrow_downward"
             enabled: !controller.searchResultsEmpty
             onClicked: controller.goToSearchResult(true)
-            KeyNavigation.down: searchBar.visible ? (root.readonly ? textArea : replaceAllBtn) : null
+            KeyNavigation.down: searchBar.displaySearchBar ? (root.readonly ? textArea : replaceAllBtn) : null
           }
         }
         RowLayout {
@@ -160,7 +161,7 @@ FocusScope {
             id: replaceOutputTextField
             Layout.fillWidth: true
             placeholderText: "Replace text"
-            KeyNavigation.down: searchBar.visible ? textArea : null
+            KeyNavigation.down: searchBar.displaySearchBar ? textArea : null
             KeyNavigation.right: replaceBtn
             Keys.onReturnPressed: replaceAndSearch(false)
             Keys.onEnterPressed: replaceAndSearch(false)
@@ -171,13 +172,13 @@ FocusScope {
             onClicked: replaceAndSearch(false)
             KeyNavigation.up: searchOutputTextField
             KeyNavigation.right: replaceAllBtn
-            KeyNavigation.down: searchBar.visible ? textArea : null
+            KeyNavigation.down: searchBar.displaySearchBar ? textArea : null
           }
           Cdt.Button {
             id: replaceAllBtn
             text: "Replace All"
             onClicked: replaceAndSearch(true)
-            KeyNavigation.down: searchBar.visible ? textArea : null
+            KeyNavigation.down: searchBar.displaySearchBar ? textArea : null
           }
         }
       }
@@ -186,7 +187,7 @@ FocusScope {
       Layout.fillWidth: true
       Layout.fillHeight: true
       color: root.color
-      focus: !searchBar.visible
+      focus: !searchBar.displaySearchBar
       Controls.ScrollView {
         anchors.fill: parent
         focus: true
@@ -227,14 +228,14 @@ FocusScope {
             } else if (root.cursorPosition >= 0) {
               textArea.cursorPosition = root.cursorPosition;
             }
-            if (searchBar.visible) {
+            if (searchBar.displaySearchBar) {
               controller.search(searchOutputTextField.displayText, root.getText(), root.readonly)
             }
           }
           Keys.onPressed: function(event) {
             if (event.key === Qt.Key_Escape) {
               event.accepted = true;
-              if (searchBar.visible) {
+              if (searchBar.displaySearchBar) {
                 closeSearchBar(true);
               } else if (textArea.selectedText) {
                 textArea.deselect();
@@ -255,7 +256,7 @@ FocusScope {
             }
           }
           onPressed: e => Common.handleRightClick(textArea, contextMenu, e)
-          KeyNavigation.up: searchBar.visible ? (root.readonly ? searchOutputTextField : replaceOutputTextField) : null
+          KeyNavigation.up: searchBar.displaySearchBar ? (root.readonly ? searchOutputTextField : replaceOutputTextField) : null
           Menu {
             id: contextMenu
             MenuItem {
