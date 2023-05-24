@@ -82,6 +82,11 @@ void GitBranchListController::checkoutSelected() {
   Application::Get().git.CheckoutBranch(branches->GetSelectedItemIndex());
 }
 
+void GitBranchListController::mergeSelected() {
+  Application::Get().git.MergeBranchIntoCurrent(
+      branches->GetSelectedItemIndex());
+}
+
 void GitBranchListController::displayList() {
   Application& app = Application::Get();
   app.view.SetWindowTitle("Git Branches");

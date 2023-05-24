@@ -170,6 +170,18 @@ void GitSystem::CheckoutBranch(int i) {
                     "Git: Branch '" + branch.name + "\' checked-out");
 }
 
+void GitSystem::MergeBranchIntoCurrent(int i) {
+  if (i < 0 || i >= branches.size()) {
+    return;
+  }
+  const GitBranch& branch = branches[i];
+  LOG() << "Merging branch" << branch.name << "into current";
+  OsCommand::Run(
+      "git", {"merge", branch.name}, "",
+      "Git: Failed to merge branch '" + branch.name + "' into current",
+      "Git: Branch '" + branch.name + "' is merged into current");
+}
+
 void GitSystem::DeleteBranch(int i, bool force) {
   if (i < 0 || i >= branches.size()) {
     return;

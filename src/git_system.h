@@ -24,6 +24,7 @@ class GitSystem : public QObject {
   const QList<GitBranch>& GetBranches() const;
   void ClearBranches();
   void CheckoutBranch(int i);
+  void MergeBranchIntoCurrent(int i);
   void DeleteBranch(int i, bool force);
   QString GetCurrentBranchName() const;
   Promise<OsProcess> CreateBranch(const QString& name, const QString& basis);

@@ -36,6 +36,12 @@ Loader {
           onTriggered: root.sourceComponent = createView
         }
         MenuItem {
+          text: "Merge Into Current"
+          shortcut: "Alt+M"
+          enabled: list.activeFocus
+          onTriggered: controller.mergeSelected()
+        }
+        MenuItem {
           text: "Delete"
           shortcut: "Alt+D"
           enabled: list.activeFocus && controller.isLocalBranchSelected

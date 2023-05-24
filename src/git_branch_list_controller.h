@@ -33,6 +33,7 @@ class GitBranchListController : public QObject {
  public slots:
   void deleteSelected(bool force);
   void checkoutSelected();
+  void mergeSelected();
   void displayList();
 
  signals:
