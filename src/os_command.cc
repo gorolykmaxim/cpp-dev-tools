@@ -8,16 +8,16 @@
 
 #define LOG() qDebug() << "[OsCommand]"
 
-Promise<OsProcess> OsCommand::Run(const QString &cmd,
-                                  const QString &error_title,
-                                  const QString &success_title) {
+Promise<OsProcess> OsCommand::RunCmd(const QString &cmd,
+                                     const QString &error_title,
+                                     const QString &success_title) {
   QStringList args = QProcess::splitCommand(cmd);
   QString program = args.takeFirst();
   return Run(program, args, "", error_title, success_title);
 }
 
 Promise<OsProcess> OsCommand::Run(const QString &cmd, const QStringList &args,
-                                  const QString &stdin,
+                                  const QString &input,
                                   const QString &error_title,
                                   const QString &success_title) {
   LOG() << "Executing" << cmd << args.join(' ');
@@ -56,8 +56,8 @@ Promise<OsProcess> OsCommand::Run(const QString &cmd, const QStringList &args,
         proc->deleteLater();
       });
   proc->start(cmd, args);
-  if (!stdin.isEmpty()) {
-    proc->write(stdin.toUtf8());
+  if (!input.isEmpty()) {
+    proc->write(input.toUtf8());
     proc->closeWriteChannel();
   }
   return promise->future();
@@ -91,16 +91,17 @@ void OsCommand::OpenTerminalInCurrentDir() {
     }
     failures->append(error);
   };
+  QObject *ctx = &Application::Get().gui_app;
   Run("wt", {"/d", QDir::currentPath()})
       .Then<OsProcess>(
-          nullptr,
-          [LogError](OsProcess proc) {
+          ctx,
+          [LogError, ctx](OsProcess proc) {
             if (proc.exit_code == 0) {
               return Promise<OsProcess>(proc);
             }
             LogError("Microsoft Terminal", proc);
             return Run("where", {"git"})
-                .Then<OsProcess>(nullptr, [](OsProcess proc) {
+                .Then<OsProcess>(ctx, [](OsProcess proc) {
                   static const QString kExpectedGitSuffix = "\\cmd\\git.exe\n";
                   if (proc.exit_code != 0 ||
                       !proc.output.endsWith(kExpectedGitSuffix)) {
@@ -112,7 +113,7 @@ void OsCommand::OpenTerminalInCurrentDir() {
                   return Run(git_bash, {"--no-cd"});
                 });
           })
-      .Then<OsProcess>(nullptr,
+      .Then<OsProcess>(ctx,
                        [LogError](OsProcess proc) {
                          if (proc.exit_code == 0) {
                            return Promise<OsProcess>(proc);
@@ -120,7 +121,7 @@ void OsCommand::OpenTerminalInCurrentDir() {
                          LogError("git-bash", proc);
                          return Run("cmd", {"/c", "start"});
                        })
-      .Then(nullptr, [LogError, failures](OsProcess proc) {
+      .Then(ctx, [LogError, failures](OsProcess proc) {
         if (proc.exit_code == 0) {
           return;
         }

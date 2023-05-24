@@ -13,12 +13,12 @@ struct OsProcess {
 
 class OsCommand {
  public:
-  static Promise<OsProcess> Run(const QString& cmd,
-                                const QString& error_title = "",
-                                const QString& success_title = "");
+  static Promise<OsProcess> RunCmd(const QString& cmd,
+                                   const QString& error_title = "",
+                                   const QString& success_title = "");
   static Promise<OsProcess> Run(const QString& cmd,
                                 const QStringList& args = {},
-                                const QString& stdin = "",
+                                const QString& input = "",
                                 const QString& error_title = "",
                                 const QString& success_title = "");
   static void OpenTerminalInCurrentDir();

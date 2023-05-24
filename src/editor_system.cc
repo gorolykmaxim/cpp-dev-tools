@@ -24,5 +24,5 @@ void EditorSystem::OpenFile(const QString& file, int column, int row) {
   LOG() << "Opening file link" << link;
   QString cmd = open_command;
   cmd.replace("{}", link);
-  OsCommand::Run(cmd, "Code Editor: Failed to open file: " + link);
+  OsCommand::RunCmd(cmd, "Code Editor: Failed to open file: " + link);
 }
