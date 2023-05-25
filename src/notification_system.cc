@@ -52,6 +52,13 @@ QString NotificationSystem::GetLastNotSeenNotificationTitle() const {
   return notifications.last().title;
 }
 
+bool NotificationSystem::IsLastNotSeenNotificationError() const {
+  if (GetNotSeenNotificationsCount() == 0) {
+    return false;
+  }
+  return notifications.last().is_error;
+}
+
 void NotificationSystem::ClearNotifications() {
   LOG() << "Clear all notifications";
   last_seen_notification = -1;

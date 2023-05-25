@@ -20,6 +20,8 @@ class NotificationSystem : public QObject {
   Q_PROPERTY(bool newErrors READ HasNewErrors NOTIFY notificationsChanged)
   Q_PROPERTY(QString lastNotSeenNotificationTitle READ
                  GetLastNotSeenNotificationTitle NOTIFY notificationsChanged)
+  Q_PROPERTY(bool isLastNotSeenNotificationError READ
+                 IsLastNotSeenNotificationError NOTIFY notificationsChanged)
  public:
   void Post(const Notification& notification);
   void MarkAllNotificationsSeenByUser();
@@ -28,6 +30,7 @@ class NotificationSystem : public QObject {
   int IndexOfLastSeenNotification() const;
   bool HasNewErrors() const;
   QString GetLastNotSeenNotificationTitle() const;
+  bool IsLastNotSeenNotificationError() const;
   void ClearNotifications();
 
  signals:

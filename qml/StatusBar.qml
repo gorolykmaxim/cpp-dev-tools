@@ -19,12 +19,11 @@ RowLayout {
     Cdt.Text {
       width: Math.min(implicitWidth, 300)
       text: notificationSystem.lastNotSeenNotificationTitle
-      color: notificationsItem.iconAndTextColor
+      color: notificationSystem.isLastNotSeenNotificationError ? "red" : Theme.colorText
       elide: Text.ElideRight
       rightPadding: Theme.basePadding
     }
     Cdt.StatusBarItem {
-      id: notificationsItem
       property string iconAndTextColor: notificationSystem.notSeenNotifications > 0 ?
                                           (notificationSystem.newErrors ? "red" : Theme.colorText) :
                                           Theme.colorSubText
