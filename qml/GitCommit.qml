@@ -132,7 +132,6 @@ SplitView {
       color: Theme.colorBgDark
       wrapMode: TextEdit.NoWrap
       enabled: controller.hasChanges
-      text: "Hello world"
       KeyNavigation.left: changeList
     }
   }
