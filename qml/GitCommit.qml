@@ -14,6 +14,11 @@ SplitView {
   }
   GitCommitController {
     id: controller
+    onFilesChanged: function() {
+      if (!hasChanges) {
+        commitMsg.clear();
+      }
+    }
   }
   Keys.onPressed: function(e) {
     if (e.key === Qt.Key_F5) {
