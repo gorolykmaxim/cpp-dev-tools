@@ -75,6 +75,11 @@ void GitCommitController::resetSelectedFile() {
                     "Git: Failed to reset file");
 }
 
+void GitCommitController::commit(const QString &msg) {
+  LOG() << "Committing";
+  ExecuteGitCommand({"commit", "-F", "-"}, msg, "Git: Failed to commit");
+}
+
 void GitCommitController::ExecuteGitCommand(const QStringList &args,
                                             const QString &input,
                                             const QString &error_title) {
