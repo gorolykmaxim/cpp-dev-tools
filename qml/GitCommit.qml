@@ -124,6 +124,7 @@ SplitView {
           Cdt.CheckBox {
             id: amendCheckBox
             text: "Amend"
+            onCheckedChanged: checked && controller.loadLastCommitMessage()
             Layout.fillWidth: true
           }
         }

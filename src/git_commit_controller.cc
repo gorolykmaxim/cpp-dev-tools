@@ -100,6 +100,20 @@ void GitCommitController::commit(const QString &msg, bool commit_all,
       });
 }
 
+void GitCommitController::loadLastCommitMessage() {
+  LOG() << "Loading last commit message";
+  OsCommand::Run("git", {"log", "-1", "--pretty=format:%B"}, "",
+                 "Git: Failed to get last commit message")
+      .Then(this, [this](OsProcess p) {
+        if (p.exit_code == 0) {
+          if (p.output.endsWith('\n')) {
+            p.output.removeLast();
+          }
+          emit commitMessageChanged(p.output);
+        }
+      });
+}
+
 Promise<OsProcess> GitCommitController::ExecuteGitCommand(
     const QStringList &args, const QString &input, const QString &error_title) {
   return OsCommand::Run("git", args, input, error_title)

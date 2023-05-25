@@ -44,6 +44,7 @@ class GitCommitController : public QObject {
   void toggleStagedSelectedFile();
   void resetSelectedFile();
   void commit(const QString& msg, bool commit_all, bool amend);
+  void loadLastCommitMessage();
 
  signals:
   void filesChanged();
