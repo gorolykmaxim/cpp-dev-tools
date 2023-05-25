@@ -11,6 +11,8 @@ GitCommitController::GitCommitController(QObject *parent)
   findChangedFiles();
 }
 
+bool GitCommitController::HasChanges() const { return !files->list.isEmpty(); }
+
 void GitCommitController::findChangedFiles() {
   LOG() << "Looking for changed files";
   OsCommand::Run("git", {"status", "--porcelain=v1"}, "",
@@ -41,6 +43,7 @@ void GitCommitController::findChangedFiles() {
                   });
         LOG() << "Found" << files->list.size() << "changed files";
         files->Load(-1);
+        emit filesChanged();
       });
 }
 

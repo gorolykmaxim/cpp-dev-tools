@@ -35,6 +35,7 @@ SplitView {
       Cdt.Pane {
         Layout.fillWidth: true
         color: Theme.colorBgMedium
+        focus: !controller.hasChanges
         RowLayout {
           anchors.fill: parent
           Cdt.Text {
@@ -45,6 +46,7 @@ SplitView {
           Cdt.IconButton {
             buttonIcon: "loop"
             onClicked: controller.findChangedFiles()
+            focus: true
           }
         }
       }
@@ -53,6 +55,7 @@ SplitView {
         Layout.fillHeight: true
         searchPlaceholderText: "Search changed file"
         searchableModel: controller.files
+        enabled: controller.hasChanges
       }
     }
     ColumnLayout {
@@ -63,9 +66,10 @@ SplitView {
         Layout.fillWidth: true
         Layout.fillHeight: true
         placeholderText: "Commit Message"
-        focus: true
+        focus: controller.hasChanges
         color: Theme.colorBgDark
         innerPadding: Theme.basePadding
+        enabled: controller.hasChanges
       }
       Cdt.Pane {
         Layout.fillWidth: true
@@ -76,13 +80,16 @@ SplitView {
           spacing: Theme.basePadding
           Cdt.Button {
             text: "Commit"
+            enabled: controller.hasChanges
           }
           Cdt.Button {
             text: "Commit All"
+            enabled: controller.hasChanges
           }
           Cdt.CheckBox {
             text: "Amend"
             Layout.fillWidth: true
+            enabled: controller.hasChanges
           }
         }
       }
@@ -110,6 +117,7 @@ SplitView {
       innerPadding: Theme.basePadding
       color: Theme.colorBgDark
       wrapMode: TextEdit.NoWrap
+      enabled: controller.hasChanges
     }
   }
 }
