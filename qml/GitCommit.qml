@@ -52,7 +52,7 @@ SplitView {
             text: "Commit"
           }
           Cdt.Button {
-            text: "Commit and Push"
+            text: "Commit All"
           }
           Cdt.CheckBox {
             text: "Amend"
