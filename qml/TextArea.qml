@@ -207,7 +207,7 @@ FocusScope {
           selectByMouse: true
           enabled: root.enabled
           selectionColor: Theme.colorHighlight
-          color: Theme.colorText
+          color: enabled ? Theme.colorText : Theme.colorSubText
           leftPadding: root.innerPadding
           rightPadding: root.innerPadding
           topPadding: root.innerPadding
