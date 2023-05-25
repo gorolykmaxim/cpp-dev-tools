@@ -16,8 +16,9 @@ bool GitCommitController::HasChanges() const { return !files->list.isEmpty(); }
 void GitCommitController::findChangedFiles() {
   LOG() << "Looking for changed files";
   OsCommand::Run("git", {"status", "--porcelain=v1"}, "",
-                 "Failed to detect git changes")
+                 "Git: Failed to detect changes")
       .Then(this, [this](OsProcess p) {
+        bool was_empty = files->list.isEmpty();
         files->list.clear();
         if (p.exit_code != 0) {
           files->SetPlaceholder("Failed to detect git changes", "red");
@@ -43,7 +44,36 @@ void GitCommitController::findChangedFiles() {
                   });
         LOG() << "Found" << files->list.size() << "changed files";
         files->Load(-1);
-        emit filesChanged();
+        if (files->list.isEmpty() != was_empty) {
+          emit filesChanged();
+        }
+      });
+}
+
+void GitCommitController::toggleStagedSelectedFile() {
+  int i = files->GetSelectedItemIndex();
+  if (i < 0) {
+    return;
+  }
+  const ChangedFile &f = files->list[i];
+  if (f.is_staged) {
+    LOG() << "Unstaging" << f.path;
+    ExecuteGitCommand({"restore", "--staged", f.path}, "",
+                      "Git: Failed to unstage file");
+  } else {
+    LOG() << "Staging" << f.path;
+    ExecuteGitCommand({"add", f.path}, "", "Git: Failed to stage file");
+  }
+}
+
+void GitCommitController::ExecuteGitCommand(const QStringList &args,
+                                            const QString &input,
+                                            const QString &error_title) {
+  OsCommand::Run("git", args, input, error_title)
+      .Then(this, [this](OsProcess proc) {
+        if (proc.exit_code == 0) {
+          findChangedFiles();
+        }
       });
 }
 

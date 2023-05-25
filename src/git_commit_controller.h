@@ -39,11 +39,14 @@ class GitCommitController : public QObject {
 
  public slots:
   void findChangedFiles();
+  void toggleStagedSelectedFile();
 
  signals:
   void filesChanged();
 
  private:
+  void ExecuteGitCommand(const QStringList& args, const QString& input,
+                         const QString& error_title);
   ChangedFileListModel* files;
 };
 

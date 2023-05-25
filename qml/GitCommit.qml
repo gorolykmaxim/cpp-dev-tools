@@ -1,6 +1,7 @@
 import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
+import Qt.labs.platform
 import "." as Cdt
 import cdt
 
@@ -59,8 +60,18 @@ SplitView {
         searchPlaceholderText: "Search changed file"
         searchableModel: controller.files
         enabled: controller.hasChanges
+        onItemRightClicked: contextMenu.open();
+        onItemSelected: controller.toggleStagedSelectedFile()
         KeyNavigation.down: commitMsg
         KeyNavigation.right: fileDiff
+        Menu {
+          id: contextMenu
+          MenuItem {
+            enabled: changeList.activeFocus
+            text: "Toggle Staged"
+            onTriggered: controller.toggleStagedSelectedFile()
+          }
+        }
       }
     }
     ColumnLayout {

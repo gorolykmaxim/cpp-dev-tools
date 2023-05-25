@@ -131,6 +131,7 @@ Cdt.Pane {
         acceptedButtons: Qt.LeftButton | Qt.RightButton
         hoverEnabled: true
         onPressed: e => {
+          root.forceActiveFocus();
           list.currentIndex = index;
           if (e.button === Qt.LeftButton) {
             root.itemLeftClicked(itemModel, e);
