@@ -54,15 +54,16 @@ SplitView {
           }
         }
       }
-      Cdt.SearchableTextList {
+      Cdt.TextList {
         id: changeList
         Layout.fillWidth: true
         Layout.fillHeight: true
-        searchPlaceholderText: "Search changed file"
-        searchableModel: controller.files
+        model: controller.files
         enabled: controller.hasChanges
-        onItemRightClicked: contextMenu.open();
-        onItemSelected: controller.toggleStagedSelectedFile()
+        highlightCurrentItemWithoutFocus: false
+        onItemRightClicked: contextMenu.open()
+        Keys.onEnterPressed: controller.toggleStagedSelectedFile()
+        Keys.onReturnPressed: controller.toggleStagedSelectedFile()
         KeyNavigation.down: commitMsg
         KeyNavigation.right: fileDiff
         Menu {

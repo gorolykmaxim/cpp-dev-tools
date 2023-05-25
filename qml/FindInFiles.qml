@@ -141,10 +141,7 @@ SplitView {
       model: controller.results
       elide: Text.ElideRight
       highlightCurrentItemWithoutFocus: false
-      onItemRightClicked: {
-        forceActiveFocus();
-        contextMenu.open();
-      }
+      onItemRightClicked: contextMenu.open()
       Keys.onEnterPressed: controller.openSelectedResultInEditor()
       Keys.onReturnPressed: controller.openSelectedResultInEditor()
       KeyNavigation.right: filePreviewArea
