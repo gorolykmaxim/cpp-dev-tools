@@ -1,6 +1,7 @@
 #include "git_commit_controller.h"
 
 #include "application.h"
+#include "io_task.h"
 #include "os_command.h"
 
 #define LOG() qDebug() << "[GitCommitController]"
@@ -71,8 +72,14 @@ void GitCommitController::resetSelectedFile() {
     return;
   }
   LOG() << "Reseting" << f->path;
-  ExecuteGitCommand({"checkout", "HEAD", "--", f->path}, "",
-                    "Git: Failed to reset file");
+  if (!f->is_staged && f->status == ChangedFile::kNew) {
+    QString path = f->path;
+    IoTask::Run(
+        this, [path] { QFile(path).remove(); }, [this] { findChangedFiles(); });
+  } else {
+    ExecuteGitCommand({"checkout", "HEAD", "--", f->path}, "",
+                      "Git: Failed to reset file");
+  }
 }
 
 void GitCommitController::commit(const QString &msg) {

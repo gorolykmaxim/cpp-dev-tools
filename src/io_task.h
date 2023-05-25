@@ -19,21 +19,6 @@ class IoTask {
   }
 
   template <typename T>
-  static void Then(QFuture<T> future, QObject* requestor,
-                   std::function<void(T)>&& callback) {
-    auto watcher = new QFutureWatcher<T>(requestor);
-    QObject::connect(watcher, &QFutureWatcher<T>::finished, requestor,
-                     [callback = std::move(callback), watcher] {
-                       callback(watcher->result());
-                       watcher->deleteLater();
-                     });
-    watcher->setFuture(future);
-  }
-
-  static void Then(QFuture<void> future, QObject* requestor,
-                   std::function<void()>&& callback);
-
-  template <typename T>
   static void Run(QObject* requestor, std::function<T()>&& on_io_thread,
                   std::function<void(T)>&& on_ui_thread) {
     Promise<T> p = Run(std::move(on_io_thread));
