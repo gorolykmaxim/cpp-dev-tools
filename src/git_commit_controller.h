@@ -35,6 +35,9 @@ class GitCommitController : public QObject {
  public:
   explicit GitCommitController(QObject* parent = nullptr);
 
+ public slots:
+  void findChangedFiles();
+
  private:
   ChangedFileListModel* files;
 };

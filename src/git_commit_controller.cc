@@ -8,6 +8,10 @@
 GitCommitController::GitCommitController(QObject *parent)
     : QObject(parent), files(new ChangedFileListModel(this)) {
   Application::Get().view.SetWindowTitle("Git Commit");
+  findChangedFiles();
+}
+
+void GitCommitController::findChangedFiles() {
   LOG() << "Looking for changed files";
   OsCommand::Run("git", {"status", "--porcelain=v1"}, "",
                  "Failed to detect git changes")
@@ -35,6 +39,7 @@ GitCommitController::GitCommitController(QObject *parent)
                   [](const ChangedFile &a, const ChangedFile &b) {
                     return a.path > b.path;
                   });
+        LOG() << "Found" << files->list.size() << "changed files";
         files->Load(-1);
       });
 }

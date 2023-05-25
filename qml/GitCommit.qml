@@ -14,6 +14,11 @@ SplitView {
   GitCommitController {
     id: controller
   }
+  Keys.onPressed: function(e) {
+    if (e.key === Qt.Key_F5) {
+      controller.findChangedFiles()
+    }
+  }
   SplitView {
     id: sidebar
     SplitView.minimumWidth: 300
@@ -23,11 +28,32 @@ SplitView {
       viewId: "GitCommitSidebar"
       view: sidebar
     }
-    Cdt.SearchableTextList {
+    ColumnLayout {
       SplitView.fillWidth: true
       SplitView.fillHeight: true
-      searchPlaceholderText: "Search changed file"
-      searchableModel: controller.files
+      spacing: 0
+      Cdt.Pane {
+        Layout.fillWidth: true
+        color: Theme.colorBgMedium
+        RowLayout {
+          anchors.fill: parent
+          Cdt.Text {
+            text: "Changed Files"
+            Layout.fillWidth: true
+            padding: Theme.basePadding
+          }
+          Cdt.IconButton {
+            buttonIcon: "loop"
+            onClicked: controller.findChangedFiles()
+          }
+        }
+      }
+      Cdt.SearchableTextList {
+        Layout.fillWidth: true
+        Layout.fillHeight: true
+        searchPlaceholderText: "Search changed file"
+        searchableModel: controller.files
+      }
     }
     ColumnLayout {
       SplitView.fillWidth: true
