@@ -44,6 +44,7 @@ ChangedFileListModel::ChangedFileListModel(QObject *parent)
   SetRoleNames(
       {{0, "title"}, {1, "titleColor"}, {2, "icon"}, {3, "iconColor"}});
   searchable_roles = {0};
+  SetEmptyListPlaceholder("No git changes found");
 }
 
 QVariantList ChangedFileListModel::GetRow(int i) const {
@@ -54,11 +55,11 @@ QVariantList ChangedFileListModel::GetRow(int i) const {
   } else if (f.status == ChangedFile::kDeleted) {
     color = "red";
   }
-  QString icon_color = "";
-  if (!f.is_staged) {
-    icon_color = "transparent";
+  QString icon = "check_box_outline_blank";
+  if (f.is_staged) {
+    icon = "check_box";
   }
-  return {f.path, color, "check", icon_color};
+  return {f.path, color, icon, color};
 }
 
 int ChangedFileListModel::GetRowCount() const { return list.size(); }
