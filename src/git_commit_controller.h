@@ -42,7 +42,7 @@ class GitCommitController : public QObject {
   void findChangedFiles();
   void toggleStagedSelectedFile();
   void resetSelectedFile();
-  void commit(const QString& msg);
+  void commit(const QString& msg, bool commit_all);
 
  signals:
   void filesChanged();

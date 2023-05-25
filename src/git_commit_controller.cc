@@ -82,9 +82,14 @@ void GitCommitController::resetSelectedFile() {
   }
 }
 
-void GitCommitController::commit(const QString &msg) {
-  LOG() << "Committing";
-  ExecuteGitCommand({"commit", "-F", "-"}, msg, "Git: Failed to commit");
+void GitCommitController::commit(const QString &msg, bool commit_all) {
+  LOG() << "Committing"
+        << "all files:" << commit_all;
+  QStringList args = {"commit", "-F", "-"};
+  if (commit_all) {
+    args.append("-a");
+  }
+  ExecuteGitCommand(args, msg, "Git: Failed to commit");
 }
 
 void GitCommitController::ExecuteGitCommand(const QStringList &args,

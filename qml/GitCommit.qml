@@ -116,12 +116,13 @@ SplitView {
           Cdt.Button {
             text: "Commit"
             focus: true
-            onClicked: controller.commit(commitMsg.displayText)
+            onClicked: controller.commit(commitMsg.displayText, false)
             KeyNavigation.right: commitAllBtn
           }
           Cdt.Button {
             id: commitAllBtn
             text: "Commit All"
+            onClicked: controller.commit(commitMsg.displayText, true)
             KeyNavigation.right: amendCheckBox
           }
           Cdt.CheckBox {
