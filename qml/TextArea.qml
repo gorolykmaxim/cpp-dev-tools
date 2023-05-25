@@ -18,6 +18,7 @@ FocusScope {
   property real innerPadding: 0
   property alias formatter: controller.formatter
   property bool detectFileLinks: true
+  property int wrapMode: Controls.TextArea.WordWrap
   property alias placeholderText: textArea.placeholderText
   property alias effectiveCursorPosition: textArea.cursorPosition
   property alias displayText: textArea.text
@@ -217,7 +218,7 @@ FocusScope {
           background: Rectangle {
             color: "transparent"
           }
-          wrapMode: Controls.TextArea.WordWrap
+          wrapMode: root.wrapMode
           onCursorPositionChanged: controller.saveCursorPosition(textArea.cursorPosition)
           onTextChanged: function () {
             if (ignoreTextChange) {
