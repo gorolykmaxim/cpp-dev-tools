@@ -36,6 +36,8 @@ SplitView {
         Layout.fillWidth: true
         color: Theme.colorBgMedium
         focus: !controller.hasChanges
+        KeyNavigation.down: changeList
+        KeyNavigation.right: fileDiff
         RowLayout {
           anchors.fill: parent
           Cdt.Text {
@@ -51,11 +53,14 @@ SplitView {
         }
       }
       Cdt.SearchableTextList {
+        id: changeList
         Layout.fillWidth: true
         Layout.fillHeight: true
         searchPlaceholderText: "Search changed file"
         searchableModel: controller.files
         enabled: controller.hasChanges
+        KeyNavigation.down: commitMsg
+        KeyNavigation.right: fileDiff
       }
     }
     ColumnLayout {
@@ -63,6 +68,7 @@ SplitView {
       SplitView.minimumHeight: 300
       spacing: 0
       Cdt.TextArea {
+        id: commitMsg
         Layout.fillWidth: true
         Layout.fillHeight: true
         placeholderText: "Commit Message"
@@ -70,23 +76,32 @@ SplitView {
         color: Theme.colorBgDark
         innerPadding: Theme.basePadding
         enabled: controller.hasChanges
+        KeyNavigation.down: commitButtons
+        KeyNavigation.right: fileDiff
       }
       Cdt.Pane {
+        id: commitButtons
         Layout.fillWidth: true
         color: Theme.colorBgMedium
         padding: Theme.basePadding
+        KeyNavigation.right: fileDiff
         RowLayout {
           anchors.fill: parent
           spacing: Theme.basePadding
           Cdt.Button {
             text: "Commit"
             enabled: controller.hasChanges
+            focus: true
+            KeyNavigation.right: commitAllBtn
           }
           Cdt.Button {
+            id: commitAllBtn
             text: "Commit All"
             enabled: controller.hasChanges
+            KeyNavigation.right: amendCheckBox
           }
           Cdt.CheckBox {
+            id: amendCheckBox
             text: "Amend"
             Layout.fillWidth: true
             enabled: controller.hasChanges
@@ -110,6 +125,7 @@ SplitView {
       }
     }
     Cdt.TextArea {
+      id: fileDiff
       Layout.fillWidth: true
       Layout.fillHeight: true
       readonly: true
@@ -118,6 +134,8 @@ SplitView {
       color: Theme.colorBgDark
       wrapMode: TextEdit.NoWrap
       enabled: controller.hasChanges
+      text: "Hello world"
+      KeyNavigation.left: changeList
     }
   }
 }
