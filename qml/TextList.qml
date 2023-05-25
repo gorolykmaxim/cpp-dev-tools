@@ -19,18 +19,26 @@ Cdt.Pane {
     }
   }
   function incrementCurrentIndex() {
+    const old = list.currentIndex;
     list.incrementCurrentIndex();
+    return old !== list.currentIndex;
   }
   function decrementCurrentIndex() {
+    const old = list.currentIndex;
     list.decrementCurrentIndex();
+    return old !== list.currentIndex;
   }
   function pageUp() {
+    const old = list.currentIndex;
     const result = list.currentIndex - 10;
     list.currentIndex = result < 0 ? 0 : result;
+    return old !== list.currentIndex;
   }
   function pageDown() {
+    const old = list.currentIndex;
     const result = list.currentIndex + 10;
     list.currentIndex = result >= list.count ? list.count - 1 : result;
+    return old !== list.currentIndex;
   }
   Cdt.PlaceholderText {
     id: placeholder

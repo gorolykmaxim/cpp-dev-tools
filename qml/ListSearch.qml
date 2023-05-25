@@ -18,16 +18,16 @@ Cdt.TextField {
   Keys.onPressed: e => {
     switch (e.key) {
       case Qt.Key_Down:
-        list.incrementCurrentIndex();
+        e.accepted = list.incrementCurrentIndex();
         break;
       case Qt.Key_Up:
-        list.decrementCurrentIndex();
+        e.accepted = list.decrementCurrentIndex();
         break;
       case Qt.Key_PageUp:
-        list.pageUp();
+        e.accepted = list.pageUp();
         break;
       case Qt.Key_PageDown:
-        list.pageDown();
+        e.accepted = list.pageDown();
         break;
       case Qt.Key_Enter:
       case Qt.Key_Return:
@@ -36,6 +36,7 @@ Cdt.TextField {
         } else {
           field.enterPressed()
         }
+        e.accepted = true;
         break;
     }
   }

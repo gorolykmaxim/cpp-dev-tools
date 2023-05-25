@@ -84,27 +84,25 @@ SplitView {
         Layout.fillWidth: true
         color: Theme.colorBgMedium
         padding: Theme.basePadding
+        enabled: controller.hasChanges
         KeyNavigation.right: fileDiff
         RowLayout {
           anchors.fill: parent
           spacing: Theme.basePadding
           Cdt.Button {
             text: "Commit"
-            enabled: controller.hasChanges
             focus: true
             KeyNavigation.right: commitAllBtn
           }
           Cdt.Button {
             id: commitAllBtn
             text: "Commit All"
-            enabled: controller.hasChanges
             KeyNavigation.right: amendCheckBox
           }
           Cdt.CheckBox {
             id: amendCheckBox
             text: "Amend"
             Layout.fillWidth: true
-            enabled: controller.hasChanges
           }
         }
       }
