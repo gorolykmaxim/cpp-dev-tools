@@ -71,6 +71,12 @@ SplitView {
             text: "Toggle Staged"
             onTriggered: controller.toggleStagedSelectedFile()
           }
+          MenuItem {
+            enabled: changeList.activeFocus
+            text: "Reset"
+            shortcut: "Alt+Shift+D"
+            onTriggered: controller.resetSelectedFile()
+          }
         }
       }
     }

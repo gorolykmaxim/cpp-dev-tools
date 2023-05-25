@@ -51,19 +51,28 @@ void GitCommitController::findChangedFiles() {
 }
 
 void GitCommitController::toggleStagedSelectedFile() {
-  int i = files->GetSelectedItemIndex();
-  if (i < 0) {
+  const ChangedFile *f = files->GetSelected();
+  if (!f) {
     return;
   }
-  const ChangedFile &f = files->list[i];
-  if (f.is_staged) {
-    LOG() << "Unstaging" << f.path;
-    ExecuteGitCommand({"restore", "--staged", f.path}, "",
+  if (f->is_staged) {
+    LOG() << "Unstaging" << f->path;
+    ExecuteGitCommand({"restore", "--staged", f->path}, "",
                       "Git: Failed to unstage file");
   } else {
-    LOG() << "Staging" << f.path;
-    ExecuteGitCommand({"add", f.path}, "", "Git: Failed to stage file");
+    LOG() << "Staging" << f->path;
+    ExecuteGitCommand({"add", f->path}, "", "Git: Failed to stage file");
   }
+}
+
+void GitCommitController::resetSelectedFile() {
+  const ChangedFile *f = files->GetSelected();
+  if (!f) {
+    return;
+  }
+  LOG() << "Reseting" << f->path;
+  ExecuteGitCommand({"checkout", "HEAD", "--", f->path}, "",
+                    "Git: Failed to reset file");
 }
 
 void GitCommitController::ExecuteGitCommand(const QStringList &args,
@@ -83,6 +92,11 @@ ChangedFileListModel::ChangedFileListModel(QObject *parent)
       {{0, "title"}, {1, "titleColor"}, {2, "icon"}, {3, "iconColor"}});
   searchable_roles = {0};
   SetEmptyListPlaceholder("No git changes found");
+}
+
+const ChangedFile *ChangedFileListModel::GetSelected() const {
+  int i = GetSelectedItemIndex();
+  return i < 0 ? nullptr : &list[i];
 }
 
 QVariantList ChangedFileListModel::GetRow(int i) const {

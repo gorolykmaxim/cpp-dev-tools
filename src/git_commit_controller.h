@@ -20,6 +20,7 @@ struct ChangedFile {
 class ChangedFileListModel : public TextListModel {
  public:
   explicit ChangedFileListModel(QObject* parent);
+  const ChangedFile* GetSelected() const;
 
   QList<ChangedFile> list;
 
@@ -40,6 +41,7 @@ class GitCommitController : public QObject {
  public slots:
   void findChangedFiles();
   void toggleStagedSelectedFile();
+  void resetSelectedFile();
 
  signals:
   void filesChanged();
