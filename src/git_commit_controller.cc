@@ -2,7 +2,6 @@
 
 #include "application.h"
 #include "io_task.h"
-#include "os_command.h"
 
 #define LOG() qDebug() << "[GitCommitController]"
 
@@ -93,17 +92,22 @@ void GitCommitController::commit(const QString &msg, bool commit_all,
   if (amend) {
     args.append("--amend");
   }
-  ExecuteGitCommand(args, msg, "Git: Failed to commit");
+  ExecuteGitCommand(args, msg, "Git: Failed to commit")
+      .Then(this, [this](OsProcess p) {
+        if (p.exit_code == 0) {
+          emit commitMessageChanged("");
+        }
+      });
 }
 
-void GitCommitController::ExecuteGitCommand(const QStringList &args,
-                                            const QString &input,
-                                            const QString &error_title) {
-  OsCommand::Run("git", args, input, error_title)
-      .Then(this, [this](OsProcess proc) {
+Promise<OsProcess> GitCommitController::ExecuteGitCommand(
+    const QStringList &args, const QString &input, const QString &error_title) {
+  return OsCommand::Run("git", args, input, error_title)
+      .Then<OsProcess>(this, [this](OsProcess proc) {
         if (proc.exit_code == 0) {
           findChangedFiles();
         }
+        return Promise<OsProcess>(proc);
       });
 }
 

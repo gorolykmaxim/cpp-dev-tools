@@ -72,9 +72,6 @@ FocusScope {
     controller.replaceSearchResultWith(replaceOutputTextField.displayText, replaceAll);
     controller.search(searchOutputTextField.displayText, root.getText(), true);
   }
-  function clear() {
-    textArea.clear();
-  }
   Timer {
     id: textSetDelay
     interval: 1 // Having it as just 0 does not always trigger "Loading"

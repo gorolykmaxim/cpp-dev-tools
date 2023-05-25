@@ -4,6 +4,7 @@
 #include <QObject>
 #include <QQmlEngine>
 
+#include "os_command.h"
 #include "text_list_model.h"
 
 struct ChangedFile {
@@ -46,10 +47,12 @@ class GitCommitController : public QObject {
 
  signals:
   void filesChanged();
+  void commitMessageChanged(const QString& msg);
 
  private:
-  void ExecuteGitCommand(const QStringList& args, const QString& input,
-                         const QString& error_title);
+  Promise<OsProcess> ExecuteGitCommand(const QStringList& args,
+                                       const QString& input,
+                                       const QString& error_title);
   ChangedFileListModel* files;
 };
 
