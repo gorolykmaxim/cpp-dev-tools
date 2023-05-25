@@ -98,6 +98,8 @@ SplitView {
         color: Theme.colorBgDark
         innerPadding: Theme.basePadding
         enabled: controller.hasChanges
+        detectFileLinks: false
+        searchable: true
         KeyNavigation.down: commitButtons
         KeyNavigation.right: fileDiff
       }
@@ -155,6 +157,8 @@ SplitView {
       color: Theme.colorBgDark
       wrapMode: TextEdit.NoWrap
       enabled: controller.hasChanges
+      detectFileLinks: false
+      searchable: true
       KeyNavigation.left: changeList
     }
   }
