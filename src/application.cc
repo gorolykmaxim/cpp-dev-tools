@@ -1,5 +1,6 @@
 #include "application.h"
 
+#include <QFontDatabase>
 #include <QQmlContext>
 #include <QQuickStyle>
 #include <QQuickWindow>
@@ -18,6 +19,9 @@ Application::Application(int argc, char** argv)
   io_thread_pool.setMaxThreadCount(1);
   qSetMessagePattern("%{time yyyy-MM-dd h:mm:ss.zzz} %{message}");
   QQuickStyle::setStyle("Basic");
+  for (const QString& font : QDir(":/fonts/").entryList()) {
+    QFontDatabase::addApplicationFont(font);
+  }
   qml_engine.rootContext()->setContextProperty("projectSystem", &project);
   qml_engine.rootContext()->setContextProperty("viewSystem", &view);
   qml_engine.rootContext()->setContextProperty("userCommandSystem",

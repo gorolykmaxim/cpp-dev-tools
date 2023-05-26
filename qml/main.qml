@@ -40,10 +40,6 @@ ApplicationWindow {
     onTriggered: viewSystem.saveWindowDimensions(width, height, x, y,
                                                  visibility == Window.Maximized)
   }
-  FontLoader {
-    id: iconFont
-    source: "../fonts/MaterialIcons-Regular.ttf"
-  }
   menuBar: Cdt.MenuBar {
     isProjectOpened: projectSystem.isProjectOpened
     model: userCommandSystem.userCommands
