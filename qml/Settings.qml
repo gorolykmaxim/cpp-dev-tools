@@ -1,6 +1,7 @@
 import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
+import Qt.labs.platform
 import "." as Cdt
 import cdt
 import "Common.js" as Common
@@ -73,7 +74,45 @@ Loader {
               Layout.columnSpan: 2
               Layout.alignment: Qt.AlignHCenter
               onClicked: controller.configureDocumentationFolders()
-              KeyNavigation.down: saveBtn
+              KeyNavigation.down: terminalPriorityList
+            }
+            Cdt.Text {
+              text: "Terminal Priority"
+              Layout.minimumWidth: 200
+              Layout.alignment: Qt.AlignTop
+            }
+            Rectangle {
+              Layout.fillWidth: true
+              height: 80
+              color: Theme.colorBgDark
+              border.color: Theme.colorBgBlack
+              border.width: 1
+              radius: Theme.baseRadius
+              Cdt.TextList {
+                id: terminalPriorityList
+                anchors.fill: parent
+                anchors.margins: 1
+                color: "transparent"
+                model: controller.terminals
+                highlightCurrentItemWithoutFocus: false
+                onItemRightClicked: contextMenu.open()
+                KeyNavigation.down: saveBtn
+                Menu {
+                  id: contextMenu
+                  MenuItem {
+                    text: "Move Up"
+                    enabled: terminalPriorityList.activeFocus
+                    shortcut: "Shift+Up"
+                    onTriggered: controller.moveSelectedTerminal(true)
+                  }
+                  MenuItem {
+                    text: "Move Down"
+                    enabled: terminalPriorityList.activeFocus
+                    shortcut: "Shift+Down"
+                    onTriggered: controller.moveSelectedTerminal(false)
+                  }
+                }
+              }
             }
           }
         }

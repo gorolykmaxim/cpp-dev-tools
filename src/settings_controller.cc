@@ -10,7 +10,8 @@ SettingsController::SettingsController(QObject *parent)
       external_search_folders(new FolderListModel(
           this, "external_search_folder", UiIcon("find_in_page"))),
       documentation_folders(new FolderListModel(this, "documentation_folder",
-                                                UiIcon("description"))) {
+                                                UiIcon("description"))),
+      terminals(new TerminalListModel(this)) {
   Application::Get().view.SetWindowTitle("Settings");
   Load();
 }
@@ -50,9 +51,23 @@ void SettingsController::save() {
   app.task.history_limit = settings.task_history_limit;
   cmds.append(Database::Cmd("UPDATE task_context SET history_limit=?",
                             {settings.task_history_limit}));
+  for (int i = 0; i < terminals->list.size(); i++) {
+    cmds.append(Database::Cmd("UPDATE terminal SET priority=? WHERE name=?",
+                              {i, terminals->list[i]}));
+  }
   Database::ExecCmdsAsync(cmds);
   emit settingsChanged();
   app.notification.Post(Notification("Settings: Changes saved"));
+}
+
+void SettingsController::moveSelectedTerminal(bool up) {
+  int i = terminals->GetSelectedItemIndex();
+  int new_i = up ? i - 1 : i + 1;
+  if (i < 0 || new_i < 0 || new_i >= terminals->list.size()) {
+    return;
+  }
+  terminals->list.swapItemsAt(i, new_i);
+  terminals->Load(new_i);
 }
 
 void SettingsController::Load() {
@@ -71,11 +86,16 @@ void SettingsController::Load() {
                 "SELECT history_limit FROM task_context",
                 &Database::ReadIntFromSql)
                 .constFirst();
+        settings.terminals = Database::ExecQueryAndRead<QString>(
+            "SELECT name FROM terminal ORDER BY priority",
+            &Database::ReadStringFromSql);
         return settings;
       },
       [this](Settings settings) {
         external_search_folders->SetFolders(settings.external_search_folders);
         documentation_folders->SetFolders(settings.documentation_folders);
+        terminals->list = settings.terminals;
+        terminals->Load(-1);
         settings.open_in_editor_command =
             Application::Get().editor.open_command;
         this->settings = settings;
@@ -130,9 +150,20 @@ bool Settings::operator==(const Settings &another) const {
   return open_in_editor_command == another.open_in_editor_command &&
          task_history_limit == another.task_history_limit &&
          external_search_folders == another.external_search_folders &&
-         documentation_folders == another.documentation_folders;
+         documentation_folders == another.documentation_folders &&
+         terminals == another.terminals;
 }
 
 bool Settings::operator!=(const Settings &another) const {
   return !(*this == another);
 }
+
+TerminalListModel::TerminalListModel(QObject *parent) : TextListModel(parent) {
+  SetRoleNames({{0, "title"}});
+}
+
+QVariantList TerminalListModel::GetRow(int i) const {
+  return {QString::number(i + 1) + ". " + list[i]};
+}
+
+int TerminalListModel::GetRowCount() const { return list.size(); }

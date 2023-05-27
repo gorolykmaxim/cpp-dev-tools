@@ -31,6 +31,17 @@ class FolderListModel : public TextListModel {
   UiIcon icon;
 };
 
+class TerminalListModel : public TextListModel {
+ public:
+  explicit TerminalListModel(QObject* parent);
+
+  QStringList list;
+
+ protected:
+  QVariantList GetRow(int i) const;
+  int GetRowCount() const;
+};
+
 struct Settings {
   Q_GADGET
   Q_PROPERTY(QString openInEditorCommand MEMBER open_in_editor_command)
@@ -43,6 +54,7 @@ struct Settings {
   int task_history_limit;
   QStringList external_search_folders;
   QStringList documentation_folders;
+  QStringList terminals;
 };
 
 class SettingsController : public QObject {
@@ -53,6 +65,7 @@ class SettingsController : public QObject {
                  external_search_folders CONSTANT)
   Q_PROPERTY(FolderListModel* documentationFolders MEMBER documentation_folders
                  CONSTANT)
+  Q_PROPERTY(TerminalListModel* terminals MEMBER terminals CONSTANT)
  public:
   explicit SettingsController(QObject* parent = nullptr);
 
@@ -61,6 +74,7 @@ class SettingsController : public QObject {
   void configureDocumentationFolders();
   void goToSettings();
   void save();
+  void moveSelectedTerminal(bool up);
 
  signals:
   void settingsChanged();
@@ -74,6 +88,7 @@ class SettingsController : public QObject {
   Settings settings;
   FolderListModel* external_search_folders;
   FolderListModel* documentation_folders;
+  TerminalListModel* terminals;
 };
 
 #endif  // SETTINGSCONTROLLER_H
