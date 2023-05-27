@@ -217,6 +217,7 @@ FocusScope {
           placeholderTextColor: Theme.colorSubText
           font.family: root.monoFont ? monoFontFamily : null
           font.pointSize: root.monoFont ? monoFontSize : -1
+          renderType: Text.NativeRendering
           focus: true
           background: Rectangle {
             color: "transparent"

@@ -7,4 +7,5 @@ Text {
   font.family: "Material Icons"
   font.pixelSize: iconSize
   text: MD.icons[icon] || ""
+  renderType: Text.NativeRendering
 }

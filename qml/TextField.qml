@@ -13,6 +13,7 @@ QtQuick.TextField {
   selectByMouse: true
   selectionColor: Theme.colorHighlight
   onPressed: e => Common.handleRightClick(textField, contextMenu, e)
+  renderType: Text.NativeRendering
   background: Rectangle {
     color: Theme.colorBgDark
     border.color: parent.activeFocus ? Theme.colorHighlight : Theme.colorBgBlack
