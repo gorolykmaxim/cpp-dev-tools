@@ -16,6 +16,10 @@ SettingsController::SettingsController(QObject *parent)
   Load();
 }
 
+bool SettingsController::ShouldDisplayTerminalPriority() const {
+  return terminals->list.size() > 1;
+}
+
 void SettingsController::configureExternalSearchFolders() {
   LOG() << "Opening external search folder editor";
   Application::Get().view.SetWindowTitle("External Search Folders");

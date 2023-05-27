@@ -80,6 +80,7 @@ Loader {
               text: "Terminal Priority"
               Layout.minimumWidth: 200
               Layout.alignment: Qt.AlignTop
+              visible: controller.displayTerminalPriority
             }
             Rectangle {
               Layout.fillWidth: true
@@ -88,6 +89,7 @@ Loader {
               border.color: Theme.colorBgBlack
               border.width: 1
               radius: Theme.baseRadius
+              visible: controller.displayTerminalPriority
               Cdt.TextList {
                 id: terminalPriorityList
                 anchors.fill: parent

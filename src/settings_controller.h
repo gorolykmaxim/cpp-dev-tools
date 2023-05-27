@@ -66,8 +66,11 @@ class SettingsController : public QObject {
   Q_PROPERTY(FolderListModel* documentationFolders MEMBER documentation_folders
                  CONSTANT)
   Q_PROPERTY(TerminalListModel* terminals MEMBER terminals CONSTANT)
+  Q_PROPERTY(bool displayTerminalPriority READ ShouldDisplayTerminalPriority
+                 NOTIFY settingsChanged)
  public:
   explicit SettingsController(QObject* parent = nullptr);
+  bool ShouldDisplayTerminalPriority() const;
 
  public slots:
   void configureExternalSearchFolders();
