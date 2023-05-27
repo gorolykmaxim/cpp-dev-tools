@@ -6,6 +6,7 @@
 #include <QQuickWindow>
 
 #include "database.h"
+#include "os_command.h"
 
 Application& Application::Get() { return *instance; }
 
@@ -55,6 +56,7 @@ int Application::Exec() {
   view.Initialize();
   editor.Initialize();
   task.Initialize();
+  OsCommand::InitTerminals();
   qml_engine.load(QUrl("qrc:/cdt/qml/main.qml"));
   return gui_app.exec();
 }

@@ -96,6 +96,10 @@ void Database::Initialize() {
       "files_to_include TEXT, "
       "files_to_exclude TEXT, "
       "FOREIGN KEY(project_id) REFERENCES project(id) ON DELETE CASCADE)");
+  ExecCmd(
+      "CREATE TABLE IF NOT EXISTS terminal("
+      "name TEXT PRIMARY KEY, "
+      "priority INT NOT NULL)");
 }
 
 void Database::ExecQuery(QSqlQuery &sql, const QString &query,

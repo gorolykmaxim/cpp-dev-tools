@@ -21,6 +21,7 @@ class OsCommand {
                                 const QString& input = "",
                                 const QString& error_title = "",
                                 const QString& success_title = "");
+  static void InitTerminals();
   static void OpenTerminalInCurrentDir();
 };
 

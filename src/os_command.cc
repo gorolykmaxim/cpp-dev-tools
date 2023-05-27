@@ -5,6 +5,8 @@
 #include <QSharedPointer>
 
 #include "application.h"
+#include "database.h"
+#include "io_task.h"
 
 #define LOG() qDebug() << "[OsCommand]"
 
@@ -66,6 +68,22 @@ Promise<OsProcess> OsCommand::Run(const QString &cmd, const QStringList &args,
     proc->closeWriteChannel();
   }
   return promise->future();
+}
+
+void OsCommand::InitTerminals() {
+  QStringList default_terminal_order;
+#if __APPLE__
+  default_terminal_order = {kMacOsTerminalName};
+#else
+  default_terminal_order = {kMicrosoftTerminalName, kGitBashName,
+                            kCommandPromptName};
+#endif
+  QList<Database::Cmd> cmds;
+  for (int i = 0; i < default_terminal_order.size(); i++) {
+    cmds.append(Database::Cmd("INSERT OR IGNORE INTO terminal VALUES(?, ?)",
+                              {default_terminal_order[i], i}));
+  }
+  Database::ExecCmdsAsync(cmds);
 }
 
 static Promise<OsProcess> OpenMacOsTerminal() {
@@ -141,12 +159,15 @@ static void TryOpenNextTerminal(QStringList terminals,
 
 void OsCommand::OpenTerminalInCurrentDir() {
   LOG() << "Opening terminal in" << QDir::currentPath();
-  auto failures = QSharedPointer<QStringList>::create();
-  QStringList terminals;
-#if __APPLE__
-  terminals = {kMacOsTerminalName};
-#else
-  terminals = {kMicrosoftTerminalName, kGitBashName, kCommandPromptName};
-#endif
-  TryOpenNextTerminal(terminals, failures);
+  IoTask::Run<QStringList>(
+      &Application::Get().gui_app,
+      [] {
+        return Database::ExecQueryAndRead<QString>(
+            "SELECT name FROM terminal ORDER BY priority",
+            &Database::ReadStringFromSql);
+      },
+      [](QStringList terminals) {
+        auto failures = QSharedPointer<QStringList>::create();
+        TryOpenNextTerminal(terminals, failures);
+      });
 }
