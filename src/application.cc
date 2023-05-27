@@ -19,7 +19,7 @@ Application::Application(int argc, char** argv)
   io_thread_pool.setMaxThreadCount(1);
   qSetMessagePattern("%{time yyyy-MM-dd h:mm:ss.zzz} %{message}");
   QQuickStyle::setStyle("Basic");
-  for (const QString& font : QDir(":/fonts/").entryList()) {
+  for (const QString& font : QDir(":/cdt/fonts/").entryList()) {
     QFontDatabase::addApplicationFont(font);
   }
   qml_engine.rootContext()->setContextProperty("projectSystem", &project);
