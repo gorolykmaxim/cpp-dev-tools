@@ -60,6 +60,8 @@ Dialog {
         text: dialogText
         readonly: true
         innerPadding: Theme.basePadding * 2
+        color: "transparent"
+        monoFont: false
         KeyNavigation.down: dialogCancel.visible ? dialogCancel : dialogOk
       }
     }

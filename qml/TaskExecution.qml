@@ -49,7 +49,6 @@ ColumnLayout {
     focus: true
     readonly: true
     innerPadding: Theme.basePadding
-    color: Theme.colorBgDark
     text: controller.executionOutput
     formatter: controller.executionFormatter
     cursorFollowEnd: true

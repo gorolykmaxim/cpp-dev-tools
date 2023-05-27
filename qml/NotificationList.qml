@@ -85,7 +85,6 @@ Loader {
         focus: true
         readonly: true
         innerPadding: Theme.basePadding
-        color: Theme.colorBgDark
         text: controller.selectedNotificationDescription
         searchable: true
         KeyNavigation.up: backBtn

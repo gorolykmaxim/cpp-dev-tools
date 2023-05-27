@@ -13,7 +13,7 @@ FocusScope {
   property bool readonly: false
   property bool isLoading: false
   property string text: ""
-  property string color: "transparent"
+  property string color: Theme.colorBgDark
   property real innerPadding: 0
   property alias formatter: controller.formatter
   property bool detectFileLinks: true
@@ -22,6 +22,7 @@ FocusScope {
   property alias effectiveCursorPosition: textArea.cursorPosition
   property alias displayText: textArea.text
   property int cursorPosition: -1
+  property bool monoFont: true
   signal ctrlEnterPressed()
   onCursorPositionChanged: textArea.cursorPosition = root.cursorPosition
   onTextChanged: {
@@ -214,8 +215,8 @@ FocusScope {
           bottomPadding: root.innerPadding
           textFormat: TextEdit.PlainText
           placeholderTextColor: Theme.colorSubText
-          font.family: monoFontFamily
-          font.pointSize: monoFontSize
+          font.family: root.monoFont ? monoFontFamily : null
+          font.pointSize: root.monoFont ? monoFontSize : -1
           focus: true
           background: Rectangle {
             color: "transparent"

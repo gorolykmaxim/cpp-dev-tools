@@ -92,7 +92,6 @@ SplitView {
         Layout.fillHeight: true
         placeholderText: "Commit Message"
         focus: controller.hasChanges
-        color: Theme.colorBgDark
         innerPadding: Theme.basePadding
         enabled: controller.hasChanges
         detectFileLinks: false
@@ -151,9 +150,7 @@ SplitView {
       Layout.fillWidth: true
       Layout.fillHeight: true
       readonly: true
-      placeholderText: "Diff will be displayed here"
       innerPadding: Theme.basePadding
-      color: Theme.colorBgDark
       wrapMode: TextEdit.NoWrap
       enabled: controller.hasChanges
       detectFileLinks: false

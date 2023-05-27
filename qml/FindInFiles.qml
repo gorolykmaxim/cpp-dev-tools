@@ -173,7 +173,6 @@ SplitView {
     }
     Cdt.TextArea {
       id: filePreviewArea
-      color: Theme.colorBgDark
       innerPadding: Theme.basePadding
       detectFileLinks: false
       searchable: true
