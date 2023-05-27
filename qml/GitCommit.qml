@@ -111,15 +111,15 @@ SplitView {
           anchors.fill: parent
           spacing: Theme.basePadding
           Cdt.Button {
-            text: "Commit"
+            text: "Commit All"
             focus: true
-            onClicked: controller.commit(commitMsg.displayText, false, amendCheckBox.checked)
-            KeyNavigation.right: commitAllBtn
+            onClicked: controller.commit(commitMsg.displayText, true, amendCheckBox.checked)
+            KeyNavigation.right: commitBtn
           }
           Cdt.Button {
-            id: commitAllBtn
-            text: "Commit All"
-            onClicked: controller.commit(commitMsg.displayText, true, amendCheckBox.checked)
+            id: commitBtn
+            text: "Commit"
+            onClicked: controller.commit(commitMsg.displayText, false, amendCheckBox.checked)
             KeyNavigation.right: amendCheckBox
           }
           Cdt.CheckBox {
