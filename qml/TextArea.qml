@@ -214,6 +214,8 @@ FocusScope {
           bottomPadding: root.innerPadding
           textFormat: TextEdit.PlainText
           placeholderTextColor: Theme.colorSubText
+          font.family: monoFontFamily
+          font.pointSize: monoFontSize
           focus: true
           background: Rectangle {
             color: "transparent"

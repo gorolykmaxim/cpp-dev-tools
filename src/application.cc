@@ -36,10 +36,13 @@ Application::Application(int argc, char** argv)
                                                &documentation);
   qml_engine.rootContext()->setContextProperty("sqliteSystem", &sqlite);
   qml_engine.rootContext()->setContextProperty("gitSystem", &git);
+  qml_engine.rootContext()->setContextProperty("monoFontSize", 12);
 #if __APPLE__
   qml_engine.rootContext()->setContextProperty("isMacOS", true);
+  qml_engine.rootContext()->setContextProperty("monoFontFamily", "Menlo");
 #else
   qml_engine.rootContext()->setContextProperty("isMacOS", false);
+  qml_engine.rootContext()->setContextProperty("monoFontFamily", "Consolas");
 #endif
 }
 
