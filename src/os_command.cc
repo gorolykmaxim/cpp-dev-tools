@@ -8,6 +8,11 @@
 
 #define LOG() qDebug() << "[OsCommand]"
 
+static const QString kMacOsTerminalName = "Terminal";
+static const QString kMicrosoftTerminalName = "Microsoft Terminal";
+static const QString kGitBashName = "Git Bash";
+static const QString kCommandPromptName = "Command Prompt";
+
 Promise<OsProcess> OsCommand::RunCmd(const QString &cmd,
                                      const QString &error_title,
                                      const QString &success_title) {
@@ -36,7 +41,7 @@ Promise<OsProcess> OsCommand::Run(const QString &cmd, const QStringList &args,
                        return;
                      }
                      data->output += "Failed to execute: " + proc->program() +
-                                     proc->arguments().join(' ');
+                                     ' ' + proc->arguments().join(' ');
                      emit proc->finished(-1);
                    });
   QObject::connect(
@@ -63,9 +68,7 @@ Promise<OsProcess> OsCommand::Run(const QString &cmd, const QStringList &args,
   return promise->future();
 }
 
-void OsCommand::OpenTerminalInCurrentDir() {
-  LOG() << "Opening terminal in" << QDir::currentPath();
-#if __APPLE__
+static Promise<OsProcess> OpenMacOsTerminal() {
   QString osascript =
       "on run argv\n"
       " set cmd to \"cd \" & item 1 of argv\n"
@@ -78,58 +81,72 @@ void OsCommand::OpenTerminalInCurrentDir() {
       "     end if\n"
       " end tell\n"
       "end run";
-  Run("osascript", {"-", QDir::currentPath()}, osascript,
-      "Faield to open terminal");
-#else
-  auto failures = QSharedPointer<QStringList>::create();
-  auto LogError = [failures](const QString &terminal, const OsProcess &proc) {
-    QString error = terminal +
-                    ": exit code=" + QString::number(proc.exit_code) +
-                    " output:\n" + proc.output;
-    if (!proc.output.endsWith('\n')) {
+  return OsCommand::Run("osascript", {"-", QDir::currentPath()}, osascript);
+}
+
+static Promise<OsProcess> OpenMicrosoftTerminal() {
+  return OsCommand::Run("wt", {"/d", QDir::currentPath()});
+}
+
+static Promise<OsProcess> OpenGitBash() {
+  return OsCommand::Run("where", {"git"})
+      .Then<OsProcess>(&Application::Get().gui_app, [](OsProcess proc) {
+        static const QString kExpectedGitSuffix = "\\cmd\\git.exe\n";
+        if (proc.exit_code != 0 || !proc.output.endsWith(kExpectedGitSuffix)) {
+          proc.exit_code = 1;
+          return Promise<OsProcess>(proc);
+        }
+        QString git_bash = proc.output;
+        git_bash.replace(kExpectedGitSuffix, "\\git-bash.exe");
+        return OsCommand::Run(git_bash, {"--no-cd"});
+      });
+}
+
+static Promise<OsProcess> OpenCommandPrompt() {
+  return OsCommand::Run("cmd", {"/c", "start"});
+}
+
+static void TryOpenNextTerminal(QStringList terminals,
+                                QSharedPointer<QStringList> failures) {
+  static const QHash<QString, std::function<Promise<OsProcess>()>>
+      kTerminalNameToFunc = {
+          {kMacOsTerminalName, OpenMacOsTerminal},
+          {kMicrosoftTerminalName, OpenMicrosoftTerminal},
+          {kGitBashName, OpenGitBash},
+          {kCommandPromptName, OpenCommandPrompt},
+      };
+  if (terminals.isEmpty()) {
+    Notification notification("Failed to open terminal");
+    notification.is_error = true;
+    notification.description = failures->join('\n');
+    Application::Get().notification.Post(notification);
+    return;
+  }
+  QString terminal = terminals.takeFirst();
+  std::function<Promise<OsProcess>()> f = kTerminalNameToFunc[terminal];
+  f().Then(&Application::Get().gui_app, [terminals = std::move(terminals),
+                                         failures, terminal](OsProcess p) {
+    if (p.exit_code == 0) {
+      return;
+    }
+    QString error = terminal + ": exit code=" + QString::number(p.exit_code) +
+                    " output:\n" + p.output;
+    if (!p.output.endsWith('\n')) {
       error += '\n';
     }
     failures->append(error);
-  };
-  QObject *ctx = &Application::Get().gui_app;
-  Run("wt", {"/d", QDir::currentPath()})
-      .Then<OsProcess>(
-          ctx,
-          [LogError, ctx](OsProcess proc) {
-            if (proc.exit_code == 0) {
-              return Promise<OsProcess>();
-            }
-            LogError("Microsoft Terminal", proc);
-            return Run("where", {"git"})
-                .Then<OsProcess>(ctx, [](OsProcess proc) {
-                  static const QString kExpectedGitSuffix = "\\cmd\\git.exe\n";
-                  if (proc.exit_code != 0 ||
-                      !proc.output.endsWith(kExpectedGitSuffix)) {
-                    proc.exit_code = 1;
-                    return Promise<OsProcess>(proc);
-                  }
-                  QString git_bash = proc.output;
-                  git_bash.replace(kExpectedGitSuffix, "\\git-bash.exe");
-                  return Run(git_bash, {"--no-cd"});
-                });
-          })
-      .Then<OsProcess>(ctx,
-                       [LogError](OsProcess proc) {
-                         if (proc.exit_code == 0) {
-                           return Promise<OsProcess>();
-                         }
-                         LogError("git-bash", proc);
-                         return Run("cmd", {"/c", "start"});
-                       })
-      .Then(ctx, [LogError, failures](OsProcess proc) {
-        if (proc.exit_code == 0) {
-          return;
-        }
-        LogError("Command Prompt", proc);
-        Notification notification("Failed to open terminal");
-        notification.is_error = true;
-        notification.description = failures->join('\n');
-        Application::Get().notification.Post(notification);
-      });
+    TryOpenNextTerminal(terminals, failures);
+  });
+}
+
+void OsCommand::OpenTerminalInCurrentDir() {
+  LOG() << "Opening terminal in" << QDir::currentPath();
+  auto failures = QSharedPointer<QStringList>::create();
+  QStringList terminals;
+#if __APPLE__
+  terminals = {kMacOsTerminalName};
+#else
+  terminals = {kMicrosoftTerminalName, kGitBashName, kCommandPromptName};
 #endif
+  TryOpenNextTerminal(terminals, failures);
 }
