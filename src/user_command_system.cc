@@ -75,9 +75,9 @@ void UserCommandSystem::RegisterCommands() {
   RegisterCommand("Run", "Kill Task Execution", "Ctrl+Shift+K", [] {
     Application::Get().task.cancelSelectedExecution(true);
   });
-  RegisterCommand("Git", "Pull", "Ctrl+Shift+U",
+  RegisterCommand("Git", "Pull", "Ctrl+Shift+P",
                   [] { Application::Get().git.Pull(); });
-  RegisterCommand("Git", "Push", "Ctrl+Shift+P",
+  RegisterCommand("Git", "Push", "Ctrl+Shift+K",
                   [] { Application::Get().git.Push(); });
   RegisterCommand("Git", "Commit", "Ctrl+K", [] {
     Application::Get().view.SetCurrentView("GitCommit.qml");
