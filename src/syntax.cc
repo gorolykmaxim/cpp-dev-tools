@@ -356,7 +356,7 @@ static QList<TextSectionFormat> ParseNumbers(const QString &text) {
 
 static QList<TextSectionFormat> ParseStrings(const QString &text) {
   static const Regex kRegex("(\".*?(?<!\\\\)\"|'.*?(?<!\\\\)')");
-  static const QTextCharFormat format = TextColorToFormat("#c98e75");
+  static const QTextCharFormat format = TextColorToFormat("#ce9178");
   return ParseByRegex(text, format, kRegex);
 }
 
