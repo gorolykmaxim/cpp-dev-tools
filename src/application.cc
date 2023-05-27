@@ -19,8 +19,10 @@ Application::Application(int argc, char** argv)
   io_thread_pool.setMaxThreadCount(1);
   qSetMessagePattern("%{time yyyy-MM-dd h:mm:ss.zzz} %{message}");
   QQuickStyle::setStyle("Basic");
-  for (const QString& font : QDir(":/cdt/fonts/").entryList()) {
-    QFontDatabase::addApplicationFont(font);
+  QString fonts = ":/cdt/fonts/";
+  for (const QString& font : QDir(fonts).entryList()) {
+    int e = QFontDatabase::addApplicationFont(fonts + font);
+    Q_ASSERT(e >= 0);
   }
   qml_engine.rootContext()->setContextProperty("projectSystem", &project);
   qml_engine.rootContext()->setContextProperty("viewSystem", &view);
