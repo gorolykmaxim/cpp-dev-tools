@@ -140,7 +140,7 @@ SplitView {
       Layout.fillWidth: true
       Cdt.Text {
         anchors.fill: parent
-        text: "Path to selected file"
+        text: controller.selectedFilePath
         elide: Text.ElideLeft
         padding: Theme.basePadding
       }

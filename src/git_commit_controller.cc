@@ -11,6 +11,8 @@
 
 GitCommitController::GitCommitController(QObject *parent)
     : QObject(parent), files(new ChangedFileListModel(this)) {
+  connect(files, &TextListModel::selectedItemChanged, this,
+          [this]() { emit selectedFileChanged(); });
   Application::Get().view.SetWindowTitle("Git Commit");
   findChangedFiles();
 }
@@ -28,6 +30,11 @@ int GitCommitController::CalcSideBarWidth() const {
       app.qml_engine.rootContext()->contextProperty("monoFontSize").toInt();
   QFontMetrics m(QFont(family, size));
   return m.horizontalAdvance(kDummyGitCommitHeader) + kTheme.kBasePadding;
+}
+
+QString GitCommitController::GetSelectedFilePath() const {
+  int i = files->GetSelectedItemIndex();
+  return i < 0 ? "" : files->list[i].path;
 }
 
 void GitCommitController::findChangedFiles() {

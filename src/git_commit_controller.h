@@ -36,10 +36,13 @@ class GitCommitController : public QObject {
   Q_PROPERTY(ChangedFileListModel* files MEMBER files CONSTANT)
   Q_PROPERTY(bool hasChanges READ HasChanges NOTIFY filesChanged)
   Q_PROPERTY(int sidebarWidth READ CalcSideBarWidth CONSTANT)
+  Q_PROPERTY(QString selectedFilePath READ GetSelectedFilePath NOTIFY
+                 selectedFileChanged)
  public:
   explicit GitCommitController(QObject* parent = nullptr);
   bool HasChanges() const;
   int CalcSideBarWidth() const;
+  QString GetSelectedFilePath() const;
 
  public slots:
   void findChangedFiles();
@@ -51,6 +54,7 @@ class GitCommitController : public QObject {
  signals:
   void filesChanged();
   void commitMessageChanged(const QString& msg);
+  void selectedFileChanged();
 
  private:
   Promise<OsProcess> ExecuteGitCommand(const QStringList& args,
