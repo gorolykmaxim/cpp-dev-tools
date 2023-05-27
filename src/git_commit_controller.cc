@@ -1,7 +1,11 @@
 #include "git_commit_controller.h"
 
+#include <QFontMetrics>
+#include <QQmlContext>
+
 #include "application.h"
 #include "io_task.h"
+#include "theme.h"
 
 #define LOG() qDebug() << "[GitCommitController]"
 
@@ -12,6 +16,19 @@ GitCommitController::GitCommitController(QObject *parent)
 }
 
 bool GitCommitController::HasChanges() const { return !files->list.isEmpty(); }
+
+int GitCommitController::CalcSideBarWidth() const {
+  static const QString kDummyGitCommitHeader(50, 'a');
+  static const Theme kTheme;
+  Application &app = Application::Get();
+  QString family = app.qml_engine.rootContext()
+                       ->contextProperty("monoFontFamily")
+                       .toString();
+  int size =
+      app.qml_engine.rootContext()->contextProperty("monoFontSize").toInt();
+  QFontMetrics m(QFont(family, size));
+  return m.horizontalAdvance(kDummyGitCommitHeader) + kTheme.kBasePadding;
+}
 
 void GitCommitController::findChangedFiles() {
   LOG() << "Looking for changed files";

@@ -35,9 +35,11 @@ class GitCommitController : public QObject {
   QML_ELEMENT
   Q_PROPERTY(ChangedFileListModel* files MEMBER files CONSTANT)
   Q_PROPERTY(bool hasChanges READ HasChanges NOTIFY filesChanged)
+  Q_PROPERTY(int sidebarWidth READ CalcSideBarWidth CONSTANT)
  public:
   explicit GitCommitController(QObject* parent = nullptr);
   bool HasChanges() const;
+  int CalcSideBarWidth() const;
 
  public slots:
   void findChangedFiles();

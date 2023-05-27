@@ -23,7 +23,7 @@ SplitView {
   }
   SplitView {
     id: sidebar
-    SplitView.minimumWidth: 300
+    SplitView.minimumWidth: controller.sidebarWidth
     SplitView.fillHeight: true
     orientation: Qt.Vertical
     handle: Cdt.SplitViewHandle {
