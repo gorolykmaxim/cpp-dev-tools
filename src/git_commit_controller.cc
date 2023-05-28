@@ -117,9 +117,6 @@ void GitCommitController::commit(const QString &msg, bool commit_all,
       .Then(this, [this](OsProcess p) {
         if (p.exit_code == 0) {
           emit commitMessageChanged("");
-          diff.clear();
-          formatter->diff_line_types.clear();
-          emit selectedFileChanged();
         }
       });
 }
@@ -158,6 +155,9 @@ static void AddDiffLine(const QString &before, const QString &after,
 void GitCommitController::DiffSelectedFile() {
   int i = files->GetSelectedItemIndex();
   if (i < 0) {
+    diff.clear();
+    formatter->diff_line_types.clear();
+    emit selectedFileChanged();
     return;
   }
   OsCommand::Run("git", {"diff", "HEAD", "--", files->list[i].path})
