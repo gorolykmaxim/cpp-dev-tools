@@ -117,6 +117,9 @@ void GitCommitController::commit(const QString &msg, bool commit_all,
       .Then(this, [this](OsProcess p) {
         if (p.exit_code == 0) {
           emit commitMessageChanged("");
+          diff.clear();
+          formatter->diff_line_types.clear();
+          emit selectedFileChanged();
         }
       });
 }
