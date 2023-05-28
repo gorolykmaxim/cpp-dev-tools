@@ -10,9 +10,11 @@
 #define LOG() qDebug() << "[GitCommitController]"
 
 GitCommitController::GitCommitController(QObject *parent)
-    : QObject(parent), files(new ChangedFileListModel(this)) {
+    : QObject(parent),
+      files(new ChangedFileListModel(this)),
+      formatter(new DiffFormatter(this)) {
   connect(files, &TextListModel::selectedItemChanged, this,
-          [this]() { emit selectedFileChanged(); });
+          &GitCommitController::DiffSelectedFile);
   Application::Get().view.SetWindowTitle("Git Commit");
   findChangedFiles();
 }
@@ -30,11 +32,6 @@ int GitCommitController::CalcSideBarWidth() const {
       app.qml_engine.rootContext()->contextProperty("monoFontSize").toInt();
   QFontMetrics m(QFont(family, size));
   return m.horizontalAdvance(kDummyGitCommitHeader) + kTheme.kBasePadding;
-}
-
-QString GitCommitController::GetSelectedFilePath() const {
-  int i = files->GetSelectedItemIndex();
-  return i < 0 ? "" : files->list[i].path;
 }
 
 void GitCommitController::findChangedFiles() {
@@ -149,6 +146,64 @@ Promise<OsProcess> GitCommitController::ExecuteGitCommand(
       });
 }
 
+static void AddDiffLine(const QString &before, const QString &after,
+                        int max_line_width, QStringList &result) {
+  result.append(before + QString(max_line_width - before.size(), ' ') + after +
+                QString(max_line_width - after.size(), ' '));
+}
+
+void GitCommitController::DiffSelectedFile() {
+  int i = files->GetSelectedItemIndex();
+  if (i < 0) {
+    return;
+  }
+  OsCommand::Run("git", {"diff", "HEAD", "--", files->list[i].path})
+      .Then(this, [this](OsProcess p) {
+        QStringList lines = p.output.split('\n', Qt::SkipEmptyParts);
+        QList<DiffLineType> dlts(lines.size());
+        qsizetype max_line_width = 80;
+        for (int i = 0; i < lines.size(); i++) {
+          QString &line = lines[i];
+          if (line.startsWith("diff --git") || line.startsWith("index ") ||
+              line.startsWith("deleted file mode") || line.startsWith("--- ") ||
+              line.startsWith("+++ ") || line.startsWith("@@ ")) {
+            dlts[i] = DiffLineType::kHeader;
+          } else {
+            if (line.startsWith('+')) {
+              dlts[i] = DiffLineType::kAdded;
+            } else if (line.startsWith('-')) {
+              dlts[i] = DiffLineType::kDeleted;
+            } else {
+              dlts[i] = DiffLineType::kUnchanged;
+            }
+            line.removeFirst();
+            max_line_width = std::max(line.size(), max_line_width);
+          }
+        }
+        QStringList result;
+        for (int i = 0; i < lines.size(); i++) {
+          const QString &line = lines[i];
+          switch (dlts[i]) {
+            case DiffLineType::kHeader:
+            case DiffLineType::kDeleted:
+              AddDiffLine(line, "", max_line_width, result);
+              break;
+            case DiffLineType::kAdded:
+              AddDiffLine("", line, max_line_width, result);
+              break;
+            case DiffLineType::kUnchanged:
+              AddDiffLine(line, line, max_line_width, result);
+              break;
+            default:
+              break;
+          }
+        }
+        formatter->diff_line_types = dlts;
+        diff = result.join('\n');
+        emit selectedFileChanged();
+      });
+}
+
 ChangedFileListModel::ChangedFileListModel(QObject *parent)
     : TextListModel(parent) {
   SetRoleNames(
@@ -178,3 +233,62 @@ QVariantList ChangedFileListModel::GetRow(int i) const {
 }
 
 int ChangedFileListModel::GetRowCount() const { return list.size(); }
+
+static QBrush FromHex(const QString &color) {
+  return QBrush(QColor::fromString(color));
+}
+
+DiffFormatter::DiffFormatter(QObject *parent) : TextAreaFormatter(parent) {
+  static const Theme kTheme;
+  header_format.setForeground(FromHex(kTheme.kColorSubText));
+  header_format.setBackground(FromHex(kTheme.kColorBgBlack));
+  added_format.setBackground(FromHex("#4d3fb950"));
+  added_placeholder_format.setBackground(FromHex("#262ea043"));
+  deleted_format.setBackground(FromHex("#4df85149"));
+  deleted_placeholder_format.setBackground(FromHex("#1af85149"));
+}
+
+QList<TextSectionFormat> DiffFormatter::Format(const QString &text,
+                                               const QTextBlock &block) {
+  QList<TextSectionFormat> fs;
+  if (block.firstLineNumber() >= diff_line_types.size()) {
+    return fs;
+  }
+  switch (diff_line_types[block.firstLineNumber()]) {
+    case DiffLineType::kHeader: {
+      TextSectionFormat f;
+      f.section.start = 0;
+      f.section.end = text.size() - 1;
+      f.format = header_format;
+      fs.append(f);
+      break;
+    }
+    case DiffLineType::kAdded: {
+      TextSectionFormat f;
+      f.section.start = 0;
+      f.section.end = text.size() / 2 - 1;
+      f.format = added_placeholder_format;
+      fs.append(f);
+      f.section.start = text.size() / 2;
+      f.section.end = text.size() - 1;
+      f.format = added_format;
+      fs.append(f);
+      break;
+    }
+    case DiffLineType::kDeleted: {
+      TextSectionFormat f;
+      f.section.start = 0;
+      f.section.end = text.size() / 2 - 1;
+      f.format = deleted_format;
+      fs.append(f);
+      f.section.start = text.size() / 2;
+      f.section.end = text.size() - 1;
+      f.format = deleted_placeholder_format;
+      fs.append(f);
+      break;
+    }
+    default:
+      break;
+  }
+  return fs;
+}

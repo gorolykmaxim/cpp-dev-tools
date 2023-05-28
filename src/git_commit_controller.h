@@ -5,6 +5,7 @@
 #include <QQmlEngine>
 
 #include "os_command.h"
+#include "text_area_controller.h"
 #include "text_list_model.h"
 
 struct ChangedFile {
@@ -30,19 +31,35 @@ class ChangedFileListModel : public TextListModel {
   int GetRowCount() const;
 };
 
+enum class DiffLineType {
+  kHeader,
+  kUnchanged,
+  kAdded,
+  kDeleted,
+};
+
+class DiffFormatter : public TextAreaFormatter {
+ public:
+  explicit DiffFormatter(QObject* parent);
+  QList<TextSectionFormat> Format(const QString& text, const QTextBlock& block);
+
+  QList<DiffLineType> diff_line_types;
+  QTextCharFormat header_format, added_format, added_placeholder_format,
+      deleted_format, deleted_placeholder_format;
+};
+
 class GitCommitController : public QObject {
   Q_OBJECT
   QML_ELEMENT
   Q_PROPERTY(ChangedFileListModel* files MEMBER files CONSTANT)
   Q_PROPERTY(bool hasChanges READ HasChanges NOTIFY filesChanged)
   Q_PROPERTY(int sidebarWidth READ CalcSideBarWidth CONSTANT)
-  Q_PROPERTY(QString selectedFilePath READ GetSelectedFilePath NOTIFY
-                 selectedFileChanged)
+  Q_PROPERTY(QString diff MEMBER diff NOTIFY selectedFileChanged)
+  Q_PROPERTY(DiffFormatter* formatter MEMBER formatter CONSTANT)
  public:
   explicit GitCommitController(QObject* parent = nullptr);
   bool HasChanges() const;
   int CalcSideBarWidth() const;
-  QString GetSelectedFilePath() const;
 
  public slots:
   void findChangedFiles();
@@ -60,7 +77,11 @@ class GitCommitController : public QObject {
   Promise<OsProcess> ExecuteGitCommand(const QStringList& args,
                                        const QString& input,
                                        const QString& error_title);
+  void DiffSelectedFile();
+
   ChangedFileListModel* files;
+  QString diff;
+  DiffFormatter* formatter;
 };
 
 #endif  // GITCOMMITCONTROLLER_H

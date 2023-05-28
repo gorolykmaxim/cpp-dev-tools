@@ -131,31 +131,17 @@ SplitView {
       }
     }
   }
-  ColumnLayout {
+  Cdt.TextArea {
+    id: fileDiff
     SplitView.fillWidth: true
     SplitView.fillHeight: true
-    spacing: 0
-    Cdt.Pane {
-      color: Theme.colorBgMedium
-      Layout.fillWidth: true
-      Cdt.Text {
-        anchors.fill: parent
-        text: controller.selectedFilePath
-        elide: Text.ElideLeft
-        padding: Theme.basePadding
-      }
-    }
-    Cdt.TextArea {
-      id: fileDiff
-      Layout.fillWidth: true
-      Layout.fillHeight: true
-      readonly: true
-      innerPadding: Theme.basePadding
-      wrapMode: TextEdit.NoWrap
-      enabled: controller.hasChanges
-      detectFileLinks: false
-      searchable: true
-      KeyNavigation.left: changeList
-    }
+    readonly: true
+    wrapMode: TextEdit.NoWrap
+    enabled: controller.hasChanges
+    text: controller.diff
+    formatter: controller.formatter
+    detectFileLinks: false
+    searchable: true
+    KeyNavigation.left: changeList
   }
 }
