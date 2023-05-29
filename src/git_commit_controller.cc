@@ -154,7 +154,7 @@ void GitCommitController::DiffSelectedFile() {
   int i = files->GetSelectedItemIndex();
   if (i < 0) {
     diff.clear();
-    formatter->diff_line_types.clear();
+    formatter->diff_line_flags.clear();
     emit selectedFileChanged();
     return;
   }
@@ -165,8 +165,9 @@ void GitCommitController::DiffSelectedFile() {
       });
 }
 
-static void AddDiffLine(const QString &before, const QString &after,
-                        int line_length, QStringList &result) {
+static int AddDiffLine(const QString &before, const QString &after,
+                       int line_length, QStringList &result) {
+  int result_size = result.size();
   int half_line = line_length / 2;
   int lines_b = std::max((int)std::ceil((float)before.size() / half_line), 1);
   int lines_a = std::max((int)std::ceil((float)after.size() / half_line), 1);
@@ -189,6 +190,7 @@ static void AddDiffLine(const QString &before, const QString &after,
     chars_written += half_line;
     result.append(line);
   }
+  return result.size() - result_size;
 }
 
 void GitCommitController::RedrawDiff() {
@@ -200,34 +202,44 @@ void GitCommitController::RedrawDiff() {
   int char_width = m.horizontalAdvance('a');
   float error = (float)m.horizontalAdvance(QString(50, 'a')) / char_width / 50;
   int max_chars = diff_width / (char_width * error);
-  QList<DiffLineType> dlts;
+  QList<int> diff_line_flags;
   QStringList result;
   bool is_header = true;
-  for (int i = 0; i < raw_git_diff_output.size(); i++) {
-    QString line = raw_git_diff_output[i];
-    int lines_written = result.size();
-    DiffLineType dlt;
+  QStringList before_buff, after_buff;
+  for (const QString &line : raw_git_diff_output) {
     if (is_header || line.startsWith("@@ ")) {
       int padding = std::max(0, max_chars - (int)line.size());
       result.append(line + QString(padding, ' '));
-      dlt = DiffLineType::kHeader;
+      diff_line_flags.append(DiffLineType::kHeader);
       is_header = !line.startsWith("@@ ");
     } else if (line.startsWith('+')) {
-      line.removeFirst();
-      dlt = DiffLineType::kAdded;
-      AddDiffLine("", line, max_chars, result);
+      after_buff.append(line.sliced(1));
     } else if (line.startsWith('-')) {
-      line.removeFirst();
-      dlt = DiffLineType::kDeleted;
-      AddDiffLine(line, "", max_chars, result);
+      before_buff.append(line.sliced(1));
     } else {
-      line.removeFirst();
-      dlt = DiffLineType::kUnchanged;
-      AddDiffLine(line, line, max_chars, result);
+      int max_buff_size = std::max(before_buff.size(), after_buff.size());
+      for (int i = 0; i < max_buff_size; i++) {
+        QString before, after;
+        int flags = 0;
+        if (i < before_buff.size()) {
+          before = before_buff[i];
+          flags |= DiffLineType::kDeleted;
+        }
+        if (i < after_buff.size()) {
+          after = after_buff[i];
+          flags |= DiffLineType::kAdded;
+        }
+        int lines_cnt = AddDiffLine(before, after, max_chars, result);
+        diff_line_flags.append(QList<int>(lines_cnt, flags));
+      }
+      before_buff.clear();
+      after_buff.clear();
+      QString line_ = line.sliced(1);
+      int lines_cnt = AddDiffLine(line_, line_, max_chars, result);
+      diff_line_flags.append(QList<int>(lines_cnt, DiffLineType::kUnchanged));
     }
-    dlts.append(QList<DiffLineType>(result.size() - lines_written, dlt));
   }
-  formatter->diff_line_types = dlts;
+  formatter->diff_line_flags = diff_line_flags;
   diff = result.join('\n');
   emit selectedFileChanged();
 }
@@ -279,44 +291,35 @@ DiffFormatter::DiffFormatter(QObject *parent) : TextAreaFormatter(parent) {
 QList<TextSectionFormat> DiffFormatter::Format(const QString &text,
                                                const QTextBlock &block) {
   QList<TextSectionFormat> fs;
-  if (block.firstLineNumber() >= diff_line_types.size()) {
+  if (block.firstLineNumber() >= diff_line_flags.size()) {
     return fs;
   }
-  switch (diff_line_types[block.firstLineNumber()]) {
-    case DiffLineType::kHeader: {
-      TextSectionFormat f;
-      f.section.start = 0;
-      f.section.end = text.size() - 1;
-      f.format = header_format;
-      fs.append(f);
-      break;
-    }
-    case DiffLineType::kAdded: {
-      TextSectionFormat f;
-      f.section.start = 0;
-      f.section.end = text.size() / 2 - 1;
-      f.format = added_placeholder_format;
-      fs.append(f);
-      f.section.start = text.size() / 2;
-      f.section.end = text.size() - 1;
-      f.format = added_format;
-      fs.append(f);
-      break;
-    }
-    case DiffLineType::kDeleted: {
-      TextSectionFormat f;
-      f.section.start = 0;
-      f.section.end = text.size() / 2 - 1;
+  int flags = diff_line_flags[block.firstLineNumber()];
+  if (flags & DiffLineType::kHeader) {
+    TextSectionFormat f;
+    f.section.start = 0;
+    f.section.end = text.size() - 1;
+    f.format = header_format;
+    fs.append(f);
+  }
+  if (flags & DiffLineType::kDeleted || flags & DiffLineType::kAdded) {
+    TextSectionFormat f;
+    f.section.start = 0;
+    f.section.end = text.size() / 2 - 1;
+    if (flags & DiffLineType::kDeleted) {
       f.format = deleted_format;
-      fs.append(f);
-      f.section.start = text.size() / 2;
-      f.section.end = text.size() - 1;
+    } else {
       f.format = deleted_placeholder_format;
-      fs.append(f);
-      break;
     }
-    default:
-      break;
+    fs.append(f);
+    f.section.start = text.size() / 2;
+    f.section.end = text.size() - 1;
+    if (flags & DiffLineType::kAdded) {
+      f.format = added_format;
+    } else {
+      f.format = added_placeholder_format;
+    }
+    fs.append(f);
   }
   return fs;
 }

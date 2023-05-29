@@ -31,11 +31,11 @@ class ChangedFileListModel : public TextListModel {
   int GetRowCount() const;
 };
 
-enum class DiffLineType {
-  kHeader,
-  kUnchanged,
-  kAdded,
-  kDeleted,
+enum DiffLineType {
+  kHeader = 1,
+  kUnchanged = 2,
+  kAdded = 4,
+  kDeleted = 8,
 };
 
 class DiffFormatter : public TextAreaFormatter {
@@ -43,7 +43,7 @@ class DiffFormatter : public TextAreaFormatter {
   explicit DiffFormatter(QObject* parent);
   QList<TextSectionFormat> Format(const QString& text, const QTextBlock& block);
 
-  QList<DiffLineType> diff_line_types;
+  QList<int> diff_line_flags;
   QTextCharFormat header_format, added_format, added_placeholder_format,
       deleted_format, deleted_placeholder_format;
 };
