@@ -165,29 +165,37 @@ void GitCommitController::DiffSelectedFile() {
       });
 }
 
-static int AddDiffLine(const QString &before, const QString &after,
-                       int line_length, QStringList &result) {
+static int AddDiffLine(const QStringList &to_write, int line_length,
+                       QStringList &result) {
+  if (to_write.isEmpty()) {
+    return 0;
+  }
   int result_size = result.size();
-  int half_line = line_length / 2;
-  int lines_b = std::max((int)std::ceil((float)before.size() / half_line), 1);
-  int lines_a = std::max((int)std::ceil((float)after.size() / half_line), 1);
-  int chars_to_write = std::max(lines_b, lines_a) * half_line;
+  int length = line_length / to_write.size();
+  int max_lines = -1;
+  for (const QString &str : to_write) {
+    int lines = std::max((int)std::ceil((float)str.size() / length), 1);
+    if (max_lines < lines) {
+      max_lines = lines;
+    }
+  }
+  int chars_to_write = max_lines * length;
   int chars_written = 0;
   while (chars_to_write > chars_written) {
     QString line;
-    for (const QString *str : {&before, &after}) {
-      int chars = std::min((int)str->size() - chars_written, half_line);
+    for (const QString &str : to_write) {
+      int chars = std::min((int)str.size() - chars_written, length);
       if (chars < 0) {
         chars = 0;
       }
       if (chars > 0) {
-        line += str->sliced(chars_written, chars);
+        line += str.sliced(chars_written, chars);
       }
-      if (half_line - chars > 0) {
-        line += QString(half_line - chars, ' ');
+      if (length - chars > 0) {
+        line += QString(length - chars, ' ');
       }
     }
-    chars_written += half_line;
+    chars_written += length;
     result.append(line);
   }
   return result.size() - result_size;
@@ -208,9 +216,8 @@ void GitCommitController::RedrawDiff() {
   QStringList before_buff, after_buff;
   for (const QString &line : raw_git_diff_output) {
     if (is_header || line.startsWith("@@ ")) {
-      int padding = std::max(0, max_chars - (int)line.size());
-      result.append(line + QString(padding, ' '));
-      diff_line_flags.append(DiffLineType::kHeader);
+      int lines_cnt = AddDiffLine({line}, max_chars, result);
+      diff_line_flags.append(QList<int>(lines_cnt, DiffLineType::kHeader));
       is_header = !line.startsWith("@@ ");
     } else if (line.startsWith('+')) {
       after_buff.append(line.sliced(1));
@@ -229,13 +236,13 @@ void GitCommitController::RedrawDiff() {
           after = after_buff[i];
           flags |= DiffLineType::kAdded;
         }
-        int lines_cnt = AddDiffLine(before, after, max_chars, result);
+        int lines_cnt = AddDiffLine({before, after}, max_chars, result);
         diff_line_flags.append(QList<int>(lines_cnt, flags));
       }
       before_buff.clear();
       after_buff.clear();
       QString line_ = line.sliced(1);
-      int lines_cnt = AddDiffLine(line_, line_, max_chars, result);
+      int lines_cnt = AddDiffLine({line_, line_}, max_chars, result);
       diff_line_flags.append(QList<int>(lines_cnt, DiffLineType::kUnchanged));
     }
   }
