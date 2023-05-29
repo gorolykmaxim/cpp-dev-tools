@@ -43,7 +43,7 @@ class DiffFormatter : public TextAreaFormatter {
   explicit DiffFormatter(QObject* parent);
   QList<TextSectionFormat> Format(const QString& text, const QTextBlock& block);
 
-  QHash<int, DiffLineType> diff_line_types;
+  QList<DiffLineType> diff_line_types;
   QTextCharFormat header_format, added_format, added_placeholder_format,
       deleted_format, deleted_placeholder_format;
 };

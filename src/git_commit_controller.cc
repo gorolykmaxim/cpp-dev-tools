@@ -200,7 +200,7 @@ void GitCommitController::RedrawDiff() {
   int char_width = m.horizontalAdvance('a');
   float error = (float)m.horizontalAdvance(QString(50, 'a')) / char_width / 50;
   int max_chars = diff_width / (char_width * error);
-  QHash<int, DiffLineType> dlts;
+  QList<DiffLineType> dlts;
   QStringList result;
   bool is_header = true;
   for (int i = 0; i < raw_git_diff_output.size(); i++) {
@@ -225,9 +225,7 @@ void GitCommitController::RedrawDiff() {
       dlt = DiffLineType::kUnchanged;
       AddDiffLine(line, line, max_chars, result);
     }
-    for (int j = lines_written; j < result.size(); j++) {
-      dlts[j] = dlt;
-    }
+    dlts.append(QList<DiffLineType>(result.size() - lines_written, dlt));
   }
   formatter->diff_line_types = dlts;
   diff = result.join('\n');
