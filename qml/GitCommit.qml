@@ -142,6 +142,8 @@ SplitView {
     formatter: controller.formatter
     detectFileLinks: false
     searchable: true
+    onWidthChanged: controller.resizeDiff(width)
+    disableLoadingPlaceholder: true
     KeyNavigation.left: changeList
   }
 }

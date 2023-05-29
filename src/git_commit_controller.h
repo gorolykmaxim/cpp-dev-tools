@@ -43,7 +43,7 @@ class DiffFormatter : public TextAreaFormatter {
   explicit DiffFormatter(QObject* parent);
   QList<TextSectionFormat> Format(const QString& text, const QTextBlock& block);
 
-  QList<DiffLineType> diff_line_types;
+  QHash<int, DiffLineType> diff_line_types;
   QTextCharFormat header_format, added_format, added_placeholder_format,
       deleted_format, deleted_placeholder_format;
 };
@@ -67,6 +67,7 @@ class GitCommitController : public QObject {
   void resetSelectedFile();
   void commit(const QString& msg, bool commit_all, bool amend);
   void loadLastCommitMessage();
+  void resizeDiff(int width);
 
  signals:
   void filesChanged();
@@ -78,9 +79,12 @@ class GitCommitController : public QObject {
                                        const QString& input,
                                        const QString& error_title);
   void DiffSelectedFile();
+  void RedrawDiff();
 
   ChangedFileListModel* files;
+  QStringList raw_git_diff_output;
   QString diff;
+  int diff_width;
   DiffFormatter* formatter;
 };
 

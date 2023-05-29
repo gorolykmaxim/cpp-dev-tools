@@ -12,6 +12,7 @@
 GitCommitController::GitCommitController(QObject *parent)
     : QObject(parent),
       files(new ChangedFileListModel(this)),
+      diff_width(80),
       formatter(new DiffFormatter(this)) {
   connect(files, &TextListModel::selectedItemChanged, this,
           &GitCommitController::DiffSelectedFile);
@@ -25,11 +26,9 @@ int GitCommitController::CalcSideBarWidth() const {
   static const QString kDummyGitCommitHeader(50, 'a');
   static const Theme kTheme;
   Application &app = Application::Get();
-  QString family = app.qml_engine.rootContext()
-                       ->contextProperty("monoFontFamily")
-                       .toString();
-  int size =
-      app.qml_engine.rootContext()->contextProperty("monoFontSize").toInt();
+  QQmlContext *ctx = app.qml_engine.rootContext();
+  QString family = ctx->contextProperty("monoFontFamily").toString();
+  int size = ctx->contextProperty("monoFontSize").toInt();
   QFontMetrics m(QFont(family, size));
   return m.horizontalAdvance(kDummyGitCommitHeader) + kTheme.kBasePadding;
 }
@@ -135,6 +134,11 @@ void GitCommitController::loadLastCommitMessage() {
       });
 }
 
+void GitCommitController::resizeDiff(int width) {
+  diff_width = width;
+  RedrawDiff();
+}
+
 Promise<OsProcess> GitCommitController::ExecuteGitCommand(
     const QStringList &args, const QString &input, const QString &error_title) {
   return OsCommand::Run("git", args, input, error_title)
@@ -144,12 +148,6 @@ Promise<OsProcess> GitCommitController::ExecuteGitCommand(
         }
         return Promise<OsProcess>(proc);
       });
-}
-
-static void AddDiffLine(const QString &before, const QString &after,
-                        int max_line_width, QStringList &result) {
-  result.append(before + QString(max_line_width - before.size(), ' ') + after +
-                QString(max_line_width - after.size(), ' '));
 }
 
 void GitCommitController::DiffSelectedFile() {
@@ -162,49 +160,78 @@ void GitCommitController::DiffSelectedFile() {
   }
   OsCommand::Run("git", {"diff", "HEAD", "--", files->list[i].path})
       .Then(this, [this](OsProcess p) {
-        QStringList lines = p.output.split('\n', Qt::SkipEmptyParts);
-        QList<DiffLineType> dlts(lines.size());
-        qsizetype max_line_width = 80;
-        for (int i = 0; i < lines.size(); i++) {
-          QString &line = lines[i];
-          if (line.startsWith("diff --git") || line.startsWith("index ") ||
-              line.startsWith("deleted file mode") || line.startsWith("--- ") ||
-              line.startsWith("+++ ") || line.startsWith("@@ ")) {
-            dlts[i] = DiffLineType::kHeader;
-          } else {
-            if (line.startsWith('+')) {
-              dlts[i] = DiffLineType::kAdded;
-            } else if (line.startsWith('-')) {
-              dlts[i] = DiffLineType::kDeleted;
-            } else {
-              dlts[i] = DiffLineType::kUnchanged;
-            }
-            line.removeFirst();
-            max_line_width = std::max(line.size(), max_line_width);
-          }
-        }
-        QStringList result;
-        for (int i = 0; i < lines.size(); i++) {
-          const QString &line = lines[i];
-          switch (dlts[i]) {
-            case DiffLineType::kHeader:
-            case DiffLineType::kDeleted:
-              AddDiffLine(line, "", max_line_width, result);
-              break;
-            case DiffLineType::kAdded:
-              AddDiffLine("", line, max_line_width, result);
-              break;
-            case DiffLineType::kUnchanged:
-              AddDiffLine(line, line, max_line_width, result);
-              break;
-            default:
-              break;
-          }
-        }
-        formatter->diff_line_types = dlts;
-        diff = result.join('\n');
-        emit selectedFileChanged();
+        raw_git_diff_output = p.output.split('\n', Qt::SkipEmptyParts);
+        RedrawDiff();
       });
+}
+
+static void AddDiffLine(const QString &before, const QString &after,
+                        int line_length, QStringList &result) {
+  int half_line = line_length / 2;
+  int lines_b = std::max((int)std::ceil((float)before.size() / half_line), 1);
+  int lines_a = std::max((int)std::ceil((float)after.size() / half_line), 1);
+  int chars_to_write = std::max(lines_b, lines_a) * half_line;
+  int chars_written = 0;
+  while (chars_to_write > chars_written) {
+    QString line;
+    for (const QString *str : {&before, &after}) {
+      int chars = std::min((int)str->size() - chars_written, half_line);
+      if (chars < 0) {
+        chars = 0;
+      }
+      if (chars > 0) {
+        line += str->sliced(chars_written, chars);
+      }
+      if (half_line - chars > 0) {
+        line += QString(half_line - chars, ' ');
+      }
+    }
+    chars_written += half_line;
+    result.append(line);
+  }
+}
+
+void GitCommitController::RedrawDiff() {
+  Application &app = Application::Get();
+  QQmlContext *ctx = app.qml_engine.rootContext();
+  QString family = ctx->contextProperty("monoFontFamily").toString();
+  int size = ctx->contextProperty("monoFontSize").toInt();
+  QFontMetrics m(QFont(family, size));
+  int char_width = m.horizontalAdvance('a');
+  float error = (float)m.horizontalAdvance(QString(50, 'a')) / char_width / 50;
+  int max_chars = diff_width / (char_width * error);
+  QHash<int, DiffLineType> dlts;
+  QStringList result;
+  bool is_header = true;
+  for (int i = 0; i < raw_git_diff_output.size(); i++) {
+    QString line = raw_git_diff_output[i];
+    int lines_written = result.size();
+    DiffLineType dlt;
+    if (is_header || line.startsWith("@@ ")) {
+      int padding = std::max(0, max_chars - (int)line.size());
+      result.append(line + QString(padding, ' '));
+      dlt = DiffLineType::kHeader;
+      is_header = !line.startsWith("@@ ");
+    } else if (line.startsWith('+')) {
+      line.removeFirst();
+      dlt = DiffLineType::kAdded;
+      AddDiffLine("", line, max_chars, result);
+    } else if (line.startsWith('-')) {
+      line.removeFirst();
+      dlt = DiffLineType::kDeleted;
+      AddDiffLine(line, "", max_chars, result);
+    } else {
+      line.removeFirst();
+      dlt = DiffLineType::kUnchanged;
+      AddDiffLine(line, line, max_chars, result);
+    }
+    for (int j = lines_written; j < result.size(); j++) {
+      dlts[j] = dlt;
+    }
+  }
+  formatter->diff_line_types = dlts;
+  diff = result.join('\n');
+  emit selectedFileChanged();
 }
 
 ChangedFileListModel::ChangedFileListModel(QObject *parent)

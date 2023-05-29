@@ -23,11 +23,12 @@ FocusScope {
   property alias displayText: textArea.text
   property int cursorPosition: -1
   property bool monoFont: true
+  property bool disableLoadingPlaceholder: false
   signal ctrlEnterPressed()
   onCursorPositionChanged: textArea.cursorPosition = root.cursorPosition
   onTextChanged: {
     controller.resetCursorPositionHistory();
-    if (textArea.text && text.startsWith(textArea.text)) {
+    if (disableLoadingPlaceholder || (textArea.text && text.startsWith(textArea.text))) {
       setText(text);
     } else {
       isLoading = true;
