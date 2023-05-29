@@ -16,6 +16,8 @@ GitCommitController::GitCommitController(QObject *parent)
       formatter(new DiffFormatter(this)) {
   connect(files, &TextListModel::selectedItemChanged, this,
           &GitCommitController::DiffSelectedFile);
+  connect(files, &TextListModel::preSelectCurrentIndex, this,
+          &GitCommitController::DiffSelectedFile);
   Application::Get().view.SetWindowTitle("Git Commit");
   findChangedFiles();
 }
