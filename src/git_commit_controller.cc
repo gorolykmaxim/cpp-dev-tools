@@ -178,6 +178,7 @@ static int ParseLineNumber(const QString &str, QChar start) {
 
 static int AddDiffLine(QStringList line_numbers, const QStringList &to_write,
                        int line_length, QStringList &result) {
+  static const QRegularExpression kWordBreakRegex("\\b");
   if (to_write.isEmpty()) {
     return 0;
   }
@@ -189,45 +190,55 @@ static int AddDiffLine(QStringList line_numbers, const QStringList &to_write,
   // side-by-side view, while accounting for space required for line numbers,
   // that will be displayed in the same lines.
   QList<int> lengths;
-  for (const QString &line_number : line_numbers) {
-    lengths.append(line_length / to_write.size() - line_number.size());
-  }
-  // Strings that we are about to write might not fit into a single line in the
-  // side-by-side diff thus we might need to wrap them effectively appending
-  // more than one line to the result. To keep the sides of the diff
-  // synchronized we need to wrap the input strings into the same number of
-  // lines in the result. Here we decide into how many lines we will wrap those
-  // strings.
-  int lines_to_write = 0;
+  // Find positions of word breaks in each input string.
+  QList<QList<int>> wbss;
+  QList<int> wbs_its(to_write.size(), 0);
   for (int i = 0; i < to_write.size(); i++) {
+    lengths.append(line_length / to_write.size() - line_numbers[i].size());
     const QString &str = to_write[i];
-    int length = lengths[i];
-    int lines = std::ceil((float)str.size() / length);
-    lines = std::max(lines, 1);
-    lines_to_write = std::max(lines, lines_to_write);
+    QList<int> &wbs = wbss.emplaceBack();
+    wbs.append(0);
+    for (auto it = kWordBreakRegex.globalMatch(str); it.hasNext();) {
+      wbs.append(it.next().capturedStart());
+    }
+    wbs.append(str.size());
   }
-  // Write input strings into the result.
+  // Write input lines into result.
   while (true) {
     QString line;
     for (int i = 0; i < to_write.size(); i++) {
       const QString &str = to_write[i];
       QString &line_number = line_numbers[i];
       int length = lengths[i];
+      QList<int> &wbs = wbss[i];
+      int &it = wbs_its[i];
       line += line_number;
       line_number = QString(line_number.size(), ' ');
-      int lines_written = result.size() - result_size;
-      int str_offset = lines_written * length;
-      int chars = std::min((int)str.size() - str_offset, length);
-      chars = std::max(chars, 0);
+      int start = wbs[it];
+      int chars = 0;
+      for (; it < wbs.size() - 1; it++) {
+        if (wbs[it + 1] >= start + length) {
+          if (chars == 0) {
+            // We can't break current section by word because it would overflow
+            // the line. Need to break by character while cutting everything
+            // up until the next word break.
+            chars = length;
+            it++;
+          }
+          break;
+        }
+        chars = wbs[it + 1] - start;
+      }
       if (chars > 0) {
-        line += str.sliced(str_offset, chars);
+        line += str.sliced(start, chars);
       }
       if (length - chars > 0) {
         line += QString(length - chars, ' ');
       }
     }
-    result.append(line);
-    if (result.size() - result_size == lines_to_write) {
+    if (!line.trimmed().isEmpty()) {
+      result.append(line);
+    } else {
       break;
     }
   }
