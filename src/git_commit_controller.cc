@@ -298,7 +298,8 @@ void GitCommitController::RedrawDiff() {
     } else if (line.startsWith('-')) {
       lnb_b.append(line_numbers_before[i]);
       lb_b.append(line.sliced(1));
-    } else {
+    }
+    if (line.startsWith(' ') || i == raw_git_diff_output.size() - 1) {
       int max_buff_size = std::max(lb_b.size(), lb_a.size());
       for (int i = 0; i < max_buff_size; i++) {
         QString l_b, l_a;
@@ -323,11 +324,13 @@ void GitCommitController::RedrawDiff() {
       lb_a.clear();
       lnb_b.clear();
       lnb_a.clear();
-      QString l = line.sliced(1);
-      const QString &ln_b = line_numbers_before[i];
-      const QString &ln_a = line_numbers_after[i];
-      int lines_cnt = AddDiffLine({ln_b, ln_a}, {l, l}, max_chars, result);
-      diff_line_flags.append(QList<int>(lines_cnt, DiffLineType::kUnchanged));
+      if (line.startsWith(' ')) {
+        QString l = line.sliced(1);
+        const QString &ln_b = line_numbers_before[i];
+        const QString &ln_a = line_numbers_after[i];
+        int lines_cnt = AddDiffLine({ln_b, ln_a}, {l, l}, max_chars, result);
+        diff_line_flags.append(QList<int>(lines_cnt, DiffLineType::kUnchanged));
+      }
     }
   }
   formatter->diff_line_flags = diff_line_flags;
