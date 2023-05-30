@@ -170,6 +170,9 @@ void GitCommitController::DiffSelectedFile() {
 static int ParseLineNumber(const QString &str, QChar start) {
   int i = str.indexOf(start) + 1;
   int j = str.indexOf(',', i);
+  if (j < 0) {
+    j = str.indexOf(' ', i);
+  }
   return str.sliced(i, j - i).toInt();
 }
 
