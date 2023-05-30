@@ -72,7 +72,7 @@ void UserCommandSystem::RegisterCommands() {
   RegisterCommand("Run", "Terminate Task Execution", "Ctrl+Shift+T", [] {
     Application::Get().task.cancelSelectedExecution(false);
   });
-  RegisterCommand("Run", "Kill Task Execution", "Ctrl+Shift+K", [] {
+  RegisterCommand("Run", "Kill Task Execution", "Ctrl+Alt+Shift+T", [] {
     Application::Get().task.cancelSelectedExecution(true);
   });
   RegisterCommand("Git", "Pull", "Ctrl+Shift+P",
