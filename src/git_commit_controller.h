@@ -44,8 +44,10 @@ class DiffFormatter : public TextAreaFormatter {
   QList<TextSectionFormat> Format(const QString& text, const QTextBlock& block);
 
   QList<int> diff_line_flags;
+  int line_number_width_before;
+  int line_number_width_after;
   QTextCharFormat header_format, added_format, added_placeholder_format,
-      deleted_format, deleted_placeholder_format;
+      deleted_format, deleted_placeholder_format, line_number_format;
 };
 
 class GitCommitController : public QObject {

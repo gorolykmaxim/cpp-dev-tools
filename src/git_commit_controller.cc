@@ -167,43 +167,72 @@ void GitCommitController::DiffSelectedFile() {
       });
 }
 
-static int AddDiffLine(const QStringList &to_write, int line_length,
-                       QStringList &result) {
+static int ParseLineNumber(const QString &str, QChar start) {
+  int i = str.indexOf(start) + 1;
+  int j = str.indexOf(',', i);
+  return str.sliced(i, j - i).toInt();
+}
+
+static int AddDiffLine(QStringList line_numbers, const QStringList &to_write,
+                       int line_length, QStringList &result) {
   if (to_write.isEmpty()) {
     return 0;
   }
-  int result_size = result.size();
-  int length = line_length / to_write.size();
-  int max_lines = -1;
-  for (const QString &str : to_write) {
-    int lines = std::max((int)std::ceil((float)str.size() / length), 1);
-    if (max_lines < lines) {
-      max_lines = lines;
-    }
+  if (line_numbers.size() < to_write.size()) {
+    line_numbers = QStringList(to_write.size(), "");
   }
-  int chars_to_write = max_lines * length;
-  int chars_written = 0;
-  while (chars_to_write > chars_written) {
+  int result_size = result.size();
+  // Figure out what is the available length for each diff side in the
+  // side-by-side view, while accounting for space required for line numbers,
+  // that will be displayed in the same lines.
+  QList<int> lengths;
+  for (const QString &line_number : line_numbers) {
+    lengths.append(line_length / to_write.size() - line_number.size());
+  }
+  // Strings that we are about to write might not fit into a single line in the
+  // side-by-side diff thus we might need to wrap them effectively appending
+  // more than one line to the result. To keep the sides of the diff
+  // synchronized we need to wrap the input strings into the same number of
+  // lines in the result. Here we decide into how many lines we will wrap those
+  // strings.
+  int lines_to_write = 0;
+  for (int i = 0; i < to_write.size(); i++) {
+    const QString &str = to_write[i];
+    int length = lengths[i];
+    int lines = std::ceil((float)str.size() / length);
+    lines = std::max(lines, 1);
+    lines_to_write = std::max(lines, lines_to_write);
+  }
+  // Write input strings into the result.
+  while (true) {
     QString line;
-    for (const QString &str : to_write) {
-      int chars = std::min((int)str.size() - chars_written, length);
-      if (chars < 0) {
-        chars = 0;
-      }
+    for (int i = 0; i < to_write.size(); i++) {
+      const QString &str = to_write[i];
+      QString &line_number = line_numbers[i];
+      int length = lengths[i];
+      line += line_number;
+      line_number = QString(line_number.size(), ' ');
+      int lines_written = result.size() - result_size;
+      int str_offset = lines_written * length;
+      int chars = std::min((int)str.size() - str_offset, length);
+      chars = std::max(chars, 0);
       if (chars > 0) {
-        line += str.sliced(chars_written, chars);
+        line += str.sliced(str_offset, chars);
       }
       if (length - chars > 0) {
         line += QString(length - chars, ' ');
       }
     }
-    chars_written += length;
     result.append(line);
+    if (result.size() - result_size == lines_to_write) {
+      break;
+    }
   }
   return result.size() - result_size;
 }
 
 void GitCommitController::RedrawDiff() {
+  // Calculate how many chars will fit into diff_width
   Application &app = Application::Get();
   QQmlContext *ctx = app.qml_engine.rootContext();
   QString family = ctx->contextProperty("monoFontFamily").toString();
@@ -212,43 +241,98 @@ void GitCommitController::RedrawDiff() {
   int char_width = m.horizontalAdvance('a');
   float error = (float)m.horizontalAdvance(QString(50, 'a')) / char_width / 50;
   int max_chars = diff_width / (char_width * error);
+  // Pre-compute line numbers for a side-by-side diff
+  QList<int> lns_b, lns_a;
+  int ln_b = -1, ln_a = -1;
+  for (const QString &line : raw_git_diff_output) {
+    if (line.startsWith('-')) {
+      lns_b.append(ln_b++);
+      lns_a.append(-1);
+    } else if (line.startsWith('+')) {
+      lns_b.append(-1);
+      lns_a.append(ln_a++);
+    } else if (line.startsWith(' ')) {
+      lns_b.append(ln_b++);
+      lns_a.append(ln_a++);
+    } else {
+      if (line.startsWith("@@ ")) {
+        ln_b = ParseLineNumber(line, '-');
+        ln_a = ParseLineNumber(line, '+');
+      }
+      lns_b.append(-1);
+      lns_a.append(-1);
+    }
+  }
+  int mcln_b = QString::number(ln_b).size() + 2;
+  int mcln_a = QString::number(ln_a).size() + 2;
+  QStringList line_numbers_before, line_numbers_after;
+  QString line_number_placeholder_before(mcln_b, ' ');
+  QString line_number_placeholder_after(mcln_a, ' ');
+  for (int i = 0; i < lns_b.size(); i++) {
+    QString &sln_b = line_numbers_before.emplaceBack();
+    QString &sln_a = line_numbers_after.emplaceBack();
+    if (lns_b[i] >= 0) {
+      sln_b = ' ' + QString::number(lns_b[i]) + ' ';
+      sln_b = QString(mcln_b - sln_b.size(), ' ') + sln_b;
+    }
+    if (lns_a[i] >= 0) {
+      sln_a = ' ' + QString::number(lns_a[i]) + ' ';
+      sln_a = QString(mcln_a - sln_a.size(), ' ') + sln_a;
+    }
+  }
+  // Turn raw_git_diff_output into a side-by-side diff
   QList<int> diff_line_flags;
   QStringList result;
   bool is_header = true;
-  QStringList before_buff, after_buff;
-  for (const QString &line : raw_git_diff_output) {
+  QStringList lb_b, lb_a;
+  QStringList lnb_b, lnb_a;
+  for (int i = 0; i < raw_git_diff_output.size(); i++) {
+    const QString &line = raw_git_diff_output[i];
     if (is_header || line.startsWith("@@ ")) {
-      int lines_cnt = AddDiffLine({line}, max_chars, result);
+      int lines_cnt = AddDiffLine({}, {line}, max_chars, result);
       diff_line_flags.append(QList<int>(lines_cnt, DiffLineType::kHeader));
       is_header = !line.startsWith("@@ ");
     } else if (line.startsWith('+')) {
-      after_buff.append(line.sliced(1));
+      lnb_a.append(line_numbers_after[i]);
+      lb_a.append(line.sliced(1));
     } else if (line.startsWith('-')) {
-      before_buff.append(line.sliced(1));
+      lnb_b.append(line_numbers_before[i]);
+      lb_b.append(line.sliced(1));
     } else {
-      int max_buff_size = std::max(before_buff.size(), after_buff.size());
+      int max_buff_size = std::max(lb_b.size(), lb_a.size());
       for (int i = 0; i < max_buff_size; i++) {
-        QString before, after;
+        QString l_b, l_a;
+        QString ln_b = line_number_placeholder_before;
+        QString ln_a = line_number_placeholder_after;
         int flags = 0;
-        if (i < before_buff.size()) {
-          before = before_buff[i];
+        if (i < lb_b.size()) {
+          l_b = lb_b[i];
+          ln_b = lnb_b[i];
           flags |= DiffLineType::kDeleted;
         }
-        if (i < after_buff.size()) {
-          after = after_buff[i];
+        if (i < lb_a.size()) {
+          l_a = lb_a[i];
+          ln_a = lnb_a[i];
           flags |= DiffLineType::kAdded;
         }
-        int lines_cnt = AddDiffLine({before, after}, max_chars, result);
+        int lines_cnt =
+            AddDiffLine({ln_b, ln_a}, {l_b, l_a}, max_chars, result);
         diff_line_flags.append(QList<int>(lines_cnt, flags));
       }
-      before_buff.clear();
-      after_buff.clear();
-      QString line_ = line.sliced(1);
-      int lines_cnt = AddDiffLine({line_, line_}, max_chars, result);
+      lb_b.clear();
+      lb_a.clear();
+      lnb_b.clear();
+      lnb_a.clear();
+      QString l = line.sliced(1);
+      const QString &ln_b = line_numbers_before[i];
+      const QString &ln_a = line_numbers_after[i];
+      int lines_cnt = AddDiffLine({ln_b, ln_a}, {l, l}, max_chars, result);
       diff_line_flags.append(QList<int>(lines_cnt, DiffLineType::kUnchanged));
     }
   }
   formatter->diff_line_flags = diff_line_flags;
+  formatter->line_number_width_before = mcln_b;
+  formatter->line_number_width_after = mcln_a;
   diff = result.join('\n');
   emit selectedFileChanged();
 }
@@ -287,7 +371,10 @@ static QBrush FromHex(const QString &color) {
   return QBrush(QColor::fromString(color));
 }
 
-DiffFormatter::DiffFormatter(QObject *parent) : TextAreaFormatter(parent) {
+DiffFormatter::DiffFormatter(QObject *parent)
+    : TextAreaFormatter(parent),
+      line_number_width_before(0),
+      line_number_width_after(0) {
   static const Theme kTheme;
   header_format.setForeground(FromHex(kTheme.kColorSubText));
   header_format.setBackground(FromHex(kTheme.kColorBgBlack));
@@ -295,6 +382,7 @@ DiffFormatter::DiffFormatter(QObject *parent) : TextAreaFormatter(parent) {
   added_placeholder_format.setBackground(FromHex("#262ea043"));
   deleted_format.setBackground(FromHex("#4df85149"));
   deleted_placeholder_format.setBackground(FromHex("#1af85149"));
+  line_number_format.setForeground(FromHex(kTheme.kColorSubText));
 }
 
 QList<TextSectionFormat> DiffFormatter::Format(const QString &text,
@@ -310,10 +398,20 @@ QList<TextSectionFormat> DiffFormatter::Format(const QString &text,
     f.section.end = text.size() - 1;
     f.format = header_format;
     fs.append(f);
+  } else {
+    TextSectionFormat f;
+    f.section.start = 0;
+    f.section.end = line_number_width_before - 1;
+    f.format = line_number_format;
+    fs.append(f);
+    f.section.start = text.size() / 2;
+    f.section.end = text.size() / 2 + line_number_width_after - 1;
+    f.format = line_number_format;
+    fs.append(f);
   }
   if (flags & DiffLineType::kDeleted || flags & DiffLineType::kAdded) {
     TextSectionFormat f;
-    f.section.start = 0;
+    f.section.start = line_number_width_before;
     f.section.end = text.size() / 2 - 1;
     if (flags & DiffLineType::kDeleted) {
       f.format = deleted_format;
@@ -321,7 +419,7 @@ QList<TextSectionFormat> DiffFormatter::Format(const QString &text,
       f.format = deleted_placeholder_format;
     }
     fs.append(f);
-    f.section.start = text.size() / 2;
+    f.section.start = text.size() / 2 + line_number_width_after;
     f.section.end = text.size() - 1;
     if (flags & DiffLineType::kAdded) {
       f.format = added_format;
