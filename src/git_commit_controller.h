@@ -5,6 +5,7 @@
 #include <QQmlEngine>
 
 #include "os_command.h"
+#include "syntax.h"
 #include "text_area_controller.h"
 #include "text_list_model.h"
 
@@ -49,12 +50,17 @@ class DiffFormatter : public TextAreaFormatter {
   int line_number_width_after;
   QTextCharFormat header_format, added_format, added_placeholder_format,
       deleted_format, deleted_placeholder_format, line_number_format;
+  SyntaxFormatter syntax;
 
  private:
-  void FormatSideBySide(const QString& text, int flags,
+  void FormatSideBySide(const QString& text, const QTextBlock& block, int flags,
                         QList<TextSectionFormat>& fs);
-  void FormatUnified(const QString& text, int flags,
+  void FormatUnified(const QString& text, const QTextBlock& block, int flags,
                      QList<TextSectionFormat>& fs);
+  void ApplySyntaxFormatter(const QString& text, const QTextBlock& block,
+                            TextSection section,
+                            const QTextCharFormat* diff_format,
+                            QList<TextSectionFormat>& results);
 };
 
 class GitCommitController : public QObject {

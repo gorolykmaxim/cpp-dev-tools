@@ -190,8 +190,8 @@ Promise<OsProcess> GitCommitController::ExecuteGitCommand(
 }
 
 void GitCommitController::DiffSelectedFile() {
-  int i = files->GetSelectedItemIndex();
-  if (i < 0) {
+  const ChangedFile *selected = files->GetSelected();
+  if (!selected) {
     LOG() << "Clearing git diff view";
     raw_git_diff_output.clear();
     diff.clear();
@@ -200,7 +200,7 @@ void GitCommitController::DiffSelectedFile() {
     emit selectedFileChanged();
     return;
   }
-  QString path = files->list[i].path;
+  QString path = selected->path;
   LOG() << "Will get git diff of" << path;
   OsCommand::Run("git", {"diff", "HEAD", "--", path}, "",
                  "Git: Failed to get git diff")
@@ -333,6 +333,11 @@ void GitCommitController::RedrawDiff() {
   int mcln_b = QString::number(ln_b).size() + 2;
   int mcln_a = QString::number(ln_a).size() + 2;
   // Draw diff
+  QString file_path;
+  if (const ChangedFile *f = files->GetSelected()) {
+    file_path = f->path;
+  }
+  formatter->syntax.DetectLanguageByFile(file_path);
   if (is_side_by_side_diff && IsSelectedFileModified()) {
     DrawSideBySideDiff(lns_b, lns_a, max_chars, mcln_b, mcln_a);
   } else {
@@ -499,14 +504,15 @@ QList<TextSectionFormat> DiffFormatter::Format(const QString &text,
   }
   int flags = diff_line_flags[block.firstLineNumber()];
   if (is_side_by_side_diff) {
-    FormatSideBySide(text, flags, fs);
+    FormatSideBySide(text, block, flags, fs);
   } else {
-    FormatUnified(text, flags, fs);
+    FormatUnified(text, block, flags, fs);
   }
   return fs;
 }
 
-void DiffFormatter::FormatSideBySide(const QString &text, int flags,
+void DiffFormatter::FormatSideBySide(const QString &text,
+                                     const QTextBlock &block, int flags,
                                      QList<TextSectionFormat> &fs) {
   if (flags & DiffLineType::kHeader) {
     TextSectionFormat f;
@@ -515,39 +521,51 @@ void DiffFormatter::FormatSideBySide(const QString &text, int flags,
     f.format = header_format;
     fs.append(f);
   } else {
+    QTextCharFormat *format;
     TextSectionFormat f;
+    // Left side line number
     f.section.start = 0;
     f.section.end = line_number_width_before - 1;
     f.format = line_number_format;
     fs.append(f);
+    // Left side diff
+    format = nullptr;
+    f.section.start = line_number_width_before;
+    f.section.end = text.size() / 2 - 1;
+    if (flags & DiffLineType::kDeleted) {
+      format = &deleted_format;
+    } else if (flags & DiffLineType::kAdded) {
+      format = &deleted_placeholder_format;
+    }
+    if (format) {
+      f.format = *format;
+      fs.append(f);
+    }
+    ApplySyntaxFormatter(text, block, f.section, format, fs);
+    // Right side line number
     f.section.start = text.size() / 2;
     f.section.end = text.size() / 2 + line_number_width_after - 1;
     f.format = line_number_format;
     fs.append(f);
-  }
-  if (flags & DiffLineType::kDeleted || flags & DiffLineType::kAdded) {
-    TextSectionFormat f;
-    f.section.start = line_number_width_before;
-    f.section.end = text.size() / 2 - 1;
-    if (flags & DiffLineType::kDeleted) {
-      f.format = deleted_format;
-    } else {
-      f.format = deleted_placeholder_format;
-    }
-    fs.append(f);
+    // Right side diff
+    format = nullptr;
     f.section.start = text.size() / 2 + line_number_width_after;
     f.section.end = text.size() - 1;
     if (flags & DiffLineType::kAdded) {
-      f.format = added_format;
-    } else {
-      f.format = added_placeholder_format;
+      format = &added_format;
+    } else if (flags & DiffLineType::kDeleted) {
+      format = &added_placeholder_format;
     }
-    fs.append(f);
+    if (format) {
+      f.format = *format;
+      fs.append(f);
+    }
+    ApplySyntaxFormatter(text, block, f.section, format, fs);
   }
 }
 
-void DiffFormatter::FormatUnified(const QString &text, int flags,
-                                  QList<TextSectionFormat> &fs) {
+void DiffFormatter::FormatUnified(const QString &text, const QTextBlock &block,
+                                  int flags, QList<TextSectionFormat> &fs) {
   if (flags & DiffLineType::kHeader) {
     TextSectionFormat f;
     f.section.start = 0;
@@ -556,19 +574,41 @@ void DiffFormatter::FormatUnified(const QString &text, int flags,
     fs.append(f);
   } else {
     TextSectionFormat f;
+    // Line number
     f.section.start = 0;
     f.section.end = line_number_width_before - 1;
     f.format = line_number_format;
     fs.append(f);
-    if (flags & DiffLineType::kAdded || flags & DiffLineType::kDeleted) {
-      f.section.start = line_number_width_before;
-      f.section.end = text.size() - 1;
-      if (flags & DiffLineType::kDeleted) {
-        f.format = deleted_format;
-      } else if (flags & DiffLineType::kAdded) {
-        f.format = added_format;
-      }
+    // Diff
+    QTextCharFormat *format = nullptr;
+    f.section.start = line_number_width_before;
+    f.section.end = text.size() - 1;
+    if (flags & DiffLineType::kDeleted) {
+      format = &deleted_format;
+    } else if (flags & DiffLineType::kAdded) {
+      format = &added_format;
+    }
+    if (format) {
+      f.format = *format;
       fs.append(f);
     }
+    ApplySyntaxFormatter(text, block, f.section, format, fs);
   }
+}
+
+void DiffFormatter::ApplySyntaxFormatter(const QString &text,
+                                         const QTextBlock &block,
+                                         TextSection section,
+                                         const QTextCharFormat *diff_format,
+                                         QList<TextSectionFormat> &results) {
+  QString str = text.sliced(section.start, section.end - section.start);
+  QList<TextSectionFormat> fs = syntax.Format(str, block);
+  for (TextSectionFormat &f : fs) {
+    f.section.start += section.start;
+    f.section.end += section.start;
+    if (diff_format) {
+      f.format.setBackground(diff_format->background());
+    }
+  }
+  results.append(fs);
 }
