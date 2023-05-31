@@ -55,6 +55,7 @@ class TextListModel : public QAbstractListModel {
   void SetEmptyListPlaceholder(const QString& text = "",
                                const QString& color = "");
   void SetPlaceholder(const QString& text = "", const QString& color = "");
+  bool IsUpdating() const;
 
   int min_filter_sub_match_length = 2;
 

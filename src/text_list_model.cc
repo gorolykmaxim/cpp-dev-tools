@@ -368,6 +368,8 @@ void TextListModel::SetPlaceholder(const QString& text, const QString& color) {
   emit placeholderChanged();
 }
 
+bool TextListModel::IsUpdating() const { return is_updating; }
+
 QVariant TextListModel::getFieldByRoleName(int row, const QString& name) const {
   if (!name_to_role.contains(name)) {
     return QVariant();

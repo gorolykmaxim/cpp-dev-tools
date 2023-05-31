@@ -18,8 +18,15 @@ GitCommitController::GitCommitController(QObject *parent)
       diff_width(80),
       formatter(new DiffFormatter(this)),
       is_side_by_side_diff(true) {
-  connect(files, &TextListModel::selectedItemChanged, this,
-          &GitCommitController::DiffSelectedFile);
+  // This re-runs git diff when user switches to a different changed file.
+  connect(files, &TextListModel::selectedItemChanged, this, [this] {
+    if (files->IsUpdating()) {
+      return;
+    }
+    DiffSelectedFile();
+  });
+  // This re-runs git diff when changes list gets initially loaded, gets updated
+  // by a modifying git command or gets manually reloaded by the user.
   connect(files, &TextListModel::preSelectCurrentIndex, this,
           &GitCommitController::DiffSelectedFile);
   Application::Get().view.SetWindowTitle("Git Commit");
