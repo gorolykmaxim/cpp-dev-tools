@@ -100,6 +100,7 @@ class GitCommitController : public QObject {
   QString diff;
   int diff_width;
   DiffFormatter* formatter;
+  bool is_side_by_side_diff;
 };
 
 #endif  // GITCOMMITCONTROLLER_H

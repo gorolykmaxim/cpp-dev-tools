@@ -16,7 +16,8 @@ GitCommitController::GitCommitController(QObject *parent)
     : QObject(parent),
       files(new ChangedFileListModel(this)),
       diff_width(80),
-      formatter(new DiffFormatter(this)) {
+      formatter(new DiffFormatter(this)),
+      is_side_by_side_diff(true) {
   connect(files, &TextListModel::selectedItemChanged, this,
           &GitCommitController::DiffSelectedFile);
   connect(files, &TextListModel::preSelectCurrentIndex, this,
@@ -32,7 +33,7 @@ GitCommitController::GitCommitController(QObject *parent)
             .constFirst();
       },
       [this](bool result) {
-        formatter->is_side_by_side_diff = result;
+        is_side_by_side_diff = result;
         RedrawDiff();
       });
 }
@@ -157,9 +158,9 @@ void GitCommitController::resizeDiff(int width) {
 }
 
 void GitCommitController::toggleUnifiedDiff() {
-  formatter->is_side_by_side_diff = !formatter->is_side_by_side_diff;
+  is_side_by_side_diff = !is_side_by_side_diff;
   Database::ExecCmdAsync("UPDATE git_commit_context SET side_by_side_view = ?",
-                         {formatter->is_side_by_side_diff});
+                         {is_side_by_side_diff});
   RedrawDiff();
 }
 
@@ -307,7 +308,9 @@ void GitCommitController::RedrawDiff() {
   int mcln_b = QString::number(ln_b).size() + 2;
   int mcln_a = QString::number(ln_a).size() + 2;
   // Draw diff
-  if (formatter->is_side_by_side_diff) {
+  bool is_file_modified = raw_git_diff_output.size() >= 2 &&
+                          raw_git_diff_output[1].startsWith("index");
+  if (is_side_by_side_diff && is_file_modified) {
     DrawSideBySideDiff(lns_b, lns_a, max_chars, mcln_b, mcln_a);
   } else {
     DrawUnifiedDiff(lns_b, lns_a, max_chars, std::max(mcln_b, mcln_a));
@@ -374,6 +377,7 @@ void GitCommitController::DrawSideBySideDiff(const QList<int> &lns_b,
   formatter->diff_line_flags = diff_line_flags;
   formatter->line_number_width_before = mcln_b;
   formatter->line_number_width_after = mcln_a;
+  formatter->is_side_by_side_diff = true;
   diff = result.join('\n');
 }
 
@@ -406,6 +410,7 @@ void GitCommitController::DrawUnifiedDiff(const QList<int> &lns_b,
   formatter->diff_line_flags = diff_line_flags;
   formatter->line_number_width_before = mcln;
   formatter->line_number_width_after = 0;
+  formatter->is_side_by_side_diff = false;
   diff = result.join('\n');
 }
 
