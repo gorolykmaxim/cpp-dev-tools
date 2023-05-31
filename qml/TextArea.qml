@@ -228,6 +228,10 @@ FocusScope {
           wrapMode: root.wrapMode
           onCursorPositionChanged: controller.saveCursorPosition(textArea.cursorPosition)
           onTextChanged: function () {
+            if (root.readonly && text !== root.text) {
+              text = root.text;
+              return;
+            }
             if (ignoreTextChange) {
               return;
             }
