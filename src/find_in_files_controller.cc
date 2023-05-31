@@ -423,7 +423,7 @@ FileSearchResultFormatter::FileSearchResultFormatter(QObject* parent)
     : TextAreaFormatter(parent), syntax_formatter(new SyntaxFormatter(this)) {
   Theme theme;
   result_format.setBackground(
-      QBrush(QColor::fromString(theme.kColorBgHighlight)));
+      ViewSystem::BrushFromHex(theme.kColorBgHighlight));
 }
 
 QList<TextSectionFormat> FileSearchResultFormatter::Format(

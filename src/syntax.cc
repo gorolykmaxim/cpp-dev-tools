@@ -1,10 +1,12 @@
 #include "syntax.h"
 
+#include "view_system.h"
+
 using Regex = QRegularExpression;
 
 static QTextCharFormat TextColorToFormat(const QString &hex) {
   QTextCharFormat format;
-  format.setForeground(QBrush(QColor::fromString(hex)));
+  format.setForeground(ViewSystem::BrushFromHex(hex));
   return format;
 }
 

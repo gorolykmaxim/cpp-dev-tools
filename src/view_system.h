@@ -62,6 +62,7 @@ class ViewSystem : public QObject {
   Q_PROPERTY(WindowDimensions dimensions MEMBER dimensions NOTIFY
                  windowDimensionsChanaged)
  public:
+  static QBrush BrushFromHex(const QString& hex);
   void SetCurrentView(const QString& current_view);
   QString GetCurrentView() const;
   void DisplayAlertDialog(AlertDialog dialog);

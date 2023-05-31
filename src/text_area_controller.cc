@@ -291,8 +291,7 @@ TextAreaFormatter::TextAreaFormatter(QObject* parent) : QObject(parent) {}
 TextAreaHighlighter::TextAreaHighlighter(QList<FileLink>& file_links)
     : QSyntaxHighlighter((QObject*)nullptr), file_links(file_links) {
   Theme theme;
-  QColor color = QColor::fromString(theme.kColorHighlight);
-  link_format.setForeground(QBrush(color));
+  link_format.setForeground(ViewSystem::BrushFromHex(theme.kColorHighlight));
   link_format.setFontUnderline(true);
 }
 

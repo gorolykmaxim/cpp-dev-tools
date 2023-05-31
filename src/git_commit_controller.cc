@@ -481,23 +481,21 @@ QVariantList ChangedFileListModel::GetRow(int i) const {
 
 int ChangedFileListModel::GetRowCount() const { return list.size(); }
 
-static QBrush FromHex(const QString &color) {
-  return QBrush(QColor::fromString(color));
-}
-
 DiffFormatter::DiffFormatter(QObject *parent)
     : TextAreaFormatter(parent),
       is_side_by_side_diff(true),
       line_number_width_before(0),
       line_number_width_after(0) {
   static const Theme kTheme;
-  header_format.setForeground(FromHex(kTheme.kColorSubText));
-  header_format.setBackground(FromHex(kTheme.kColorBgBlack));
-  added_format.setBackground(FromHex("#4d3fb950"));
-  added_placeholder_format.setBackground(FromHex("#262ea043"));
-  deleted_format.setBackground(FromHex("#4df85149"));
-  deleted_placeholder_format.setBackground(FromHex("#1af85149"));
-  line_number_format.setForeground(FromHex(kTheme.kColorSubText));
+  header_format.setForeground(ViewSystem::BrushFromHex(kTheme.kColorSubText));
+  header_format.setBackground(ViewSystem::BrushFromHex(kTheme.kColorBgBlack));
+  added_format.setBackground(ViewSystem::BrushFromHex("#4d3fb950"));
+  added_placeholder_format.setBackground(ViewSystem::BrushFromHex("#262ea043"));
+  deleted_format.setBackground(ViewSystem::BrushFromHex("#4df85149"));
+  deleted_placeholder_format.setBackground(
+      ViewSystem::BrushFromHex("#1af85149"));
+  line_number_format.setForeground(
+      ViewSystem::BrushFromHex(kTheme.kColorSubText));
 }
 
 QList<TextSectionFormat> DiffFormatter::Format(const QString &text,

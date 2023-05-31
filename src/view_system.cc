@@ -1,5 +1,6 @@
 #include "view_system.h"
 
+#include <QBrush>
 #include <QGuiApplication>
 #include <QScreen>
 
@@ -32,6 +33,10 @@ QDebug operator<<(QDebug debug, const WindowDimensions &dimensions) {
                          << ",height=" << dimensions.height
                          << ",x=" << dimensions.x << ",y=" << dimensions.y
                          << ",is_maximized=" << dimensions.is_maximized << ')';
+}
+
+QBrush ViewSystem::BrushFromHex(const QString &hex) {
+  return QBrush(QColor::fromString(hex));
 }
 
 void ViewSystem::SetCurrentView(const QString &current_view) {
