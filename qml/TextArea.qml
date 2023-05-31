@@ -205,6 +205,7 @@ FocusScope {
             Qt.Key_Home,
             Qt.Key_End,
             Qt.Key_Escape,
+            Qt.Key_F5,
           ])
           property bool ignoreTextChange: false
           selectByMouse: true
