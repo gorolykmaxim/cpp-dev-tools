@@ -89,6 +89,7 @@ class GitCommitController : public QObject {
   void loadLastCommitMessage();
   void resizeDiff(int width);
   void toggleUnifiedDiff();
+  void rollbackChunk(int pos);
 
  signals:
   void filesChanged();
@@ -107,6 +108,8 @@ class GitCommitController : public QObject {
   void DrawUnifiedDiff(const QList<int>& lns_b, const QList<int>& lns_a,
                        int max_chars, int mcln);
   void SetDiffError(const QString& text);
+  void SavePreviousChunkAndStartNewOne(const QStringList& result, int max_chars,
+                                       bool start_new = true);
 
   ChangedFileListModel* files;
   QStringList raw_git_diff_output;
@@ -116,6 +119,7 @@ class GitCommitController : public QObject {
   bool is_side_by_side_diff;
   QString diff_error;
   QFontMetrics mono_font_metrics;
+  QList<TextSection> diff_chunks;
 };
 
 #endif  // GITCOMMITCONTROLLER_H

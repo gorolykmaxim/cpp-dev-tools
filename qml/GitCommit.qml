@@ -132,7 +132,14 @@ SplitView {
         enabled: fileDiff.activeFocus && controller.isSelectedFileModified
         shortcut: "Alt+U"
         onTriggered: controller.toggleUnifiedDiff()
+      },
+      MenuItem {
+        text: "Rollback Chunk"
+        enabled: fileDiff.activeFocus
+        shortcut: "Ctrl+Alt+Z"
+        onTriggered: controller.rollbackChunk(fileDiff.effectiveCursorPosition)
       }
+
     ]
   }
 }
