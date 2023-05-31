@@ -138,8 +138,13 @@ SplitView {
         enabled: fileDiff.activeFocus
         shortcut: "Ctrl+Alt+Z"
         onTriggered: controller.rollbackChunk(fileDiff.effectiveCursorPosition)
+      },
+      MenuItem {
+        text: "Open Chunk In Editor"
+        enabled: fileDiff.activeFocus
+        shortcut: "Ctrl+Shift+O"
+        onTriggered: controller.openChunkInEditor(fileDiff.effectiveCursorPosition)
       }
-
     ]
   }
 }

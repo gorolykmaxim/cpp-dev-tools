@@ -191,7 +191,7 @@ void GitCommitController::rollbackChunk(int pos) {
   if (!f) {
     return;
   }
-  LOG() << "Rolling back git diff chunk at" << pos;
+  LOG() << "Rolling back git diff chunk at" << pos << "in" << f->path;
   QStringList input;
   for (TextSection chunk : diff_chunks) {
     if (pos >= chunk.start && pos < chunk.end) {
@@ -202,6 +202,18 @@ void GitCommitController::rollbackChunk(int pos) {
   }
   ExecuteGitCommand({"checkout", "-p", "--", f->path}, input.join(""),
                     "Git: Failed to rollback diff chunk");
+}
+
+void GitCommitController::openChunkInEditor(int pos) {
+  const ChangedFile *f = files->GetSelected();
+  if (!f) {
+    return;
+  }
+  int diff_line = diff.sliced(0, pos).count('\n');
+  int file_line = diff_line_to_file_line[diff_line];
+  LOG() << "Opening git diff chunk at" << pos << "line" << file_line << "of"
+        << f->path << "in editor";
+  Application::Get().editor.OpenFile(f->path, file_line, -1);
 }
 
 Promise<OsProcess> GitCommitController::ExecuteGitCommand(
@@ -224,6 +236,7 @@ void GitCommitController::DiffSelectedFile() {
     SetDiffError("");
     formatter->diff_line_flags.clear();
     diff_chunks.clear();
+    diff_line_to_file_line.clear();
     emit selectedFileChanged();
     return;
   }
@@ -252,7 +265,7 @@ static int ParseLineNumber(const QString &str, QChar start) {
 }
 
 static QString MakeLineNumber(int number, int max_chars) {
-  QString result = QString::number(number);
+  QString result = number > -1 ? QString::number(number) : "";
   return ' ' + QString(max_chars - 2 - result.size(), ' ') + result + ' ';
 }
 
@@ -377,8 +390,9 @@ void GitCommitController::DrawSideBySideDiff(const QList<int> &lns_b,
   QStringList result;
   bool is_header = true;
   QStringList lb_b, lb_a;
-  QStringList lnb_b, lnb_a;
+  QList<int> lnb_b, lnb_a;
   diff_chunks.clear();
+  diff_line_to_file_line.clear();
   for (int i = 0; i < raw_git_diff_output.size(); i++) {
     const QString &line = raw_git_diff_output[i];
     if (is_header || line.startsWith("@@ ")) {
@@ -388,19 +402,20 @@ void GitCommitController::DrawSideBySideDiff(const QList<int> &lns_b,
       }
       int lines_cnt = AddDiffLine({}, {line}, max_chars, result);
       diff_line_flags.append(QList<int>(lines_cnt, DiffLineType::kHeader));
+      diff_line_to_file_line.append(QList<int>(lines_cnt, -1));
     } else if (line.startsWith('+')) {
-      lnb_a.append(MakeLineNumber(lns_a[i], mcln_a));
+      lnb_a.append(lns_a[i]);
       lb_a.append(line.sliced(1));
     } else if (line.startsWith('-')) {
-      lnb_b.append(MakeLineNumber(lns_b[i], mcln_b));
+      lnb_b.append(lns_b[i]);
       lb_b.append(line.sliced(1));
     }
     if (line.startsWith(' ') || i == raw_git_diff_output.size() - 1) {
       int max_buff_size = std::max(lb_b.size(), lb_a.size());
       for (int i = 0; i < max_buff_size; i++) {
         QString l_b, l_a;
-        QString ln_b(mcln_b, ' ');
-        QString ln_a(mcln_a, ' ');
+        int ln_b = -1;
+        int ln_a = -1;
         int flags = 0;
         if (i < lb_b.size()) {
           l_b = lb_b[i];
@@ -412,9 +427,11 @@ void GitCommitController::DrawSideBySideDiff(const QList<int> &lns_b,
           ln_a = lnb_a[i];
           flags |= DiffLineType::kAdded;
         }
-        int lines_cnt =
-            AddDiffLine({ln_b, ln_a}, {l_b, l_a}, max_chars, result);
+        int lines_cnt = AddDiffLine(
+            {MakeLineNumber(ln_b, mcln_b), MakeLineNumber(ln_a, mcln_a)},
+            {l_b, l_a}, max_chars, result);
         diff_line_flags.append(QList<int>(lines_cnt, flags));
+        diff_line_to_file_line.append(QList<int>(lines_cnt, ln_a));
       }
       lb_b.clear();
       lb_a.clear();
@@ -426,6 +443,7 @@ void GitCommitController::DrawSideBySideDiff(const QList<int> &lns_b,
         const QString &ln_a = MakeLineNumber(lns_a[i], mcln_a);
         int lines_cnt = AddDiffLine({ln_b, ln_a}, {l, l}, max_chars, result);
         diff_line_flags.append(QList<int>(lines_cnt, DiffLineType::kUnchanged));
+        diff_line_to_file_line.append(QList<int>(lines_cnt, lns_a[i]));
       }
     }
   }
@@ -444,6 +462,7 @@ void GitCommitController::DrawUnifiedDiff(const QList<int> &lns_b,
   QStringList result;
   bool is_header = true;
   diff_chunks.clear();
+  diff_line_to_file_line.clear();
   for (int i = 0; i < raw_git_diff_output.size(); i++) {
     const QString &line = raw_git_diff_output[i];
     if (is_header || line.startsWith("@@ ")) {
@@ -453,18 +472,22 @@ void GitCommitController::DrawUnifiedDiff(const QList<int> &lns_b,
       }
       int lines_cnt = AddDiffLine({}, {line}, max_chars, result);
       diff_line_flags.append(QList<int>(lines_cnt, DiffLineType::kHeader));
+      diff_line_to_file_line.append(QList<int>(lines_cnt, -1));
     } else if (line.startsWith('+')) {
       int lines_cnt = AddDiffLine({MakeLineNumber(lns_a[i], mcln)},
                                   {line.sliced(1)}, max_chars, result);
       diff_line_flags.append(QList<int>(lines_cnt, DiffLineType::kAdded));
+      diff_line_to_file_line.append(QList<int>(lines_cnt, lns_a[i]));
     } else if (line.startsWith('-')) {
       int lines_cnt = AddDiffLine({MakeLineNumber(lns_b[i], mcln)},
                                   {line.sliced(1)}, max_chars, result);
       diff_line_flags.append(QList<int>(lines_cnt, DiffLineType::kDeleted));
+      diff_line_to_file_line.append(QList<int>(lines_cnt, lns_a[i]));
     } else if (line.startsWith(' ')) {
       int lines_cnt = AddDiffLine({MakeLineNumber(lns_a[i], mcln)},
                                   {line.sliced(1)}, max_chars, result);
       diff_line_flags.append(QList<int>(lines_cnt, DiffLineType::kUnchanged));
+      diff_line_to_file_line.append(QList<int>(lines_cnt, lns_a[i]));
     }
   }
   SavePreviousChunkAndStartNewOne(result, max_chars, false);

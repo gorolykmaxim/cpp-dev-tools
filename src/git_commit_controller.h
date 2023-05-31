@@ -90,6 +90,7 @@ class GitCommitController : public QObject {
   void resizeDiff(int width);
   void toggleUnifiedDiff();
   void rollbackChunk(int pos);
+  void openChunkInEditor(int pos);
 
  signals:
   void filesChanged();
@@ -120,6 +121,7 @@ class GitCommitController : public QObject {
   QString diff_error;
   QFontMetrics mono_font_metrics;
   QList<TextSection> diff_chunks;
+  QList<int> diff_line_to_file_line;
 };
 
 #endif  // GITCOMMITCONTROLLER_H
