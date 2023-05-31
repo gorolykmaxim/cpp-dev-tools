@@ -25,6 +25,8 @@ FocusScope {
   property bool monoFont: true
   property bool disableLoadingPlaceholder: false
   property alias menuItems: contextMenu.items
+  property string centeredPlaceholderText: ""
+  property alias centeredPlaceholderTextColor: placeholder.textColor
   signal ctrlEnterPressed()
   onCursorPositionChanged: textArea.cursorPosition = root.cursorPosition
   onTextChanged: {
@@ -98,20 +100,15 @@ FocusScope {
     }
     onChangeCursorPosition: pos => textArea.cursorPosition = pos
   }
-  Cdt.Pane {
-    visible: isLoading
+  Cdt.PlaceholderText {
+    id: placeholder
+    visible: text
     anchors.fill: parent
     color: root.color
-    Cdt.Text {
-      anchors.fill: parent
-      verticalAlignment: Text.AlignVCenter
-      horizontalAlignment: Text.AlignHCenter
-      text: "Loading..."
-      elide: Text.ElideRight
-    }
+    text: isLoading ? "Loading..." : root.centeredPlaceholderText
   }
   ColumnLayout {
-    visible: !isLoading
+    visible: !placeholder.visible
     anchors.fill: parent
     spacing: 0
     Cdt.Pane {
