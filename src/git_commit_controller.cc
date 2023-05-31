@@ -183,6 +183,7 @@ Promise<OsProcess> GitCommitController::ExecuteGitCommand(
 void GitCommitController::DiffSelectedFile() {
   int i = files->GetSelectedItemIndex();
   if (i < 0) {
+    raw_git_diff_output.clear();
     diff.clear();
     formatter->diff_line_flags.clear();
     emit selectedFileChanged();
