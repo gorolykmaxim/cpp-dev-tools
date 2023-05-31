@@ -30,6 +30,7 @@ FocusScope {
   onTextChanged: {
     controller.resetCursorPositionHistory();
     if (disableLoadingPlaceholder || (textArea.text && text.startsWith(textArea.text))) {
+      textArea.text = "";
       setText(text);
     } else {
       isLoading = true;
