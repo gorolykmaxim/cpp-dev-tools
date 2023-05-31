@@ -65,10 +65,13 @@ class GitCommitController : public QObject {
   Q_PROPERTY(int sidebarWidth READ CalcSideBarWidth CONSTANT)
   Q_PROPERTY(QString diff MEMBER diff NOTIFY selectedFileChanged)
   Q_PROPERTY(DiffFormatter* formatter MEMBER formatter CONSTANT)
+  Q_PROPERTY(bool isSelectedFileModified READ IsSelectedFileModified NOTIFY
+                 selectedFileChanged)
  public:
   explicit GitCommitController(QObject* parent = nullptr);
   bool HasChanges() const;
   int CalcSideBarWidth() const;
+  bool IsSelectedFileModified() const;
 
  public slots:
   void findChangedFiles();

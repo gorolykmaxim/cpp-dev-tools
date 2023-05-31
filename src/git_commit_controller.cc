@@ -51,6 +51,11 @@ int GitCommitController::CalcSideBarWidth() const {
   return m.horizontalAdvance(kDummyGitCommitHeader) + kTheme.kBasePadding;
 }
 
+bool GitCommitController::IsSelectedFileModified() const {
+  return raw_git_diff_output.size() >= 2 &&
+         raw_git_diff_output[1].startsWith("index");
+}
+
 void GitCommitController::findChangedFiles() {
   LOG() << "Looking for changed files";
   OsCommand::Run("git", {"status", "--porcelain=v1"}, "",
@@ -308,9 +313,7 @@ void GitCommitController::RedrawDiff() {
   int mcln_b = QString::number(ln_b).size() + 2;
   int mcln_a = QString::number(ln_a).size() + 2;
   // Draw diff
-  bool is_file_modified = raw_git_diff_output.size() >= 2 &&
-                          raw_git_diff_output[1].startsWith("index");
-  if (is_side_by_side_diff && is_file_modified) {
+  if (is_side_by_side_diff && IsSelectedFileModified()) {
     DrawSideBySideDiff(lns_b, lns_a, max_chars, mcln_b, mcln_a);
   } else {
     DrawUnifiedDiff(lns_b, lns_a, max_chars, std::max(mcln_b, mcln_a));

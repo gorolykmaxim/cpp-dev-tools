@@ -149,7 +149,7 @@ SplitView {
       MenuSeparator {},
       MenuItem {
         text: "Toggle Unified Diff"
-        enabled: fileDiff.activeFocus
+        enabled: fileDiff.activeFocus && controller.isSelectedFileModified
         shortcut: "Alt+U"
         onTriggered: controller.toggleUnifiedDiff()
       }
