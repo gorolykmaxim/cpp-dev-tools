@@ -33,6 +33,7 @@ GitCommitController::GitCommitController(QObject *parent)
             .constFirst();
       },
       [this](bool result) {
+        LOG() << "Loaded diff view setting. Side-by-side view:" << result;
         is_side_by_side_diff = result;
         RedrawDiff();
       });
@@ -164,6 +165,7 @@ void GitCommitController::resizeDiff(int width) {
 
 void GitCommitController::toggleUnifiedDiff() {
   is_side_by_side_diff = !is_side_by_side_diff;
+  LOG() << "Setting diff view to side-by-side:" << is_side_by_side_diff;
   Database::ExecCmdAsync("UPDATE git_commit_context SET side_by_side_view = ?",
                          {is_side_by_side_diff});
   RedrawDiff();
@@ -183,13 +185,16 @@ Promise<OsProcess> GitCommitController::ExecuteGitCommand(
 void GitCommitController::DiffSelectedFile() {
   int i = files->GetSelectedItemIndex();
   if (i < 0) {
+    LOG() << "Clearing git diff view";
     raw_git_diff_output.clear();
     diff.clear();
     formatter->diff_line_flags.clear();
     emit selectedFileChanged();
     return;
   }
-  OsCommand::Run("git", {"diff", "HEAD", "--", files->list[i].path})
+  QString path = files->list[i].path;
+  LOG() << "Will get git diff of" << path;
+  OsCommand::Run("git", {"diff", "HEAD", "--", path})
       .Then(this, [this](OsProcess p) {
         raw_git_diff_output = p.output.split('\n', Qt::SkipEmptyParts);
         RedrawDiff();
