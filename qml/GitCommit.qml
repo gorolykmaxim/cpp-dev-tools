@@ -145,5 +145,14 @@ SplitView {
     onWidthChanged: controller.resizeDiff(width)
     disableLoadingPlaceholder: true
     KeyNavigation.left: changeList
+    menuItems: [
+      MenuSeparator {},
+      MenuItem {
+        text: "Toggle Unified Diff"
+        enabled: fileDiff.activeFocus
+        shortcut: "Alt+U"
+        onTriggered: controller.toggleUnifiedDiff()
+      }
+    ]
   }
 }

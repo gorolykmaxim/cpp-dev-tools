@@ -44,10 +44,17 @@ class DiffFormatter : public TextAreaFormatter {
   QList<TextSectionFormat> Format(const QString& text, const QTextBlock& block);
 
   QList<int> diff_line_flags;
+  bool is_side_by_side_diff;
   int line_number_width_before;
   int line_number_width_after;
   QTextCharFormat header_format, added_format, added_placeholder_format,
       deleted_format, deleted_placeholder_format, line_number_format;
+
+ private:
+  void FormatSideBySide(const QString& text, int flags,
+                        QList<TextSectionFormat>& fs);
+  void FormatUnified(const QString& text, int flags,
+                     QList<TextSectionFormat>& fs);
 };
 
 class GitCommitController : public QObject {
@@ -70,6 +77,7 @@ class GitCommitController : public QObject {
   void commit(const QString& msg, bool commit_all, bool amend);
   void loadLastCommitMessage();
   void resizeDiff(int width);
+  void toggleUnifiedDiff();
 
  signals:
   void filesChanged();
@@ -82,6 +90,10 @@ class GitCommitController : public QObject {
                                        const QString& error_title);
   void DiffSelectedFile();
   void RedrawDiff();
+  void DrawSideBySideDiff(const QList<int>& lns_b, const QList<int>& lns_a,
+                          int max_chars, int mcln_b, int mcln_a);
+  void DrawUnifiedDiff(const QList<int>& lns_b, const QList<int>& lns_a,
+                       int max_chars, int mcln);
 
   ChangedFileListModel* files;
   QStringList raw_git_diff_output;

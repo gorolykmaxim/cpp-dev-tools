@@ -24,6 +24,7 @@ FocusScope {
   property int cursorPosition: -1
   property bool monoFont: true
   property bool disableLoadingPlaceholder: false
+  property alias menuItems: contextMenu.items
   signal ctrlEnterPressed()
   onCursorPositionChanged: textArea.cursorPosition = root.cursorPosition
   onTextChanged: {

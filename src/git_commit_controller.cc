@@ -4,10 +4,13 @@
 #include <QQmlContext>
 
 #include "application.h"
+#include "database.h"
 #include "io_task.h"
 #include "theme.h"
 
 #define LOG() qDebug() << "[GitCommitController]"
+
+static bool ReadBoolFromSql(QSqlQuery &sql) { return sql.value(0).toBool(); }
 
 GitCommitController::GitCommitController(QObject *parent)
     : QObject(parent),
@@ -20,6 +23,18 @@ GitCommitController::GitCommitController(QObject *parent)
           &GitCommitController::DiffSelectedFile);
   Application::Get().view.SetWindowTitle("Git Commit");
   findChangedFiles();
+  IoTask::Run<bool>(
+      this,
+      [] {
+        return Database::ExecQueryAndRead<bool>(
+                   "SELECT side_by_side_view FROM git_commit_context",
+                   ReadBoolFromSql)
+            .constFirst();
+      },
+      [this](bool result) {
+        formatter->is_side_by_side_diff = result;
+        RedrawDiff();
+      });
 }
 
 bool GitCommitController::HasChanges() const { return !files->list.isEmpty(); }
@@ -141,6 +156,13 @@ void GitCommitController::resizeDiff(int width) {
   RedrawDiff();
 }
 
+void GitCommitController::toggleUnifiedDiff() {
+  formatter->is_side_by_side_diff = !formatter->is_side_by_side_diff;
+  Database::ExecCmdAsync("UPDATE git_commit_context SET side_by_side_view = ?",
+                         {formatter->is_side_by_side_diff});
+  RedrawDiff();
+}
+
 Promise<OsProcess> GitCommitController::ExecuteGitCommand(
     const QStringList &args, const QString &input, const QString &error_title) {
   return OsCommand::Run("git", args, input, error_title)
@@ -174,6 +196,11 @@ static int ParseLineNumber(const QString &str, QChar start) {
     j = str.indexOf(' ', i);
   }
   return str.sliced(i, j - i).toInt();
+}
+
+static QString MakeLineNumber(int number, int max_chars) {
+  QString result = QString::number(number);
+  return ' ' + QString(max_chars - 2 - result.size(), ' ') + result + ' ';
 }
 
 static int AddDiffLine(QStringList line_numbers, const QStringList &to_write,
@@ -255,7 +282,7 @@ void GitCommitController::RedrawDiff() {
   int char_width = m.horizontalAdvance('a');
   float error = (float)m.horizontalAdvance(QString(50, 'a')) / char_width / 50;
   int max_chars = diff_width / (char_width * error);
-  // Pre-compute line numbers for a side-by-side diff
+  // Pre-compute line numbers for a diff
   QList<int> lns_b, lns_a;
   int ln_b = -1, ln_a = -1;
   for (const QString &line : raw_git_diff_output) {
@@ -279,22 +306,19 @@ void GitCommitController::RedrawDiff() {
   }
   int mcln_b = QString::number(ln_b).size() + 2;
   int mcln_a = QString::number(ln_a).size() + 2;
-  QStringList line_numbers_before, line_numbers_after;
-  QString line_number_placeholder_before(mcln_b, ' ');
-  QString line_number_placeholder_after(mcln_a, ' ');
-  for (int i = 0; i < lns_b.size(); i++) {
-    QString &sln_b = line_numbers_before.emplaceBack();
-    QString &sln_a = line_numbers_after.emplaceBack();
-    if (lns_b[i] >= 0) {
-      sln_b = ' ' + QString::number(lns_b[i]) + ' ';
-      sln_b = QString(mcln_b - sln_b.size(), ' ') + sln_b;
-    }
-    if (lns_a[i] >= 0) {
-      sln_a = ' ' + QString::number(lns_a[i]) + ' ';
-      sln_a = QString(mcln_a - sln_a.size(), ' ') + sln_a;
-    }
+  // Draw diff
+  if (formatter->is_side_by_side_diff) {
+    DrawSideBySideDiff(lns_b, lns_a, max_chars, mcln_b, mcln_a);
+  } else {
+    DrawUnifiedDiff(lns_b, lns_a, max_chars, std::max(mcln_b, mcln_a));
   }
-  // Turn raw_git_diff_output into a side-by-side diff
+  emit selectedFileChanged();
+}
+
+void GitCommitController::DrawSideBySideDiff(const QList<int> &lns_b,
+                                             const QList<int> &lns_a,
+                                             int max_chars, int mcln_b,
+                                             int mcln_a) {
   QList<int> diff_line_flags;
   QStringList result;
   bool is_header = true;
@@ -307,18 +331,18 @@ void GitCommitController::RedrawDiff() {
       diff_line_flags.append(QList<int>(lines_cnt, DiffLineType::kHeader));
       is_header = !line.startsWith("@@ ");
     } else if (line.startsWith('+')) {
-      lnb_a.append(line_numbers_after[i]);
+      lnb_a.append(MakeLineNumber(lns_a[i], mcln_a));
       lb_a.append(line.sliced(1));
     } else if (line.startsWith('-')) {
-      lnb_b.append(line_numbers_before[i]);
+      lnb_b.append(MakeLineNumber(lns_b[i], mcln_b));
       lb_b.append(line.sliced(1));
     }
     if (line.startsWith(' ') || i == raw_git_diff_output.size() - 1) {
       int max_buff_size = std::max(lb_b.size(), lb_a.size());
       for (int i = 0; i < max_buff_size; i++) {
         QString l_b, l_a;
-        QString ln_b = line_number_placeholder_before;
-        QString ln_a = line_number_placeholder_after;
+        QString ln_b(mcln_b, ' ');
+        QString ln_a(mcln_a, ' ');
         int flags = 0;
         if (i < lb_b.size()) {
           l_b = lb_b[i];
@@ -340,8 +364,8 @@ void GitCommitController::RedrawDiff() {
       lnb_a.clear();
       if (line.startsWith(' ')) {
         QString l = line.sliced(1);
-        const QString &ln_b = line_numbers_before[i];
-        const QString &ln_a = line_numbers_after[i];
+        const QString &ln_b = MakeLineNumber(lns_b[i], mcln_b);
+        const QString &ln_a = MakeLineNumber(lns_a[i], mcln_a);
         int lines_cnt = AddDiffLine({ln_b, ln_a}, {l, l}, max_chars, result);
         diff_line_flags.append(QList<int>(lines_cnt, DiffLineType::kUnchanged));
       }
@@ -351,7 +375,38 @@ void GitCommitController::RedrawDiff() {
   formatter->line_number_width_before = mcln_b;
   formatter->line_number_width_after = mcln_a;
   diff = result.join('\n');
-  emit selectedFileChanged();
+}
+
+void GitCommitController::DrawUnifiedDiff(const QList<int> &lns_b,
+                                          const QList<int> &lns_a,
+                                          int max_chars, int mcln) {
+  QList<int> diff_line_flags;
+  QStringList result;
+  bool is_header = true;
+  for (int i = 0; i < raw_git_diff_output.size(); i++) {
+    const QString &line = raw_git_diff_output[i];
+    if (is_header || line.startsWith("@@ ")) {
+      int lines_cnt = AddDiffLine({}, {line}, max_chars, result);
+      diff_line_flags.append(QList<int>(lines_cnt, DiffLineType::kHeader));
+      is_header = !line.startsWith("@@ ");
+    } else if (line.startsWith('+')) {
+      int lines_cnt = AddDiffLine({MakeLineNumber(lns_a[i], mcln)},
+                                  {line.sliced(1)}, max_chars, result);
+      diff_line_flags.append(QList<int>(lines_cnt, DiffLineType::kAdded));
+    } else if (line.startsWith('-')) {
+      int lines_cnt = AddDiffLine({MakeLineNumber(lns_b[i], mcln)},
+                                  {line.sliced(1)}, max_chars, result);
+      diff_line_flags.append(QList<int>(lines_cnt, DiffLineType::kDeleted));
+    } else if (line.startsWith(' ')) {
+      int lines_cnt = AddDiffLine({MakeLineNumber(lns_a[i], mcln)},
+                                  {line.sliced(1)}, max_chars, result);
+      diff_line_flags.append(QList<int>(lines_cnt, DiffLineType::kUnchanged));
+    }
+  }
+  formatter->diff_line_flags = diff_line_flags;
+  formatter->line_number_width_before = mcln;
+  formatter->line_number_width_after = 0;
+  diff = result.join('\n');
 }
 
 ChangedFileListModel::ChangedFileListModel(QObject *parent)
@@ -390,6 +445,7 @@ static QBrush FromHex(const QString &color) {
 
 DiffFormatter::DiffFormatter(QObject *parent)
     : TextAreaFormatter(parent),
+      is_side_by_side_diff(true),
       line_number_width_before(0),
       line_number_width_after(0) {
   static const Theme kTheme;
@@ -409,6 +465,16 @@ QList<TextSectionFormat> DiffFormatter::Format(const QString &text,
     return fs;
   }
   int flags = diff_line_flags[block.firstLineNumber()];
+  if (is_side_by_side_diff) {
+    FormatSideBySide(text, flags, fs);
+  } else {
+    FormatUnified(text, flags, fs);
+  }
+  return fs;
+}
+
+void DiffFormatter::FormatSideBySide(const QString &text, int flags,
+                                     QList<TextSectionFormat> &fs) {
   if (flags & DiffLineType::kHeader) {
     TextSectionFormat f;
     f.section.start = 0;
@@ -445,5 +511,31 @@ QList<TextSectionFormat> DiffFormatter::Format(const QString &text,
     }
     fs.append(f);
   }
-  return fs;
+}
+
+void DiffFormatter::FormatUnified(const QString &text, int flags,
+                                  QList<TextSectionFormat> &fs) {
+  if (flags & DiffLineType::kHeader) {
+    TextSectionFormat f;
+    f.section.start = 0;
+    f.section.end = text.size() - 1;
+    f.format = header_format;
+    fs.append(f);
+  } else {
+    TextSectionFormat f;
+    f.section.start = 0;
+    f.section.end = line_number_width_before - 1;
+    f.format = line_number_format;
+    fs.append(f);
+    if (flags & DiffLineType::kAdded || flags & DiffLineType::kDeleted) {
+      f.section.start = line_number_width_before;
+      f.section.end = text.size() - 1;
+      if (flags & DiffLineType::kDeleted) {
+        f.format = deleted_format;
+      } else if (flags & DiffLineType::kAdded) {
+        f.format = added_format;
+      }
+      fs.append(f);
+    }
+  }
 }
