@@ -1,6 +1,7 @@
 #ifndef GITCOMMITCONTROLLER_H
 #define GITCOMMITCONTROLLER_H
 
+#include <QFontMetrics>
 #include <QObject>
 #include <QQmlEngine>
 
@@ -114,6 +115,7 @@ class GitCommitController : public QObject {
   DiffFormatter* formatter;
   bool is_side_by_side_diff;
   QString diff_error;
+  QFontMetrics mono_font_metrics;
 };
 
 #endif  // GITCOMMITCONTROLLER_H

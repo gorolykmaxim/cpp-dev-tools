@@ -1,6 +1,5 @@
 #include "git_commit_controller.h"
 
-#include <QFontMetrics>
 #include <QQmlContext>
 
 #include "application.h"
@@ -12,12 +11,21 @@
 
 static bool ReadBoolFromSql(QSqlQuery &sql) { return sql.value(0).toBool(); }
 
+static QFont GetMonoFont() {
+  Application &app = Application::Get();
+  QQmlContext *ctx = app.qml_engine.rootContext();
+  QString family = ctx->contextProperty("monoFontFamily").toString();
+  int size = ctx->contextProperty("monoFontSize").toInt();
+  return QFont(family, size);
+}
+
 GitCommitController::GitCommitController(QObject *parent)
     : QObject(parent),
       files(new ChangedFileListModel(this)),
       diff_width(80),
       formatter(new DiffFormatter(this)),
-      is_side_by_side_diff(true) {
+      is_side_by_side_diff(true),
+      mono_font_metrics(GetMonoFont()) {
   // This re-runs git diff when user switches to a different changed file.
   connect(files, &TextListModel::selectedItemChanged, this, [this] {
     if (files->IsUpdating()) {
@@ -51,12 +59,8 @@ bool GitCommitController::HasChanges() const { return !files->list.isEmpty(); }
 int GitCommitController::CalcSideBarWidth() const {
   static const QString kDummyGitCommitHeader(50, 'a');
   static const Theme kTheme;
-  Application &app = Application::Get();
-  QQmlContext *ctx = app.qml_engine.rootContext();
-  QString family = ctx->contextProperty("monoFontFamily").toString();
-  int size = ctx->contextProperty("monoFontSize").toInt();
-  QFontMetrics m(QFont(family, size));
-  return m.horizontalAdvance(kDummyGitCommitHeader) + kTheme.kBasePadding;
+  return mono_font_metrics.horizontalAdvance(kDummyGitCommitHeader) +
+         kTheme.kBasePadding;
 }
 
 bool GitCommitController::IsSelectedFileModified() const {
@@ -166,8 +170,12 @@ void GitCommitController::loadLastCommitMessage() {
 }
 
 void GitCommitController::resizeDiff(int width) {
-  diff_width = width;
-  RedrawDiff();
+  int approx_char_width = mono_font_metrics.horizontalAdvance('a');
+  // Only redraw the character width has changed
+  if (std::abs(width - diff_width) > approx_char_width) {
+    diff_width = width;
+    RedrawDiff();
+  }
 }
 
 void GitCommitController::toggleUnifiedDiff() {
@@ -300,13 +308,9 @@ static int AddDiffLine(QStringList line_numbers, const QStringList &to_write,
 
 void GitCommitController::RedrawDiff() {
   // Calculate how many chars will fit into diff_width
-  Application &app = Application::Get();
-  QQmlContext *ctx = app.qml_engine.rootContext();
-  QString family = ctx->contextProperty("monoFontFamily").toString();
-  int size = ctx->contextProperty("monoFontSize").toInt();
-  QFontMetrics m(QFont(family, size));
-  int char_width = m.horizontalAdvance('a');
-  float error = (float)m.horizontalAdvance(QString(50, 'a')) / char_width / 50;
+  int char_width = mono_font_metrics.horizontalAdvance('a');
+  float error = (float)mono_font_metrics.horizontalAdvance(QString(50, 'a')) /
+                char_width / 50;
   int max_chars = diff_width / (char_width * error);
   // Pre-compute line numbers for a diff
   QList<int> lns_b, lns_a;
