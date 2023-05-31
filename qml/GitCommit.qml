@@ -16,9 +16,12 @@ SplitView {
     id: controller
     onCommitMessageChanged: txt => commitMsg.setText(txt)
   }
-  Keys.onPressed: function(e) {
-    if (e.key === Qt.Key_F5) {
-      controller.findChangedFiles()
+  Connections {
+    target: appWindow
+    function onActiveChanged() {
+      if (appWindow.active) {
+        controller.findChangedFiles();
+      }
     }
   }
   SplitView {
@@ -30,55 +33,30 @@ SplitView {
       viewId: "GitCommitSidebar"
       view: sidebar
     }
-    ColumnLayout {
+    Cdt.TextList {
+      id: changeList
       SplitView.fillWidth: true
       SplitView.fillHeight: true
-      spacing: 0
-      Cdt.Pane {
-        Layout.fillWidth: true
-        color: Theme.colorBgMedium
-        focus: !controller.hasChanges
-        KeyNavigation.down: changeList
-        KeyNavigation.right: fileDiff
-        RowLayout {
-          anchors.fill: parent
-          Cdt.Text {
-            text: "Changed Files"
-            Layout.fillWidth: true
-            padding: Theme.basePadding
-          }
-          Cdt.IconButton {
-            buttonIcon: "loop"
-            onClicked: controller.findChangedFiles()
-            focus: true
-          }
+      model: controller.files
+      enabled: controller.hasChanges
+      highlightCurrentItemWithoutFocus: false
+      onItemRightClicked: contextMenu.open()
+      Keys.onEnterPressed: controller.toggleStagedSelectedFile()
+      Keys.onReturnPressed: controller.toggleStagedSelectedFile()
+      KeyNavigation.down: commitMsg
+      KeyNavigation.right: fileDiff
+      Menu {
+        id: contextMenu
+        MenuItem {
+          enabled: changeList.activeFocus
+          text: "Toggle Staged"
+          onTriggered: controller.toggleStagedSelectedFile()
         }
-      }
-      Cdt.TextList {
-        id: changeList
-        Layout.fillWidth: true
-        Layout.fillHeight: true
-        model: controller.files
-        enabled: controller.hasChanges
-        highlightCurrentItemWithoutFocus: false
-        onItemRightClicked: contextMenu.open()
-        Keys.onEnterPressed: controller.toggleStagedSelectedFile()
-        Keys.onReturnPressed: controller.toggleStagedSelectedFile()
-        KeyNavigation.down: commitMsg
-        KeyNavigation.right: fileDiff
-        Menu {
-          id: contextMenu
-          MenuItem {
-            enabled: changeList.activeFocus
-            text: "Toggle Staged"
-            onTriggered: controller.toggleStagedSelectedFile()
-          }
-          MenuItem {
-            enabled: changeList.activeFocus
-            text: "Reset"
-            shortcut: "Alt+Shift+D"
-            onTriggered: controller.resetSelectedFile()
-          }
+        MenuItem {
+          enabled: changeList.activeFocus
+          text: "Reset"
+          shortcut: "Alt+Shift+D"
+          onTriggered: controller.resetSelectedFile()
         }
       }
     }

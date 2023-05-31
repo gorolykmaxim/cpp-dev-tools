@@ -4,6 +4,7 @@ import cdt
 import "." as Cdt
 
 ApplicationWindow {
+  id: appWindow
   Component.onCompleted: applyShowMode()
   title: viewSystem.windowTitle
   width: viewSystem.dimensions.width
