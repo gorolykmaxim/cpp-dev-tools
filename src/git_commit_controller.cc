@@ -188,16 +188,23 @@ void GitCommitController::DiffSelectedFile() {
     LOG() << "Clearing git diff view";
     raw_git_diff_output.clear();
     diff.clear();
+    SetDiffError("");
     formatter->diff_line_flags.clear();
     emit selectedFileChanged();
     return;
   }
   QString path = files->list[i].path;
   LOG() << "Will get git diff of" << path;
-  OsCommand::Run("git", {"diff", "HEAD", "--", path})
-      .Then(this, [this](OsProcess p) {
-        raw_git_diff_output = p.output.split('\n', Qt::SkipEmptyParts);
-        RedrawDiff();
+  OsCommand::Run("git", {"diff", "HEAD", "--", path}, "",
+                 "Git: Failed to get git diff")
+      .Then(this, [this, path](OsProcess p) {
+        if (p.exit_code == 0) {
+          raw_git_diff_output = p.output.split('\n', Qt::SkipEmptyParts);
+          RedrawDiff();
+          SetDiffError("");
+        } else {
+          SetDiffError("Failed to git diff '" + path + '\'');
+        }
       });
 }
 
@@ -421,6 +428,11 @@ void GitCommitController::DrawUnifiedDiff(const QList<int> &lns_b,
   formatter->line_number_width_after = 0;
   formatter->is_side_by_side_diff = false;
   diff = result.join('\n');
+}
+
+void GitCommitController::SetDiffError(const QString &text) {
+  diff_error = text;
+  emit diffErrorChanged();
 }
 
 ChangedFileListModel::ChangedFileListModel(QObject *parent)

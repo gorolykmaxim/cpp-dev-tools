@@ -67,6 +67,7 @@ class GitCommitController : public QObject {
   Q_PROPERTY(DiffFormatter* formatter MEMBER formatter CONSTANT)
   Q_PROPERTY(bool isSelectedFileModified READ IsSelectedFileModified NOTIFY
                  selectedFileChanged)
+  Q_PROPERTY(QString diffError MEMBER diff_error NOTIFY diffErrorChanged)
  public:
   explicit GitCommitController(QObject* parent = nullptr);
   bool HasChanges() const;
@@ -86,6 +87,7 @@ class GitCommitController : public QObject {
   void filesChanged();
   void commitMessageChanged(const QString& msg);
   void selectedFileChanged();
+  void diffErrorChanged();
 
  private:
   Promise<OsProcess> ExecuteGitCommand(const QStringList& args,
@@ -97,6 +99,7 @@ class GitCommitController : public QObject {
                           int max_chars, int mcln_b, int mcln_a);
   void DrawUnifiedDiff(const QList<int>& lns_b, const QList<int>& lns_a,
                        int max_chars, int mcln);
+  void SetDiffError(const QString& text);
 
   ChangedFileListModel* files;
   QStringList raw_git_diff_output;
@@ -104,6 +107,7 @@ class GitCommitController : public QObject {
   int diff_width;
   DiffFormatter* formatter;
   bool is_side_by_side_diff;
+  QString diff_error;
 };
 
 #endif  // GITCOMMITCONTROLLER_H

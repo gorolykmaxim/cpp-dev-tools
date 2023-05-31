@@ -131,28 +131,40 @@ SplitView {
       }
     }
   }
-  Cdt.TextArea {
-    id: fileDiff
+  RowLayout {
     SplitView.fillWidth: true
     SplitView.fillHeight: true
-    readonly: true
-    wrapMode: TextEdit.NoWrap
-    enabled: controller.hasChanges
-    text: controller.diff
-    formatter: controller.formatter
-    detectFileLinks: false
-    searchable: true
-    onWidthChanged: controller.resizeDiff(width)
-    disableLoadingPlaceholder: true
-    KeyNavigation.left: changeList
-    menuItems: [
-      MenuSeparator {},
-      MenuItem {
-        text: "Toggle Unified Diff"
-        enabled: fileDiff.activeFocus && controller.isSelectedFileModified
-        shortcut: "Alt+U"
-        onTriggered: controller.toggleUnifiedDiff()
-      }
-    ]
+    Cdt.PlaceholderText {
+      Layout.fillWidth: true
+      Layout.fillHeight: true
+      text: controller.diffError
+      visible: controller.diffError
+      textColor: "red"
+    }
+    Cdt.TextArea {
+      id: fileDiff
+      Layout.fillWidth: true
+      Layout.fillHeight: true
+      visible: !controller.diffError
+      readonly: true
+      wrapMode: TextEdit.NoWrap
+      enabled: controller.hasChanges
+      text: controller.diff
+      formatter: controller.formatter
+      detectFileLinks: false
+      searchable: true
+      onWidthChanged: controller.resizeDiff(width)
+      disableLoadingPlaceholder: true
+      KeyNavigation.left: changeList
+      menuItems: [
+        MenuSeparator {},
+        MenuItem {
+          text: "Toggle Unified Diff"
+          enabled: fileDiff.activeFocus && controller.isSelectedFileModified
+          shortcut: "Alt+U"
+          onTriggered: controller.toggleUnifiedDiff()
+        }
+      ]
+    }
   }
 }
