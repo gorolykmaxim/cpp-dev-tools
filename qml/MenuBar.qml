@@ -19,5 +19,5 @@ Loader {
       model: root.model
     }
   }
-  sourceComponent: isMacOS ? nativeMenuBar : crossPlatformMenuBar
+  sourceComponent: Qt.platform.os === "osx" ? nativeMenuBar : crossPlatformMenuBar
 }
