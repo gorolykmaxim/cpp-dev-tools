@@ -311,56 +311,55 @@ void TextAreaHighlighter::highlightBlock(const QString& text) {
   }
 }
 
-TextAreaModel::TextAreaModel(QObject* parent) : QAbstractListModel(parent) {}
+TextAreaModel::TextAreaModel(QObject* parent, TextAreaData& data)
+    : QAbstractListModel(parent), text_data(data) {}
 
 QHash<int, QByteArray> TextAreaModel::roleNames() const {
   return {{0, "text"}};
 }
 
 int TextAreaModel::rowCount(const QModelIndex&) const {
-  return line_starts.size();
+  return text_data.line_start_offsets.size();
 }
 
 QVariant TextAreaModel::data(const QModelIndex& index, int role) const {
   if (role != 0) {
     return QVariant();
   }
-  int start = line_starts[index.row()];
-  int end = text.size();
-  if (index.row() + 1 < line_starts.size()) {
-    end = line_starts[index.row() + 1] - 1;
+  int start = text_data.line_start_offsets[index.row()];
+  int end = text_data.text.size();
+  if (index.row() + 1 < text_data.line_start_offsets.size()) {
+    end = text_data.line_start_offsets[index.row() + 1] - 1;
   }
-  return text.sliced(start, end - start);
+  return text_data.text.sliced(start, end - start);
 }
 
-void TextAreaModel::SetText(const QString& text) {
-  beginRemoveRows(QModelIndex(), 0, line_starts.size() - 1);
-  line_starts.clear();
-  this->text = "";
+void TextAreaModel::DisplayText(const QString& text) {
+  beginRemoveRows(QModelIndex(), 0, text_data.line_start_offsets.size() - 1);
+  text_data.line_start_offsets.clear();
+  text_data.text = "";
   endRemoveRows();
   int pos = 0;
-  line_starts.append(0);
+  text_data.line_start_offsets.append(0);
   while (true) {
     int i = text.indexOf('\n', pos);
     if (i < 0) {
       break;
     }
-    line_starts.append(i + 1);
-    pos = line_starts.constLast();
+    text_data.line_start_offsets.append(i + 1);
+    pos = text_data.line_start_offsets.constLast();
   }
-  beginInsertRows(QModelIndex(), 0, line_starts.size() - 1);
-  this->text = text;
+  beginInsertRows(QModelIndex(), 0, text_data.line_start_offsets.size() - 1);
+  text_data.text = text;
   endInsertRows();
 }
 
-QString TextAreaModel::GetText() const { return text; }
-
 BigTextAreaController::BigTextAreaController(QObject* parent)
-    : QObject(parent), text_model(new TextAreaModel(this)) {}
+    : QObject(parent), text_model(new TextAreaModel(this, data)) {}
 
 void BigTextAreaController::SetText(const QString& text) {
-  text_model->SetText(text);
+  text_model->DisplayText(text);
   emit textChanged();
 }
 
-QString BigTextAreaController::GetText() const { return text_model->GetText(); }
+QString BigTextAreaController::GetText() const { return data.text; }

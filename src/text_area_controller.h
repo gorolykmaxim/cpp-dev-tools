@@ -104,18 +104,21 @@ class TextAreaController : public QObject {
   bool detect_file_links;
 };
 
+struct TextAreaData {
+  QString text;
+  QList<int> line_start_offsets;
+};
+
 class TextAreaModel : public QAbstractListModel {
  public:
-  explicit TextAreaModel(QObject* parent);
+  explicit TextAreaModel(QObject* parent, TextAreaData& data);
   QHash<int, QByteArray> roleNames() const;
   int rowCount(const QModelIndex& parent) const;
   QVariant data(const QModelIndex& index, int role) const;
-  void SetText(const QString& text);
-  QString GetText() const;
+  void DisplayText(const QString& text);
 
  private:
-  QString text;
-  QList<int> line_starts;
+  TextAreaData& text_data;
 };
 
 class BigTextAreaController : public QObject {
@@ -132,5 +135,6 @@ class BigTextAreaController : public QObject {
   void textChanged();
 
  private:
+  TextAreaData data;
   TextAreaModel* text_model;
 };
