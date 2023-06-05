@@ -103,3 +103,34 @@ class TextAreaController : public QObject {
   QList<FileLink> file_links;
   bool detect_file_links;
 };
+
+class TextAreaModel : public QAbstractListModel {
+ public:
+  explicit TextAreaModel(QObject* parent);
+  QHash<int, QByteArray> roleNames() const;
+  int rowCount(const QModelIndex& parent) const;
+  QVariant data(const QModelIndex& index, int role) const;
+  void SetText(const QString& text);
+  QString GetText() const;
+
+ private:
+  QString text;
+  QList<int> line_starts;
+};
+
+class BigTextAreaController : public QObject {
+  Q_OBJECT
+  QML_ELEMENT
+  Q_PROPERTY(QString text WRITE SetText READ GetText NOTIFY textChanged)
+  Q_PROPERTY(TextAreaModel* textModel MEMBER text_model CONSTANT)
+ public:
+  explicit BigTextAreaController(QObject* parent = nullptr);
+  void SetText(const QString& text);
+  QString GetText() const;
+
+ signals:
+  void textChanged();
+
+ private:
+  TextAreaModel* text_model;
+};

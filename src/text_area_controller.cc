@@ -310,3 +310,57 @@ void TextAreaHighlighter::highlightBlock(const QString& text) {
     setFormat(offset, link.section.end - link.section.start, link_format);
   }
 }
+
+TextAreaModel::TextAreaModel(QObject* parent) : QAbstractListModel(parent) {}
+
+QHash<int, QByteArray> TextAreaModel::roleNames() const {
+  return {{0, "text"}};
+}
+
+int TextAreaModel::rowCount(const QModelIndex&) const {
+  return line_starts.size();
+}
+
+QVariant TextAreaModel::data(const QModelIndex& index, int role) const {
+  if (role != 0) {
+    return QVariant();
+  }
+  int start = line_starts[index.row()];
+  int end = text.size();
+  if (index.row() + 1 < line_starts.size()) {
+    end = line_starts[index.row() + 1] - 1;
+  }
+  return text.sliced(start, end - start);
+}
+
+void TextAreaModel::SetText(const QString& text) {
+  beginRemoveRows(QModelIndex(), 0, line_starts.size() - 1);
+  line_starts.clear();
+  this->text = "";
+  endRemoveRows();
+  int pos = 0;
+  line_starts.append(0);
+  while (true) {
+    int i = text.indexOf('\n', pos);
+    if (i < 0) {
+      break;
+    }
+    line_starts.append(i + 1);
+    pos = line_starts.constLast();
+  }
+  beginInsertRows(QModelIndex(), 0, line_starts.size() - 1);
+  this->text = text;
+  endInsertRows();
+}
+
+QString TextAreaModel::GetText() const { return text; }
+
+BigTextAreaController::BigTextAreaController(QObject* parent)
+    : QObject(parent), text_model(new TextAreaModel(this)) {}
+
+void BigTextAreaController::SetText(const QString& text) {
+  text_model->SetText(text);
+  emit textChanged();
+}
+
+QString BigTextAreaController::GetText() const { return text_model->GetText(); }
