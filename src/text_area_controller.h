@@ -141,24 +141,26 @@ class BigTextAreaController : public QObject {
   Q_PROPERTY(TextAreaModel* textModel MEMBER text_model CONSTANT)
   Q_PROPERTY(bool cursorFollowEnd MEMBER cursor_follow_end NOTIFY
                  cursorFollowEndChanged)
+  Q_PROPERTY(int currentLine MEMBER current_line NOTIFY currentLineChanged)
  public:
   explicit BigTextAreaController(QObject* parent = nullptr);
   void SetText(const QString& text);
   QString GetText() const;
 
  public slots:
-  void toggleSelection(int line, int offset);
-  void resetSelection();
+  void selectInline(int line, int start, int end);
   void copySelection();
 
  signals:
   void textChanged();
   void cursorFollowEndChanged();
   void goToLine(int line);
+  void currentLineChanged();
 
  private:
   TextAreaData data;
   bool cursor_follow_end;
   TextAreaModel* text_model;
   TextPoint selection_start, selection_end;
+  int current_line;
 };

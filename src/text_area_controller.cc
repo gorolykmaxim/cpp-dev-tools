@@ -380,36 +380,28 @@ void BigTextAreaController::SetText(const QString& text) {
 
 QString BigTextAreaController::GetText() const { return data.text; }
 
-void BigTextAreaController::toggleSelection(int line, int offset) {
-  if (!selection_start.IsNull() && selection_end.IsNull()) {
-    // End selection
-    selection_end = TextPoint(line, offset);
-  } else {
-    // Start selection
-    selection_start = TextPoint(line, offset);
-    selection_end = TextPoint();
-  }
-}
-
-void BigTextAreaController::resetSelection() {
-  selection_start = TextPoint();
-  selection_end = TextPoint();
+void BigTextAreaController::selectInline(int line, int start, int end) {
+  selection_start = TextPoint(line, start);
+  selection_end = TextPoint(line, end);
 }
 
 void BigTextAreaController::copySelection() {
+  int start, end;
   if (selection_start.IsNull() || selection_end.IsNull() ||
       selection_start == selection_end) {
-    return;
-  }
-  int start = data.line_start_offsets[selection_start.line];
-  if (selection_start.offset >= 0) {
-    start += selection_start.offset;
-  }
-  int end = data.line_start_offsets[selection_end.line];
-  if (selection_end.offset < 0) {
-    end += data.GetLineLength(selection_end.line);
+    start = data.line_start_offsets[current_line];
+    end = start + data.GetLineLength(current_line);
   } else {
-    end += selection_end.offset;
+    start = data.line_start_offsets[selection_start.line];
+    if (selection_start.offset >= 0) {
+      start += selection_start.offset;
+    }
+    end = data.line_start_offsets[selection_end.line];
+    if (selection_end.offset < 0) {
+      end += data.GetLineLength(selection_end.line);
+    } else {
+      end += selection_end.offset;
+    }
   }
   QString text = data.text.sliced(start, end - start);
   QGuiApplication::clipboard()->setText(text);

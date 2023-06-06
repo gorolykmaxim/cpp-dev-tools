@@ -37,6 +37,7 @@ Cdt.Pane {
         currentIndex = Math.min(currentIndex + 10, count - 1);
       }
     }
+    onCurrentIndexChanged: controller.currentLine = currentIndex
     delegate: Cdt.Pane {
       property int itemIndex: index
       width: listView.width
@@ -56,15 +57,11 @@ Cdt.Pane {
         font.pointSize: root.monoFont ? monoFontSize : -1
         renderType: Text.NativeRendering
         wrapMode: Text.WordWrap
-        onSelectedTextChanged: {
-          controller.resetSelection();
-          controller.toggleSelection(itemIndex, selectionStart);
-          controller.toggleSelection(itemIndex, selectionEnd);
-        }
+        onSelectedTextChanged: controller.selectInline(itemIndex, selectionStart, selectionEnd)
         Keys.onPressed: function(e) {
           if (e.matches(StandardKey.Copy)) {
             copyMenuItem.triggered();
-            event.accepted = true;
+            e.accepted = true;
           }
         }
         MouseArea {
