@@ -1,5 +1,6 @@
 import QtQuick
 import QtQuick.Controls
+import Qt.labs.platform
 import "." as Cdt
 import cdt
 
@@ -43,6 +44,7 @@ Cdt.Pane {
       TextEdit {
         anchors.fill: parent
         selectByMouse: true
+        selectByKeyboard: true
         readOnly: true
         enabled: root.enabled
         selectionColor: Theme.colorHighlight
@@ -54,15 +56,41 @@ Cdt.Pane {
         font.pointSize: root.monoFont ? monoFontSize : -1
         renderType: Text.NativeRendering
         wrapMode: Text.WordWrap
+        onSelectedTextChanged: {
+          controller.resetSelection();
+          controller.toggleSelection(itemIndex, selectionStart);
+          controller.toggleSelection(itemIndex, selectionEnd);
+        }
+        Keys.onPressed: function(e) {
+          if (e.matches(StandardKey.Copy)) {
+            copyMenuItem.triggered();
+            event.accepted = true;
+          }
+        }
         MouseArea {
           anchors.fill: parent
           acceptedButtons: Qt.LeftButton | Qt.RightButton
           cursorShape: Qt.IBeamCursor
           onPressed: function(event) {
             listView.currentIndex = itemIndex;
-            event.accepted = false;
+            if (event.button === Qt.RightButton) {
+              contextMenu.open();
+              event.accepted = true;
+            } else {
+              event.accepted = false;
+            }
           }
         }
+      }
+    }
+    Menu {
+      id: contextMenu
+      MenuItem {
+        id: copyMenuItem
+        text: "Copy"
+        shortcut: "Ctrl+C"
+        enabled: listView.activeFocus
+        onTriggered: controller.copySelection()
       }
     }
   }

@@ -111,6 +111,17 @@ struct TextAreaData {
   QList<int> line_start_offsets;
 };
 
+struct TextPoint {
+  TextPoint();
+  TextPoint(int line, int offset);
+  bool IsNull() const;
+  bool operator==(const TextPoint& another) const;
+  bool operator!=(const TextPoint& another) const;
+
+  int line;
+  int offset;
+};
+
 class TextAreaModel : public QAbstractListModel {
  public:
   TextAreaModel(QObject* parent, TextAreaData& data);
@@ -135,6 +146,11 @@ class BigTextAreaController : public QObject {
   void SetText(const QString& text);
   QString GetText() const;
 
+ public slots:
+  void toggleSelection(int line, int offset);
+  void resetSelection();
+  void copySelection();
+
  signals:
   void textChanged();
   void cursorFollowEndChanged();
@@ -144,4 +160,5 @@ class BigTextAreaController : public QObject {
   TextAreaData data;
   bool cursor_follow_end;
   TextAreaModel* text_model;
+  TextPoint selection_start, selection_end;
 };

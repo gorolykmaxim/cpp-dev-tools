@@ -1,5 +1,7 @@
 #include "text_area_controller.h"
 
+#include <QClipboard>
+#include <QGuiApplication>
 #include <algorithm>
 #include <cmath>
 #include <limits>
@@ -378,9 +380,58 @@ void BigTextAreaController::SetText(const QString& text) {
 
 QString BigTextAreaController::GetText() const { return data.text; }
 
+void BigTextAreaController::toggleSelection(int line, int offset) {
+  if (!selection_start.IsNull() && selection_end.IsNull()) {
+    // End selection
+    selection_end = TextPoint(line, offset);
+  } else {
+    // Start selection
+    selection_start = TextPoint(line, offset);
+    selection_end = TextPoint();
+  }
+}
+
+void BigTextAreaController::resetSelection() {
+  selection_start = TextPoint();
+  selection_end = TextPoint();
+}
+
+void BigTextAreaController::copySelection() {
+  if (selection_start.IsNull() || selection_end.IsNull() ||
+      selection_start == selection_end) {
+    return;
+  }
+  int start = data.line_start_offsets[selection_start.line];
+  if (selection_start.offset >= 0) {
+    start += selection_start.offset;
+  }
+  int end = data.line_start_offsets[selection_end.line];
+  if (selection_end.offset < 0) {
+    end += data.GetLineLength(selection_end.line);
+  } else {
+    end += selection_end.offset;
+  }
+  QString text = data.text.sliced(start, end - start);
+  QGuiApplication::clipboard()->setText(text);
+}
+
 int TextAreaData::GetLineLength(int line) const {
   int start = line_start_offsets[line];
   int end = line < line_start_offsets.size() - 1 ? line_start_offsets[line + 1]
                                                  : text.size();
   return std::max(end - start - 1, 0);
+}
+
+TextPoint::TextPoint() : TextPoint(-1, -1) {}
+
+TextPoint::TextPoint(int line, int offset) : line(line), offset(offset) {}
+
+bool TextPoint::IsNull() const { return line < 0; }
+
+bool TextPoint::operator==(const TextPoint& another) const {
+  return line == another.line && offset == another.offset;
+}
+
+bool TextPoint::operator!=(const TextPoint& another) const {
+  return !(*this == another);
 }
