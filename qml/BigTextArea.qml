@@ -6,12 +6,12 @@ import cdt
 
 Cdt.Pane {
   id: root
-  property alias text: controller.text
+  property alias text: textModel.text
   property bool monoFont: true
-  property alias cursorFollowEnd: controller.cursorFollowEnd
+  property alias cursorFollowEnd: textModel.cursorFollowEnd
   color: Theme.colorBgDark
-  BigTextAreaController {
-    id: controller
+  TextAreaModel {
+    id: textModel
     onGoToLine: function(line) {
       listView.currentIndex = line;
     }
@@ -25,7 +25,7 @@ Cdt.Pane {
     boundsMovement: ListView.StopAtBounds
     highlightMoveDuration: 100
     ScrollBar.vertical: ScrollBar {}
-    model: controller.textModel
+    model: textModel
     Keys.onPressed: function(e) {
       if (e.matches(StandardKey.MoveToStartOfDocument)) {
         currentIndex = 0;
@@ -37,7 +37,7 @@ Cdt.Pane {
         currentIndex = Math.min(currentIndex + 10, count - 1);
       }
     }
-    onCurrentIndexChanged: controller.currentLine = currentIndex
+    onCurrentIndexChanged: textModel.currentLine = currentIndex
     delegate: Cdt.Pane {
       property int itemIndex: index
       width: listView.width
@@ -57,7 +57,7 @@ Cdt.Pane {
         font.pointSize: root.monoFont ? monoFontSize : -1
         renderType: Text.NativeRendering
         wrapMode: Text.WordWrap
-        onSelectedTextChanged: controller.selectInline(itemIndex, selectionStart, selectionEnd)
+        onSelectedTextChanged: textModel.selectInline(itemIndex, selectionStart, selectionEnd)
         Keys.onPressed: function(e) {
           if (e.matches(StandardKey.Copy)) {
             copyMenuItem.triggered();
@@ -87,7 +87,7 @@ Cdt.Pane {
         text: "Copy"
         shortcut: "Ctrl+C"
         enabled: listView.activeFocus
-        onTriggered: controller.copySelection()
+        onTriggered: textModel.copySelection()
       }
     }
   }

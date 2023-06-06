@@ -313,43 +313,43 @@ void TextAreaHighlighter::highlightBlock(const QString& text) {
   }
 }
 
-TextAreaModel::TextAreaModel(QObject* parent, TextAreaData& data)
-    : QAbstractListModel(parent), text_data(data) {}
+TextAreaModel::TextAreaModel(QObject* parent)
+    : QAbstractListModel(parent), cursor_follow_end(false), current_line(0) {}
 
 QHash<int, QByteArray> TextAreaModel::roleNames() const {
   return {{0, "text"}};
 }
 
 int TextAreaModel::rowCount(const QModelIndex&) const {
-  return text_data.line_start_offsets.size();
+  return line_start_offsets.size();
 }
 
 QVariant TextAreaModel::data(const QModelIndex& index, int role) const {
   if (role != 0) {
     return QVariant();
   }
-  int start = text_data.line_start_offsets[index.row()];
-  int length = text_data.GetLineLength(index.row());
-  return text_data.text.sliced(start, length);
+  int start = line_start_offsets[index.row()];
+  int length = GetLineLength(index.row());
+  return text.sliced(start, length);
 }
 
-void TextAreaModel::DisplayText(const QString& text) {
-  bool is_append = !text_data.text.isEmpty() && text.startsWith(text_data.text);
+void TextAreaModel::SetText(const QString& text) {
+  bool is_append = !this->text.isEmpty() && text.startsWith(this->text);
   int first_new_line;
   if (is_append) {
-    first_new_line = text_data.line_start_offsets.constLast();
-    beginRemoveRows(QModelIndex(), text_data.line_start_offsets.size() - 1,
-                    text_data.line_start_offsets.size() - 1);
-    text_data.line_start_offsets.removeLast();
+    first_new_line = line_start_offsets.constLast();
+    beginRemoveRows(QModelIndex(), line_start_offsets.size() - 1,
+                    line_start_offsets.size() - 1);
+    line_start_offsets.removeLast();
   } else {
     first_new_line = 0;
-    beginRemoveRows(QModelIndex(), 0, text_data.line_start_offsets.size() - 1);
-    text_data.line_start_offsets.clear();
+    beginRemoveRows(QModelIndex(), 0, line_start_offsets.size() - 1);
+    line_start_offsets.clear();
   }
   endRemoveRows();
-  int current_size = text_data.line_start_offsets.size();
+  int current_size = line_start_offsets.size();
   QList<int> new_lines = {first_new_line};
-  int pos = is_append ? text_data.text.size() : 0;
+  int pos = is_append ? this->text.size() : 0;
   while (true) {
     int i = text.indexOf('\n', pos);
     if (i < 0) {
@@ -360,54 +360,45 @@ void TextAreaModel::DisplayText(const QString& text) {
   }
   beginInsertRows(QModelIndex(), current_size,
                   current_size + new_lines.size() - 1);
-  text_data.line_start_offsets.append(new_lines);
-  text_data.text = text;
+  line_start_offsets.append(new_lines);
+  this->text = text;
   endInsertRows();
-}
-
-BigTextAreaController::BigTextAreaController(QObject* parent)
-    : QObject(parent),
-      cursor_follow_end(false),
-      text_model(new TextAreaModel(this, data)) {}
-
-void BigTextAreaController::SetText(const QString& text) {
-  text_model->DisplayText(text);
   emit textChanged();
   if (cursor_follow_end) {
-    emit goToLine(data.line_start_offsets.size() - 1);
+    emit goToLine(line_start_offsets.size() - 1);
   }
 }
 
-QString BigTextAreaController::GetText() const { return data.text; }
+QString TextAreaModel::GetText() const { return text; }
 
-void BigTextAreaController::selectInline(int line, int start, int end) {
+void TextAreaModel::selectInline(int line, int start, int end) {
   selection_start = TextPoint(line, start);
   selection_end = TextPoint(line, end);
 }
 
-void BigTextAreaController::copySelection() {
+void TextAreaModel::copySelection() {
   int start, end;
   if (selection_start.IsNull() || selection_end.IsNull() ||
       selection_start == selection_end) {
-    start = data.line_start_offsets[current_line];
-    end = start + data.GetLineLength(current_line);
+    start = line_start_offsets[current_line];
+    end = start + GetLineLength(current_line);
   } else {
-    start = data.line_start_offsets[selection_start.line];
+    start = line_start_offsets[selection_start.line];
     if (selection_start.offset >= 0) {
       start += selection_start.offset;
     }
-    end = data.line_start_offsets[selection_end.line];
+    end = line_start_offsets[selection_end.line];
     if (selection_end.offset < 0) {
-      end += data.GetLineLength(selection_end.line);
+      end += GetLineLength(selection_end.line);
     } else {
       end += selection_end.offset;
     }
   }
-  QString text = data.text.sliced(start, end - start);
+  QString text = this->text.sliced(start, end - start);
   QGuiApplication::clipboard()->setText(text);
 }
 
-int TextAreaData::GetLineLength(int line) const {
+int TextAreaModel::GetLineLength(int line) const {
   int start = line_start_offsets[line];
   int end = line < line_start_offsets.size() - 1 ? line_start_offsets[line + 1]
                                                  : text.size();
