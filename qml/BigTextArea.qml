@@ -25,23 +25,33 @@ Cdt.Pane {
     highlightMoveDuration: 100
     ScrollBar.vertical: ScrollBar {}
     model: controller.textModel
-    delegate: TextEdit {
+    delegate: Cdt.Pane {
+      property int itemIndex: index
       width: listView.width
-      selectByMouse: true
-      readOnly: true
-      enabled: root.enabled
-      selectionColor: Theme.colorHighlight
-      text: model.text
-      textFormat: TextEdit.PlainText
-      color: root.enabled ? Theme.colorText : Theme.colorSubText
-      font.family: root.monoFont ? monoFontFamily : null
-      font.pointSize: root.monoFont ? monoFontSize : -1
-      renderType: Text.NativeRendering
-      wrapMode: Text.WordWrap
-      MouseArea {
+      color: ListView.isCurrentItem ? Theme.colorBgMedium : Theme.colorBgDark
+      TextEdit {
         anchors.fill: parent
-        acceptedButtons: Qt.LeftButton | Qt.RightButton
-        onPressed: listView.currentIndex = index
+        selectByMouse: true
+        readOnly: true
+        enabled: root.enabled
+        selectionColor: Theme.colorHighlight
+        selectedTextColor: Theme.colorBgBlack
+        text: model.text
+        textFormat: TextEdit.PlainText
+        color: root.enabled ? Theme.colorText : Theme.colorSubText
+        font.family: root.monoFont ? monoFontFamily : null
+        font.pointSize: root.monoFont ? monoFontSize : -1
+        renderType: Text.NativeRendering
+        wrapMode: Text.WordWrap
+        MouseArea {
+          anchors.fill: parent
+          acceptedButtons: Qt.LeftButton | Qt.RightButton
+          cursorShape: Qt.IBeamCursor
+          onPressed: function(event) {
+            listView.currentIndex = itemIndex;
+            event.accepted = false;
+          }
+        }
       }
     }
   }
