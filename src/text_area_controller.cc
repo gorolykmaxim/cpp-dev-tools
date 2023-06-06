@@ -327,39 +327,60 @@ QVariant TextAreaModel::data(const QModelIndex& index, int role) const {
     return QVariant();
   }
   int start = text_data.line_start_offsets[index.row()];
-  int end = text_data.text.size();
-  if (index.row() + 1 < text_data.line_start_offsets.size()) {
-    end = text_data.line_start_offsets[index.row() + 1] - 1;
-  }
-  return text_data.text.sliced(start, end - start);
+  int length = text_data.GetLineLength(index.row());
+  return text_data.text.sliced(start, length);
 }
 
 void TextAreaModel::DisplayText(const QString& text) {
-  beginRemoveRows(QModelIndex(), 0, text_data.line_start_offsets.size() - 1);
-  text_data.line_start_offsets.clear();
-  text_data.text = "";
+  bool is_append = !text_data.text.isEmpty() && text.startsWith(text_data.text);
+  int first_new_line;
+  if (is_append) {
+    first_new_line = text_data.line_start_offsets.constLast();
+    beginRemoveRows(QModelIndex(), text_data.line_start_offsets.size() - 1,
+                    text_data.line_start_offsets.size() - 1);
+    text_data.line_start_offsets.removeLast();
+  } else {
+    first_new_line = 0;
+    beginRemoveRows(QModelIndex(), 0, text_data.line_start_offsets.size() - 1);
+    text_data.line_start_offsets.clear();
+  }
   endRemoveRows();
-  int pos = 0;
-  text_data.line_start_offsets.append(0);
+  int current_size = text_data.line_start_offsets.size();
+  QList<int> new_lines = {first_new_line};
+  int pos = is_append ? text_data.text.size() : 0;
   while (true) {
     int i = text.indexOf('\n', pos);
     if (i < 0) {
       break;
     }
-    text_data.line_start_offsets.append(i + 1);
-    pos = text_data.line_start_offsets.constLast();
+    new_lines.append(i + 1);
+    pos = new_lines.constLast();
   }
-  beginInsertRows(QModelIndex(), 0, text_data.line_start_offsets.size() - 1);
+  beginInsertRows(QModelIndex(), current_size,
+                  current_size + new_lines.size() - 1);
+  text_data.line_start_offsets.append(new_lines);
   text_data.text = text;
   endInsertRows();
 }
 
 BigTextAreaController::BigTextAreaController(QObject* parent)
-    : QObject(parent), text_model(new TextAreaModel(this, data)) {}
+    : QObject(parent),
+      cursor_follow_end(false),
+      text_model(new TextAreaModel(this, data)) {}
 
 void BigTextAreaController::SetText(const QString& text) {
   text_model->DisplayText(text);
   emit textChanged();
+  if (cursor_follow_end) {
+    emit goToLine(data.line_start_offsets.size() - 1);
+  }
 }
 
 QString BigTextAreaController::GetText() const { return data.text; }
+
+int TextAreaData::GetLineLength(int line) const {
+  int start = line_start_offsets[line];
+  int end = line < line_start_offsets.size() - 1 ? line_start_offsets[line + 1]
+                                                 : text.size();
+  return std::max(end - start - 1, 0);
+}

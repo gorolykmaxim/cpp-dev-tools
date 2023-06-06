@@ -105,13 +105,15 @@ class TextAreaController : public QObject {
 };
 
 struct TextAreaData {
+  int GetLineLength(int line) const;
+
   QString text;
   QList<int> line_start_offsets;
 };
 
 class TextAreaModel : public QAbstractListModel {
  public:
-  explicit TextAreaModel(QObject* parent, TextAreaData& data);
+  TextAreaModel(QObject* parent, TextAreaData& data);
   QHash<int, QByteArray> roleNames() const;
   int rowCount(const QModelIndex& parent) const;
   QVariant data(const QModelIndex& index, int role) const;
@@ -126,6 +128,8 @@ class BigTextAreaController : public QObject {
   QML_ELEMENT
   Q_PROPERTY(QString text WRITE SetText READ GetText NOTIFY textChanged)
   Q_PROPERTY(TextAreaModel* textModel MEMBER text_model CONSTANT)
+  Q_PROPERTY(bool cursorFollowEnd MEMBER cursor_follow_end NOTIFY
+                 cursorFollowEndChanged)
  public:
   explicit BigTextAreaController(QObject* parent = nullptr);
   void SetText(const QString& text);
@@ -133,8 +137,11 @@ class BigTextAreaController : public QObject {
 
  signals:
   void textChanged();
+  void cursorFollowEndChanged();
+  void goToLine(int line);
 
  private:
   TextAreaData data;
+  bool cursor_follow_end;
   TextAreaModel* text_model;
 };
