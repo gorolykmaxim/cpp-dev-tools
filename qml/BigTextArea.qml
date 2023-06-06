@@ -25,6 +25,17 @@ Cdt.Pane {
     highlightMoveDuration: 100
     ScrollBar.vertical: ScrollBar {}
     model: controller.textModel
+    Keys.onPressed: function(e) {
+      if (e.matches(StandardKey.MoveToStartOfDocument)) {
+        currentIndex = 0;
+      } else if (e.matches(StandardKey.MoveToEndOfDocument)) {
+        currentIndex = count -1;
+      } else if (e.key === Qt.Key_PageUp) {
+        currentIndex = Math.max(currentIndex - 10, 0);
+      } else if (e.key === Qt.Key_PageDown) {
+        currentIndex = Math.min(currentIndex + 10, count - 1);
+      }
+    }
     delegate: Cdt.Pane {
       property int itemIndex: index
       width: listView.width
