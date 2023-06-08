@@ -43,13 +43,15 @@ Cdt.Pane {
       width: listView.width
       color: ListView.isCurrentItem ? Theme.colorBgMedium : Theme.colorBgDark
       TextEdit {
+        id: textEdit
+        property bool ignoreSelect: false
         anchors.fill: parent
         selectByMouse: true
         selectByKeyboard: true
         readOnly: true
         enabled: root.enabled
-        selectionColor: Theme.colorHighlight
-        selectedTextColor: Theme.colorBgBlack
+        selectionColor: "transparent"
+        selectedTextColor: "transparent"
         text: model.text
         textFormat: TextEdit.PlainText
         color: root.enabled ? Theme.colorText : Theme.colorSubText
@@ -57,12 +59,26 @@ Cdt.Pane {
         font.pointSize: root.monoFont ? monoFontSize : -1
         renderType: Text.NativeRendering
         wrapMode: Text.WordWrap
-        onSelectedTextChanged: textModel.selectInline(itemIndex, selectionStart, selectionEnd)
+        onSelectedTextChanged: {
+          if (ignoreSelect) {
+            return;
+          }
+          ignoreSelect = true;
+          textModel.resetSelect();
+          textModel.toggleSelect(itemIndex, selectionStart);
+          textModel.toggleSelect(itemIndex, selectionEnd);
+          ignoreSelect = false;
+        }
         Keys.onPressed: function(e) {
           if (e.matches(StandardKey.Copy)) {
             copyMenuItem.triggered();
             e.accepted = true;
           }
+        }
+        LineHighlighter {
+          document: textEdit.textDocument
+          selectionStart: model.selectionStart
+          selectionEnd: model.selectionEnd
         }
         MouseArea {
           anchors.fill: parent

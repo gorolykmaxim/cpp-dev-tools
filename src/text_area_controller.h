@@ -107,12 +107,43 @@ class TextAreaController : public QObject {
 struct TextPoint {
   TextPoint();
   TextPoint(int line, int offset);
-  bool IsNull() const;
   bool operator==(const TextPoint& another) const;
   bool operator!=(const TextPoint& another) const;
+  bool operator<(const TextPoint& another) const;
 
   int line;
   int offset;
+};
+
+class LineHighlighter : public QSyntaxHighlighter {
+  Q_OBJECT
+  QML_ELEMENT
+  Q_PROPERTY(
+      TextAreaFormatter* formatter MEMBER formatter NOTIFY formatterChanged)
+  Q_PROPERTY(QQuickTextDocument* document READ GetDocument WRITE SetDocument
+                 NOTIFY documentChanged)
+  Q_PROPERTY(
+      int selectionStart MEMBER selection_start NOTIFY selectionStartChanged)
+  Q_PROPERTY(int selectionEnd MEMBER selection_end NOTIFY selectionEndChanged)
+ public:
+  explicit LineHighlighter(QObject* parent = nullptr);
+  QQuickTextDocument* GetDocument() const;
+  void SetDocument(QQuickTextDocument* document);
+
+ protected:
+  void highlightBlock(const QString& text);
+
+ signals:
+  void formatterChanged();
+  void documentChanged();
+  void selectionStartChanged();
+  void selectionEndChanged();
+
+ private:
+  TextAreaFormatter* formatter;
+  QQuickTextDocument* document;
+  QTextCharFormat selection_format;
+  int selection_start, selection_end;
 };
 
 class TextAreaModel : public QAbstractListModel {
@@ -131,7 +162,8 @@ class TextAreaModel : public QAbstractListModel {
   QString GetText() const;
 
  public slots:
-  void selectInline(int line, int start, int end);
+  void resetSelect();
+  void toggleSelect(int line, int offset);
   void copySelection();
 
  signals:
