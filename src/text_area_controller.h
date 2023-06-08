@@ -122,9 +122,6 @@ class LineHighlighter : public QSyntaxHighlighter {
       TextAreaFormatter* formatter MEMBER formatter NOTIFY formatterChanged)
   Q_PROPERTY(QQuickTextDocument* document READ GetDocument WRITE SetDocument
                  NOTIFY documentChanged)
-  Q_PROPERTY(
-      int selectionStart MEMBER selection_start NOTIFY selectionStartChanged)
-  Q_PROPERTY(int selectionEnd MEMBER selection_end NOTIFY selectionEndChanged)
  public:
   explicit LineHighlighter(QObject* parent = nullptr);
   QQuickTextDocument* GetDocument() const;
@@ -136,14 +133,22 @@ class LineHighlighter : public QSyntaxHighlighter {
  signals:
   void formatterChanged();
   void documentChanged();
-  void selectionStartChanged();
-  void selectionEndChanged();
 
  private:
   TextAreaFormatter* formatter;
   QQuickTextDocument* document;
-  QTextCharFormat selection_format;
-  int selection_start, selection_end;
+};
+
+class SelectionFormatter : public TextAreaFormatter {
+ public:
+  SelectionFormatter(QObject* parent, const TextPoint& start,
+                     const TextPoint& end, const int& current_line);
+  QList<TextSectionFormat> Format(const QString& text, const QTextBlock& block);
+
+ private:
+  const TextPoint &start, &end;
+  const int& current_line;
+  QTextCharFormat format;
 };
 
 class TextAreaModel : public QAbstractListModel {
@@ -153,6 +158,7 @@ class TextAreaModel : public QAbstractListModel {
   Q_PROPERTY(bool cursorFollowEnd MEMBER cursor_follow_end NOTIFY
                  cursorFollowEndChanged)
   Q_PROPERTY(int currentLine MEMBER current_line NOTIFY currentLineChanged)
+  Q_PROPERTY(SelectionFormatter* formatter MEMBER formatter CONSTANT)
  public:
   explicit TextAreaModel(QObject* parent = nullptr);
   QHash<int, QByteArray> roleNames() const;
@@ -171,13 +177,16 @@ class TextAreaModel : public QAbstractListModel {
   void cursorFollowEndChanged();
   void goToLine(int line);
   void currentLineChanged();
+  void linesMarkedDirty(int first, int last);
 
  private:
   int GetLineLength(int line) const;
+  void ReDrawLines(int first, int last);
 
   bool cursor_follow_end;
   int current_line;
   QString text;
   QList<int> line_start_offsets;
   TextPoint selection_start, selection_end;
+  SelectionFormatter* formatter;
 };

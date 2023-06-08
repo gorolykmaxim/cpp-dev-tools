@@ -75,10 +75,18 @@ Cdt.Pane {
             e.accepted = true;
           }
         }
+        Connections {
+          target: textModel
+          function onLinesMarkedDirty(first, last) {
+            if (itemIndex >= first && itemIndex <= last) {
+              highlighter.rehighlight();
+            }
+          }
+        }
         LineHighlighter {
+          id: highlighter
           document: textEdit.textDocument
-          selectionStart: model.selectionStart
-          selectionEnd: model.selectionEnd
+          formatter: textModel.formatter
         }
         MouseArea {
           anchors.fill: parent

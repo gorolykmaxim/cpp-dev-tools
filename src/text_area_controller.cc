@@ -314,10 +314,14 @@ void TextAreaHighlighter::highlightBlock(const QString& text) {
 }
 
 TextAreaModel::TextAreaModel(QObject* parent)
-    : QAbstractListModel(parent), cursor_follow_end(false), current_line(0) {}
+    : QAbstractListModel(parent),
+      cursor_follow_end(false),
+      current_line(0),
+      formatter(new SelectionFormatter(this, selection_start, selection_end,
+                                       current_line)) {}
 
 QHash<int, QByteArray> TextAreaModel::roleNames() const {
-  return {{0, "text"}, {1, "selectionStart"}, {2, "selectionEnd"}};
+  return {{0, "text"}};
 }
 
 int TextAreaModel::rowCount(const QModelIndex&) const {
@@ -325,28 +329,12 @@ int TextAreaModel::rowCount(const QModelIndex&) const {
 }
 
 QVariant TextAreaModel::data(const QModelIndex& index, int role) const {
-  if (role == 0) {
-    int start = line_start_offsets[index.row()];
-    int length = GetLineLength(index.row());
-    return text.sliced(start, length);
-  } else if (role == 1) {
-    if (selection_start.line != index.row()) {
-      return 0;
-    } else {
-      return selection_start.offset;
-    }
-  } else if (role == 2) {
-    if (index.row() < selection_start.line ||
-        index.row() > selection_end.line) {
-      return 0;
-    } else if (index.row() < selection_end.line) {
-      return GetLineLength(index.row());
-    } else {
-      return selection_end.offset;
-    }
-  } else {
+  if (role != 0) {
     return QVariant();
   }
+  int start = line_start_offsets[index.row()];
+  int length = GetLineLength(index.row());
+  return text.sliced(start, length);
 }
 
 void TextAreaModel::SetText(const QString& text) {
@@ -391,19 +379,19 @@ void TextAreaModel::resetSelect() {
   int start = selection_start.line;
   int end = selection_end.line;
   selection_start = selection_end = TextPoint();
-  emit dataChanged(index(start), index(end));
+  ReDrawLines(start, end);
 }
 
 void TextAreaModel::toggleSelect(int line, int offset) {
   if (selection_start == selection_end) {
     selection_start = TextPoint(line, offset);
-    emit dataChanged(index(line), index(line));
+    ReDrawLines(line, line);
   } else {
     TextPoint end(line, offset);
     TextPoint start = selection_start;
     selection_start = std::min(start, end);
     selection_end = std::max(start, end);
-    emit dataChanged(index(selection_start.line), index(selection_end.line));
+    ReDrawLines(selection_start.line, selection_end.line);
   }
 }
 
@@ -427,6 +415,11 @@ int TextAreaModel::GetLineLength(int line) const {
   return std::max(end - start - 1, 0);
 }
 
+void TextAreaModel::ReDrawLines(int first, int last) {
+  emit dataChanged(index(first), index(last));
+  emit linesMarkedDirty(first, last);
+}
+
 TextPoint::TextPoint() : TextPoint(0, 0) {}
 
 TextPoint::TextPoint(int line, int offset) : line(line), offset(offset) {}
@@ -445,21 +438,7 @@ bool TextPoint::operator<(const TextPoint& another) const {
 }
 
 LineHighlighter::LineHighlighter(QObject* parent)
-    : QSyntaxHighlighter(parent),
-      formatter(nullptr),
-      document(nullptr),
-      selection_start(0),
-      selection_end(0) {
-  static const Theme kTheme;
-  connect(this, &LineHighlighter::selectionStartChanged, this,
-          &LineHighlighter::rehighlight);
-  connect(this, &LineHighlighter::selectionEndChanged, this,
-          &LineHighlighter::rehighlight);
-  selection_format.setForeground(
-      ViewSystem::BrushFromHex(kTheme.kColorBgBlack));
-  selection_format.setBackground(
-      ViewSystem::BrushFromHex(kTheme.kColorHighlight));
-}
+    : QSyntaxHighlighter(parent), formatter(nullptr), document(nullptr) {}
 
 QQuickTextDocument* LineHighlighter::GetDocument() const { return document; }
 
@@ -470,13 +449,34 @@ void LineHighlighter::SetDocument(QQuickTextDocument* document) {
 }
 
 void LineHighlighter::highlightBlock(const QString& text) {
-  if (formatter) {
-    for (const TextSectionFormat& f : formatter->Format(text, currentBlock())) {
-      setFormat(f.section.start, f.section.end - f.section.start + 1, f.format);
-    }
+  if (!formatter) {
+    return;
   }
-  if (selection_start != selection_end) {
-    setFormat(selection_start, selection_end - selection_start,
-              selection_format);
+  for (const TextSectionFormat& f : formatter->Format(text, currentBlock())) {
+    setFormat(f.section.start, f.section.end - f.section.start + 1, f.format);
   }
+}
+
+SelectionFormatter::SelectionFormatter(QObject* parent, const TextPoint& start,
+                                       const TextPoint& end,
+                                       const int& current_line)
+    : TextAreaFormatter(parent),
+      start(start),
+      end(end),
+      current_line(current_line) {
+  static const Theme kTheme;
+  format.setForeground(ViewSystem::BrushFromHex(kTheme.kColorBgBlack));
+  format.setBackground(ViewSystem::BrushFromHex(kTheme.kColorHighlight));
+}
+
+QList<TextSectionFormat> SelectionFormatter::Format(const QString& text,
+                                                    const QTextBlock&) {
+  if (start == end || (current_line < start.line || current_line > end.line)) {
+    return {};
+  }
+  TextSectionFormat f;
+  f.section.start = current_line == start.line ? start.offset : 0;
+  f.section.end = current_line == end.line ? end.offset - 1 : text.size() - 1;
+  f.format = format;
+  return {f};
 }
