@@ -86,7 +86,8 @@ Cdt.Pane {
         LineHighlighter {
           id: highlighter
           document: textEdit.textDocument
-          formatter: textModel.formatter
+          formatters: textModel.formatters
+          lineNumber: itemIndex
         }
         MouseArea {
           anchors.fill: parent

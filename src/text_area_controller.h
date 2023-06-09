@@ -104,6 +104,11 @@ class TextAreaController : public QObject {
   bool detect_file_links;
 };
 
+struct TextSegment {
+  int offset = 0;
+  int length = 0;
+};
+
 struct TextPoint {
   TextPoint();
   TextPoint(int line, int offset);
@@ -115,13 +120,25 @@ struct TextPoint {
   int offset;
 };
 
+struct TextFormat : public TextSegment {
+  QTextCharFormat format;
+};
+
+class TextFormatter : public QObject {
+ public:
+  explicit TextFormatter(QObject* parent);
+  virtual QList<TextFormat> Format(const QString& text,
+                                   int line_number) const = 0;
+};
+
 class LineHighlighter : public QSyntaxHighlighter {
   Q_OBJECT
   QML_ELEMENT
-  Q_PROPERTY(
-      TextAreaFormatter* formatter MEMBER formatter NOTIFY formatterChanged)
+  Q_PROPERTY(QList<TextFormatter*> formatters MEMBER formatters NOTIFY
+                 formattersChanged)
   Q_PROPERTY(QQuickTextDocument* document READ GetDocument WRITE SetDocument
                  NOTIFY documentChanged)
+  Q_PROPERTY(int lineNumber MEMBER line_number NOTIFY lineNumberChanged)
  public:
   explicit LineHighlighter(QObject* parent = nullptr);
   QQuickTextDocument* GetDocument() const;
@@ -131,23 +148,24 @@ class LineHighlighter : public QSyntaxHighlighter {
   void highlightBlock(const QString& text);
 
  signals:
-  void formatterChanged();
+  void formattersChanged();
   void documentChanged();
+  void lineNumberChanged();
 
  private:
-  TextAreaFormatter* formatter;
+  QList<TextFormatter*> formatters;
   QQuickTextDocument* document;
+  int line_number;
 };
 
-class SelectionFormatter : public TextAreaFormatter {
+class SelectionFormatter : public TextFormatter {
  public:
   SelectionFormatter(QObject* parent, const TextPoint& start,
-                     const TextPoint& end, const int& current_line);
-  QList<TextSectionFormat> Format(const QString& text, const QTextBlock& block);
+                     const TextPoint& end);
+  QList<TextFormat> Format(const QString& text, int line_number) const;
 
  private:
   const TextPoint &start, &end;
-  const int& current_line;
   QTextCharFormat format;
 };
 
@@ -158,7 +176,8 @@ class TextAreaModel : public QAbstractListModel {
   Q_PROPERTY(bool cursorFollowEnd MEMBER cursor_follow_end NOTIFY
                  cursorFollowEndChanged)
   Q_PROPERTY(int currentLine MEMBER current_line NOTIFY currentLineChanged)
-  Q_PROPERTY(SelectionFormatter* formatter MEMBER formatter CONSTANT)
+  Q_PROPERTY(QList<TextFormatter*> formatters READ GetFormatters NOTIFY
+                 formattersChanged)
  public:
   explicit TextAreaModel(QObject* parent = nullptr);
   QHash<int, QByteArray> roleNames() const;
@@ -166,6 +185,7 @@ class TextAreaModel : public QAbstractListModel {
   QVariant data(const QModelIndex& index, int role) const;
   void SetText(const QString& text);
   QString GetText() const;
+  QList<TextFormatter*> GetFormatters() const;
 
  public slots:
   void resetSelect();
@@ -178,6 +198,7 @@ class TextAreaModel : public QAbstractListModel {
   void goToLine(int line);
   void currentLineChanged();
   void linesMarkedDirty(int first, int last);
+  void formattersChanged();
 
  private:
   int GetLineLength(int line) const;
@@ -188,5 +209,6 @@ class TextAreaModel : public QAbstractListModel {
   QString text;
   QList<int> line_start_offsets;
   TextPoint selection_start, selection_end;
-  SelectionFormatter* formatter;
+  SelectionFormatter* selection_formatter;
+  QList<TextFormatter*> formatters;
 };
