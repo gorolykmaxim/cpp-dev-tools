@@ -9,6 +9,7 @@ Cdt.Pane {
   property alias text: textModel.text
   property bool monoFont: true
   property alias cursorFollowEnd: textModel.cursorFollowEnd
+  property alias cursorPosition: textModel.cursorPosition
   color: Theme.colorBgDark
   TextAreaModel {
     id: textModel
@@ -24,6 +25,9 @@ Cdt.Pane {
     boundsBehavior: ListView.StopAtBounds
     boundsMovement: ListView.StopAtBounds
     highlightMoveDuration: 100
+    highlightRangeMode: ListView.ApplyRange
+    preferredHighlightBegin: listView.height / 2 - 50
+    preferredHighlightEnd: listView.height / 2 + 50
     ScrollBar.vertical: ScrollBar {}
     model: textModel
     Keys.onPressed: function(e) {

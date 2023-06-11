@@ -316,9 +316,16 @@ void TextAreaHighlighter::highlightBlock(const QString& text) {
 TextAreaModel::TextAreaModel(QObject* parent)
     : QAbstractListModel(parent),
       cursor_follow_end(false),
+      cursor_position(-1),
       current_line(0),
       selection_formatter(new SelectionFormatter(this, selection)),
-      formatters({selection_formatter}) {}
+      formatters({selection_formatter}) {
+  connect(this, &TextAreaModel::cursorPositionChanged, this, [this] {
+    if (cursor_position >= 0) {
+      emit goToLine(GetCursorPositionLine());
+    }
+  });
+}
 
 QHash<int, QByteArray> TextAreaModel::roleNames() const {
   return {{0, "text"}};
@@ -371,6 +378,8 @@ void TextAreaModel::SetText(const QString& text) {
   emit textChanged();
   if (cursor_follow_end) {
     emit goToLine(line_start_offsets.size() - 1);
+  } else if (cursor_position >= 0) {
+    emit goToLine(GetCursorPositionLine());
   }
 }
 
@@ -456,6 +465,15 @@ int TextAreaModel::GetLineLength(int line) const {
   int end = line < line_start_offsets.size() - 1 ? line_start_offsets[line + 1]
                                                  : text.size();
   return std::max(end - start - 1, 0);
+}
+
+int TextAreaModel::GetCursorPositionLine() const {
+  for (int i = 0; i < line_start_offsets.size(); i++) {
+    if (cursor_position < line_start_offsets[i]) {
+      return i - 1;
+    }
+  }
+  return 0;
 }
 
 LineHighlighter::LineHighlighter(QObject* parent)

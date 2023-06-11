@@ -175,6 +175,8 @@ class TextAreaModel : public QAbstractListModel {
   Q_PROPERTY(QString text WRITE SetText READ GetText NOTIFY textChanged)
   Q_PROPERTY(bool cursorFollowEnd MEMBER cursor_follow_end NOTIFY
                  cursorFollowEndChanged)
+  Q_PROPERTY(
+      int cursorPosition MEMBER cursor_position NOTIFY cursorPositionChanged)
   Q_PROPERTY(int currentLine MEMBER current_line NOTIFY currentLineChanged)
   Q_PROPERTY(QList<TextFormatter*> formatters READ GetFormatters NOTIFY
                  formattersChanged)
@@ -201,11 +203,14 @@ class TextAreaModel : public QAbstractListModel {
   void currentLineChanged();
   void rehighlightLines(int first, int last);
   void formattersChanged();
+  void cursorPositionChanged();
 
  private:
   int GetLineLength(int line) const;
+  int GetCursorPositionLine() const;
 
   bool cursor_follow_end;
+  int cursor_position;
   int current_line;
   QString text;
   QList<int> line_start_offsets;
