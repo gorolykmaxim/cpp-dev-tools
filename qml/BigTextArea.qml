@@ -1,5 +1,6 @@
 import QtQuick
 import QtQuick.Controls
+import QtQuick.Layouts
 import Qt.labs.platform
 import "." as Cdt
 import cdt
@@ -10,11 +11,13 @@ Cdt.Pane {
   property bool monoFont: true
   property alias cursorFollowEnd: textModel.cursorFollowEnd
   property alias cursorPosition: textModel.cursorPosition
+  property bool displayLineNumbers: false
   color: Theme.colorBgDark
   TextAreaModel {
     id: textModel
     onGoToLine: function(line) {
       listView.currentIndex = line;
+      listView.positionViewAtIndex(listView.currentIndex, ListView.Center);
     }
   }
   ListView {
@@ -25,9 +28,6 @@ Cdt.Pane {
     boundsBehavior: ListView.StopAtBounds
     boundsMovement: ListView.StopAtBounds
     highlightMoveDuration: 100
-    highlightRangeMode: ListView.ApplyRange
-    preferredHighlightBegin: listView.height / 2 - 50
-    preferredHighlightEnd: listView.height / 2 + 50
     ScrollBar.vertical: ScrollBar {}
     model: textModel
     Keys.onPressed: function(e) {
@@ -46,68 +46,85 @@ Cdt.Pane {
       property int itemIndex: index
       width: listView.width
       color: ListView.isCurrentItem ? Theme.colorBgMedium : Theme.colorBgDark
-      TextEdit {
-        id: textEdit
-        property bool ignoreSelect: false
+      RowLayout {
         anchors.fill: parent
-        selectByMouse: true
-        selectByKeyboard: true
-        readOnly: true
-        enabled: root.enabled
-        selectionColor: "transparent"
-        selectedTextColor: "transparent"
-        text: model.text
-        textFormat: TextEdit.PlainText
-        color: root.enabled ? Theme.colorText : Theme.colorSubText
-        font.family: root.monoFont ? monoFontFamily : null
-        font.pointSize: root.monoFont ? monoFontSize : -1
-        renderType: Text.NativeRendering
-        wrapMode: Text.WordWrap
-        onSelectedTextChanged: {
-          if (ignoreSelect) {
-            return;
-          }
-          ignoreSelect = true;
-          textModel.selectInline(itemIndex, selectionStart, selectionEnd);
-          ignoreSelect = false;
+        spacing: 0
+        Cdt.Text {
+          visible: root.displayLineNumbers
+          text: itemIndex
+          color: Theme.colorSubText
+          Layout.fillHeight: true
+          Layout.minimumWidth: textModel.lineNumberMaxWidth
+          Layout.leftMargin: Theme.basePadding
+          Layout.rightMargin: Theme.basePadding
+          horizontalAlignment: Text.AlignRight
+          verticalAlignment: Text.AlignTop
+          font.family: root.monoFont ? monoFontFamily : null
+          font.pointSize: root.monoFont ? monoFontSize : -1
         }
-        Keys.onPressed: function(e) {
-          if (e.matches(StandardKey.Copy)) {
-            copyMenuItem.triggered();
-            e.accepted = true;
-          } else if (e.matches(StandardKey.SelectAll)) {
-            selectAllMenuItem.triggered();
-            e.accepted = true;
+        TextEdit {
+          id: textEdit
+          property bool ignoreSelect: false
+          Layout.fillWidth: true
+          selectByMouse: true
+          selectByKeyboard: true
+          readOnly: true
+          enabled: root.enabled
+          selectionColor: "transparent"
+          selectedTextColor: "transparent"
+          text: model.text
+          textFormat: TextEdit.PlainText
+          color: root.enabled ? Theme.colorText : Theme.colorSubText
+          font.family: root.monoFont ? monoFontFamily : null
+          font.pointSize: root.monoFont ? monoFontSize : -1
+          renderType: Text.NativeRendering
+          wrapMode: Text.WordWrap
+          onSelectedTextChanged: {
+            if (ignoreSelect) {
+              return;
+            }
+            ignoreSelect = true;
+            textModel.selectInline(itemIndex, selectionStart, selectionEnd);
+            ignoreSelect = false;
           }
-        }
-        Connections {
-          target: textModel
-          function onRehighlightLines(first, last) {
-            if (itemIndex >= first && itemIndex <= last) {
-              highlighter.rehighlight();
+          Keys.onPressed: function(e) {
+            if (e.matches(StandardKey.Copy)) {
+              copyMenuItem.triggered();
+              e.accepted = true;
+            } else if (e.matches(StandardKey.SelectAll)) {
+              selectAllMenuItem.triggered();
+              e.accepted = true;
             }
           }
-        }
-        LineHighlighter {
-          id: highlighter
-          document: textEdit.textDocument
-          formatters: textModel.formatters
-          lineNumber: itemIndex
-        }
-        MouseArea {
-          anchors.fill: parent
-          acceptedButtons: Qt.LeftButton | Qt.RightButton
-          cursorShape: Qt.IBeamCursor
-          onPressed: function(event) {
-            listView.currentIndex = itemIndex;
-            if (event.button === Qt.RightButton) {
-              contextMenu.open();
-              event.accepted = true;
-            } else if (event.modifiers & Qt.ControlModifier) {
-              textModel.selectLine(itemIndex);
-              event.accepted = true;
-            } else {
-              event.accepted = false;
+          Connections {
+            target: textModel
+            function onRehighlightLines(first, last) {
+              if (itemIndex >= first && itemIndex <= last) {
+                highlighter.rehighlight();
+              }
+            }
+          }
+          LineHighlighter {
+            id: highlighter
+            document: textEdit.textDocument
+            formatters: textModel.formatters
+            lineNumber: itemIndex
+          }
+          MouseArea {
+            anchors.fill: parent
+            acceptedButtons: Qt.LeftButton | Qt.RightButton
+            cursorShape: Qt.IBeamCursor
+            onPressed: function(event) {
+              listView.currentIndex = itemIndex;
+              if (event.button === Qt.RightButton) {
+                contextMenu.open();
+                event.accepted = true;
+              } else if (event.modifiers & Qt.ControlModifier) {
+                textModel.selectLine(itemIndex);
+                event.accepted = true;
+              } else {
+                event.accepted = false;
+              }
             }
           }
         }

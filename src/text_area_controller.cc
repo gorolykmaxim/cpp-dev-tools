@@ -1,6 +1,7 @@
 #include "text_area_controller.h"
 
 #include <QClipboard>
+#include <QFontMetrics>
 #include <QGuiApplication>
 #include <algorithm>
 #include <cmath>
@@ -387,6 +388,11 @@ QString TextAreaModel::GetText() const { return text; }
 
 QList<TextFormatter*> TextAreaModel::GetFormatters() const {
   return formatters;
+}
+
+int TextAreaModel::GetLineNumberMaxWidth() const {
+  QFontMetrics m(font);
+  return m.horizontalAdvance(QString::number(line_start_offsets.size()));
 }
 
 void TextAreaModel::selectInline(int line, int start, int end) {

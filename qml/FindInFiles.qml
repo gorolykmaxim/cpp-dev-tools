@@ -177,6 +177,7 @@ SplitView {
       Layout.fillHeight: true
       text: controller.selectedFileContent
       cursorPosition: controller.selectedFileCursorPosition
+      displayLineNumbers: true
     }
 //    Cdt.TextArea {
 //      id: filePreviewArea

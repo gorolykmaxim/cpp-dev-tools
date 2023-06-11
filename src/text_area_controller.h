@@ -180,6 +180,9 @@ class TextAreaModel : public QAbstractListModel {
   Q_PROPERTY(int currentLine MEMBER current_line NOTIFY currentLineChanged)
   Q_PROPERTY(QList<TextFormatter*> formatters READ GetFormatters NOTIFY
                  formattersChanged)
+  Q_PROPERTY(QFont font MEMBER font NOTIFY fontChanged)
+  Q_PROPERTY(
+      int lineNumberMaxWidth READ GetLineNumberMaxWidth NOTIFY fontChanged)
  public:
   explicit TextAreaModel(QObject* parent = nullptr);
   QHash<int, QByteArray> roleNames() const;
@@ -188,6 +191,7 @@ class TextAreaModel : public QAbstractListModel {
   void SetText(const QString& text);
   QString GetText() const;
   QList<TextFormatter*> GetFormatters() const;
+  int GetLineNumberMaxWidth() const;
 
  public slots:
   void selectInline(int line, int start, int end);
@@ -204,6 +208,7 @@ class TextAreaModel : public QAbstractListModel {
   void rehighlightLines(int first, int last);
   void formattersChanged();
   void cursorPositionChanged();
+  void fontChanged();
 
  private:
   int GetLineLength(int line) const;
@@ -217,4 +222,5 @@ class TextAreaModel : public QAbstractListModel {
   TextSelection selection;
   SelectionFormatter* selection_formatter;
   QList<TextFormatter*> formatters;
+  QFont font;
 };
