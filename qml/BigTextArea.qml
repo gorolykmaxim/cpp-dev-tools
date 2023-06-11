@@ -51,7 +51,7 @@ Cdt.Pane {
         spacing: 0
         Cdt.Text {
           visible: root.displayLineNumbers
-          text: itemIndex
+          text: itemIndex + 1
           color: Theme.colorSubText
           Layout.fillHeight: true
           Layout.minimumWidth: textModel.lineNumberMaxWidth
