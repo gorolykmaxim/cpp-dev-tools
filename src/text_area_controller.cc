@@ -361,7 +361,10 @@ void TextAreaModel::SetText(const QString& text) {
   }
   endRemoveRows();
   int current_size = line_start_offsets.size();
-  QList<int> new_lines = {first_new_line};
+  QList<int> new_lines;
+  if (!text.isEmpty()) {
+    new_lines.append(first_new_line);
+  }
   int pos = is_append ? this->text.size() : 0;
   while (true) {
     int i = text.indexOf('\n', pos);
