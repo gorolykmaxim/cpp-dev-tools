@@ -66,6 +66,7 @@ Cdt.Pane {
           id: textEdit
           property bool ignoreSelect: false
           Layout.fillWidth: true
+          activeFocusOnPress: false
           selectByMouse: true
           selectByKeyboard: true
           readOnly: true
@@ -86,15 +87,6 @@ Cdt.Pane {
             ignoreSelect = true;
             textModel.selectInline(itemIndex, selectionStart, selectionEnd);
             ignoreSelect = false;
-          }
-          Keys.onPressed: function(e) {
-            if (e.matches(StandardKey.Copy)) {
-              copyMenuItem.triggered();
-              e.accepted = true;
-            } else if (e.matches(StandardKey.SelectAll)) {
-              selectAllMenuItem.triggered();
-              e.accepted = true;
-            }
           }
           Connections {
             target: textModel
