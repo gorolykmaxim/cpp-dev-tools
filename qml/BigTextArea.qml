@@ -99,6 +99,9 @@ Cdt.Pane {
             if (event.button === Qt.RightButton) {
               contextMenu.open();
               event.accepted = true;
+            } else if (event.modifiers & Qt.ControlModifier) {
+              textModel.selectLine(itemIndex);
+              event.accepted = true;
             } else {
               event.accepted = false;
             }
