@@ -64,20 +64,21 @@ Cdt.Pane {
             return;
           }
           ignoreSelect = true;
-          textModel.resetSelect();
-          textModel.toggleSelect(itemIndex, selectionStart);
-          textModel.toggleSelect(itemIndex, selectionEnd);
+          textModel.selectInline(itemIndex, selectionStart, selectionEnd);
           ignoreSelect = false;
         }
         Keys.onPressed: function(e) {
           if (e.matches(StandardKey.Copy)) {
             copyMenuItem.triggered();
             e.accepted = true;
+          } else if (e.matches(StandardKey.SelectAll)) {
+            selectAllMenuItem.triggered();
+            e.accepted = true;
           }
         }
         Connections {
           target: textModel
-          function onLinesMarkedDirty(first, last) {
+          function onRehighlightLines(first, last) {
             if (itemIndex >= first && itemIndex <= last) {
               highlighter.rehighlight();
             }
@@ -113,6 +114,25 @@ Cdt.Pane {
         shortcut: "Ctrl+C"
         enabled: listView.activeFocus
         onTriggered: textModel.copySelection()
+      }
+      MenuItem {
+        text: "Toggle Select"
+        shortcut: "Ctrl+S"
+        enabled: listView.activeFocus
+        onTriggered: textModel.selectLine(listView.currentIndex)
+      }
+      MenuItem {
+        id: selectAllMenuItem
+        text: "Select All"
+        shortcut: "Ctrl+A"
+        enabled: listView.activeFocus
+        onTriggered: textModel.selectAll()
+      }
+      MenuItem {
+        text: "Clear Selection"
+        shortcut: "Esc"
+        enabled: listView.activeFocus
+        onTriggered: textModel.resetSelection()
       }
     }
   }

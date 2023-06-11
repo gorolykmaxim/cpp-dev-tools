@@ -317,8 +317,7 @@ TextAreaModel::TextAreaModel(QObject* parent)
     : QAbstractListModel(parent),
       cursor_follow_end(false),
       current_line(0),
-      selection_formatter(
-          new SelectionFormatter(this, selection_start, selection_end)),
+      selection_formatter(new SelectionFormatter(this, selection)),
       formatters({selection_formatter}) {}
 
 QHash<int, QByteArray> TextAreaModel::roleNames() const {
@@ -350,6 +349,7 @@ void TextAreaModel::SetText(const QString& text) {
     first_new_line = 0;
     beginRemoveRows(QModelIndex(), 0, line_start_offsets.size() - 1);
     line_start_offsets.clear();
+    selection = TextSelection();
   }
   endRemoveRows();
   int current_size = line_start_offsets.size();
@@ -380,66 +380,82 @@ QList<TextFormatter*> TextAreaModel::GetFormatters() const {
   return formatters;
 }
 
-void TextAreaModel::resetSelect() {
-  int start = selection_start.line;
-  int end = selection_end.line;
-  selection_start = selection_end = TextPoint();
-  ReDrawLines(start, end);
+void TextAreaModel::selectInline(int line, int start, int end) {
+  std::pair<int, int> redraw_range = selection.GetLineRange();
+  selection.multiline_selection = false;
+  selection.last_line = selection.first_line = line;
+  selection.first_line_offset = start;
+  selection.last_line_offset = end;
+  emit rehighlightLines(redraw_range.first, redraw_range.second);
+  emit rehighlightLines(line, line);
 }
 
-void TextAreaModel::toggleSelect(int line, int offset) {
-  if (selection_start == selection_end) {
-    selection_start = TextPoint(line, offset);
-    ReDrawLines(line, line);
+void TextAreaModel::selectLine(int line) {
+  if (line < 0 || line >= line_start_offsets.size()) {
+    return;
+  }
+  if (!selection.multiline_selection) {
+    std::pair<int, int> redraw_range = selection.GetLineRange();
+    selection.multiline_selection = true;
+    selection.first_line = selection.last_line = line;
+    selection.first_line_offset = selection.last_line_offset = -1;
+    emit rehighlightLines(redraw_range.first, redraw_range.second);
+    emit rehighlightLines(line, line);
   } else {
-    TextPoint end(line, offset);
-    TextPoint start = selection_start;
-    selection_start = std::min(start, end);
-    selection_end = std::max(start, end);
-    ReDrawLines(selection_start.line, selection_end.line);
+    std::pair<int, int> redraw_range = selection.GetLineRange();
+    selection.last_line = line;
+    emit rehighlightLines(redraw_range.first, redraw_range.second);
+    redraw_range = selection.GetLineRange();
+    emit rehighlightLines(redraw_range.first, redraw_range.second);
   }
 }
 
+void TextAreaModel::selectAll() {
+  std::pair<int, int> redraw_range = selection.GetLineRange();
+  selection = TextSelection();
+  selection.first_line = 0;
+  selection.last_line = line_start_offsets.size();
+  emit rehighlightLines(redraw_range.first, redraw_range.second);
+  redraw_range = selection.GetLineRange();
+  emit rehighlightLines(redraw_range.first, redraw_range.second);
+}
+
+void TextAreaModel::resetSelection() {
+  std::pair<int, int> redraw_range = selection.GetLineRange();
+  selection = TextSelection();
+  emit rehighlightLines(redraw_range.first, redraw_range.second);
+}
+
 void TextAreaModel::copySelection() {
+  TextSelection s = selection.Normalize();
   int start, end;
-  if (selection_start == selection_end) {
+  if (s.first_line < 0) {
     start = line_start_offsets[current_line];
     end = start + GetLineLength(current_line);
   } else {
-    start = line_start_offsets[selection_start.line] + selection_start.offset;
-    end = line_start_offsets[selection_end.line] + selection_end.offset;
+    start = line_start_offsets[s.first_line];
+    end = line_start_offsets[s.last_line];
+    if (s.first_line_offset >= 0) {
+      start += s.first_line_offset;
+    }
+    if (s.last_line_offset >= 0) {
+      end += s.last_line_offset;
+    } else {
+      end += GetLineLength(s.last_line);
+    }
   }
   QString text = this->text.sliced(start, end - start);
   QGuiApplication::clipboard()->setText(text);
 }
 
 int TextAreaModel::GetLineLength(int line) const {
+  if (line < 0 || line >= line_start_offsets.size()) {
+    return 0;
+  }
   int start = line_start_offsets[line];
   int end = line < line_start_offsets.size() - 1 ? line_start_offsets[line + 1]
                                                  : text.size();
   return std::max(end - start - 1, 0);
-}
-
-void TextAreaModel::ReDrawLines(int first, int last) {
-  emit dataChanged(index(first), index(last));
-  emit linesMarkedDirty(first, last);
-}
-
-TextPoint::TextPoint() : TextPoint(0, 0) {}
-
-TextPoint::TextPoint(int line, int offset) : line(line), offset(offset) {}
-
-bool TextPoint::operator==(const TextPoint& another) const {
-  return line == another.line && offset == another.offset;
-}
-
-bool TextPoint::operator!=(const TextPoint& another) const {
-  return !(*this == another);
-}
-
-bool TextPoint::operator<(const TextPoint& another) const {
-  return line < another.line ||
-         (line == another.line && offset < another.offset);
 }
 
 LineHighlighter::LineHighlighter(QObject* parent)
@@ -461,9 +477,9 @@ void LineHighlighter::highlightBlock(const QString& text) {
   }
 }
 
-SelectionFormatter::SelectionFormatter(QObject* parent, const TextPoint& start,
-                                       const TextPoint& end)
-    : TextFormatter(parent), start(start), end(end) {
+SelectionFormatter::SelectionFormatter(QObject* parent,
+                                       const TextSelection& selection)
+    : TextFormatter(parent), selection(selection) {
   static const Theme kTheme;
   format.setForeground(ViewSystem::BrushFromHex(kTheme.kColorBgBlack));
   format.setBackground(ViewSystem::BrushFromHex(kTheme.kColorHighlight));
@@ -471,15 +487,47 @@ SelectionFormatter::SelectionFormatter(QObject* parent, const TextPoint& start,
 
 QList<TextFormat> SelectionFormatter::Format(const QString& text,
                                              int line_number) const {
-  if (start == end || (line_number < start.line || line_number > end.line)) {
+  TextSelection s = selection.Normalize();
+  if (line_number < s.first_line || line_number > s.last_line) {
     return {};
   }
   TextFormat f;
-  f.offset = line_number == start.line ? start.offset : 0;
-  int end_offset = line_number == end.line ? end.offset : text.size();
-  f.length = end_offset - f.offset;
+  f.offset = std::max(s.first_line_offset, 0);
+  int end = s.last_line_offset;
+  if (end < 0) {
+    end = text.size();
+  }
+  f.length = end - f.offset;
   f.format = format;
   return {f};
 }
 
 TextFormatter::TextFormatter(QObject* parent) : QObject(parent) {}
+
+TextSelection::TextSelection()
+    : first_line(-1),
+      first_line_offset(-1),
+      last_line(-1),
+      last_line_offset(-1),
+      multiline_selection(false) {}
+
+std::pair<int, int> TextSelection::GetLineRange() const {
+  int first = std::max(first_line, 0);
+  int last = std::max(last_line, 0);
+  if (first > last) {
+    return std::make_pair(last, first);
+  } else {
+    return std::make_pair(first, last);
+  }
+}
+
+TextSelection TextSelection::Normalize() const {
+  TextSelection result = *this;
+  if (first_line > last_line) {
+    result.first_line = last_line;
+    result.first_line_offset = last_line_offset;
+    result.last_line = first_line;
+    result.last_line_offset = first_line_offset;
+  }
+  return result;
+}

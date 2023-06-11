@@ -109,19 +109,20 @@ struct TextSegment {
   int length = 0;
 };
 
-struct TextPoint {
-  TextPoint();
-  TextPoint(int line, int offset);
-  bool operator==(const TextPoint& another) const;
-  bool operator!=(const TextPoint& another) const;
-  bool operator<(const TextPoint& another) const;
-
-  int line;
-  int offset;
-};
-
 struct TextFormat : public TextSegment {
   QTextCharFormat format;
+};
+
+struct TextSelection {
+  TextSelection();
+  std::pair<int, int> GetLineRange() const;
+  TextSelection Normalize() const;
+
+  int first_line;
+  int first_line_offset;
+  int last_line;
+  int last_line_offset;
+  bool multiline_selection;
 };
 
 class TextFormatter : public QObject {
@@ -160,12 +161,11 @@ class LineHighlighter : public QSyntaxHighlighter {
 
 class SelectionFormatter : public TextFormatter {
  public:
-  SelectionFormatter(QObject* parent, const TextPoint& start,
-                     const TextPoint& end);
+  SelectionFormatter(QObject* parent, const TextSelection& selection);
   QList<TextFormat> Format(const QString& text, int line_number) const;
 
  private:
-  const TextPoint &start, &end;
+  const TextSelection& selection;
   QTextCharFormat format;
 };
 
@@ -188,8 +188,10 @@ class TextAreaModel : public QAbstractListModel {
   QList<TextFormatter*> GetFormatters() const;
 
  public slots:
-  void resetSelect();
-  void toggleSelect(int line, int offset);
+  void selectInline(int line, int start, int end);
+  void selectLine(int line);
+  void selectAll();
+  void resetSelection();
   void copySelection();
 
  signals:
@@ -197,18 +199,17 @@ class TextAreaModel : public QAbstractListModel {
   void cursorFollowEndChanged();
   void goToLine(int line);
   void currentLineChanged();
-  void linesMarkedDirty(int first, int last);
+  void rehighlightLines(int first, int last);
   void formattersChanged();
 
  private:
   int GetLineLength(int line) const;
-  void ReDrawLines(int first, int last);
 
   bool cursor_follow_end;
   int current_line;
   QString text;
   QList<int> line_start_offsets;
-  TextPoint selection_start, selection_end;
+  TextSelection selection;
   SelectionFormatter* selection_formatter;
   QList<TextFormatter*> formatters;
 };
