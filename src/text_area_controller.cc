@@ -392,6 +392,12 @@ void TextAreaModel::SetText(const QString& text) {
 
 QString TextAreaModel::GetText() const { return text; }
 
+void TextAreaModel::SetFormatters(QList<TextFormatter*> formatters) {
+  this->formatters = formatters;
+  this->formatters.append(selection_formatter);
+  emit formattersChanged();
+}
+
 QList<TextFormatter*> TextAreaModel::GetFormatters() const {
   return formatters;
 }
@@ -479,6 +485,10 @@ QString TextAreaModel::getSelectedText() {
   }
   std::pair<int, int> range = GetSelectionRange(s);
   return text.sliced(range.first, range.second - range.first);
+}
+
+void TextAreaModel::rehighlight() {
+  emit rehighlightLines(0, line_start_offsets.size());
 }
 
 int TextAreaModel::GetLineLength(int line) const {
@@ -590,45 +600,50 @@ std::pair<int, int> TextAreaModel::GetSelectionRange(
   return std::make_pair(start, end);
 }
 
-TextSearchController::TextSearchController(QObject* parent) : QObject(parent) {}
+TextSearchController::TextSearchController(QObject* parent)
+    : QObject(parent), formatter(new SearchFormatter(this, results)) {}
 
 bool TextSearchController::AreSearchResultsEmpty() const {
-  return search_results.isEmpty();
+  return results.items.isEmpty();
 }
 
 void TextSearchController::search(const QString& term, const QString& text,
                                   bool select_result) {
   int prev_start = -1;
-  if (selected_result < search_results.size()) {
-    prev_start = search_results[selected_result].start;
+  if (selected_result < results.items.size()) {
+    prev_start = results.items[selected_result].offset;
   }
-  search_results.clear();
+  results = SearchResults();
   if (term.size() > 2) {
+    int line = 0;
     int pos = 0;
     while (true) {
       int i = text.indexOf(term, pos, Qt::CaseSensitivity::CaseInsensitive);
       if (i < 0) {
         break;
       }
-      TextSection result;
-      result.start = i;
-      result.end = i + term.size();
-      search_results.append(result);
-      pos = result.end;
+      line += text.sliced(pos, i - pos).count('\n');
+      results.index[line].append(results.items.size());
+      TextSegment result;
+      result.offset = i;
+      result.length = term.size();
+      results.items.append(result);
+      pos = result.offset + result.length;
     }
   }
-  if (selected_result >= search_results.size() ||
-      search_results[selected_result].start != prev_start) {
+  emit searchResultsChanged();
+  if (selected_result >= results.items.size() ||
+      results.items[selected_result].offset != prev_start) {
     selected_result = 0;
-    for (int i = 0; i < search_results.size(); i++) {
-      if (search_results[i].start >= prev_start) {
+    for (int i = 0; i < results.items.size(); i++) {
+      if (results.items[i].offset >= prev_start) {
         selected_result = i;
         break;
       }
     }
   }
   if (select_result) {
-    if (!search_results.isEmpty()) {
+    if (!results.items.isEmpty()) {
       DisplaySelectedSearchResult();
     } else {
       emit selectText(0, 0);
@@ -639,22 +654,22 @@ void TextSearchController::search(const QString& term, const QString& text,
 
 void TextSearchController::replaceSearchResultWith(const QString& text,
                                                    bool replace_all) {
-  if (search_results.isEmpty()) {
+  if (results.items.isEmpty()) {
     return;
   }
   if (replace_all) {
-    for (auto it = search_results.rbegin(); it != search_results.rend(); it++) {
-      emit replaceText(it->start, it->end, text);
+    for (auto it = results.items.rbegin(); it != results.items.rend(); it++) {
+      emit replaceText(it->offset, it->length, text);
     }
   } else {
-    TextSection result = search_results[selected_result];
-    emit replaceText(result.start, result.end, text);
+    TextSegment result = results.items[selected_result];
+    emit replaceText(result.offset, result.length, text);
   }
 }
 
 void TextSearchController::goToResultWithStartAt(int text_position) {
-  for (int i = 0; i < search_results.size(); i++) {
-    if (search_results[i].start == text_position) {
+  for (int i = 0; i < results.items.size(); i++) {
+    if (results.items[i].offset == text_position) {
       selected_result = i;
       DisplaySelectedSearchResult();
       UpdateSearchResultsCount();
@@ -664,23 +679,23 @@ void TextSearchController::goToResultWithStartAt(int text_position) {
 }
 
 void TextSearchController::goToSearchResult(bool next) {
-  if (search_results.isEmpty()) {
+  if (results.items.isEmpty()) {
     return;
   }
   selected_result = next ? selected_result + 1 : selected_result - 1;
-  if (selected_result >= search_results.size()) {
+  if (selected_result >= results.items.size()) {
     selected_result = 0;
   } else if (selected_result < 0) {
-    selected_result = search_results.size() - 1;
+    selected_result = results.items.size() - 1;
   }
   DisplaySelectedSearchResult();
   UpdateSearchResultsCount();
 }
 
 void TextSearchController::UpdateSearchResultsCount() {
-  if (!search_results.isEmpty()) {
+  if (!results.items.isEmpty()) {
     search_results_count = QString::number(selected_result + 1) + " of " +
-                           QString::number(search_results.size());
+                           QString::number(results.items.size());
   } else {
     search_results_count = "No Results";
   }
@@ -688,6 +703,25 @@ void TextSearchController::UpdateSearchResultsCount() {
 }
 
 void TextSearchController::DisplaySelectedSearchResult() {
-  const TextSection& result = search_results[selected_result];
-  emit selectText(result.start, result.end);
+  TextSegment result = results.items[selected_result];
+  emit selectText(result.offset, result.length);
+}
+
+SearchFormatter::SearchFormatter(QObject* parent, const SearchResults& results)
+    : TextFormatter(parent), results(results) {
+  format.setBackground(ViewSystem::BrushFromHex("#6b420f"));
+}
+
+QList<TextFormat> SearchFormatter::Format(const QString&, LineInfo line) const {
+  QList<TextFormat> fs;
+  const QList<int>& sris = results.index[line.number];
+  for (int sri : sris) {
+    TextSegment sr = results.items[sri];
+    TextFormat f;
+    f.offset = sr.offset - line.offset;
+    f.length = sr.length;
+    f.format = format;
+    fs.append(f);
+  }
+  return fs;
 }

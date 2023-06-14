@@ -176,6 +176,21 @@ class SelectionFormatter : public TextFormatter {
   QTextCharFormat format;
 };
 
+struct SearchResults {
+  QList<TextSegment> items;
+  QHash<int, QList<int>> index;
+};
+
+class SearchFormatter : public TextFormatter {
+ public:
+  SearchFormatter(QObject* parent, const SearchResults& results);
+  QList<TextFormat> Format(const QString& text, LineInfo line) const;
+
+ private:
+  const SearchResults& results;
+  QTextCharFormat format;
+};
+
 class TextSearchController : public QObject {
   Q_OBJECT
   QML_ELEMENT
@@ -183,6 +198,7 @@ class TextSearchController : public QObject {
                  searchResultsCountChanged)
   Q_PROPERTY(bool searchResultsEmpty READ AreSearchResultsEmpty NOTIFY
                  searchResultsCountChanged)
+  Q_PROPERTY(SearchFormatter* formatter MEMBER formatter CONSTANT)
  public:
   explicit TextSearchController(QObject* parent = nullptr);
   bool AreSearchResultsEmpty() const;
@@ -194,17 +210,19 @@ class TextSearchController : public QObject {
   void goToSearchResult(bool next);
 
  signals:
-  void selectText(int start, int end);
-  void replaceText(int start, int end, const QString& text);
+  void selectText(int offset, int length);
+  void replaceText(int offset, int length, const QString& text);
   void searchResultsCountChanged();
+  void searchResultsChanged();
 
  private:
   void UpdateSearchResultsCount();
   void DisplaySelectedSearchResult();
 
   int selected_result = 0;
-  QList<TextSection> search_results;
+  SearchResults results;
   QString search_results_count = "0 Results";
+  SearchFormatter* formatter;
 };
 
 class TextAreaModel : public QAbstractListModel {
@@ -216,8 +234,8 @@ class TextAreaModel : public QAbstractListModel {
   Q_PROPERTY(
       int cursorPosition MEMBER cursor_position NOTIFY cursorPositionChanged)
   Q_PROPERTY(int currentLine MEMBER current_line NOTIFY currentLineChanged)
-  Q_PROPERTY(QList<TextFormatter*> formatters READ GetFormatters NOTIFY
-                 formattersChanged)
+  Q_PROPERTY(QList<TextFormatter*> formatters WRITE SetFormatters READ
+                 GetFormatters NOTIFY formattersChanged)
   Q_PROPERTY(QFont font MEMBER font NOTIFY fontChanged)
   Q_PROPERTY(
       int lineNumberMaxWidth READ GetLineNumberMaxWidth NOTIFY fontChanged)
@@ -228,6 +246,7 @@ class TextAreaModel : public QAbstractListModel {
   QVariant data(const QModelIndex& index, int role) const;
   void SetText(const QString& text);
   QString GetText() const;
+  void SetFormatters(QList<TextFormatter*> formatters);
   QList<TextFormatter*> GetFormatters() const;
   int GetLineNumberMaxWidth() const;
 
@@ -239,6 +258,7 @@ class TextAreaModel : public QAbstractListModel {
   void copySelection();
   int getSelectionOffset();
   QString getSelectedText();
+  void rehighlight();
 
  signals:
   void textChanged();

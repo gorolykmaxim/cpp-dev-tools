@@ -15,6 +15,7 @@ Cdt.Pane {
   color: Theme.colorBgDark
   TextAreaModel {
     id: textModel
+    formatters: [searchBar.formatter]
     onGoToLine: function(line) {
       listView.currentIndex = line;
       listView.positionViewAtIndex(listView.currentIndex, ListView.Center);
@@ -35,6 +36,7 @@ Cdt.Pane {
       text: textModel.text
       Layout.fillWidth: true
       readOnly: true
+      onSearchResultsChanged: textModel.rehighlight()
       KeyNavigation.down: visible ? listView : null
     }
     ListView {

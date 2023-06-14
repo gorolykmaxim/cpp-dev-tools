@@ -7,6 +7,8 @@ Cdt.Pane {
   id: root
   property bool readOnly: false
   property string text: ""
+  property alias formatter: controller.formatter
+  signal searchResultsChanged()
   color: Theme.colorBgMedium
   padding: Theme.basePadding
   visible: false
@@ -31,6 +33,7 @@ Cdt.Pane {
   }
   TextSearchController {
     id: controller
+    onSearchResultsChanged: root.searchResultsChanged()
   }
   ColumnLayout {
     anchors.fill: parent
