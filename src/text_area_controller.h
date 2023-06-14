@@ -113,6 +113,11 @@ struct TextFormat : public TextSegment {
   QTextCharFormat format;
 };
 
+struct LineInfo {
+  int offset = 0;
+  int number = 0;
+};
+
 struct TextSelection {
   TextSelection();
   std::pair<int, int> GetLineRange() const;
@@ -129,7 +134,7 @@ class TextFormatter : public QObject {
  public:
   explicit TextFormatter(QObject* parent);
   virtual QList<TextFormat> Format(const QString& text,
-                                   int line_number) const = 0;
+                                   LineInfo line) const = 0;
 };
 
 class LineHighlighter : public QSyntaxHighlighter {
@@ -139,7 +144,8 @@ class LineHighlighter : public QSyntaxHighlighter {
                  formattersChanged)
   Q_PROPERTY(QQuickTextDocument* document READ GetDocument WRITE SetDocument
                  NOTIFY documentChanged)
-  Q_PROPERTY(int lineNumber MEMBER line_number NOTIFY lineNumberChanged)
+  Q_PROPERTY(int lineNumber MEMBER line_number NOTIFY lineChanged)
+  Q_PROPERTY(int lineOffset MEMBER line_offset NOTIFY lineChanged)
  public:
   explicit LineHighlighter(QObject* parent = nullptr);
   QQuickTextDocument* GetDocument() const;
@@ -151,18 +157,19 @@ class LineHighlighter : public QSyntaxHighlighter {
  signals:
   void formattersChanged();
   void documentChanged();
-  void lineNumberChanged();
+  void lineChanged();
 
  private:
   QList<TextFormatter*> formatters;
   QQuickTextDocument* document;
   int line_number;
+  int line_offset;
 };
 
 class SelectionFormatter : public TextFormatter {
  public:
   SelectionFormatter(QObject* parent, const TextSelection& selection);
-  QList<TextFormat> Format(const QString& text, int line_number) const;
+  QList<TextFormat> Format(const QString& text, LineInfo line) const;
 
  private:
   const TextSelection& selection;

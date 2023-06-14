@@ -132,6 +132,7 @@ Cdt.Pane {
               document: textEdit.textDocument
               formatters: textModel.formatters
               lineNumber: itemIndex
+              lineOffset: model.offset
             }
             MouseArea {
               anchors.fill: parent

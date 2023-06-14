@@ -329,7 +329,7 @@ TextAreaModel::TextAreaModel(QObject* parent)
 }
 
 QHash<int, QByteArray> TextAreaModel::roleNames() const {
-  return {{0, "text"}};
+  return {{0, "text"}, {1, "offset"}};
 }
 
 int TextAreaModel::rowCount(const QModelIndex&) const {
@@ -337,12 +337,15 @@ int TextAreaModel::rowCount(const QModelIndex&) const {
 }
 
 QVariant TextAreaModel::data(const QModelIndex& index, int role) const {
-  if (role != 0) {
+  if (role == 0) {
+    int start = line_start_offsets[index.row()];
+    int length = GetLineLength(index.row());
+    return text.sliced(start, length);
+  } else if (role == 1) {
+    return line_start_offsets[index.row()];
+  } else {
     return QVariant();
   }
-  int start = line_start_offsets[index.row()];
-  int length = GetLineLength(index.row());
-  return text.sliced(start, length);
 }
 
 void TextAreaModel::SetText(const QString& text) {
@@ -509,8 +512,9 @@ void LineHighlighter::SetDocument(QQuickTextDocument* document) {
 }
 
 void LineHighlighter::highlightBlock(const QString& text) {
+  LineInfo line{line_offset, line_number};
   for (const TextFormatter* formatter : formatters) {
-    for (const TextFormat& f : formatter->Format(text, line_number)) {
+    for (const TextFormat& f : formatter->Format(text, line)) {
       setFormat(f.offset, f.length, f.format);
     }
   }
@@ -525,9 +529,9 @@ SelectionFormatter::SelectionFormatter(QObject* parent,
 }
 
 QList<TextFormat> SelectionFormatter::Format(const QString& text,
-                                             int line_number) const {
+                                             LineInfo line) const {
   TextSelection s = selection.Normalize();
-  if (line_number < s.first_line || line_number > s.last_line) {
+  if (line.number < s.first_line || line.number > s.last_line) {
     return {};
   }
   TextFormat f;
