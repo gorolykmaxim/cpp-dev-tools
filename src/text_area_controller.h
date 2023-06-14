@@ -169,6 +169,37 @@ class SelectionFormatter : public TextFormatter {
   QTextCharFormat format;
 };
 
+class TextSearchController : public QObject {
+  Q_OBJECT
+  QML_ELEMENT
+  Q_PROPERTY(QString searchResultsCount MEMBER search_results_count NOTIFY
+                 searchResultsCountChanged)
+  Q_PROPERTY(bool searchResultsEmpty READ AreSearchResultsEmpty NOTIFY
+                 searchResultsCountChanged)
+ public:
+  explicit TextSearchController(QObject* parent = nullptr);
+  bool AreSearchResultsEmpty() const;
+
+ public slots:
+  void search(const QString& term, const QString& text, bool select_result);
+  void replaceSearchResultWith(const QString& text, bool replace_all);
+  void goToResultWithStartAt(int text_position);
+  void goToSearchResult(bool next);
+
+ signals:
+  void selectText(int start, int end);
+  void replaceText(int start, int end, const QString& text);
+  void searchResultsCountChanged();
+
+ private:
+  void UpdateSearchResultsCount();
+  void DisplaySelectedSearchResult();
+
+  int selected_result = 0;
+  QList<TextSection> search_results;
+  QString search_results_count = "0 Results";
+};
+
 class TextAreaModel : public QAbstractListModel {
   Q_OBJECT
   QML_ELEMENT

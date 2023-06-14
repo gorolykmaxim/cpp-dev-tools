@@ -6,22 +6,31 @@ import cdt
 Cdt.Pane {
   id: root
   property bool readOnly: false
+  property string text: ""
   color: Theme.colorBgMedium
   padding: Theme.basePadding
   visible: false
+  onTextChanged: {
+    if (visible) {
+      controller.search(searchTextField.displayText, text, readOnly)
+    }
+  }
   function display(offset, text) {
     visible = true;
-    console.log(offset);
     searchTextField.text = text;
     replaceTextField.text = "";
     // When searchBar open request arrives we need to focus the search bar's
     // input regardless of what else is happenning.
     searchTextField.forceActiveFocus();
+    controller.goToResultWithStartAt(offset);
   }
   function close() {
     const result = visible;
     visible = false;
     return result;
+  }
+  TextSearchController {
+    id: controller
   }
   ColumnLayout {
     anchors.fill: parent
@@ -31,52 +40,58 @@ Cdt.Pane {
         id: searchTextField
         Layout.fillWidth: true
         placeholderText: "Search text"
-        onDisplayTextChanged: console.log('search', displayText, true)
-        Keys.onReturnPressed: e => console.log('go to search result', !(e.modifiers & Qt.ShiftModifier))
-        Keys.onEnterPressed: e => console.log('go to search result', !(e.modifiers & Qt.ShiftModifier))
+        onDisplayTextChanged: controller.search(displayText, root.text, true)
+        Keys.onReturnPressed: e => controller.goToSearchResult(!(e.modifiers & Qt.ShiftModifier))
+        Keys.onEnterPressed: e => controller.goToSearchResult(!(e.modifiers & Qt.ShiftModifier))
         KeyNavigation.right: prevResultBtn
         KeyNavigation.down: root.readOnly ? null : replaceTextField
       }
       Cdt.Text {
-        text: "Results count"
+        text: controller.searchResultsCount
       }
       Cdt.IconButton {
         id: prevResultBtn
         buttonIcon: "arrow_upward"
-        onClicked: console.log('go to search result', false)
+        enabled: !controller.searchResultsEmpty
+        onClicked: controller.goToSearchResult(false)
         KeyNavigation.right: nextResultBtn
         KeyNavigation.down: root.readOnly ? null : replaceTextField
       }
       Cdt.IconButton {
         id: nextResultBtn
         buttonIcon: "arrow_downward"
-        onClicked: console.log('go to search result', true)
+        enabled: !controller.searchResultsEmpty
+        onClicked: controller.goToSearchResult(true)
         KeyNavigation.down: root.readOnly ? null : replaceTextField
       }
     }
     RowLayout {
       visible: !root.readOnly
       Layout.fillWidth: true
+      function replaceAndSearch(replaceAll) {
+        controller.replaceSearchResultWith(replaceOutputTextField.displayText, replaceAll);
+        controller.search(searchOutputTextField.displayText, root.text, true);
+      }
       Cdt.TextField {
         id: replaceTextField
         Layout.fillWidth: true
         placeholderText: "Replace text"
-        Keys.onReturnPressed: console.log('replace and search', false)
-        Keys.onEnterPressed: console.log('replace and search', false)
+        Keys.onReturnPressed: replaceAndSearch(false)
+        Keys.onEnterPressed: replaceAndSearch(false)
         KeyNavigation.right: replaceBtn
         KeyNavigation.up: searchTextField
       }
       Cdt.Button {
         id: replaceBtn
         text: "Replace"
-        onClicked: console.log('replace and search', false)
+        onClicked: replaceAndSearch(false)
         KeyNavigation.right: replaceAllBtn
         KeyNavigation.up: searchTextField
       }
       Cdt.Button {
         id: replaceAllBtn
         text: "Replace All"
-        onClicked: console.log('replace and search', true)
+        onClicked: replaceAndSearch(true)
         KeyNavigation.up: searchTextField
       }
     }

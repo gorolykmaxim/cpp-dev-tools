@@ -32,6 +32,7 @@ Cdt.Pane {
     spacing: 0
     Cdt.TextSearchBar {
       id: searchBar
+      text: textModel.text
       Layout.fillWidth: true
       readOnly: true
       KeyNavigation.down: visible ? listView : null
