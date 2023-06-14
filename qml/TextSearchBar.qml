@@ -9,12 +9,13 @@ Cdt.Pane {
   color: Theme.colorBgMedium
   padding: Theme.basePadding
   visible: false
-  function display() {
+  function display(offset, text) {
     visible = true;
+    console.log(offset);
+    searchTextField.text = text;
+    replaceTextField.text = "";
     // When searchBar open request arrives we need to focus the search bar's
     // input regardless of what else is happenning.
-    searchTextField.text = "";
-    replaceTextField.text = "";
     searchTextField.forceActiveFocus();
   }
   function close() {

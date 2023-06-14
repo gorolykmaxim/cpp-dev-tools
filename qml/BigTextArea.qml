@@ -138,6 +138,7 @@ Cdt.Pane {
               cursorShape: Qt.IBeamCursor
               onPressed: function(event) {
                 listView.currentIndex = itemIndex;
+                listView.forceActiveFocus();
                 if (event.button === Qt.RightButton) {
                   contextMenu.open();
                   event.accepted = true;
@@ -176,7 +177,7 @@ Cdt.Pane {
           text: "Find"
           shortcut: "Ctrl+F"
           enabled: listView.activeFocus
-          onTriggered: searchBar.display()
+          onTriggered: searchBar.display(textModel.getSelectionOffset(), textModel.getSelectedText())
         }
       }
     }

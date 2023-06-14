@@ -199,6 +199,8 @@ class TextAreaModel : public QAbstractListModel {
   void selectAll();
   bool resetSelection();
   void copySelection();
+  int getSelectionOffset();
+  QString getSelectedText();
 
  signals:
   void textChanged();
@@ -213,6 +215,7 @@ class TextAreaModel : public QAbstractListModel {
  private:
   int GetLineLength(int line) const;
   int GetCursorPositionLine() const;
+  std::pair<int, int> GetSelectionRange(const TextSelection& s) const;
 
   bool cursor_follow_end;
   int cursor_position;

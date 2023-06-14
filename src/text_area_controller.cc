@@ -450,24 +450,32 @@ bool TextAreaModel::resetSelection() {
 
 void TextAreaModel::copySelection() {
   TextSelection s = selection.Normalize();
-  int start, end;
+  std::pair<int, int> range;
   if (s.first_line < 0) {
-    start = line_start_offsets[current_line];
-    end = start + GetLineLength(current_line);
+    int start = line_start_offsets[current_line];
+    range = std::make_pair(start, start + GetLineLength(current_line));
   } else {
-    start = line_start_offsets[s.first_line];
-    end = line_start_offsets[s.last_line];
-    if (s.first_line_offset >= 0) {
-      start += s.first_line_offset;
-    }
-    if (s.last_line_offset >= 0) {
-      end += s.last_line_offset;
-    } else {
-      end += GetLineLength(s.last_line);
-    }
+    range = GetSelectionRange(s);
   }
-  QString text = this->text.sliced(start, end - start);
+  QString text = this->text.sliced(range.first, range.second - range.first);
   QGuiApplication::clipboard()->setText(text);
+}
+
+int TextAreaModel::getSelectionOffset() {
+  TextSelection s = selection.Normalize();
+  if (s.first_line < 0) {
+    return -1;
+  }
+  return line_start_offsets[s.first_line] + std::max(s.first_line_offset, 0);
+}
+
+QString TextAreaModel::getSelectedText() {
+  TextSelection s = selection.Normalize();
+  if (s.first_line < 0) {
+    return "";
+  }
+  std::pair<int, int> range = GetSelectionRange(s);
+  return text.sliced(range.first, range.second - range.first);
 }
 
 int TextAreaModel::GetLineLength(int line) const {
@@ -561,4 +569,19 @@ TextSelection TextSelection::Normalize() const {
     result.last_line_offset = first_line_offset;
   }
   return result;
+}
+
+std::pair<int, int> TextAreaModel::GetSelectionRange(
+    const TextSelection& s) const {
+  int start = line_start_offsets[s.first_line];
+  int end = line_start_offsets[s.last_line];
+  if (s.first_line_offset >= 0) {
+    start += s.first_line_offset;
+  }
+  if (s.last_line_offset >= 0) {
+    end += s.last_line_offset;
+  } else {
+    end += GetLineLength(s.last_line);
+  }
+  return std::make_pair(start, end);
 }
