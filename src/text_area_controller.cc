@@ -438,10 +438,14 @@ void TextAreaModel::selectAll() {
   emit rehighlightLines(redraw_range.first, redraw_range.second);
 }
 
-void TextAreaModel::resetSelection() {
+bool TextAreaModel::resetSelection() {
+  if (selection.first_line < 0) {
+    return false;
+  }
   std::pair<int, int> redraw_range = selection.GetLineRange();
   selection = TextSelection();
   emit rehighlightLines(redraw_range.first, redraw_range.second);
+  return true;
 }
 
 void TextAreaModel::copySelection() {

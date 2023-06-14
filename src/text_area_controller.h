@@ -197,7 +197,7 @@ class TextAreaModel : public QAbstractListModel {
   void selectInline(int line, int start, int end);
   void selectLine(int line);
   void selectAll();
-  void resetSelection();
+  bool resetSelection();
   void copySelection();
 
  signals:
