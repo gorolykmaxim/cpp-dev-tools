@@ -90,7 +90,6 @@ Cdt.Pane {
             Layout.fillHeight: true
             Layout.minimumWidth: textModel.lineNumberMaxWidth
             Layout.leftMargin: Theme.basePadding
-            Layout.rightMargin: Theme.basePadding
             horizontalAlignment: Text.AlignRight
             verticalAlignment: Text.AlignTop
             font.family: root.monoFont ? monoFontFamily : null
@@ -99,6 +98,8 @@ Cdt.Pane {
           TextEdit {
             id: textEdit
             property bool ignoreSelect: false
+            Layout.leftMargin: Theme.basePadding
+            Layout.rightMargin: Theme.basePadding
             Layout.fillWidth: true
             activeFocusOnPress: false
             selectByMouse: true
