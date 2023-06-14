@@ -210,8 +210,8 @@ class TextSearchController : public QObject {
   void goToSearchResult(bool next);
 
  signals:
-  void selectText(int offset, int length);
-  void replaceText(int offset, int length, const QString& text);
+  void selectResult(int offset, int length);
+  void replaceResult(int offset, int length, const QString& text);
   void searchResultsCountChanged();
   void searchResultsChanged();
 
@@ -254,6 +254,7 @@ class TextAreaModel : public QAbstractListModel {
   void selectInline(int line, int start, int end);
   void selectLine(int line);
   void selectAll();
+  void selectSearchResult(int offset, int length);
   bool resetSelection();
   void copySelection();
   int getSelectionOffset();
@@ -272,6 +273,7 @@ class TextAreaModel : public QAbstractListModel {
 
  private:
   int GetLineLength(int line) const;
+  int GetLineWithOffset(int offset) const;
   int GetCursorPositionLine() const;
   std::pair<int, int> GetSelectionRange(const TextSelection& s) const;
 

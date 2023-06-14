@@ -447,6 +447,21 @@ void TextAreaModel::selectAll() {
   emit rehighlightLines(redraw_range.first, redraw_range.second);
 }
 
+void TextAreaModel::selectSearchResult(int offset, int length) {
+  std::pair<int, int> redraw_range = selection.GetLineRange();
+  selection = TextSelection();
+  if (length > 0) {
+    int line = GetLineWithOffset(offset);
+    selection.first_line = selection.last_line = line;
+    selection.first_line_offset = offset - line_start_offsets[line];
+    selection.last_line_offset = selection.first_line_offset + length;
+    emit goToLine(line);
+  }
+  emit rehighlightLines(redraw_range.first, redraw_range.second);
+  redraw_range = selection.GetLineRange();
+  emit rehighlightLines(redraw_range.first, redraw_range.second);
+}
+
 bool TextAreaModel::resetSelection() {
   if (selection.first_line < 0) {
     return false;
@@ -501,13 +516,17 @@ int TextAreaModel::GetLineLength(int line) const {
   return std::max(end - start - 1, 0);
 }
 
-int TextAreaModel::GetCursorPositionLine() const {
+int TextAreaModel::GetLineWithOffset(int offset) const {
   for (int i = 0; i < line_start_offsets.size(); i++) {
-    if (cursor_position < line_start_offsets[i]) {
+    if (offset < line_start_offsets[i]) {
       return i - 1;
     }
   }
   return 0;
+}
+
+int TextAreaModel::GetCursorPositionLine() const {
+  return GetLineWithOffset(cursor_position);
 }
 
 LineHighlighter::LineHighlighter(QObject* parent)
@@ -646,7 +665,7 @@ void TextSearchController::search(const QString& term, const QString& text,
     if (!results.items.isEmpty()) {
       DisplaySelectedSearchResult();
     } else {
-      emit selectText(0, 0);
+      emit selectResult(0, 0);
     }
   }
   UpdateSearchResultsCount();
@@ -659,11 +678,11 @@ void TextSearchController::replaceSearchResultWith(const QString& text,
   }
   if (replace_all) {
     for (auto it = results.items.rbegin(); it != results.items.rend(); it++) {
-      emit replaceText(it->offset, it->length, text);
+      emit replaceResult(it->offset, it->length, text);
     }
   } else {
     TextSegment result = results.items[selected_result];
-    emit replaceText(result.offset, result.length, text);
+    emit replaceResult(result.offset, result.length, text);
   }
 }
 
@@ -704,7 +723,7 @@ void TextSearchController::UpdateSearchResultsCount() {
 
 void TextSearchController::DisplaySelectedSearchResult() {
   TextSegment result = results.items[selected_result];
-  emit selectText(result.offset, result.length);
+  emit selectResult(result.offset, result.length);
 }
 
 SearchFormatter::SearchFormatter(QObject* parent, const SearchResults& results)

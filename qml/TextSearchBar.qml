@@ -9,6 +9,7 @@ Cdt.Pane {
   property string text: ""
   property alias formatter: controller.formatter
   signal searchResultsChanged()
+  signal selectResult(int offset, int length)
   color: Theme.colorBgMedium
   padding: Theme.basePadding
   visible: false
@@ -29,11 +30,14 @@ Cdt.Pane {
   function close() {
     const result = visible;
     visible = false;
+    searchTextField.text = "";
+    replaceTextField.text = "";
     return result;
   }
   TextSearchController {
     id: controller
     onSearchResultsChanged: root.searchResultsChanged()
+    onSelectResult: (o, l) => root.selectResult(o, l)
   }
   ColumnLayout {
     anchors.fill: parent

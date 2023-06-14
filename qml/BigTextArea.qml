@@ -22,7 +22,7 @@ Cdt.Pane {
     }
   }
   Keys.onEscapePressed: function(e) {
-    if (textModel.resetSelection()) {
+    if (listView.activeFocus && textModel.resetSelection()) {
       e.accepted = true;
     } else if (searchBar.close()) {
       e.accepted = true;
@@ -37,6 +37,7 @@ Cdt.Pane {
       Layout.fillWidth: true
       readOnly: true
       onSearchResultsChanged: textModel.rehighlight()
+      onSelectResult: (o, l) => textModel.selectSearchResult(o, l)
       KeyNavigation.down: visible ? listView : null
     }
     ListView {
