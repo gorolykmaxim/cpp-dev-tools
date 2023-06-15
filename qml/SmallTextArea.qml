@@ -11,6 +11,7 @@ FocusScope {
   property alias text: textArea.text
   property alias placeholderText: textArea.placeholderText
   property alias effectiveCursorPosition: textArea.cursorPosition
+  property bool ignoreTextChange: false
   property QtObject formatter: DummyFormatter {}
   signal ctrlEnterPressed()
   function goToPage(event, down) {
@@ -43,9 +44,12 @@ FocusScope {
     anchors.fill: parent
     Cdt.TextSearchBar {
       id: searchBar
-      text: textArea.text
       Layout.fillWidth: true
-      onSelectResult: (o, l) => textArea.select(o, o + l)
+      onSelectResult: function(o, l) {
+        ignoreTextChange = true;
+        textArea.select(o, o + l);
+        ignoreTextChange = false;
+      }
       onReplaceResults: function(offsets, lengths, text) {
         for (let i = 0; i < offsets.length; i++) {
           const offset = offsets[i];
@@ -54,7 +58,11 @@ FocusScope {
           textArea.insert(offset, text);
         }
       }
-      onSearchResultsChanged: highlighter.rehighlight()
+      onSearchResultsChanged: {
+        ignoreTextChange = true;
+        highlighter.rehighlight();
+        ignoreTextChange = false;
+      }
       KeyNavigation.down: visible ? textArea : null
     }
     Cdt.Pane {
@@ -84,6 +92,20 @@ FocusScope {
           focus: true
           background: Rectangle {
             color: "transparent"
+          }
+          onTextChanged: {
+            // When TextSearchBar is open and has a search term entered,
+            // if you type anything in the TextArea:
+            // - text gets changed
+            // - search() of TextSearchBar gets called
+            // - selectResult or searchResultsChanged get emitted
+            // - either TextArea.select() or SmallTextAreaHighlighter.rehighlight() gets called
+            // - internal state of TextArea gets modified and text gets "changed"
+            // This leads to a binding loop on "text".
+            // The code below sets text of TextSearchBar while avoiding the aforementioned loop.
+            if (!ignoreTextChange) {
+              searchBar.text = text;
+            }
           }
           Keys.onPressed: function(e) {
             if ((e.key === Qt.Key_Enter || e.key === Qt.Key_Return) && (e.modifiers & Qt.ControlModifier)) {
