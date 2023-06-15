@@ -11,7 +11,7 @@
 SqliteQueryEditorController::SqliteQueryEditorController(QObject *parent)
     : QObject(parent),
       model(new SqliteTableModel(this)),
-      formatter(new OldSyntaxFormatter(this)) {
+      formatter(new SyntaxFormatter(this)) {
   Application &app = Application::Get();
   app.view.SetWindowTitle("SQLite Query Editor");
   formatter->DetectLanguageByFile(".sql");

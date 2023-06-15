@@ -39,25 +39,11 @@ Loader {
             enabled: dbFile.isSelected
             text: controller.query
             placeholderText: "Enter SQL queries here"
+            formatter: controller.formatter
             onTextChanged: controller.query = text
             KeyNavigation.right: tableView
             onCtrlEnterPressed: controller.executeQuery(text, effectiveCursorPosition)
           }
-//          Cdt.TextArea {
-//            SplitView.minimumWidth: 300
-//            SplitView.fillHeight: true
-//            focus: true
-//            detectFileLinks: false
-//            enabled: dbFile.isSelected
-//            searchable: true
-//            text: controller.query
-//            placeholderText: "Enter SQL queries here"
-//            innerPadding: Theme.basePadding
-//            formatter: controller.formatter
-//            onDisplayTextChanged: controller.query = displayText
-//            KeyNavigation.right: tableView
-//            onCtrlEnterPressed: controller.executeQuery(getText(), effectiveCursorPosition)
-//          }
           Cdt.TableView {
             id: tableView
             SplitView.fillWidth: true

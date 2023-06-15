@@ -11,6 +11,7 @@ FocusScope {
   property alias text: textArea.text
   property alias placeholderText: textArea.placeholderText
   property alias effectiveCursorPosition: textArea.cursorPosition
+  property QtObject formatter: DummyFormatter {}
   signal ctrlEnterPressed()
   function goToPage(event, down) {
     let pos = textArea.cursorPosition;
@@ -34,7 +35,7 @@ FocusScope {
   }
   SmallTextAreaHighlighter {
     id: highlighter
-    formatters: [searchBar.formatter]
+    formatters: [root.formatter, searchBar.formatter]
     document: textArea.textDocument
   }
   ColumnLayout {
@@ -93,6 +94,7 @@ FocusScope {
             } else if (e.key === Qt.Key_PageDown) {
               goToPage(e, true);
             }
+            e.accepted = false;
           }
           KeyNavigation.up: searchBar.visible ? searchBar : null
           onPressed: e => Common.handleRightClick(textArea, contextMenu, e)
