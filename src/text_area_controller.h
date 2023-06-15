@@ -137,6 +137,14 @@ class TextFormatter : public QObject {
                                    LineInfo line) const = 0;
 };
 
+class DummyFormatter : public TextFormatter {
+  Q_OBJECT
+  QML_ELEMENT
+ public:
+  explicit DummyFormatter(QObject* parent = nullptr);
+  QList<TextFormat> Format(const QString& text, LineInfo line) const;
+};
+
 class LineHighlighter : public QSyntaxHighlighter {
   Q_OBJECT
   QML_ELEMENT

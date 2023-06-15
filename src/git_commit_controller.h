@@ -51,7 +51,7 @@ class DiffFormatter : public TextAreaFormatter {
   int line_number_width_after;
   QTextCharFormat header_format, added_format, added_placeholder_format,
       deleted_format, deleted_placeholder_format, line_number_format;
-  SyntaxFormatter syntax;
+  OldSyntaxFormatter syntax;
 
  private:
   void FormatSideBySide(const QString& text, const QTextBlock& block, int flags,

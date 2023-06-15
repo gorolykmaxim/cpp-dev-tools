@@ -11,7 +11,7 @@
 SqliteQueryEditorController::SqliteQueryEditorController(QObject *parent)
     : QObject(parent),
       model(new SqliteTableModel(this)),
-      formatter(new SyntaxFormatter(this)) {
+      formatter(new OldSyntaxFormatter(this)) {
   Application &app = Application::Get();
   app.view.SetWindowTitle("SQLite Query Editor");
   formatter->DetectLanguageByFile(".sql");
@@ -47,7 +47,7 @@ static QString GetSelectedQuery(const QString &text, int cursor) {
   if (cursor < 0 || cursor > text.size()) {
     return text;
   }
-  QList<TextSectionFormat> strings_and_comments =
+  QList<TextFormat> strings_and_comments =
       Syntax::FindStringsAndComments(text, "--");
   int start = 0;
   int end = text.size() - 1;

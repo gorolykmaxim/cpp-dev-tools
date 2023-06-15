@@ -12,7 +12,7 @@ class SqliteQueryEditorController : public QObject {
   QML_ELEMENT
   Q_PROPERTY(SqliteTableModel* model MEMBER model CONSTANT)
   Q_PROPERTY(QString query WRITE SaveQuery READ GetQuery NOTIFY queryChanged)
-  Q_PROPERTY(SyntaxFormatter* formatter MEMBER formatter CONSTANT)
+  Q_PROPERTY(OldSyntaxFormatter* formatter MEMBER formatter CONSTANT)
  public:
   explicit SqliteQueryEditorController(QObject* parent = nullptr);
   void SaveQuery(const QString& query);
@@ -27,7 +27,7 @@ class SqliteQueryEditorController : public QObject {
  private:
   SqliteTableModel* model;
   QString query;
-  SyntaxFormatter* formatter;
+  OldSyntaxFormatter* formatter;
 };
 
 #endif  // SQLITEQUERYEDITORCONTROLLER_H

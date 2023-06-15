@@ -771,3 +771,9 @@ void SmallTextAreaHighlighter::highlightBlock(const QString& text) {
     }
   }
 }
+
+DummyFormatter::DummyFormatter(QObject* parent) : TextFormatter(parent) {}
+
+QList<TextFormat> DummyFormatter::Format(const QString&, LineInfo) const {
+  return {};
+}

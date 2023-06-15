@@ -12,10 +12,11 @@ Cdt.Pane {
   property alias cursorFollowEnd: textModel.cursorFollowEnd
   property alias cursorPosition: textModel.cursorPosition
   property bool displayLineNumbers: false
+  property QtObject formatter: DummyFormatter {}
   color: Theme.colorBgDark
   BigTextAreaModel {
     id: textModel
-    formatters: [searchBar.formatter]
+    formatters: [root.formatter, searchBar.formatter]
     onGoToLine: function(line) {
       listView.currentIndex = line;
       listView.positionViewAtIndex(listView.currentIndex, ListView.Center);

@@ -334,38 +334,37 @@ static const Regex kJsKeywords = KeywordsRegExp({
     "volatile",     "while",     "with",     "yield",
 });
 
-static QList<TextSectionFormat> ParseByRegex(const QString &text,
-                                             const QTextCharFormat &format,
-                                             const Regex &regex,
-                                             int end_offset = 0) {
-  QList<TextSectionFormat> results;
+static QList<TextFormat> ParseByRegex(const QString &text,
+                                      const QTextCharFormat &format,
+                                      const Regex &regex, int end_offset = 0) {
+  QList<TextFormat> results;
   for (auto it = regex.globalMatch(text); it.hasNext();) {
     QRegularExpressionMatch m = it.next();
-    TextSectionFormat f;
-    f.section.start = m.capturedStart(0);
-    f.section.end = m.capturedEnd(0) - 1 + end_offset;
+    TextFormat f;
+    f.offset = m.capturedStart(0);
+    f.length = m.capturedLength(0) + end_offset;
     f.format = format;
     results.append(f);
   }
   return results;
 }
 
-static QList<TextSectionFormat> ParseNumbers(const QString &text) {
+static QList<TextFormat> ParseNumbers(const QString &text) {
   static const Regex kRegex("\\b(\\d+(?:\\.\\d+)?|0x[0-9a-fA-F]+)\\b");
   static const QTextCharFormat format = TextColorToFormat("#b5cea8");
   return ParseByRegex(text, format, kRegex);
 }
 
-static QList<TextSectionFormat> ParseStrings(const QString &text) {
+static QList<TextFormat> ParseStrings(const QString &text) {
   static const Regex kRegex("(\".*?(?<!\\\\)\"|'.*?(?<!\\\\)')");
   static const QTextCharFormat format = TextColorToFormat("#ce9178");
   return ParseByRegex(text, format, kRegex);
 }
 
-static QList<TextSectionFormat> ParseComments(
-    const QString &text, const QString &comment_symbol,
-    const QList<TextSectionFormat> &strings) {
-  QList<TextSectionFormat> results;
+static QList<TextFormat> ParseComments(const QString &text,
+                                       const QString &comment_symbol,
+                                       const QList<TextFormat> &strings) {
+  QList<TextFormat> results;
   int pos = 0;
   while (true) {
     int i = text.indexOf(comment_symbol, pos);
@@ -374,10 +373,10 @@ static QList<TextSectionFormat> ParseComments(
     }
     pos = i + comment_symbol.size();
     if (!Syntax::SectionsContain(strings, i)) {
-      TextSectionFormat tsf;
-      tsf.section.start = i;
+      TextFormat tsf;
+      tsf.offset = i;
       i = text.indexOf('\n', pos);
-      tsf.section.end = i < 0 ? text.size() - 1 : i;
+      tsf.length = (i < 0 ? text.size() : i + 1) - tsf.offset;
       tsf.format = kCommentFormat;
       results.append(tsf);
       if (i < 0) {
@@ -389,28 +388,28 @@ static QList<TextSectionFormat> ParseComments(
   return results;
 }
 
-static QList<TextSectionFormat> ParseStringsAndComments(
+static QList<TextFormat> ParseStringsAndComments(
     const QString &text, const QString &comment_symbol) {
-  QList<TextSectionFormat> results;
-  QList<TextSectionFormat> strings = ParseStrings(text);
+  QList<TextFormat> results;
+  QList<TextFormat> strings = ParseStrings(text);
   results.append(strings);
   results.append(ParseComments(text, comment_symbol, strings));
   return results;
 }
 
-static QList<TextSectionFormat> ParseCmake(const QString &text) {
+static QList<TextFormat> ParseCmake(const QString &text) {
   static const Regex kFunctionRegex("\\b[a-zA-Z0-9\\_]+\\s?\\(");
   static const Regex kCommentRegex("#.*$");
-  QList<TextSectionFormat> results;
+  QList<TextFormat> results;
   results.append(ParseByRegex(text, kFunctionNameFormat, kFunctionRegex, -1));
   results.append(ParseByRegex(text, kCommentFormat, kCommentRegex));
   return results;
 }
 
-static QList<TextSectionFormat> ParseSql(const QString &text) {
+static QList<TextFormat> ParseSql(const QString &text) {
   static const Regex kBoolRegex =
       KeywordsRegExp({"TRUE", "FALSE"}, Regex::CaseInsensitiveOption);
-  QList<TextSectionFormat> results;
+  QList<TextFormat> results;
   results.append(ParseByRegex(text, kLanguageKeywordFormat1, kSqlKeywords));
   results.append(ParseByRegex(text, kLanguageKeywordFormat2, kBoolRegex));
   results.append(ParseNumbers(text));
@@ -418,10 +417,10 @@ static QList<TextSectionFormat> ParseSql(const QString &text) {
   return results;
 }
 
-static QList<TextSectionFormat> ParseQml(const QString &text) {
+static QList<TextFormat> ParseQml(const QString &text) {
   static const Regex kComponentRegex("[a-zA-Z0-9.]+\\s{");
   static const Regex kPropertyRegex("^\\s*[a-zA-Z0-9.]+\\s*:");
-  QList<TextSectionFormat> results;
+  QList<TextFormat> results;
   results.append(ParseByRegex(text, kFunctionNameFormat, kComponentRegex, -1));
   results.append(
       ParseByRegex(text, kLanguageKeywordFormat1, kPropertyRegex, -1));
@@ -432,8 +431,8 @@ static QList<TextSectionFormat> ParseQml(const QString &text) {
   return results;
 }
 
-static QList<TextSectionFormat> ParseCpp(const QString &text) {
-  QList<TextSectionFormat> results;
+static QList<TextFormat> ParseCpp(const QString &text) {
+  QList<TextFormat> results;
   results.append(ParseByRegex(text, kLanguageKeywordFormat1, kCppKeywords));
   results.append(ParseNumbers(text));
   results.append(
@@ -442,18 +441,53 @@ static QList<TextSectionFormat> ParseCpp(const QString &text) {
   return results;
 }
 
-static QList<TextSectionFormat> ParseJs(const QString &text) {
-  QList<TextSectionFormat> results;
+static QList<TextFormat> ParseJs(const QString &text) {
+  QList<TextFormat> results;
   results.append(ParseByRegex(text, kLanguageKeywordFormat1, kJsKeywords));
   results.append(ParseNumbers(text));
   results.append(ParseStringsAndComments(text, "//"));
   return results;
 }
 
-SyntaxFormatter::SyntaxFormatter(QObject *parent) : TextAreaFormatter(parent) {}
+OldSyntaxFormatter::OldSyntaxFormatter(QObject *parent)
+    : TextAreaFormatter(parent), formatter(this) {}
 
-QList<TextSectionFormat> SyntaxFormatter::Format(const QString &text,
-                                                 const QTextBlock &) {
+QList<TextSectionFormat> OldSyntaxFormatter::Format(const QString &text,
+                                                    const QTextBlock &block) {
+  LineInfo line{block.position(), block.firstLineNumber()};
+  QList<TextFormat> fs = formatter.Format(text, line);
+  QList<TextSectionFormat> result;
+  for (const TextFormat &f : fs) {
+    TextSectionFormat tsf;
+    tsf.section.start = f.offset;
+    tsf.section.end = f.offset + f.length - 1;
+    tsf.format = f.format;
+    result.append(tsf);
+  }
+  return result;
+}
+
+void OldSyntaxFormatter::DetectLanguageByFile(const QString &file_name) {
+  formatter.DetectLanguageByFile(file_name);
+}
+
+QList<TextFormat> Syntax::FindStringsAndComments(
+    const QString &text, const QString &comment_symbol) {
+  return ParseStringsAndComments(text, comment_symbol);
+}
+
+bool Syntax::SectionsContain(const QList<TextFormat> &sections, int i) {
+  for (const TextFormat &sec : sections) {
+    if (sec.offset < i && sec.offset + sec.length > i) {
+      return true;
+    }
+  }
+  return false;
+}
+
+SyntaxFormatter::SyntaxFormatter(QObject *parent) : TextFormatter(parent) {}
+
+QList<TextFormat> SyntaxFormatter::Format(const QString &text, LineInfo) const {
   if (format) {
     return format(text);
   } else {
@@ -478,18 +512,4 @@ void SyntaxFormatter::DetectLanguageByFile(const QString &file_name) {
   } else {
     format = nullptr;
   }
-}
-
-QList<TextSectionFormat> Syntax::FindStringsAndComments(
-    const QString &text, const QString &comment_symbol) {
-  return ParseStringsAndComments(text, comment_symbol);
-}
-
-bool Syntax::SectionsContain(const QList<TextSectionFormat> &sections, int i) {
-  for (const TextSectionFormat &sec : sections) {
-    if (sec.section.start < i && sec.section.end > i) {
-      return true;
-    }
-  }
-  return false;
 }

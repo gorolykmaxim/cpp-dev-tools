@@ -29,7 +29,7 @@ FindInFilesController::FindInFilesController(QObject* parent)
     : QObject(parent),
       search_results(new FileSearchResultListModel(this)),
       selected_file_cursor_position(-1),
-      formatter(new FileSearchResultFormatter(this)) {
+      formatter(new SyntaxFormatter(this)) {
   Application& app = Application::Get();
   app.view.SetWindowTitle("Find In Files");
   connect(search_results, &TextListModel::selectedItemChanged, this,
@@ -188,7 +188,6 @@ static ResultBatch FindRegex(const QRegularExpression& search_term_regex,
 
 void FindInFilesController::search() {
   LOG() << "Searching for" << search_term;
-  prev_selected_result = -1;
   selected_file_path.clear();
   selected_file_content.clear();
   selected_file_cursor_position = -1;
@@ -293,14 +292,8 @@ void FindInFilesController::OnSelectedResultChanged() {
     return;
   }
   LOG() << "Selected search result" << selected_result;
-  int old_result_line = -1;
-  if (prev_selected_result >= 0) {
-    old_result_line = search_results->At(prev_selected_result).column - 1;
-  }
-  prev_selected_result = selected_result;
   const FileSearchResult& result = search_results->At(selected_result);
-  int new_result_line = result.column - 1;
-  formatter->SetResult(result);
+  formatter->DetectLanguageByFile(result.file_path);
   if (selected_file_path != result.file_path) {
     IoTask::Run<QString>(
         this,
@@ -321,10 +314,6 @@ void FindInFilesController::OnSelectedResultChanged() {
   } else {
     selected_file_cursor_position = result.offset;
     emit selectedResultChanged();
-    if (old_result_line >= 0) {
-      emit rehighlightBlockByLineNumber(old_result_line);
-    }
-    emit rehighlightBlockByLineNumber(new_result_line);
   }
 }
 
@@ -417,30 +406,4 @@ bool FindInFilesOptions::operator==(const FindInFilesOptions& another) const {
 
 bool FindInFilesOptions::operator!=(const FindInFilesOptions& another) const {
   return !(*this == another);
-}
-
-FileSearchResultFormatter::FileSearchResultFormatter(QObject* parent)
-    : TextAreaFormatter(parent), syntax_formatter(new SyntaxFormatter(this)) {
-  Theme theme;
-  result_format.setBackground(
-      ViewSystem::BrushFromHex(theme.kColorBgHighlight));
-}
-
-QList<TextSectionFormat> FileSearchResultFormatter::Format(
-    const QString& text, const QTextBlock& block) {
-  QList<TextSectionFormat> results;
-  results.append(syntax_formatter->Format(text, block));
-  if (block.firstLineNumber() == result.column - 1) {
-    TextSectionFormat f;
-    f.section.start = result.row - 1;
-    f.section.end = f.section.start + result.match_length - 1;
-    f.format = result_format;
-    results.append(f);
-  }
-  return results;
-}
-
-void FileSearchResultFormatter::SetResult(const FileSearchResult& result) {
-  this->result = result;
-  syntax_formatter->DetectLanguageByFile(result.file_path);
 }

@@ -14,7 +14,6 @@ SplitView {
   }
   FindInFilesController {
     id: controller
-//    onRehighlightBlockByLineNumber: (i) => filePreviewArea.rehighlightBlockByLineNumber(i)
   }
   ColumnLayout {
     SplitView.minimumWidth: 300
@@ -178,18 +177,7 @@ SplitView {
       text: controller.selectedFileContent
       cursorPosition: controller.selectedFileCursorPosition
       displayLineNumbers: true
+      formatter: controller.formatter
     }
-//    Cdt.TextArea {
-//      id: filePreviewArea
-//      innerPadding: Theme.basePadding
-//      detectFileLinks: false
-//      searchable: true
-//      readonly: true
-//      text: controller.selectedFileContent
-//      cursorPosition: controller.selectedFileCursorPosition
-//      formatter: controller.formatter
-//      Layout.fillWidth: true
-//      Layout.fillHeight: true
-//    }
   }
 }

@@ -5,22 +5,31 @@
 
 class Syntax {
  public:
-  static QList<TextSectionFormat> FindStringsAndComments(
+  static QList<TextFormat> FindStringsAndComments(
       const QString &text, const QString &comment_symbol);
-  static bool SectionsContain(const QList<TextSectionFormat> &sections, int i);
+  static bool SectionsContain(const QList<TextFormat> &sections, int i);
 };
 
-class SyntaxFormatter : public TextAreaFormatter {
- public:
-  using FormatFunc =
-      std::function<QList<TextSectionFormat>(const QString &text)>;
+using SyntaxFormatFunc = std::function<QList<TextFormat>(const QString &text)>;
 
+class SyntaxFormatter : public TextFormatter {
+ public:
   explicit SyntaxFormatter(QObject *parent = nullptr);
+  QList<TextFormat> Format(const QString &text, LineInfo line) const;
+  void DetectLanguageByFile(const QString &file_name);
+
+ private:
+  SyntaxFormatFunc format;
+};
+
+class OldSyntaxFormatter : public TextAreaFormatter {
+ public:
+  explicit OldSyntaxFormatter(QObject *parent = nullptr);
   QList<TextSectionFormat> Format(const QString &text, const QTextBlock &block);
   void DetectLanguageByFile(const QString &file_name);
 
  private:
-  FormatFunc format;
+  SyntaxFormatter formatter;
 };
 
 #endif  // SYNTAX_H

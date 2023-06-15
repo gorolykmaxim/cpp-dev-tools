@@ -58,18 +58,6 @@ struct FindInFilesOptions {
   bool operator!=(const FindInFilesOptions& another) const;
 };
 
-class FileSearchResultFormatter : public TextAreaFormatter {
- public:
-  explicit FileSearchResultFormatter(QObject* parent);
-  QList<TextSectionFormat> Format(const QString& text, const QTextBlock& block);
-  void SetResult(const FileSearchResult& result);
-
- private:
-  SyntaxFormatter* syntax_formatter;
-  FileSearchResult result;
-  QTextCharFormat result_format;
-};
-
 class FindInFilesController : public QObject {
   Q_OBJECT
   QML_ELEMENT
@@ -84,7 +72,7 @@ class FindInFilesController : public QObject {
                  selectedResultChanged)
   Q_PROPERTY(int selectedFileCursorPosition MEMBER selected_file_cursor_position
                  NOTIFY selectedResultChanged)
-  Q_PROPERTY(FileSearchResultFormatter* formatter MEMBER formatter CONSTANT)
+  Q_PROPERTY(SyntaxFormatter* formatter MEMBER formatter CONSTANT)
  public:
   explicit FindInFilesController(QObject* parent = nullptr);
   ~FindInFilesController();
@@ -97,7 +85,6 @@ class FindInFilesController : public QObject {
   void searchStatusChanged();
   void optionsChanged();
   void selectedResultChanged();
-  void rehighlightBlockByLineNumber(int i);
 
  private:
   void OnResultFound(int i);
@@ -107,12 +94,11 @@ class FindInFilesController : public QObject {
 
   QString search_term;
   FileSearchResultListModel* search_results;
-  int prev_selected_result = -1;
   QString selected_file_path;
   QString selected_file_content;
   int selected_file_cursor_position;
   FindInFilesOptions options;
-  FileSearchResultFormatter* formatter;
+  SyntaxFormatter* formatter;
   QFutureWatcher<QList<FileSearchResult>> search_result_watcher;
 };
 
