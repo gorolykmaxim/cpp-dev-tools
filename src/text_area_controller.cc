@@ -314,29 +314,29 @@ void TextAreaHighlighter::highlightBlock(const QString& text) {
   }
 }
 
-TextAreaModel::TextAreaModel(QObject* parent)
+BigTextAreaModel::BigTextAreaModel(QObject* parent)
     : QAbstractListModel(parent),
       cursor_follow_end(false),
       cursor_position(-1),
       current_line(0),
       selection_formatter(new SelectionFormatter(this, selection)),
       formatters({selection_formatter}) {
-  connect(this, &TextAreaModel::cursorPositionChanged, this, [this] {
+  connect(this, &BigTextAreaModel::cursorPositionChanged, this, [this] {
     if (cursor_position >= 0) {
       emit goToLine(GetCursorPositionLine());
     }
   });
 }
 
-QHash<int, QByteArray> TextAreaModel::roleNames() const {
+QHash<int, QByteArray> BigTextAreaModel::roleNames() const {
   return {{0, "text"}, {1, "offset"}};
 }
 
-int TextAreaModel::rowCount(const QModelIndex&) const {
+int BigTextAreaModel::rowCount(const QModelIndex&) const {
   return line_start_offsets.size();
 }
 
-QVariant TextAreaModel::data(const QModelIndex& index, int role) const {
+QVariant BigTextAreaModel::data(const QModelIndex& index, int role) const {
   if (role == 0) {
     int start = line_start_offsets[index.row()];
     int length = GetLineLength(index.row());
@@ -348,7 +348,7 @@ QVariant TextAreaModel::data(const QModelIndex& index, int role) const {
   }
 }
 
-void TextAreaModel::SetText(const QString& text) {
+void BigTextAreaModel::SetText(const QString& text) {
   bool is_append = !this->text.isEmpty() && text.startsWith(this->text);
   int first_new_line;
   if (is_append) {
@@ -390,24 +390,24 @@ void TextAreaModel::SetText(const QString& text) {
   }
 }
 
-QString TextAreaModel::GetText() const { return text; }
+QString BigTextAreaModel::GetText() const { return text; }
 
-void TextAreaModel::SetFormatters(QList<TextFormatter*> formatters) {
+void BigTextAreaModel::SetFormatters(QList<TextFormatter*> formatters) {
   this->formatters = formatters;
   this->formatters.append(selection_formatter);
   emit formattersChanged();
 }
 
-QList<TextFormatter*> TextAreaModel::GetFormatters() const {
+QList<TextFormatter*> BigTextAreaModel::GetFormatters() const {
   return formatters;
 }
 
-int TextAreaModel::GetLineNumberMaxWidth() const {
+int BigTextAreaModel::GetLineNumberMaxWidth() const {
   QFontMetrics m(font);
   return m.horizontalAdvance(QString::number(line_start_offsets.size()));
 }
 
-void TextAreaModel::selectInline(int line, int start, int end) {
+void BigTextAreaModel::selectInline(int line, int start, int end) {
   std::pair<int, int> redraw_range = selection.GetLineRange();
   selection.multiline_selection = false;
   selection.last_line = selection.first_line = line;
@@ -417,7 +417,7 @@ void TextAreaModel::selectInline(int line, int start, int end) {
   emit rehighlightLines(line, line);
 }
 
-void TextAreaModel::selectLine(int line) {
+void BigTextAreaModel::selectLine(int line) {
   if (line < 0 || line >= line_start_offsets.size()) {
     return;
   }
@@ -437,7 +437,7 @@ void TextAreaModel::selectLine(int line) {
   }
 }
 
-void TextAreaModel::selectAll() {
+void BigTextAreaModel::selectAll() {
   std::pair<int, int> redraw_range = selection.GetLineRange();
   selection = TextSelection();
   selection.first_line = 0;
@@ -447,7 +447,7 @@ void TextAreaModel::selectAll() {
   emit rehighlightLines(redraw_range.first, redraw_range.second);
 }
 
-void TextAreaModel::selectSearchResult(int offset, int length) {
+void BigTextAreaModel::selectSearchResult(int offset, int length) {
   std::pair<int, int> redraw_range = selection.GetLineRange();
   selection = TextSelection();
   if (length > 0) {
@@ -462,7 +462,7 @@ void TextAreaModel::selectSearchResult(int offset, int length) {
   emit rehighlightLines(redraw_range.first, redraw_range.second);
 }
 
-bool TextAreaModel::resetSelection() {
+bool BigTextAreaModel::resetSelection() {
   if (selection.first_line < 0) {
     return false;
   }
@@ -472,7 +472,7 @@ bool TextAreaModel::resetSelection() {
   return true;
 }
 
-void TextAreaModel::copySelection() {
+void BigTextAreaModel::copySelection() {
   TextSelection s = selection.Normalize();
   std::pair<int, int> range;
   if (s.first_line < 0) {
@@ -485,7 +485,7 @@ void TextAreaModel::copySelection() {
   QGuiApplication::clipboard()->setText(text);
 }
 
-int TextAreaModel::getSelectionOffset() {
+int BigTextAreaModel::getSelectionOffset() {
   TextSelection s = selection.Normalize();
   if (s.first_line < 0) {
     return -1;
@@ -493,7 +493,7 @@ int TextAreaModel::getSelectionOffset() {
   return line_start_offsets[s.first_line] + std::max(s.first_line_offset, 0);
 }
 
-QString TextAreaModel::getSelectedText() {
+QString BigTextAreaModel::getSelectedText() {
   TextSelection s = selection.Normalize();
   if (s.first_line < 0) {
     return "";
@@ -502,11 +502,11 @@ QString TextAreaModel::getSelectedText() {
   return text.sliced(range.first, range.second - range.first);
 }
 
-void TextAreaModel::rehighlight() {
+void BigTextAreaModel::rehighlight() {
   emit rehighlightLines(0, line_start_offsets.size());
 }
 
-int TextAreaModel::GetLineLength(int line) const {
+int BigTextAreaModel::GetLineLength(int line) const {
   if (line < 0 || line >= line_start_offsets.size()) {
     return 0;
   }
@@ -516,7 +516,7 @@ int TextAreaModel::GetLineLength(int line) const {
   return std::max(end - start - 1, 0);
 }
 
-int TextAreaModel::GetLineWithOffset(int offset) const {
+int BigTextAreaModel::GetLineWithOffset(int offset) const {
   for (int i = 0; i < line_start_offsets.size(); i++) {
     if (offset < line_start_offsets[i]) {
       return i - 1;
@@ -525,7 +525,7 @@ int TextAreaModel::GetLineWithOffset(int offset) const {
   return 0;
 }
 
-int TextAreaModel::GetCursorPositionLine() const {
+int BigTextAreaModel::GetCursorPositionLine() const {
   return GetLineWithOffset(cursor_position);
 }
 
@@ -604,7 +604,7 @@ TextSelection TextSelection::Normalize() const {
   return result;
 }
 
-std::pair<int, int> TextAreaModel::GetSelectionRange(
+std::pair<int, int> BigTextAreaModel::GetSelectionRange(
     const TextSelection& s) const {
   int start = line_start_offsets[s.first_line];
   int end = line_start_offsets[s.last_line];
@@ -676,14 +676,18 @@ void TextSearchController::replaceSearchResultWith(const QString& text,
   if (results.items.isEmpty()) {
     return;
   }
+  QList<int> offsets, lengths;
   if (replace_all) {
     for (auto it = results.items.rbegin(); it != results.items.rend(); it++) {
-      emit replaceResult(it->offset, it->length, text);
+      offsets.append(it->offset);
+      lengths.append(it->length);
     }
   } else {
     TextSegment result = results.items[selected_result];
-    emit replaceResult(result.offset, result.length, text);
+    offsets.append(result.offset);
+    lengths.append(result.length);
   }
+  emit replaceResults(offsets, lengths, text);
 }
 
 void TextSearchController::goToResultWithStartAt(int text_position) {
@@ -743,4 +747,27 @@ QList<TextFormat> SearchFormatter::Format(const QString&, LineInfo line) const {
     fs.append(f);
   }
   return fs;
+}
+
+SmallTextAreaHighlighter::SmallTextAreaHighlighter(QObject* parent)
+    : QSyntaxHighlighter(parent), document(nullptr) {}
+
+QQuickTextDocument* SmallTextAreaHighlighter::GetDocument() const {
+  return document;
+}
+
+void SmallTextAreaHighlighter::SetDocument(QQuickTextDocument* document) {
+  this->document = document;
+  setDocument(document->textDocument());
+  emit documentChanged();
+}
+
+void SmallTextAreaHighlighter::highlightBlock(const QString& text) {
+  QTextBlock block = currentBlock();
+  LineInfo line{block.position(), block.firstLineNumber()};
+  for (const TextFormatter* formatter : formatters) {
+    for (const TextFormat& f : formatter->Format(text, line)) {
+      setFormat(f.offset, f.length, f.format);
+    }
+  }
 }

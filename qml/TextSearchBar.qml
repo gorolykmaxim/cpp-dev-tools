@@ -10,9 +10,18 @@ Cdt.Pane {
   property alias formatter: controller.formatter
   signal searchResultsChanged()
   signal selectResult(int offset, int length)
+  signal replaceResults(list<int> offsets, list<int> lengths, string text)
   color: Theme.colorBgMedium
   padding: Theme.basePadding
   visible: false
+  Keys.onEscapePressed: function(e) {
+    if (visible) {
+      close();
+      e.accepted = true;
+    } else {
+      e.accepted = false;
+    }
+  }
   onTextChanged: {
     if (visible) {
       controller.search(searchTextField.displayText, text, readOnly)
@@ -34,9 +43,14 @@ Cdt.Pane {
     replaceTextField.text = "";
     return result;
   }
+  function replaceAndSearch(replaceAll) {
+    controller.replaceSearchResultWith(replaceTextField.displayText, replaceAll);
+    controller.search(searchTextField.displayText, root.text, true);
+  }
   TextSearchController {
     id: controller
     onSearchResultsChanged: root.searchResultsChanged()
+    onReplaceResults: (o, l, t) => root.replaceResults(o, l, t)
     onSelectResult: (o, l) => root.selectResult(o, l)
   }
   ColumnLayout {
@@ -75,10 +89,6 @@ Cdt.Pane {
     RowLayout {
       visible: !root.readOnly
       Layout.fillWidth: true
-      function replaceAndSearch(replaceAll) {
-        controller.replaceSearchResultWith(replaceOutputTextField.displayText, replaceAll);
-        controller.search(searchOutputTextField.displayText, root.text, true);
-      }
       Cdt.TextField {
         id: replaceTextField
         Layout.fillWidth: true

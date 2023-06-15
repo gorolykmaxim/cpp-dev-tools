@@ -211,7 +211,8 @@ class TextSearchController : public QObject {
 
  signals:
   void selectResult(int offset, int length);
-  void replaceResult(int offset, int length, const QString& text);
+  void replaceResults(const QList<int>& offsets, const QList<int>& lengths,
+                      const QString& text);
   void searchResultsCountChanged();
   void searchResultsChanged();
 
@@ -225,7 +226,7 @@ class TextSearchController : public QObject {
   SearchFormatter* formatter;
 };
 
-class TextAreaModel : public QAbstractListModel {
+class BigTextAreaModel : public QAbstractListModel {
   Q_OBJECT
   QML_ELEMENT
   Q_PROPERTY(QString text WRITE SetText READ GetText NOTIFY textChanged)
@@ -240,7 +241,7 @@ class TextAreaModel : public QAbstractListModel {
   Q_PROPERTY(
       int lineNumberMaxWidth READ GetLineNumberMaxWidth NOTIFY fontChanged)
  public:
-  explicit TextAreaModel(QObject* parent = nullptr);
+  explicit BigTextAreaModel(QObject* parent = nullptr);
   QHash<int, QByteArray> roleNames() const;
   int rowCount(const QModelIndex& parent) const;
   QVariant data(const QModelIndex& index, int role) const;
@@ -286,4 +287,28 @@ class TextAreaModel : public QAbstractListModel {
   SelectionFormatter* selection_formatter;
   QList<TextFormatter*> formatters;
   QFont font;
+};
+
+class SmallTextAreaHighlighter : public QSyntaxHighlighter {
+  Q_OBJECT
+  QML_ELEMENT
+  Q_PROPERTY(QList<TextFormatter*> formatters MEMBER formatters NOTIFY
+                 formattersChanged)
+  Q_PROPERTY(QQuickTextDocument* document READ GetDocument WRITE SetDocument
+                 NOTIFY documentChanged)
+ public:
+  explicit SmallTextAreaHighlighter(QObject* parent = nullptr);
+  QQuickTextDocument* GetDocument() const;
+  void SetDocument(QQuickTextDocument* document);
+
+ protected:
+  void highlightBlock(const QString& text);
+
+ signals:
+  void formattersChanged();
+  void documentChanged();
+
+ private:
+  QList<TextFormatter*> formatters;
+  QQuickTextDocument* document;
 };

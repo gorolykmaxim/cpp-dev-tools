@@ -13,7 +13,7 @@ Cdt.Pane {
   property alias cursorPosition: textModel.cursorPosition
   property bool displayLineNumbers: false
   color: Theme.colorBgDark
-  TextAreaModel {
+  BigTextAreaModel {
     id: textModel
     formatters: [searchBar.formatter]
     onGoToLine: function(line) {
@@ -22,9 +22,7 @@ Cdt.Pane {
     }
   }
   Keys.onEscapePressed: function(e) {
-    if (listView.activeFocus && textModel.resetSelection()) {
-      e.accepted = true;
-    } else if (searchBar.close()) {
+    if (textModel.resetSelection() || searchBar.close()) {
       e.accepted = true;
     }
   }
