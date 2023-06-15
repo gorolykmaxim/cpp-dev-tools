@@ -24,7 +24,7 @@ Cdt.Pane {
   }
   onTextChanged: {
     if (visible) {
-      controller.search(searchTextField.displayText, text, readOnly)
+      controller.search(searchTextField.displayText, text, root.activeFocus)
     }
   }
   function display(offset, text) {
@@ -42,10 +42,6 @@ Cdt.Pane {
     searchTextField.text = "";
     replaceTextField.text = "";
     return result;
-  }
-  function replaceAndSearch(replaceAll) {
-    controller.replaceSearchResultWith(replaceTextField.displayText, replaceAll);
-    controller.search(searchTextField.displayText, root.text, true);
   }
   TextSearchController {
     id: controller
@@ -93,22 +89,22 @@ Cdt.Pane {
         id: replaceTextField
         Layout.fillWidth: true
         placeholderText: "Replace text"
-        Keys.onReturnPressed: replaceAndSearch(false)
-        Keys.onEnterPressed: replaceAndSearch(false)
+        Keys.onReturnPressed: controller.replaceSearchResultWith(replaceTextField.displayText, false)
+        Keys.onEnterPressed: controller.replaceSearchResultWith(replaceTextField.displayText, false)
         KeyNavigation.right: replaceBtn
         KeyNavigation.up: searchTextField
       }
       Cdt.Button {
         id: replaceBtn
         text: "Replace"
-        onClicked: replaceAndSearch(false)
+        onClicked: controller.replaceSearchResultWith(replaceTextField.displayText, false)
         KeyNavigation.right: replaceAllBtn
         KeyNavigation.up: searchTextField
       }
       Cdt.Button {
         id: replaceAllBtn
         text: "Replace All"
-        onClicked: replaceAndSearch(true)
+        onClicked: controller.replaceSearchResultWith(replaceTextField.displayText, true)
         KeyNavigation.up: searchTextField
       }
     }
