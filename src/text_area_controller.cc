@@ -350,20 +350,19 @@ QVariant BigTextAreaModel::data(const QModelIndex& index, int role) const {
 
 void BigTextAreaModel::SetText(const QString& text) {
   bool is_append = !this->text.isEmpty() && text.startsWith(this->text);
-  int first_new_line;
+  int first_new_line = 0;
   if (is_append) {
     first_new_line = line_start_offsets.constLast();
     beginRemoveRows(QModelIndex(), line_start_offsets.size() - 1,
                     line_start_offsets.size() - 1);
     line_start_offsets.removeLast();
-  } else {
-    first_new_line = 0;
+    endRemoveRows();
+  } else if (!line_start_offsets.isEmpty()) {
     beginRemoveRows(QModelIndex(), 0, line_start_offsets.size() - 1);
     line_start_offsets.clear();
     selection = TextSelection();
+    endRemoveRows();
   }
-  endRemoveRows();
-  int current_size = line_start_offsets.size();
   QList<int> new_lines;
   if (!text.isEmpty()) {
     new_lines.append(first_new_line);
@@ -377,8 +376,11 @@ void BigTextAreaModel::SetText(const QString& text) {
     new_lines.append(i + 1);
     pos = new_lines.constLast();
   }
-  beginInsertRows(QModelIndex(), current_size,
-                  current_size + new_lines.size() - 1);
+  if (new_lines.isEmpty()) {
+    return;
+  }
+  beginInsertRows(QModelIndex(), line_start_offsets.size(),
+                  line_start_offsets.size() + new_lines.size() - 1);
   line_start_offsets.append(new_lines);
   this->text = text;
   endInsertRows();
