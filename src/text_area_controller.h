@@ -15,7 +15,7 @@ struct TextSectionFormat {
   QTextCharFormat format;
 };
 
-struct FileLink {
+struct OldFileLink {
   TextSection section;
   QString file_path;
   int column = -1;
@@ -31,9 +31,9 @@ class TextAreaFormatter : public QObject {
 
 class TextAreaHighlighter : public QSyntaxHighlighter {
  public:
-  TextAreaHighlighter(QList<FileLink>& file_links);
+  TextAreaHighlighter(QList<OldFileLink>& file_links);
   TextAreaFormatter* formatter = nullptr;
-  QList<FileLink>& file_links;
+  QList<OldFileLink>& file_links;
   QTextCharFormat link_format;
 
  protected:
@@ -100,7 +100,7 @@ class TextAreaController : public QObject {
   int cursor_history_index = -1;
   TextAreaHighlighter highlighter;
   QQuickTextDocument* document;
-  QList<FileLink> file_links;
+  QList<OldFileLink> file_links;
   bool detect_file_links;
 };
 
@@ -116,6 +116,12 @@ struct TextFormat : public TextSegment {
 struct LineInfo {
   int offset = 0;
   int number = 0;
+};
+
+struct FileLink : public TextSegment {
+  QString file_path;
+  int column = -1;
+  int row = -1;
 };
 
 struct TextSelection {
@@ -233,6 +239,46 @@ class TextSearchController : public QObject {
   SearchFormatter* formatter;
 };
 
+class FileLinkFormatter : public TextFormatter {
+ public:
+  FileLinkFormatter(QObject* parent, const QList<FileLink>& links,
+                    const QHash<int, QList<int>>& index,
+                    const int& current_line, const int& current_line_link);
+  QList<TextFormat> Format(const QString& text, LineInfo line) const;
+
+ private:
+  const QList<FileLink>& links;
+  const QHash<int, QList<int>>& index;
+  const int& current_line;
+  const int& current_line_link;
+  QTextCharFormat format;
+};
+
+class FileLinkLookupController : public QObject {
+  Q_OBJECT
+  QML_ELEMENT
+  Q_PROPERTY(FileLinkFormatter* formatter MEMBER formatter CONSTANT)
+ public:
+  explicit FileLinkLookupController(QObject* parent = nullptr);
+
+ public slots:
+  void findFileLinks(const QString& text);
+  void setCurrentLine(int line);
+  void openCurrentFileLink();
+
+ signals:
+  void rehighlightLine(int line);
+
+ private:
+  void FindFileLinks(const QRegularExpression& regex, const QString& text);
+
+  int current_line;
+  int current_line_link;
+  FileLinkFormatter* formatter;
+  QList<FileLink> links;
+  QHash<int, QList<int>> index;
+};
+
 class BigTextAreaModel : public QAbstractListModel {
   Q_OBJECT
   QML_ELEMENT
@@ -268,6 +314,7 @@ class BigTextAreaModel : public QAbstractListModel {
   int getSelectionOffset();
   QString getSelectedText();
   void rehighlight();
+  void rehighlightLine(int line);
 
  signals:
   void textChanged();

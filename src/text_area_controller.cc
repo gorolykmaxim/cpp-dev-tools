@@ -157,7 +157,7 @@ void TextAreaController::openFileLinkAtCursor() {
   if (i < 0) {
     return;
   }
-  const FileLink& link = file_links[i];
+  const OldFileLink& link = file_links[i];
   Application::Get().editor.OpenFile(link.file_path, link.column, link.row);
 }
 
@@ -267,7 +267,7 @@ void TextAreaController::FindFileLinks(const QRegularExpression& regex,
                                        const QString& text) {
   for (auto it = regex.globalMatch(text); it.hasNext();) {
     QRegularExpressionMatch m = it.next();
-    FileLink link;
+    OldFileLink link;
     link.file_path = m.captured(1);
     link.section.start = m.capturedStart();
     link.section.end = m.capturedEnd();
@@ -291,7 +291,7 @@ int TextAreaController::IndexOfFileLinkAtPosition(int position) const {
 
 TextAreaFormatter::TextAreaFormatter(QObject* parent) : QObject(parent) {}
 
-TextAreaHighlighter::TextAreaHighlighter(QList<FileLink>& file_links)
+TextAreaHighlighter::TextAreaHighlighter(QList<OldFileLink>& file_links)
     : QSyntaxHighlighter((QObject*)nullptr), file_links(file_links) {
   Theme theme;
   link_format.setForeground(ViewSystem::BrushFromHex(theme.kColorHighlight));
@@ -305,7 +305,7 @@ void TextAreaHighlighter::highlightBlock(const QString& text) {
       setFormat(f.section.start, f.section.end - f.section.start + 1, f.format);
     }
   }
-  for (const FileLink& link : file_links) {
+  for (const OldFileLink& link : file_links) {
     if (!block.contains(link.section.start)) {
       continue;
     }
@@ -506,6 +506,10 @@ QString BigTextAreaModel::getSelectedText() {
 
 void BigTextAreaModel::rehighlight() {
   emit rehighlightLines(0, line_start_offsets.size());
+}
+
+void BigTextAreaModel::rehighlightLine(int line) {
+  emit rehighlightLines(line, line);
 }
 
 int BigTextAreaModel::GetLineLength(int line) const {
@@ -784,4 +788,98 @@ DummyFormatter::DummyFormatter(QObject* parent) : TextFormatter(parent) {}
 
 QList<TextFormat> DummyFormatter::Format(const QString&, LineInfo) const {
   return {};
+}
+
+FileLinkFormatter::FileLinkFormatter(QObject* parent,
+                                     const QList<FileLink>& links,
+                                     const QHash<int, QList<int>>& index,
+                                     const int& current_line,
+                                     const int& current_line_link)
+    : TextFormatter(parent),
+      links(links),
+      index(index),
+      current_line(current_line),
+      current_line_link(current_line_link) {
+  static const Theme kTheme;
+  format.setForeground(ViewSystem::BrushFromHex(kTheme.kColorHighlight));
+}
+
+QList<TextFormat> FileLinkFormatter::Format(const QString&,
+                                            LineInfo line) const {
+  QList<TextFormat> fs;
+  const QList<int>& flis = index[line.number];
+  for (int i = 0; i < flis.size(); i++) {
+    int fli = flis[i];
+    const FileLink& fl = links[fli];
+    TextFormat f;
+    f.offset = fl.offset - line.offset;
+    f.length = fl.length;
+    f.format = format;
+    if (current_line == line.number && i == current_line_link) {
+      f.format.setFontUnderline(true);
+    }
+    fs.append(f);
+  }
+  return fs;
+}
+
+FileLinkLookupController::FileLinkLookupController(QObject* parent)
+    : QObject(parent),
+      current_line(0),
+      current_line_link(0),
+      formatter(new FileLinkFormatter(this, links, index, current_line,
+                                      current_line_link)) {}
+
+void FileLinkLookupController::findFileLinks(const QString& text) {
+  static const QRegularExpression kUnix(
+      "([A-Z]?\\:?\\/[^:\\n]+):([0-9]+):?([0-9]+)?");
+  static const QRegularExpression kWin1(
+      "([A-Z]\\:\\\\[^:\\n]+)\\(([0-9]+),?([0-9]+)?\\)");
+  static const QRegularExpression kWin2(
+      "([A-Z]\\:\\\\[^:\\n]+):([0-9]+):([0-9]+)?");
+  links.clear();
+  index.clear();
+  FindFileLinks(kUnix, text);
+  FindFileLinks(kWin1, text);
+  FindFileLinks(kWin2, text);
+}
+
+void FileLinkLookupController::setCurrentLine(int line) {
+  int old = current_line;
+  current_line = line;
+  if (old != current_line) {
+    current_line_link = 0;
+  }
+  emit rehighlightLine(old);
+  emit rehighlightLine(line);
+}
+
+void FileLinkLookupController::openCurrentFileLink() {
+  if (!index.contains(current_line)) {
+    return;
+  }
+  int i = index[current_line][current_line_link];
+  const FileLink& link = links[i];
+  Application::Get().editor.OpenFile(link.file_path, link.column, link.row);
+}
+
+void FileLinkLookupController::FindFileLinks(const QRegularExpression& regex,
+                                             const QString& text) {
+  int line = 0;
+  int pos = 0;
+  for (auto it = regex.globalMatch(text); it.hasNext();) {
+    QRegularExpressionMatch m = it.next();
+    FileLink link;
+    link.file_path = m.captured(1);
+    link.offset = m.capturedStart();
+    link.length = m.capturedLength();
+    link.column = m.captured(2).toInt();
+    if (m.lastCapturedIndex() > 2) {
+      link.row = m.captured(3).toInt();
+    }
+    line += text.sliced(pos, link.offset - pos).count('\n');
+    pos = link.offset;
+    index[line].append(links.size());
+    links.append(link);
+  }
 }

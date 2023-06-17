@@ -42,16 +42,31 @@ ColumnLayout {
     height: 1
     color: Theme.colorBgBlack
   }
-  Cdt.TextArea {
-    id: execOutputTextArea
+  Cdt.FileLinkLookup {
+    id: linkLookup
+    onRehighlightLine: line => textArea.rehighlightLine(line)
+  }
+  Cdt.BigTextArea {
+    id: textArea
     Layout.fillWidth: true
     Layout.fillHeight: true
     focus: true
-    readonly: true
-    innerPadding: Theme.basePadding
     text: controller.executionOutput
-    formatter: controller.executionFormatter
+    formatter: linkLookup.formatter
     cursorFollowEnd: true
-    searchable: true
+    onPreHighlight: linkLookup.findFileLinks(text)
+    onCurrentLineChanged: linkLookup.setCurrentLine(currentLine)
   }
+//  Cdt.TextArea {
+//    id: execOutputTextArea
+//    Layout.fillWidth: true
+//    Layout.fillHeight: true
+//    focus: true
+//    readonly: true
+//    innerPadding: Theme.basePadding
+//    text: controller.executionOutput
+//    formatter: controller.executionFormatter
+//    cursorFollowEnd: true
+//    searchable: true
+//  }
 }

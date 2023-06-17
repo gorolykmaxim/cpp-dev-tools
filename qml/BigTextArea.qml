@@ -11,6 +11,7 @@ Cdt.Pane {
   property bool monoFont: true
   property alias cursorFollowEnd: textModel.cursorFollowEnd
   property alias cursorPosition: textModel.cursorPosition
+  property alias currentLine: listView.currentIndex
   property bool displayLineNumbers: false
   property QtObject formatter: DummyFormatter {}
   signal preHighlight()
@@ -18,6 +19,9 @@ Cdt.Pane {
     searchBar.text = text;
     preHighlight();
     textModel.text = text;
+  }
+  function rehighlightLine(line) {
+    textModel.rehighlightLine(line);
   }
   color: Theme.colorBgDark
   BigTextAreaModel {
