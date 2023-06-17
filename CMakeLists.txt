@@ -140,6 +140,7 @@ qt_add_qml_module(cpp-dev-tools URI cdt VERSION 1.0
       qml/TextSearchBar.qml
       qml/SmallTextArea.qml
       qml/FileLinkLookup.qml
+      qml/DynamicContextMenu.qml
   RESOURCES
       fonts/MaterialIcons-Regular.ttf
   RESOURCE_PREFIX /)

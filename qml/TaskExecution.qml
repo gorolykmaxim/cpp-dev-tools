@@ -56,6 +56,7 @@ ColumnLayout {
     cursorFollowEnd: true
     onPreHighlight: linkLookup.findFileLinks(text)
     onCurrentLineChanged: linkLookup.setCurrentLine(currentLine)
+    additionalMenuItems: linkLookup.menuItems
   }
 //  Cdt.TextArea {
 //    id: execOutputTextArea

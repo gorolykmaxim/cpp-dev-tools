@@ -14,6 +14,7 @@ Cdt.Pane {
   property alias currentLine: listView.currentIndex
   property bool displayLineNumbers: false
   property QtObject formatter: DummyFormatter {}
+  property var additionalMenuItems: []
   signal preHighlight()
   onTextChanged: {
     searchBar.text = text;
@@ -167,32 +168,32 @@ Cdt.Pane {
           }
         }
       }
-      Menu {
+      Cdt.DynamicContextMenu {
         id: contextMenu
-        MenuItem {
-          text: "Copy"
-          shortcut: "Ctrl+C"
-          enabled: listView.activeFocus
-          onTriggered: textModel.copySelection()
-        }
-        MenuItem {
-          text: "Toggle Select"
-          shortcut: "Ctrl+S"
-          enabled: listView.activeFocus
-          onTriggered: textModel.selectLine(listView.currentIndex)
-        }
-        MenuItem {
-          text: "Select All"
-          shortcut: "Ctrl+A"
-          enabled: listView.activeFocus
-          onTriggered: textModel.selectAll()
-        }
-        MenuItem {
-          text: "Find"
-          shortcut: "Ctrl+F"
-          enabled: listView.activeFocus
-          onTriggered: searchBar.display(textModel.getSelectionOffset(), textModel.getSelectedText())
-        }
+        parentView: listView
+        itemsList: [
+          {
+            text: "Copy",
+            shortcut: "Ctrl+C",
+            callback: () => textModel.copySelection(),
+          },
+          {
+            text: "Toggle Select",
+            shortcut: "Ctrl+S",
+            callback: () => textModel.selectLine(listView.currentIndex),
+          },
+          {
+            text: "Select All",
+            shortcut: "Ctrl+A",
+            callback: () => textModel.selectAll(),
+          },
+          {
+            text: "Find",
+            shortcut: "Ctrl+F",
+            callback: () => searchBar.display(textModel.getSelectionOffset(), textModel.getSelectedText()),
+          },
+          ...additionalMenuItems
+        ]
       }
     }
   }
