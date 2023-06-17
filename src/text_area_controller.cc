@@ -622,20 +622,21 @@ std::pair<int, int> BigTextAreaModel::GetSelectionRange(
 }
 
 TextSearchController::TextSearchController(QObject* parent)
-    : QObject(parent), formatter(new SearchFormatter(this, results)) {}
+    : QObject(parent), formatter(new SearchFormatter(this, results, index)) {}
 
 bool TextSearchController::AreSearchResultsEmpty() const {
-  return results.items.isEmpty();
+  return results.isEmpty();
 }
 
 void TextSearchController::search(const QString& term, const QString& text,
                                   bool select_result,
                                   bool notify_results_changed) {
   int prev_start = -1;
-  if (selected_result < results.items.size()) {
-    prev_start = results.items[selected_result].offset;
+  if (selected_result < results.size()) {
+    prev_start = results[selected_result].offset;
   }
-  results = SearchResults();
+  results.clear();
+  index.clear();
   if (term.size() > 2) {
     int line = 0;
     int pos = 0;
@@ -645,29 +646,29 @@ void TextSearchController::search(const QString& term, const QString& text,
         break;
       }
       line += text.sliced(pos, i - pos).count('\n');
-      results.index[line].append(results.items.size());
+      index[line].append(results.size());
       TextSegment result;
       result.offset = i;
       result.length = term.size();
-      results.items.append(result);
+      results.append(result);
       pos = result.offset + result.length;
     }
   }
   if (notify_results_changed) {
     emit searchResultsChanged();
   }
-  if (selected_result >= results.items.size() ||
-      results.items[selected_result].offset != prev_start) {
+  if (selected_result >= results.size() ||
+      results[selected_result].offset != prev_start) {
     selected_result = 0;
-    for (int i = 0; i < results.items.size(); i++) {
-      if (results.items[i].offset >= prev_start) {
+    for (int i = 0; i < results.size(); i++) {
+      if (results[i].offset >= prev_start) {
         selected_result = i;
         break;
       }
     }
   }
   if (select_result) {
-    if (!results.items.isEmpty()) {
+    if (!results.isEmpty()) {
       DisplaySelectedSearchResult();
     } else {
       emit selectResult(0, 0);
@@ -678,17 +679,17 @@ void TextSearchController::search(const QString& term, const QString& text,
 
 void TextSearchController::replaceSearchResultWith(const QString& text,
                                                    bool replace_all) {
-  if (results.items.isEmpty()) {
+  if (results.isEmpty()) {
     return;
   }
   QList<int> offsets, lengths;
   if (replace_all) {
-    for (auto it = results.items.rbegin(); it != results.items.rend(); it++) {
+    for (auto it = results.rbegin(); it != results.rend(); it++) {
       offsets.append(it->offset);
       lengths.append(it->length);
     }
   } else {
-    TextSegment result = results.items[selected_result];
+    TextSegment result = results[selected_result];
     offsets.append(result.offset);
     lengths.append(result.length);
   }
@@ -696,8 +697,8 @@ void TextSearchController::replaceSearchResultWith(const QString& text,
 }
 
 void TextSearchController::goToResultWithStartAt(int text_position) {
-  for (int i = 0; i < results.items.size(); i++) {
-    if (results.items[i].offset == text_position) {
+  for (int i = 0; i < results.size(); i++) {
+    if (results[i].offset == text_position) {
       selected_result = i;
       DisplaySelectedSearchResult();
       UpdateSearchResultsCount();
@@ -707,23 +708,23 @@ void TextSearchController::goToResultWithStartAt(int text_position) {
 }
 
 void TextSearchController::goToSearchResult(bool next) {
-  if (results.items.isEmpty()) {
+  if (results.isEmpty()) {
     return;
   }
   selected_result = next ? selected_result + 1 : selected_result - 1;
-  if (selected_result >= results.items.size()) {
+  if (selected_result >= results.size()) {
     selected_result = 0;
   } else if (selected_result < 0) {
-    selected_result = results.items.size() - 1;
+    selected_result = results.size() - 1;
   }
   DisplaySelectedSearchResult();
   UpdateSearchResultsCount();
 }
 
 void TextSearchController::UpdateSearchResultsCount() {
-  if (!results.items.isEmpty()) {
+  if (!results.isEmpty()) {
     search_results_count = QString::number(selected_result + 1) + " of " +
-                           QString::number(results.items.size());
+                           QString::number(results.size());
   } else {
     search_results_count = "No Results";
   }
@@ -731,20 +732,22 @@ void TextSearchController::UpdateSearchResultsCount() {
 }
 
 void TextSearchController::DisplaySelectedSearchResult() {
-  TextSegment result = results.items[selected_result];
+  TextSegment result = results[selected_result];
   emit selectResult(result.offset, result.length);
 }
 
-SearchFormatter::SearchFormatter(QObject* parent, const SearchResults& results)
-    : TextFormatter(parent), results(results) {
+SearchFormatter::SearchFormatter(QObject* parent,
+                                 const QList<TextSegment>& results,
+                                 const QHash<int, QList<int>>& index)
+    : TextFormatter(parent), results(results), index(index) {
   format.setBackground(ViewSystem::BrushFromHex("#6b420f"));
 }
 
 QList<TextFormat> SearchFormatter::Format(const QString&, LineInfo line) const {
   QList<TextFormat> fs;
-  const QList<int>& sris = results.index[line.number];
+  const QList<int>& sris = index[line.number];
   for (int sri : sris) {
-    TextSegment sr = results.items[sri];
+    TextSegment sr = results[sri];
     TextFormat f;
     f.offset = sr.offset - line.offset;
     f.length = sr.length;

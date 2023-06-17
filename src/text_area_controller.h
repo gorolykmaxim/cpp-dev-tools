@@ -184,18 +184,15 @@ class SelectionFormatter : public TextFormatter {
   QTextCharFormat format;
 };
 
-struct SearchResults {
-  QList<TextSegment> items;
-  QHash<int, QList<int>> index;
-};
-
 class SearchFormatter : public TextFormatter {
  public:
-  SearchFormatter(QObject* parent, const SearchResults& results);
+  SearchFormatter(QObject* parent, const QList<TextSegment>& results,
+                  const QHash<int, QList<int>>& index);
   QList<TextFormat> Format(const QString& text, LineInfo line) const;
 
  private:
-  const SearchResults& results;
+  const QList<TextSegment>& results;
+  const QHash<int, QList<int>>& index;
   QTextCharFormat format;
 };
 
@@ -230,7 +227,8 @@ class TextSearchController : public QObject {
   void DisplaySelectedSearchResult();
 
   int selected_result = 0;
-  SearchResults results;
+  QList<TextSegment> results;
+  QHash<int, QList<int>> index;
   QString search_results_count = "0 Results";
   SearchFormatter* formatter;
 };
