@@ -14,7 +14,7 @@ SplitView {
   }
   GitCommitController {
     id: controller
-    onCommitMessageChanged: txt => commitMsg.setText(txt)
+    onCommitMessageChanged: txt => commitMsg.text = txt
   }
   Connections {
     target: appWindow
@@ -64,16 +64,13 @@ SplitView {
       SplitView.fillWidth: true
       SplitView.minimumHeight: 300
       spacing: 0
-      Cdt.TextArea {
+      Cdt.SmallTextArea {
         id: commitMsg
         Layout.fillWidth: true
         Layout.fillHeight: true
         placeholderText: "Commit Message"
         focus: controller.hasChanges
-        innerPadding: Theme.basePadding
         enabled: controller.hasChanges
-        detectFileLinks: false
-        searchable: true
         KeyNavigation.down: commitButtons
         KeyNavigation.right: fileDiff
       }
@@ -90,13 +87,13 @@ SplitView {
           Cdt.Button {
             text: "Commit All"
             focus: true
-            onClicked: controller.commit(commitMsg.displayText, true, amendCheckBox.checked)
+            onClicked: controller.commit(commitMsg.text, true, amendCheckBox.checked)
             KeyNavigation.right: commitBtn
           }
           Cdt.Button {
             id: commitBtn
             text: "Commit"
-            onClicked: controller.commit(commitMsg.displayText, false, amendCheckBox.checked)
+            onClicked: controller.commit(commitMsg.text, false, amendCheckBox.checked)
             KeyNavigation.right: amendCheckBox
           }
           Cdt.CheckBox {

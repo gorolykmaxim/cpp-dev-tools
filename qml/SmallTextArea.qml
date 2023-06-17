@@ -91,6 +91,7 @@ FocusScope {
           font.pointSize: monoFontSize
           renderType: Text.NativeRendering
           focus: true
+          wrapMode: Controls.TextArea.WordWrap
           background: Rectangle {
             color: "transparent"
           }
