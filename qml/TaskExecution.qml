@@ -53,22 +53,10 @@ ColumnLayout {
     Layout.fillHeight: true
     focus: true
     text: controller.executionOutput
-    formatters: [linkLookup.formatter]
+    formatters: [controller.executionFormatter, linkLookup.formatter]
     cursorFollowEnd: true
     onPreHighlight: linkLookup.findFileLinks(text)
     onCurrentLineChanged: linkLookup.setCurrentLine(currentLine)
     additionalMenuItems: linkLookup.menuItems
   }
-//  Cdt.TextArea {
-//    id: execOutputTextArea
-//    Layout.fillWidth: true
-//    Layout.fillHeight: true
-//    focus: true
-//    readonly: true
-//    innerPadding: Theme.basePadding
-//    text: controller.executionOutput
-//    formatter: controller.executionFormatter
-//    cursorFollowEnd: true
-//    searchable: true
-//  }
 }

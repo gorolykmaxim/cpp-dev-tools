@@ -51,17 +51,17 @@ void TaskExecutionController::LoadExecution(bool include_output) {
 }
 
 TaskExecutionOutputFormatter::TaskExecutionOutputFormatter(QObject* parent)
-    : TextAreaFormatter(parent) {
+    : TextFormatter(parent) {
   error_line_format.setForeground(QBrush(Qt::red));
 }
 
-QList<TextSectionFormat> TaskExecutionOutputFormatter::Format(
-    const QString& text, const QTextBlock& block) {
-  QList<TextSectionFormat> results;
-  if (stderr_line_indicies.contains(block.firstLineNumber())) {
-    TextSectionFormat f;
-    f.section.start = 0;
-    f.section.end = text.size() - 1;
+QList<TextFormat> TaskExecutionOutputFormatter::Format(const QString& text,
+                                                       LineInfo line) const {
+  QList<TextFormat> results;
+  if (stderr_line_indicies.contains(line.number)) {
+    TextFormat f;
+    f.offset = 0;
+    f.length = text.size();
     f.format = error_line_format;
     results.append(f);
   }

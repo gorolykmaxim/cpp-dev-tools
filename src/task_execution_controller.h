@@ -5,11 +5,10 @@
 
 #include "text_area_controller.h"
 
-class TaskExecutionOutputFormatter : public TextAreaFormatter {
+class TaskExecutionOutputFormatter : public TextFormatter {
  public:
   explicit TaskExecutionOutputFormatter(QObject* parent);
-  QList<TextSectionFormat> Format(const QString& text,
-                                  const QTextBlock& block) override;
+  QList<TextFormat> Format(const QString& text, LineInfo line) const;
 
   QSet<int> stderr_line_indicies;
   QTextCharFormat error_line_format;
@@ -28,8 +27,8 @@ class TaskExecutionController : public QObject {
                  executionChanged)
   Q_PROPERTY(
       QString executionOutput MEMBER execution_output NOTIFY executionChanged)
-  Q_PROPERTY(
-      TextAreaFormatter* executionFormatter MEMBER execution_formatter CONSTANT)
+  Q_PROPERTY(TaskExecutionOutputFormatter* executionFormatter MEMBER
+                 execution_formatter CONSTANT)
  public:
   explicit TaskExecutionController(QObject* parent = nullptr);
 
