@@ -119,6 +119,7 @@ struct LineInfo {
 };
 
 struct FileLink : public TextSegment {
+  int line = 0;
   QString file_path;
   int column = -1;
   int row = -1;
@@ -265,9 +266,11 @@ class FileLinkLookupController : public QObject {
   void findFileLinks(const QString& text);
   void setCurrentLine(int line);
   void openCurrentFileLink();
+  void goToLink(bool next);
 
  signals:
   void rehighlightLine(int line);
+  void linkInLineSelected(int line);
 
  private:
   void FindFileLinks(const QRegularExpression& regex, const QString& text);

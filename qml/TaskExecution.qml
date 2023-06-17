@@ -45,6 +45,7 @@ ColumnLayout {
   Cdt.FileLinkLookup {
     id: linkLookup
     onRehighlightLine: line => textArea.rehighlightLine(line)
+    onLinkInLineSelected: line => textArea.goToLine(line)
   }
   Cdt.BigTextArea {
     id: textArea

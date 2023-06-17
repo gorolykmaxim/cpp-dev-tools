@@ -21,6 +21,9 @@ Cdt.Pane {
     preHighlight();
     textModel.text = text;
   }
+  function goToLine(line) {
+    textModel.goToLine(line);
+  }
   function rehighlightLine(line) {
     textModel.rehighlightLine(line);
   }

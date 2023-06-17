@@ -845,11 +845,15 @@ void FileLinkLookupController::findFileLinks(const QString& text) {
 }
 
 void FileLinkLookupController::setCurrentLine(int line) {
+  if (line == current_line) {
+    // We can only get here if we ourselves initiated change of the line. In
+    // such case we don't need to do anything because we must've already
+    // properly set and rehighlighted everything.
+    return;
+  }
   int old = current_line;
   current_line = line;
-  if (old != current_line) {
-    current_line_link = 0;
-  }
+  current_line_link = 0;
   emit rehighlightLine(old);
   emit rehighlightLine(line);
 }
@@ -861,6 +865,23 @@ void FileLinkLookupController::openCurrentFileLink() {
   int i = index[current_line][current_line_link];
   const FileLink& link = links[i];
   Application::Get().editor.OpenFile(link.file_path, link.column, link.row);
+}
+
+void FileLinkLookupController::goToLink(bool next) {
+  int i;
+  for (i = 0; i < links.size() && links[i].line < current_line; i++) {
+  }
+  i += current_line_link;
+  i += next ? 1 : -1;
+  if (i < 0 || i >= links.size()) {
+    return;
+  }
+  int old = current_line;
+  current_line = links[i].line;
+  current_line_link = index[current_line].indexOf(i);
+  emit rehighlightLine(old);
+  emit rehighlightLine(current_line);
+  emit linkInLineSelected(current_line);
 }
 
 void FileLinkLookupController::FindFileLinks(const QRegularExpression& regex,
@@ -878,6 +899,7 @@ void FileLinkLookupController::FindFileLinks(const QRegularExpression& regex,
       link.row = m.captured(3).toInt();
     }
     line += text.sliced(pos, link.offset - pos).count('\n');
+    link.line = line;
     pos = link.offset;
     index[line].append(links.size());
     links.append(link);
