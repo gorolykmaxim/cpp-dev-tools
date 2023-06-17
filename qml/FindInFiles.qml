@@ -177,6 +177,7 @@ SplitView {
       text: controller.selectedFileContent
       cursorPosition: controller.selectedFileCursorPosition
       displayLineNumbers: true
+      highlightCurrentLineWithoutFocus: true
       formatters: [controller.formatter]
     }
   }

@@ -54,13 +54,12 @@ Dialog {
         color: dialog.isError ? "red" : Theme.colorText
         Layout.alignment: Qt.AlignTop
       }
-      Cdt.TextArea {
+      Cdt.BigTextArea {
         Layout.fillWidth: true
         Layout.fillHeight: true
         text: dialogText
-        readonly: true
-        innerPadding: Theme.basePadding * 2
         color: "transparent"
+        currentLineColor: Theme.colorBgLight
         monoFont: false
         KeyNavigation.down: dialogCancel.visible ? dialogCancel : dialogOk
       }

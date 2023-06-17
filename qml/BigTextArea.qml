@@ -8,6 +8,8 @@ import cdt
 Cdt.Pane {
   id: root
   property string text: ""
+  property string currentLineColor: Theme.colorBgMedium
+  property bool highlightCurrentLineWithoutFocus: false
   property bool monoFont: true
   property alias cursorFollowEnd: textModel.cursorFollowEnd
   property alias cursorPosition: textModel.cursorPosition
@@ -91,7 +93,7 @@ Cdt.Pane {
       delegate: Cdt.Pane {
         property int itemIndex: index
         width: listView.width
-        color: ListView.isCurrentItem ? Theme.colorBgMedium : Theme.colorBgDark
+        color: ListView.isCurrentItem && (root.highlightCurrentLineWithoutFocus || listView.activeFocus) ? root.currentLineColor : "transparent"
         RowLayout {
           anchors.fill: parent
           spacing: 0
