@@ -14,6 +14,7 @@ FocusScope {
   property bool ignoreTextChange: false
   property QtObject formatter: DummyFormatter {}
   signal ctrlEnterPressed()
+  signal preHighlight()
   function goToPage(event, down) {
     let pos = textArea.cursorPosition;
     let delta = down ? 1 : -1;
@@ -105,6 +106,10 @@ FocusScope {
             // The code below sets text of TextSearchBar while avoiding the aforementioned loop.
             if (!ignoreTextChange) {
               searchBar.text = text;
+              preHighlight();
+              ignoreTextChange = true;
+              highlighter.rehighlight();
+              ignoreTextChange = false;
             }
           }
           Keys.onPressed: function(e) {

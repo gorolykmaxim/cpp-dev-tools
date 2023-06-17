@@ -212,7 +212,8 @@ class TextSearchController : public QObject {
   bool AreSearchResultsEmpty() const;
 
  public slots:
-  void search(const QString& term, const QString& text, bool select_result);
+  void search(const QString& term, const QString& text, bool select_result,
+              bool notify_results_changed);
   void replaceSearchResultWith(const QString& text, bool replace_all);
   void goToResultWithStartAt(int text_position);
   void goToSearchResult(bool next);

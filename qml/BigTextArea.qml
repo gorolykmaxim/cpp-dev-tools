@@ -7,12 +7,18 @@ import cdt
 
 Cdt.Pane {
   id: root
-  property alias text: textModel.text
+  property string text: ""
   property bool monoFont: true
   property alias cursorFollowEnd: textModel.cursorFollowEnd
   property alias cursorPosition: textModel.cursorPosition
   property bool displayLineNumbers: false
   property QtObject formatter: DummyFormatter {}
+  signal preHighlight()
+  onTextChanged: {
+    searchBar.text = text;
+    preHighlight();
+    textModel.text = text;
+  }
   color: Theme.colorBgDark
   BigTextAreaModel {
     id: textModel
@@ -32,7 +38,6 @@ Cdt.Pane {
     spacing: 0
     Cdt.TextSearchBar {
       id: searchBar
-      text: textModel.text
       Layout.fillWidth: true
       readOnly: true
       onSearchResultsChanged: textModel.rehighlight()

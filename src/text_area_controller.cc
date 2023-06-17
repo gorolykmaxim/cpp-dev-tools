@@ -629,7 +629,8 @@ bool TextSearchController::AreSearchResultsEmpty() const {
 }
 
 void TextSearchController::search(const QString& term, const QString& text,
-                                  bool select_result) {
+                                  bool select_result,
+                                  bool notify_results_changed) {
   int prev_start = -1;
   if (selected_result < results.items.size()) {
     prev_start = results.items[selected_result].offset;
@@ -652,7 +653,9 @@ void TextSearchController::search(const QString& term, const QString& text,
       pos = result.offset + result.length;
     }
   }
-  emit searchResultsChanged();
+  if (notify_results_changed) {
+    emit searchResultsChanged();
+  }
   if (selected_result >= results.items.size() ||
       results.items[selected_result].offset != prev_start) {
     selected_result = 0;

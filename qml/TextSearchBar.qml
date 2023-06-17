@@ -24,7 +24,7 @@ Cdt.Pane {
   }
   onTextChanged: {
     if (visible) {
-      controller.search(searchTextField.displayText, text, root.activeFocus)
+      controller.search(searchTextField.displayText, text, root.activeFocus, false)
     }
   }
   function display(offset, text) {
@@ -57,7 +57,7 @@ Cdt.Pane {
         id: searchTextField
         Layout.fillWidth: true
         placeholderText: "Search text"
-        onDisplayTextChanged: controller.search(displayText, root.text, true)
+        onDisplayTextChanged: controller.search(displayText, root.text, true, true)
         Keys.onReturnPressed: e => controller.goToSearchResult(!(e.modifiers & Qt.ShiftModifier))
         Keys.onEnterPressed: e => controller.goToSearchResult(!(e.modifiers & Qt.ShiftModifier))
         KeyNavigation.right: prevResultBtn
