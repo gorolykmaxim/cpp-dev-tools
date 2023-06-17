@@ -79,14 +79,21 @@ Loader {
         height: 1
         color: Theme.colorBgBlack
       }
-      Cdt.TextArea {
+      Cdt.FileLinkLookup {
+        id: linkLookup
+        onRehighlightLine: line => textArea.rehighlightLine(line)
+        onLinkInLineSelected: line => textArea.goToLine(line)
+      }
+      Cdt.BigTextArea {
+        id: textArea
         Layout.fillWidth: true
         Layout.fillHeight: true
         focus: true
-        readonly: true
-        innerPadding: Theme.basePadding
         text: controller.selectedNotificationDescription
-        searchable: true
+        formatters: [linkLookup.formatter]
+        onPreHighlight: linkLookup.findFileLinks(text)
+        onCurrentLineChanged: linkLookup.setCurrentLine(currentLine)
+        additionalMenuItems: linkLookup.menuItems
         KeyNavigation.up: backBtn
       }
     }

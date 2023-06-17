@@ -177,7 +177,7 @@ SplitView {
       text: controller.selectedFileContent
       cursorPosition: controller.selectedFileCursorPosition
       displayLineNumbers: true
-      formatter: controller.formatter
+      formatters: [controller.formatter]
     }
   }
 }

@@ -13,7 +13,7 @@ Cdt.Pane {
   property alias cursorPosition: textModel.cursorPosition
   property alias currentLine: listView.currentIndex
   property bool displayLineNumbers: false
-  property QtObject formatter: DummyFormatter {}
+  property list<QtObject> formatters: []
   property var additionalMenuItems: []
   signal preHighlight()
   onTextChanged: {
@@ -30,7 +30,7 @@ Cdt.Pane {
   color: Theme.colorBgDark
   BigTextAreaModel {
     id: textModel
-    formatters: [root.formatter, searchBar.formatter]
+    formatters: root.formatters.concat([searchBar.formatter])
     onGoToLine: function(line) {
       listView.currentIndex = line;
       listView.positionViewAtIndex(listView.currentIndex, ListView.Center);

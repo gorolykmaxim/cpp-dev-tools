@@ -53,7 +53,7 @@ ColumnLayout {
     Layout.fillHeight: true
     focus: true
     text: controller.executionOutput
-    formatter: linkLookup.formatter
+    formatters: [linkLookup.formatter]
     cursorFollowEnd: true
     onPreHighlight: linkLookup.findFileLinks(text)
     onCurrentLineChanged: linkLookup.setCurrentLine(currentLine)
