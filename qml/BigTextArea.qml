@@ -90,86 +90,30 @@ Cdt.Pane {
         }
       }
       onCurrentIndexChanged: textModel.currentLine = currentIndex
-      delegate: Cdt.Pane {
-        property int itemIndex: index
+      delegate: Cdt.TextAreaLine {
+        required property var model
+        required property int index
+        id: textAreaLine
+        itemIndex: index
+        itemOffset: model.offset
+        lineNumberMaxWidth: textModel.lineNumberMaxWidth
+        text: model.text
+        formatters: textModel.formatters
+        displayLineNumber: root.displayLineNumbers
+        enabled: root.enabled
         width: listView.width
         color: ListView.isCurrentItem && (root.highlightCurrentLineWithoutFocus || listView.activeFocus) ? root.currentLineColor : "transparent"
-        RowLayout {
-          anchors.fill: parent
-          spacing: 0
-          Cdt.Text {
-            visible: root.displayLineNumbers
-            text: itemIndex + 1
-            color: Theme.colorSubText
-            Layout.fillHeight: true
-            Layout.minimumWidth: textModel.lineNumberMaxWidth
-            Layout.leftMargin: Theme.basePadding
-            horizontalAlignment: Text.AlignRight
-            verticalAlignment: Text.AlignTop
-            font.family: root.monoFont ? monoFontFamily : null
-            font.pointSize: root.monoFont ? monoFontSize : -1
-          }
-          TextEdit {
-            id: textEdit
-            property bool ignoreSelect: false
-            Layout.leftMargin: Theme.basePadding
-            Layout.rightMargin: Theme.basePadding
-            Layout.fillWidth: true
-            activeFocusOnPress: false
-            selectByMouse: true
-            selectByKeyboard: true
-            readOnly: true
-            enabled: root.enabled
-            selectionColor: "transparent"
-            selectedTextColor: "transparent"
-            text: model.text
-            textFormat: TextEdit.PlainText
-            color: root.enabled ? Theme.colorText : Theme.colorSubText
-            font.family: root.monoFont ? monoFontFamily : null
-            font.pointSize: root.monoFont ? monoFontSize : -1
-            renderType: Text.NativeRendering
-            wrapMode: Text.WordWrap
-            onSelectedTextChanged: {
-              if (ignoreSelect) {
-                return;
-              }
-              ignoreSelect = true;
-              textModel.selectInline(itemIndex, selectionStart, selectionEnd);
-              ignoreSelect = false;
-            }
-            Connections {
-              target: textModel
-              function onRehighlightLines(first, last) {
-                if (itemIndex >= first && itemIndex <= last) {
-                  highlighter.rehighlight();
-                }
-              }
-            }
-            LineHighlighter {
-              id: highlighter
-              document: textEdit.textDocument
-              formatters: textModel.formatters
-              lineNumber: itemIndex
-              lineOffset: model.offset
-            }
-            MouseArea {
-              anchors.fill: parent
-              acceptedButtons: Qt.LeftButton | Qt.RightButton
-              cursorShape: Qt.IBeamCursor
-              onPressed: function(event) {
-                listView.currentIndex = itemIndex;
-                listView.forceActiveFocus();
-                if (event.button === Qt.RightButton) {
-                  contextMenu.open();
-                  event.accepted = true;
-                } else if (event.modifiers & Qt.ControlModifier) {
-                  textModel.selectLine(itemIndex);
-                  event.accepted = true;
-                } else {
-                  event.accepted = false;
-                }
-              }
-            }
+        onInlineSelect: (l, s, e) => textModel.selectInline(l, s, e)
+        onPressed: {
+          listView.currentIndex = index;
+          listView.forceActiveFocus();
+        }
+        onRightClick: contextMenu.open()
+        onCtrlLeftClick: textModel.selectLine(index)
+        Connections {
+          target: textModel
+          function onRehighlightLines(first, last) {
+            textAreaLine.rehighlightIfInRange(first, last);
           }
         }
       }

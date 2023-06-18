@@ -141,6 +141,7 @@ qt_add_qml_module(cpp-dev-tools URI cdt VERSION 1.0
       qml/SmallTextArea.qml
       qml/FileLinkLookup.qml
       qml/DynamicContextMenu.qml
+      qml/TextAreaLine.qml
   RESOURCES
       fonts/MaterialIcons-Regular.ttf
   RESOURCE_PREFIX /)
