@@ -233,6 +233,8 @@ void GitCommitController::DiffSelectedFile() {
     LOG() << "Clearing git diff view";
     raw_git_diff_output.clear();
     diff.clear();
+    raw_diff.clear();
+    emit rawDiffChanged();
     SetDiffError("");
     formatter->diff_line_flags.clear();
     diff_chunks.clear();
