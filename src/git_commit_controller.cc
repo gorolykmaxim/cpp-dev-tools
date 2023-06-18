@@ -245,6 +245,8 @@ void GitCommitController::DiffSelectedFile() {
   OsCommand::Run("git", {"diff", "HEAD", "--", path}, "",
                  "Git: Failed to get git diff")
       .Then(this, [this, path](OsProcess p) {
+        raw_diff = p.output;
+        emit rawDiffChanged();
         if (p.exit_code == 0) {
           raw_git_diff_output = p.output.split('\n', Qt::SkipEmptyParts);
           RedrawDiff();

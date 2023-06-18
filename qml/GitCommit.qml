@@ -106,42 +106,46 @@ SplitView {
       }
     }
   }
-  Cdt.TextArea {
+  Cdt.GitDiff {
     id: fileDiff
-    SplitView.fillWidth: true
-    SplitView.fillHeight: true
-    centeredPlaceholderText: controller.diffError
-    centeredPlaceholderTextColor: controller.diffError ? "red" : null
-    readonly: true
-    wrapMode: TextEdit.NoWrap
-    enabled: controller.hasChanges
-    text: controller.diff
-    formatter: controller.formatter
-    detectFileLinks: false
-    searchable: true
-    onWidthChanged: controller.resizeDiff(width)
-    disableLoadingPlaceholder: true
-    KeyNavigation.left: changeList
-    menuItems: [
-      MenuSeparator {},
-      MenuItem {
-        text: "Toggle Unified Diff"
-        enabled: fileDiff.activeFocus && controller.isSelectedFileModified
-        shortcut: "Alt+U"
-        onTriggered: controller.toggleUnifiedDiff()
-      },
-      MenuItem {
-        text: "Rollback Chunk"
-        enabled: fileDiff.activeFocus
-        shortcut: "Ctrl+Alt+Z"
-        onTriggered: controller.rollbackChunk(fileDiff.effectiveCursorPosition)
-      },
-      MenuItem {
-        text: "Open Chunk In Editor"
-        enabled: fileDiff.activeFocus
-        shortcut: "Ctrl+Shift+O"
-        onTriggered: controller.openChunkInEditor(fileDiff.effectiveCursorPosition)
-      }
-    ]
+    rawDiff: controller.rawDiff
   }
+//  Cdt.TextArea {
+//    id: fileDiff
+//    SplitView.fillWidth: true
+//    SplitView.fillHeight: true
+//    centeredPlaceholderText: controller.diffError
+//    centeredPlaceholderTextColor: controller.diffError ? "red" : null
+//    readonly: true
+//    wrapMode: TextEdit.NoWrap
+//    enabled: controller.hasChanges
+//    text: controller.diff
+//    formatter: controller.formatter
+//    detectFileLinks: false
+//    searchable: true
+//    onWidthChanged: controller.resizeDiff(width)
+//    disableLoadingPlaceholder: true
+//    KeyNavigation.left: changeList
+//    menuItems: [
+//      MenuSeparator {},
+//      MenuItem {
+//        text: "Toggle Unified Diff"
+//        enabled: fileDiff.activeFocus && controller.isSelectedFileModified
+//        shortcut: "Alt+U"
+//        onTriggered: controller.toggleUnifiedDiff()
+//      },
+//      MenuItem {
+//        text: "Rollback Chunk"
+//        enabled: fileDiff.activeFocus
+//        shortcut: "Ctrl+Alt+Z"
+//        onTriggered: controller.rollbackChunk(fileDiff.effectiveCursorPosition)
+//      },
+//      MenuItem {
+//        text: "Open Chunk In Editor"
+//        enabled: fileDiff.activeFocus
+//        shortcut: "Ctrl+Shift+O"
+//        onTriggered: controller.openChunkInEditor(fileDiff.effectiveCursorPosition)
+//      }
+//    ]
+//  }
 }

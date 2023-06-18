@@ -75,6 +75,7 @@ class GitCommitController : public QObject {
   Q_PROPERTY(bool isSelectedFileModified READ IsSelectedFileModified NOTIFY
                  selectedFileChanged)
   Q_PROPERTY(QString diffError MEMBER diff_error NOTIFY diffErrorChanged)
+  Q_PROPERTY(QString rawDiff MEMBER raw_diff NOTIFY rawDiffChanged)
  public:
   explicit GitCommitController(QObject* parent = nullptr);
   bool HasChanges() const;
@@ -97,6 +98,7 @@ class GitCommitController : public QObject {
   void commitMessageChanged(const QString& msg);
   void selectedFileChanged();
   void diffErrorChanged();
+  void rawDiffChanged();
 
  private:
   Promise<OsProcess> ExecuteGitCommand(const QStringList& args,
@@ -122,6 +124,7 @@ class GitCommitController : public QObject {
   QFontMetrics mono_font_metrics;
   QList<TextSection> diff_chunks;
   QList<int> diff_line_to_file_line;
+  QString raw_diff;
 };
 
 #endif  // GITCOMMITCONTROLLER_H
