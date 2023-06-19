@@ -10,7 +10,7 @@ GitDiffModel::GitDiffModel(QObject *parent)
     : QAbstractListModel(parent),
       before_line_number_max_width(0),
       after_line_number_max_width(0),
-      before_selected(true),
+      selected_side(0),
       formatter(new SyntaxFormatter(this)) {
   connect(this, &GitDiffModel::rawDiffChanged, this, &GitDiffModel::ParseDiff);
   connect(this, &GitDiffModel::fileChanged, this,
