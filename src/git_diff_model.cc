@@ -10,8 +10,11 @@ GitDiffModel::GitDiffModel(QObject *parent)
     : QAbstractListModel(parent),
       before_line_number_max_width(0),
       after_line_number_max_width(0),
-      before_selected(true) {
+      before_selected(true),
+      formatter(new SyntaxFormatter(this)) {
   connect(this, &GitDiffModel::rawDiffChanged, this, &GitDiffModel::ParseDiff);
+  connect(this, &GitDiffModel::fileChanged, this,
+          [this] { formatter->DetectLanguageByFile(file); });
 }
 
 int GitDiffModel::rowCount(const QModelIndex &) const { return lines.size(); }

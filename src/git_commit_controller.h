@@ -22,9 +22,13 @@ struct ChangedFile {
 };
 
 class ChangedFileListModel : public TextListModel {
+  Q_OBJECT
+  Q_PROPERTY(QString selectedFileName READ GetSelectedFileName NOTIFY
+                 selectedItemChanged)
  public:
   explicit ChangedFileListModel(QObject* parent);
   const ChangedFile* GetSelected() const;
+  QString GetSelectedFileName() const;
 
   QList<ChangedFile> list;
 

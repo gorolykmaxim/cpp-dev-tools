@@ -108,6 +108,7 @@ SplitView {
   }
   Cdt.GitDiff {
     id: fileDiff
+    file: controller.files.selectedFileName
     rawDiff: controller.rawDiff
   }
 //  Cdt.TextArea {

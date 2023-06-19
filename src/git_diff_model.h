@@ -5,6 +5,7 @@
 #include <QObject>
 #include <QQmlEngine>
 
+#include "syntax.h"
 #include "text_area_controller.h"
 
 struct DiffLine {
@@ -20,6 +21,7 @@ struct DiffLine {
 class GitDiffModel : public QAbstractListModel {
   Q_OBJECT
   QML_ELEMENT
+  Q_PROPERTY(QString file MEMBER file NOTIFY fileChanged)
   Q_PROPERTY(QString rawDiff MEMBER raw_diff NOTIFY rawDiffChanged)
   Q_PROPERTY(int maxLineNumberWidthBefore MEMBER before_line_number_max_width
                  NOTIFY modelChanged)
@@ -27,6 +29,7 @@ class GitDiffModel : public QAbstractListModel {
                  NOTIFY modelChanged)
   Q_PROPERTY(
       bool isBeforeSelected MEMBER before_selected NOTIFY beforeSelectedChanged)
+  Q_PROPERTY(SyntaxFormatter *formatter MEMBER formatter CONSTANT)
  public:
   explicit GitDiffModel(QObject *parent = nullptr);
   int rowCount(const QModelIndex &parent) const;
@@ -37,6 +40,7 @@ class GitDiffModel : public QAbstractListModel {
   void rawDiffChanged();
   void modelChanged();
   void beforeSelectedChanged();
+  void fileChanged();
 
  private:
   void ParseDiff();
@@ -46,6 +50,8 @@ class GitDiffModel : public QAbstractListModel {
   int after_line_number_max_width;
   QList<DiffLine> lines;
   bool before_selected;
+  SyntaxFormatter *formatter;
+  QString file;
 };
 
 #endif  // GITDIFFMODEL_H

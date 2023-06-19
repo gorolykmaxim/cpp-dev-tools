@@ -6,6 +6,7 @@ import "." as Cdt
 
 Cdt.Pane {
   id: root
+  property alias file: diffModel.file
   property alias rawDiff: diffModel.rawDiff
   color: Theme.colorBgDark
   GitDiffModel {
@@ -64,6 +65,7 @@ Cdt.Pane {
         displayLineNumber: true
         enabled: root.enabled
         lineNumber: model.beforeLineNumber
+        formatters: [diffModel.formatter]
         color: listItem.isSelected && listView.activeFocus && diffModel.isBeforeSelected ? Theme.colorBgMedium : "transparent"
         lineColor: model.isDelete ? "#4df85149" : (model.isAdd ? "#1af85149" : "transparent")
         onPressed: {
@@ -82,6 +84,7 @@ Cdt.Pane {
         displayLineNumber: true
         enabled: root.enabled
         lineNumber: model.afterLineNumber
+        formatters: [diffModel.formatter]
         color: listItem.isSelected && listView.activeFocus && !diffModel.isBeforeSelected ? Theme.colorBgMedium : "transparent"
         lineColor: model.isAdd ? "#4d3fb950" : (model.isDelete ? "#262ea043" : "transparent")
         onPressed: {

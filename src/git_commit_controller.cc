@@ -530,6 +530,11 @@ const ChangedFile *ChangedFileListModel::GetSelected() const {
   return i < 0 ? nullptr : &list[i];
 }
 
+QString ChangedFileListModel::GetSelectedFileName() const {
+  const ChangedFile *file = GetSelected();
+  return file ? file->path : "";
+}
+
 QVariantList ChangedFileListModel::GetRow(int i) const {
   const ChangedFile &f = list[i];
   QString color;
