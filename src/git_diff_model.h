@@ -25,6 +25,8 @@ class GitDiffModel : public QAbstractListModel {
                  NOTIFY modelChanged)
   Q_PROPERTY(int maxLineNumberWidthAfter MEMBER after_line_number_max_width
                  NOTIFY modelChanged)
+  Q_PROPERTY(
+      bool isBeforeSelected MEMBER before_selected NOTIFY beforeSelectedChanged)
  public:
   explicit GitDiffModel(QObject *parent = nullptr);
   int rowCount(const QModelIndex &parent) const;
@@ -34,6 +36,7 @@ class GitDiffModel : public QAbstractListModel {
  signals:
   void rawDiffChanged();
   void modelChanged();
+  void beforeSelectedChanged();
 
  private:
   void ParseDiff();
@@ -42,6 +45,7 @@ class GitDiffModel : public QAbstractListModel {
   int before_line_number_max_width;
   int after_line_number_max_width;
   QList<DiffLine> lines;
+  bool before_selected;
 };
 
 #endif  // GITDIFFMODEL_H

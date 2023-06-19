@@ -43,6 +43,17 @@ Cdt.Pane {
       property int itemIndex: index
       width: listView.width
       spacing: 0
+      Keys.onPressed: function(e) {
+        if (e.key === Qt.Key_Left && !diffModel.isBeforeSelected) {
+          diffModel.isBeforeSelected = true;
+          e.accepted = true;
+        } else if (e.key === Qt.Key_Right && diffModel.isBeforeSelected) {
+          diffModel.isBeforeSelected = false;
+          e.accepted = true;
+        } else {
+          e.accepted = false;
+        }
+      }
       Cdt.TextAreaLine {
         Layout.fillHeight: true
         Layout.preferredWidth: listItem.width / 2
@@ -53,8 +64,13 @@ Cdt.Pane {
         displayLineNumber: true
         enabled: root.enabled
         lineNumber: model.beforeLineNumber
-        color: listItem.isSelected && listView.activeFocus ? Theme.colorBgMedium : "transparent"
+        color: listItem.isSelected && listView.activeFocus && diffModel.isBeforeSelected ? Theme.colorBgMedium : "transparent"
         lineColor: model.isDelete ? "#4df85149" : (model.isAdd ? "#1af85149" : "transparent")
+        onPressed: {
+          listView.currentIndex = itemIndex;
+          listView.forceActiveFocus();
+          diffModel.isBeforeSelected = true;
+        }
       }
       Cdt.TextAreaLine {
         Layout.fillHeight: true
@@ -66,8 +82,13 @@ Cdt.Pane {
         displayLineNumber: true
         enabled: root.enabled
         lineNumber: model.afterLineNumber
-        color: listItem.isSelected && listView.activeFocus ? Theme.colorBgMedium : "transparent"
+        color: listItem.isSelected && listView.activeFocus && !diffModel.isBeforeSelected ? Theme.colorBgMedium : "transparent"
         lineColor: model.isAdd ? "#4d3fb950" : (model.isDelete ? "#262ea043" : "transparent")
+        onPressed: {
+          listView.currentIndex = itemIndex;
+          listView.forceActiveFocus();
+          diffModel.isBeforeSelected = false;
+        }
       }
     }
   }
