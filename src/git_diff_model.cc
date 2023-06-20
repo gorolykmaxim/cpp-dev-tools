@@ -8,6 +8,8 @@
 
 #include "application.h"
 
+#define LOG() qDebug() << "[GitDiffModel]"
+
 GitDiffModel::GitDiffModel(QObject *parent)
     : QAbstractListModel(parent),
       before_line_number_max_width(0),
@@ -104,6 +106,13 @@ void GitDiffModel::copySelection(int current_line) {
     lines_to_copy.append(text);
   }
   QGuiApplication::clipboard()->setText(lines_to_copy.join('\n'));
+}
+
+void GitDiffModel::openFileInEditor(int current_line) {
+  const DiffLine &line = lines[current_line];
+  LOG() << "Opening git diff chunk at line" << line.after_line_number << "of"
+        << file << "in editor";
+  Application::Get().editor.OpenFile(file, line.after_line_number, -1);
 }
 
 void GitDiffModel::selectInline(int line, int start, int end) {

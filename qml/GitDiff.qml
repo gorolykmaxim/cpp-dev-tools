@@ -145,6 +145,13 @@ Cdt.Pane {
         enabled: listView.activeFocus
         onTriggered: diffModel.selectAll()
       }
+      MenuSeparator {}
+      MenuItem {
+        text: "Open Chunk In Editor"
+        shortcut: "Ctrl+O"
+        enabled: listView.activeFocus
+        onTriggered: diffModel.openFileInEditor(listView.currentIndex)
+      }
     }
   }
 }

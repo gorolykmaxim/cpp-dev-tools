@@ -60,6 +60,7 @@ class GitDiffModel : public QAbstractListModel {
   void selectAll();
   bool resetSelection();
   void copySelection(int current_line);
+  void openFileInEditor(int current_line);
 
  signals:
   void rawDiffChanged();
