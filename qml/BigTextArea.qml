@@ -45,9 +45,7 @@ Cdt.Pane {
     }
   }
   Keys.onEscapePressed: function(e) {
-    if (textModel.resetSelection() || searchBar.close()) {
-      e.accepted = true;
-    }
+    e.accepted = textModel.resetSelection() || searchBar.close();
   }
   ColumnLayout {
     anchors.fill: parent
