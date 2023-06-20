@@ -14,7 +14,10 @@ GitDiffModel::GitDiffModel(QObject *parent)
       after_line_number_max_width(0),
       selected_side(0),
       syntax_formatter(new SyntaxFormatter(this)),
-      selection_formatter(new SelectionFormatter(this, selection)) {
+      before_selection_formatter(
+          new DiffSelectionFormatter(this, selected_side, 0, selection)),
+      after_selection_formatter(
+          new DiffSelectionFormatter(this, selected_side, 1, selection)) {
   connect(this, &GitDiffModel::rawDiffChanged, this, &GitDiffModel::ParseDiff);
   connect(this, &GitDiffModel::fileChanged, this,
           [this] { syntax_formatter->DetectLanguageByFile(file); });
@@ -220,4 +223,22 @@ void GitDiffModel::ParseDiff() {
   after_line_number_max_width =
       m.horizontalAdvance(QString::number(after_line_number));
   emit modelChanged();
+}
+
+DiffSelectionFormatter::DiffSelectionFormatter(QObject *parent,
+                                               const int &selected_side,
+                                               int side,
+                                               const TextSelection &selection)
+    : TextFormatter(parent),
+      selected_side(selected_side),
+      side(side),
+      formatter(this, selection) {}
+
+QList<TextFormat> DiffSelectionFormatter::Format(const QString &text,
+                                                 LineInfo line) const {
+  if (side == selected_side) {
+    return formatter.Format(text, line);
+  } else {
+    return {};
+  }
 }

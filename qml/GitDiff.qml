@@ -87,7 +87,7 @@ Cdt.Pane {
         displayLineNumber: true
         enabled: root.enabled
         lineNumber: model.beforeLineNumber
-        formatters: [diffModel.syntaxFormatter, diffModel.selectionFormatter]
+        formatters: [diffModel.syntaxFormatter, diffModel.beforeSelectionFormatter]
         color: listItem.isSelected && listView.activeFocus && diffModel.selectedSide === 0 ? Theme.colorBgMedium : "transparent"
         lineColor: model.isDelete ? "#4df85149" : (model.isAdd ? "#1af85149" : "transparent")
         onInlineSelect: (l, s, e) => diffModel.selectInline(l, s, e)
@@ -110,7 +110,7 @@ Cdt.Pane {
         displayLineNumber: true
         enabled: root.enabled
         lineNumber: model.afterLineNumber
-        formatters: [diffModel.syntaxFormatter, diffModel.selectionFormatter]
+        formatters: [diffModel.syntaxFormatter, diffModel.afterSelectionFormatter]
         color: listItem.isSelected && listView.activeFocus && diffModel.selectedSide === 1 ? Theme.colorBgMedium : "transparent"
         lineColor: model.isAdd ? "#4d3fb950" : (model.isDelete ? "#262ea043" : "transparent")
         onInlineSelect: (l, s, e) => diffModel.selectInline(l, s, e)

@@ -18,6 +18,18 @@ struct DiffLine {
   TextSegment header;
 };
 
+class DiffSelectionFormatter : public TextFormatter {
+ public:
+  DiffSelectionFormatter(QObject *parent, const int &selected_side, int side,
+                         const TextSelection &selection);
+  QList<TextFormat> Format(const QString &text, LineInfo line) const;
+
+ private:
+  const int &selected_side;
+  int side;
+  SelectionFormatter formatter;
+};
+
 class GitDiffModel : public QAbstractListModel {
   Q_OBJECT
   QML_ELEMENT
@@ -30,8 +42,10 @@ class GitDiffModel : public QAbstractListModel {
   Q_PROPERTY(int selectedSide WRITE SetSelectedSide READ GetSelectedSide NOTIFY
                  selectedSideChanged)
   Q_PROPERTY(SyntaxFormatter *syntaxFormatter MEMBER syntax_formatter CONSTANT)
-  Q_PROPERTY(SelectionFormatter *selectionFormatter MEMBER selection_formatter
-                 CONSTANT)
+  Q_PROPERTY(DiffSelectionFormatter *beforeSelectionFormatter MEMBER
+                 before_selection_formatter CONSTANT)
+  Q_PROPERTY(DiffSelectionFormatter *afterSelectionFormatter MEMBER
+                 after_selection_formatter CONSTANT)
  public:
   explicit GitDiffModel(QObject *parent = nullptr);
   int rowCount(const QModelIndex &parent) const;
@@ -63,7 +77,8 @@ class GitDiffModel : public QAbstractListModel {
   QList<DiffLine> lines;
   int selected_side;
   SyntaxFormatter *syntax_formatter;
-  SelectionFormatter *selection_formatter;
+  DiffSelectionFormatter *before_selection_formatter;
+  DiffSelectionFormatter *after_selection_formatter;
   QString file;
   TextSelection selection;
 };
