@@ -318,7 +318,6 @@ BigTextAreaModel::BigTextAreaModel(QObject* parent)
     : QAbstractListModel(parent),
       cursor_follow_end(false),
       cursor_position(-1),
-      current_line(0),
       selection_formatter(new SelectionFormatter(this, selection)),
       formatters({selection_formatter}) {
   connect(this, &BigTextAreaModel::cursorPositionChanged, this, [this] {
@@ -443,7 +442,7 @@ void BigTextAreaModel::selectAll() {
   std::pair<int, int> redraw_range = selection.GetLineRange();
   selection = TextSelection();
   selection.first_line = 0;
-  selection.last_line = line_start_offsets.size();
+  selection.last_line = std::max((int)line_start_offsets.size() - 1, 0);
   emit rehighlightLines(redraw_range.first, redraw_range.second);
   redraw_range = selection.GetLineRange();
   emit rehighlightLines(redraw_range.first, redraw_range.second);
@@ -474,7 +473,7 @@ bool BigTextAreaModel::resetSelection() {
   return true;
 }
 
-void BigTextAreaModel::copySelection() {
+void BigTextAreaModel::copySelection(int current_line) {
   TextSelection s = selection.Normalize();
   std::pair<int, int> range;
   if (s.first_line < 0) {

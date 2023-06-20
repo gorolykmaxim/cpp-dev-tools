@@ -290,7 +290,6 @@ class BigTextAreaModel : public QAbstractListModel {
                  cursorFollowEndChanged)
   Q_PROPERTY(
       int cursorPosition MEMBER cursor_position NOTIFY cursorPositionChanged)
-  Q_PROPERTY(int currentLine MEMBER current_line NOTIFY currentLineChanged)
   Q_PROPERTY(QList<TextFormatter*> formatters WRITE SetFormatters READ
                  GetFormatters NOTIFY formattersChanged)
   Q_PROPERTY(QFont font MEMBER font NOTIFY fontChanged)
@@ -313,7 +312,7 @@ class BigTextAreaModel : public QAbstractListModel {
   void selectAll();
   void selectSearchResult(int offset, int length);
   bool resetSelection();
-  void copySelection();
+  void copySelection(int current_line);
   int getSelectionOffset();
   QString getSelectedText();
   void rehighlight();
@@ -323,7 +322,6 @@ class BigTextAreaModel : public QAbstractListModel {
   void textChanged();
   void cursorFollowEndChanged();
   void goToLine(int line);
-  void currentLineChanged();
   void rehighlightLines(int first, int last);
   void formattersChanged();
   void cursorPositionChanged();
@@ -337,7 +335,6 @@ class BigTextAreaModel : public QAbstractListModel {
 
   bool cursor_follow_end;
   int cursor_position;
-  int current_line;
   QString text;
   QList<int> line_start_offsets;
   TextSelection selection;

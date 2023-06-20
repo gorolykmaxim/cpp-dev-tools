@@ -23,6 +23,11 @@ Cdt.Pane {
     preHighlight();
     textModel.text = text;
   }
+  onActiveFocusChanged: {
+    if (!activeFocus) {
+      textModel.resetSelection();
+    }
+  }
   function goToLine(line) {
     textModel.goToLine(line);
   }
@@ -89,7 +94,6 @@ Cdt.Pane {
           currentIndex = Math.min(currentIndex + 10, count - 1);
         }
       }
-      onCurrentIndexChanged: textModel.currentLine = currentIndex
       delegate: Cdt.TextAreaLine {
         required property var model
         required property int index
@@ -124,7 +128,7 @@ Cdt.Pane {
           {
             text: "Copy",
             shortcut: "Ctrl+C",
-            callback: () => textModel.copySelection(),
+            callback: () => textModel.copySelection(listView.currentIndex),
           },
           {
             text: "Toggle Select",
