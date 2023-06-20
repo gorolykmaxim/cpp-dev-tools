@@ -409,43 +409,18 @@ int BigTextAreaModel::GetLineNumberMaxWidth() const {
 }
 
 void BigTextAreaModel::selectInline(int line, int start, int end) {
-  std::pair<int, int> redraw_range = selection.GetLineRange();
-  selection.multiline_selection = false;
-  selection.last_line = selection.first_line = line;
-  selection.first_line_offset = start;
-  selection.last_line_offset = end;
-  emit rehighlightLines(redraw_range.first, redraw_range.second);
-  emit rehighlightLines(line, line);
+  selection.SelectInline(line, start, end,
+                         [this](int a, int b) { emit rehighlightLines(a, b); });
 }
 
 void BigTextAreaModel::selectLine(int line) {
-  if (line < 0 || line >= line_start_offsets.size()) {
-    return;
-  }
-  if (!selection.multiline_selection) {
-    std::pair<int, int> redraw_range = selection.GetLineRange();
-    selection.multiline_selection = true;
-    selection.first_line = selection.last_line = line;
-    selection.first_line_offset = selection.last_line_offset = -1;
-    emit rehighlightLines(redraw_range.first, redraw_range.second);
-    emit rehighlightLines(line, line);
-  } else {
-    std::pair<int, int> redraw_range = selection.GetLineRange();
-    selection.last_line = line;
-    emit rehighlightLines(redraw_range.first, redraw_range.second);
-    redraw_range = selection.GetLineRange();
-    emit rehighlightLines(redraw_range.first, redraw_range.second);
-  }
+  selection.SelectLine(line, line_start_offsets.size(),
+                       [this](int a, int b) { emit rehighlightLines(a, b); });
 }
 
 void BigTextAreaModel::selectAll() {
-  std::pair<int, int> redraw_range = selection.GetLineRange();
-  selection = TextSelection();
-  selection.first_line = 0;
-  selection.last_line = std::max((int)line_start_offsets.size() - 1, 0);
-  emit rehighlightLines(redraw_range.first, redraw_range.second);
-  redraw_range = selection.GetLineRange();
-  emit rehighlightLines(redraw_range.first, redraw_range.second);
+  selection.SelectAll(line_start_offsets.size(),
+                      [this](int a, int b) { emit rehighlightLines(a, b); });
 }
 
 void BigTextAreaModel::selectSearchResult(int offset, int length) {
@@ -464,13 +439,7 @@ void BigTextAreaModel::selectSearchResult(int offset, int length) {
 }
 
 bool BigTextAreaModel::resetSelection() {
-  if (selection.first_line < 0) {
-    return false;
-  }
-  std::pair<int, int> redraw_range = selection.GetLineRange();
-  selection = TextSelection();
-  emit rehighlightLines(redraw_range.first, redraw_range.second);
-  return true;
+  return selection.Reset([this](int a, int b) { emit rehighlightLines(a, b); });
 }
 
 void BigTextAreaModel::copySelection(int current_line) {
@@ -607,6 +576,61 @@ TextSelection TextSelection::Normalize() const {
     result.last_line_offset = first_line_offset;
   }
   return result;
+}
+
+void TextSelection::SelectInline(
+    int line, int start, int end,
+    const std::function<void(int, int)>& rehighlight) {
+  std::pair<int, int> redraw_range = GetLineRange();
+  multiline_selection = false;
+  last_line = first_line = line;
+  first_line_offset = start;
+  last_line_offset = end;
+  rehighlight(redraw_range.first, redraw_range.second);
+  rehighlight(line, line);
+}
+
+void TextSelection::SelectLine(
+    int line, int line_count,
+    const std::function<void(int, int)>& rehighlight) {
+  if (line < 0 || line >= line_count) {
+    return;
+  }
+  if (!multiline_selection) {
+    std::pair<int, int> redraw_range = GetLineRange();
+    multiline_selection = true;
+    first_line = last_line = line;
+    first_line_offset = last_line_offset = -1;
+    rehighlight(redraw_range.first, redraw_range.second);
+    rehighlight(line, line);
+  } else {
+    std::pair<int, int> redraw_range = GetLineRange();
+    last_line = line;
+    rehighlight(redraw_range.first, redraw_range.second);
+    redraw_range = GetLineRange();
+    rehighlight(redraw_range.first, redraw_range.second);
+  }
+}
+
+void TextSelection::SelectAll(
+    int line_count, const std::function<void(int, int)>& rehighlight) {
+  std::pair<int, int> redraw_range = GetLineRange();
+  *this = TextSelection();
+  first_line = 0;
+  last_line = std::max(line_count - 1, 0);
+  rehighlight(redraw_range.first, redraw_range.second);
+  redraw_range = GetLineRange();
+  rehighlight(redraw_range.first, redraw_range.second);
+}
+
+bool TextSelection::Reset(const std::function<void(int, int)>& rehighlight) {
+  if (first_line < 0) {
+    return false;
+  }
+  std::pair<int, int> redraw_range = GetLineRange();
+  *this = TextSelection();
+  rehighlight(redraw_range.first, redraw_range.second);
+  return true;
 }
 
 std::pair<int, int> BigTextAreaModel::GetSelectionRange(

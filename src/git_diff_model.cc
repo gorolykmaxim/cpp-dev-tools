@@ -74,13 +74,7 @@ void GitDiffModel::SetSelectedSide(int side) {
 int GitDiffModel::GetSelectedSide() const { return selected_side; }
 
 bool GitDiffModel::resetSelection() {
-  if (selection.first_line < 0) {
-    return false;
-  }
-  std::pair<int, int> redraw_range = selection.GetLineRange();
-  selection = TextSelection();
-  emit rehighlightLines(redraw_range.first, redraw_range.second);
-  return true;
+  return selection.Reset([this](int a, int b) { emit rehighlightLines(a, b); });
 }
 
 void GitDiffModel::copySelection(int current_line) {
@@ -110,43 +104,18 @@ void GitDiffModel::copySelection(int current_line) {
 }
 
 void GitDiffModel::selectInline(int line, int start, int end) {
-  std::pair<int, int> redraw_range = selection.GetLineRange();
-  selection.multiline_selection = false;
-  selection.last_line = selection.first_line = line;
-  selection.first_line_offset = start;
-  selection.last_line_offset = end;
-  emit rehighlightLines(redraw_range.first, redraw_range.second);
-  emit rehighlightLines(line, line);
+  selection.SelectInline(line, start, end,
+                         [this](int a, int b) { emit rehighlightLines(a, b); });
 }
 
 void GitDiffModel::selectLine(int line) {
-  if (line < 0 || line >= lines.size()) {
-    return;
-  }
-  if (!selection.multiline_selection) {
-    std::pair<int, int> redraw_range = selection.GetLineRange();
-    selection.multiline_selection = true;
-    selection.first_line = selection.last_line = line;
-    selection.first_line_offset = selection.last_line_offset = -1;
-    emit rehighlightLines(redraw_range.first, redraw_range.second);
-    emit rehighlightLines(line, line);
-  } else {
-    std::pair<int, int> redraw_range = selection.GetLineRange();
-    selection.last_line = line;
-    emit rehighlightLines(redraw_range.first, redraw_range.second);
-    redraw_range = selection.GetLineRange();
-    emit rehighlightLines(redraw_range.first, redraw_range.second);
-  }
+  selection.SelectLine(line, lines.size(),
+                       [this](int a, int b) { emit rehighlightLines(a, b); });
 }
 
 void GitDiffModel::selectAll() {
-  std::pair<int, int> redraw_range = selection.GetLineRange();
-  selection = TextSelection();
-  selection.first_line = 0;
-  selection.last_line = std::max((int)lines.size() - 1, 0);
-  emit rehighlightLines(redraw_range.first, redraw_range.second);
-  redraw_range = selection.GetLineRange();
-  emit rehighlightLines(redraw_range.first, redraw_range.second);
+  selection.SelectAll(lines.size(),
+                      [this](int a, int b) { emit rehighlightLines(a, b); });
 }
 
 static int ParseLineNumber(const QString &str, QChar start) {

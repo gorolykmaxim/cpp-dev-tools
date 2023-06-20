@@ -129,6 +129,13 @@ struct TextSelection {
   TextSelection();
   std::pair<int, int> GetLineRange() const;
   TextSelection Normalize() const;
+  void SelectInline(int line, int start, int end,
+                    const std::function<void(int, int)>& rehighlight);
+  void SelectLine(int line, int line_count,
+                  const std::function<void(int, int)>& rehighlight);
+  void SelectAll(int line_count,
+                 const std::function<void(int, int)>& rehighlight);
+  bool Reset(const std::function<void(int, int)>& rehighlight);
 
   int first_line;
   int first_line_offset;
