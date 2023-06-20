@@ -80,6 +80,7 @@ Cdt.Pane {
         id: beforeTextLine
         Layout.fillHeight: true
         Layout.preferredWidth: listItem.width / 2
+        clip: true
         itemIndex: listItem.itemIndex
         itemOffset: 0
         lineNumberMaxWidth: diffModel.maxLineNumberWidthBefore
@@ -103,6 +104,7 @@ Cdt.Pane {
         id: afterTextLine
         Layout.fillHeight: true
         Layout.preferredWidth: listItem.width / 2
+        clip: true
         itemIndex: listItem.itemIndex
         itemOffset: 0
         lineNumberMaxWidth: diffModel.maxLineNumberWidthAfter
