@@ -3,6 +3,7 @@ import QtQuick.Controls
 import QtQuick.Layouts
 import Qt.labs.platform
 import "." as Cdt
+import "Common.js" as Common
 import cdt
 
 Cdt.Pane {
@@ -71,29 +72,7 @@ Cdt.Pane {
       ScrollBar.vertical: ScrollBar {}
       model: textModel
       KeyNavigation.up: searchBar.visible ? searchBar : null
-      Keys.onPressed: function(e) {
-        if (e.matches(StandardKey.MoveToStartOfDocument)) {
-          if (currentIndex !== 0) {
-            e.accepted = true;
-          }
-          currentIndex = 0;
-        } else if (e.matches(StandardKey.MoveToEndOfDocument)) {
-          if (currentIndex !== count - 1) {
-            e.accepted = true;
-          }
-          currentIndex = count -1;
-        } else if (e.key === Qt.Key_PageUp) {
-          if (currentIndex !== 0) {
-            e.accepted = true;
-          }
-          currentIndex = Math.max(currentIndex - 10, 0);
-        } else if (e.key === Qt.Key_PageDown) {
-          if (currentIndex !== count - 1) {
-            e.accepted = true;
-          }
-          currentIndex = Math.min(currentIndex + 10, count - 1);
-        }
-      }
+      Keys.onPressed: e => Common.handleListViewNavigation(e, listView)
       delegate: Cdt.TextAreaLine {
         required property var model
         required property int index

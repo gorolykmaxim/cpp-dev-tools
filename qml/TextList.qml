@@ -3,6 +3,7 @@ import QtQuick.Controls
 import QtQuick.Layouts
 import cdt
 import "." as Cdt
+import "Common.js" as Common
 
 Cdt.Pane {
   id: root
@@ -29,16 +30,10 @@ Cdt.Pane {
     return old !== list.currentIndex;
   }
   function pageUp() {
-    const old = list.currentIndex;
-    const result = list.currentIndex - 10;
-    list.currentIndex = result < 0 ? 0 : result;
-    return old !== list.currentIndex;
+    return Common.pageUpList(list);
   }
   function pageDown() {
-    const old = list.currentIndex;
-    const result = list.currentIndex + 10;
-    list.currentIndex = result >= list.count ? list.count - 1 : result;
-    return old !== list.currentIndex;
+    return Common.pageDownList(list);
   }
   Cdt.PlaceholderText {
     id: placeholder
@@ -62,16 +57,7 @@ Cdt.Pane {
         model.selectItemByIndex(list.currentIndex);
       }
     }
-    Keys.onPressed: e => {
-      switch (e.key) {
-        case Qt.Key_PageUp:
-          root.pageUp();
-          break;
-        case Qt.Key_PageDown:
-          root.pageDown();
-          break;
-      }
-    }
+    Keys.onPressed: e => Common.handleListViewNavigation(e, list)
     anchors.fill: parent
     visible: !list.model.placeholderText
     focus: true

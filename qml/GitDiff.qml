@@ -4,6 +4,7 @@ import QtQuick.Layouts
 import Qt.labs.platform
 import cdt
 import "." as Cdt
+import "Common.js" as Common
 
 Cdt.Pane {
   id: root
@@ -62,9 +63,8 @@ Cdt.Pane {
         } else if (e.key === Qt.Key_Right && diffModel.selectedSide < 1) {
           diffModel.selectedSide++;
           e.accepted = true;
-        } else {
-          e.accepted = false;
         }
+        Common.handleListViewNavigation(e, listView);
       }
       Connections {
         target: diffModel
