@@ -27,19 +27,32 @@ class GitDiffModel : public QAbstractListModel {
                  NOTIFY modelChanged)
   Q_PROPERTY(int maxLineNumberWidthAfter MEMBER after_line_number_max_width
                  NOTIFY modelChanged)
-  Q_PROPERTY(int selectedSide MEMBER selected_side NOTIFY selectedSideChanged)
-  Q_PROPERTY(SyntaxFormatter *formatter MEMBER formatter CONSTANT)
+  Q_PROPERTY(int selectedSide WRITE SetSelectedSide READ GetSelectedSide NOTIFY
+                 selectedSideChanged)
+  Q_PROPERTY(SyntaxFormatter *syntaxFormatter MEMBER syntax_formatter CONSTANT)
+  Q_PROPERTY(SelectionFormatter *selectionFormatter MEMBER selection_formatter
+                 CONSTANT)
  public:
   explicit GitDiffModel(QObject *parent = nullptr);
   int rowCount(const QModelIndex &parent) const;
   QVariant data(const QModelIndex &index, int role) const;
   QHash<int, QByteArray> roleNames() const;
+  void SetSelectedSide(int side);
+  int GetSelectedSide() const;
+
+ public slots:
+  void selectInline(int line, int start, int end);
+  void selectLine(int line);
+  void selectAll();
+  bool resetSelection();
+  void copySelection(int current_line);
 
  signals:
   void rawDiffChanged();
   void modelChanged();
   void selectedSideChanged();
   void fileChanged();
+  void rehighlightLines(int first, int last);
 
  private:
   void ParseDiff();
@@ -49,8 +62,10 @@ class GitDiffModel : public QAbstractListModel {
   int after_line_number_max_width;
   QList<DiffLine> lines;
   int selected_side;
-  SyntaxFormatter *formatter;
+  SyntaxFormatter *syntax_formatter;
+  SelectionFormatter *selection_formatter;
   QString file;
+  TextSelection selection;
 };
 
 #endif  // GITDIFFMODEL_H

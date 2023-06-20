@@ -1,6 +1,7 @@
 import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
+import Qt.labs.platform
 import cdt
 import "." as Cdt
 
@@ -14,6 +15,16 @@ Cdt.Pane {
     onModelChanged: {
       listView.currentIndex = 0;
       listView.positionViewAtIndex(listView.currentIndex, ListView.Center);
+    }
+  }
+  onActiveFocusChanged: {
+    if (!activeFocus) {
+      diffModel.resetSelection();
+    }
+  }
+  Keys.onEscapePressed: function(e) {
+    if (diffModel.resetSelection()) {
+      e.accepted = true;
     }
   }
   ListView {
@@ -55,7 +66,18 @@ Cdt.Pane {
           e.accepted = false;
         }
       }
+      Connections {
+        target: diffModel
+        function onRehighlightLines(first, last) {
+          if (diffModel.selectedSide === 0) {
+            beforeTextLine.rehighlightIfInRange(first, last);
+          } else {
+            afterTextLine.rehighlightIfInRange(first, last);
+          }
+        }
+      }
       Cdt.TextAreaLine {
+        id: beforeTextLine
         Layout.fillHeight: true
         Layout.preferredWidth: listItem.width / 2
         itemIndex: listItem.itemIndex
@@ -65,9 +87,12 @@ Cdt.Pane {
         displayLineNumber: true
         enabled: root.enabled
         lineNumber: model.beforeLineNumber
-        formatters: [diffModel.formatter]
+        formatters: [diffModel.syntaxFormatter, diffModel.selectionFormatter]
         color: listItem.isSelected && listView.activeFocus && diffModel.selectedSide === 0 ? Theme.colorBgMedium : "transparent"
         lineColor: model.isDelete ? "#4df85149" : (model.isAdd ? "#1af85149" : "transparent")
+        onInlineSelect: (l, s, e) => diffModel.selectInline(l, s, e)
+        onCtrlLeftClick: diffModel.selectLine(listItem.itemIndex)
+        onRightClick: contextMenu.open()
         onPressed: {
           listView.currentIndex = itemIndex;
           listView.forceActiveFocus();
@@ -75,6 +100,7 @@ Cdt.Pane {
         }
       }
       Cdt.TextAreaLine {
+        id: afterTextLine
         Layout.fillHeight: true
         Layout.preferredWidth: listItem.width / 2
         itemIndex: listItem.itemIndex
@@ -84,14 +110,38 @@ Cdt.Pane {
         displayLineNumber: true
         enabled: root.enabled
         lineNumber: model.afterLineNumber
-        formatters: [diffModel.formatter]
+        formatters: [diffModel.syntaxFormatter, diffModel.selectionFormatter]
         color: listItem.isSelected && listView.activeFocus && diffModel.selectedSide === 1 ? Theme.colorBgMedium : "transparent"
         lineColor: model.isAdd ? "#4d3fb950" : (model.isDelete ? "#262ea043" : "transparent")
+        onInlineSelect: (l, s, e) => diffModel.selectInline(l, s, e)
+        onCtrlLeftClick: diffModel.selectLine(listItem.itemIndex)
+        onRightClick: contextMenu.open()
         onPressed: {
           listView.currentIndex = itemIndex;
           listView.forceActiveFocus();
           diffModel.selectedSide = 1;
         }
+      }
+    }
+    Menu {
+      id: contextMenu
+      MenuItem {
+        text: "Copy"
+        shortcut: "Ctrl+C"
+        enabled: listView.activeFocus
+        onTriggered: diffModel.copySelection(listView.currentIndex)
+      }
+      MenuItem {
+        text: "Toggle Select"
+        shortcut: "Ctrl+S"
+        enabled: listView.activeFocus
+        onTriggered: diffModel.selectLine(listView.currentIndex)
+      }
+      MenuItem {
+        text: "Select All"
+        shortcut: "Ctrl+A"
+        enabled: listView.activeFocus
+        onTriggered: diffModel.selectAll()
       }
     }
   }

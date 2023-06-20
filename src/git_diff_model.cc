@@ -1,7 +1,9 @@
 #include "git_diff_model.h"
 
+#include <QClipboard>
 #include <QFont>
 #include <QFontMetrics>
+#include <QGuiApplication>
 #include <QQmlContext>
 
 #include "application.h"
@@ -11,10 +13,11 @@ GitDiffModel::GitDiffModel(QObject *parent)
       before_line_number_max_width(0),
       after_line_number_max_width(0),
       selected_side(0),
-      formatter(new SyntaxFormatter(this)) {
+      syntax_formatter(new SyntaxFormatter(this)),
+      selection_formatter(new SelectionFormatter(this, selection)) {
   connect(this, &GitDiffModel::rawDiffChanged, this, &GitDiffModel::ParseDiff);
   connect(this, &GitDiffModel::fileChanged, this,
-          [this] { formatter->DetectLanguageByFile(file); });
+          [this] { syntax_formatter->DetectLanguageByFile(file); });
 }
 
 int GitDiffModel::rowCount(const QModelIndex &) const { return lines.size(); }
@@ -55,6 +58,95 @@ QHash<int, QByteArray> GitDiffModel::roleNames() const {
       {5, "isDelete"},
       {6, "isAdd"},
   };
+}
+
+void GitDiffModel::SetSelectedSide(int side) {
+  if (side == selected_side) {
+    return;
+  }
+  std::pair<int, int> redraw_range = selection.GetLineRange();
+  selection = TextSelection{};
+  emit rehighlightLines(redraw_range.first, redraw_range.second);
+  selected_side = side;
+  emit selectedSideChanged();
+}
+
+int GitDiffModel::GetSelectedSide() const { return selected_side; }
+
+bool GitDiffModel::resetSelection() {
+  if (selection.first_line < 0) {
+    return false;
+  }
+  std::pair<int, int> redraw_range = selection.GetLineRange();
+  selection = TextSelection();
+  emit rehighlightLines(redraw_range.first, redraw_range.second);
+  return true;
+}
+
+void GitDiffModel::copySelection(int current_line) {
+  TextSelection s = selection.Normalize();
+  if (s.first_line < 0) {
+    s.first_line = s.last_line = current_line;
+  }
+  QStringList lines_to_copy;
+  for (int i = s.first_line; i <= s.last_line; i++) {
+    const DiffLine &dl = lines[i];
+    if ((selected_side == 0 && dl.before_line_number < 0) ||
+        (selected_side == 1 && dl.after_line_number < 0)) {
+      continue;
+    }
+    TextSegment segment = selected_side == 0 ? dl.before_line : dl.after_line;
+    if (i == s.last_line && s.last_line_offset >= 0) {
+      segment.length = s.last_line_offset;
+    }
+    if (i == s.first_line && s.first_line_offset >= 0) {
+      segment.offset += s.first_line_offset;
+      segment.length -= s.first_line_offset;
+    }
+    QString text = raw_diff.sliced(segment.offset, segment.length);
+    lines_to_copy.append(text);
+  }
+  QGuiApplication::clipboard()->setText(lines_to_copy.join('\n'));
+}
+
+void GitDiffModel::selectInline(int line, int start, int end) {
+  std::pair<int, int> redraw_range = selection.GetLineRange();
+  selection.multiline_selection = false;
+  selection.last_line = selection.first_line = line;
+  selection.first_line_offset = start;
+  selection.last_line_offset = end;
+  emit rehighlightLines(redraw_range.first, redraw_range.second);
+  emit rehighlightLines(line, line);
+}
+
+void GitDiffModel::selectLine(int line) {
+  if (line < 0 || line >= lines.size()) {
+    return;
+  }
+  if (!selection.multiline_selection) {
+    std::pair<int, int> redraw_range = selection.GetLineRange();
+    selection.multiline_selection = true;
+    selection.first_line = selection.last_line = line;
+    selection.first_line_offset = selection.last_line_offset = -1;
+    emit rehighlightLines(redraw_range.first, redraw_range.second);
+    emit rehighlightLines(line, line);
+  } else {
+    std::pair<int, int> redraw_range = selection.GetLineRange();
+    selection.last_line = line;
+    emit rehighlightLines(redraw_range.first, redraw_range.second);
+    redraw_range = selection.GetLineRange();
+    emit rehighlightLines(redraw_range.first, redraw_range.second);
+  }
+}
+
+void GitDiffModel::selectAll() {
+  std::pair<int, int> redraw_range = selection.GetLineRange();
+  selection = TextSelection();
+  selection.first_line = 0;
+  selection.last_line = std::max((int)lines.size() - 1, 0);
+  emit rehighlightLines(redraw_range.first, redraw_range.second);
+  redraw_range = selection.GetLineRange();
+  emit rehighlightLines(redraw_range.first, redraw_range.second);
 }
 
 static int ParseLineNumber(const QString &str, QChar start) {
