@@ -12,6 +12,7 @@ Cdt.Pane {
   property alias rawDiff: diffModel.rawDiff
   property alias chunkCount: diffModel.chunkCount
   property alias currentChunk: diffModel.currentChunk
+  property alias errorMessage: errorText.text
   property var additionalMenuItems: []
   color: Theme.colorBgDark
   GitDiffModel {
@@ -34,7 +35,15 @@ Cdt.Pane {
   Keys.onEscapePressed: function(e) {
     e.accepted = diffModel.resetSelection() || searchBar.close();
   }
+  Cdt.PlaceholderText {
+    id: errorText
+    visible: text
+    anchors.fill: parent
+    textColor: "red"
+    color: "transparent"
+  }
   ColumnLayout {
+    visible: !errorText.visible
     anchors.fill: parent
     spacing: 0
     Cdt.TextSearchBar {
