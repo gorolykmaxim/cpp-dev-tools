@@ -20,6 +20,11 @@ Cdt.Pane {
       listView.currentIndex = line;
       listView.positionViewAtIndex(listView.currentIndex, ListView.Center);
     }
+    onModelChanged: {
+      if (searchBar.visible) {
+        search(searchBar.searchTerm);
+      }
+    }
   }
   onActiveFocusChanged: {
     if (!activeFocus) {
