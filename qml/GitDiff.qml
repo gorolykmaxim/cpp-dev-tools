@@ -37,6 +37,7 @@ Cdt.Pane {
     model: diffModel
     focus: true
     clip: true
+    enabled: root.enabled
     boundsBehavior: ListView.StopAtBounds
     boundsMovement: ListView.StopAtBounds
     highlightMoveDuration: 100

@@ -110,6 +110,7 @@ SplitView {
     id: fileDiff
     file: controller.files.selectedFileName
     rawDiff: controller.rawDiff
+    enabled: controller.hasChanges
     additionalMenuItems: [
       {
         text: "Rollback Chunk",
