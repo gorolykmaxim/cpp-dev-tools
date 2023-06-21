@@ -43,7 +43,7 @@ FocusScope {
   ColumnLayout {
     spacing: 0
     anchors.fill: parent
-    Cdt.TextSearchBar {
+    Cdt.TextAreaSearchBar {
       id: searchBar
       Layout.fillWidth: true
       onSelectResult: function(o, l) {
@@ -151,7 +151,7 @@ FocusScope {
               text: "Find"
               enabled: textArea.activeFocus
               shortcut: "Ctrl+F"
-              onTriggered: searchBar.display(textArea.selectionStart, textArea.selectedText)
+              onTriggered: searchBar.displayAndGoToResult(textArea.selectionStart, textArea.selectedText)
             }
             MenuSeparator {}
             MenuItem {

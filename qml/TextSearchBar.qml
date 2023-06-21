@@ -6,35 +6,20 @@ import cdt
 Cdt.Pane {
   id: root
   property bool readOnly: false
-  property string text: ""
-  property alias formatter: controller.formatter
-  signal searchResultsChanged()
-  signal selectResult(int offset, int length)
-  signal replaceResults(list<int> offsets, list<int> lengths, string text)
-  color: Theme.colorBgMedium
-  padding: Theme.basePadding
-  visible: false
-  Keys.onEscapePressed: function(e) {
-    if (visible) {
-      close();
-      e.accepted = true;
-    } else {
-      e.accepted = false;
-    }
-  }
-  onTextChanged: {
-    if (visible) {
-      controller.search(searchTextField.displayText, text, root.activeFocus, false)
-    }
-  }
-  function display(offset, text) {
+  property alias searchTerm: searchTextField.displayText
+  property alias replacementTerm: replaceTextField.displayText
+  property alias searchResultCount: searchResultCountText.text
+  property bool noSearchResults: true
+  signal search()
+  signal replace(bool replaceAll)
+  signal goToSearchResult(bool next)
+  function display(term) {
     visible = true;
-    searchTextField.text = text;
+    searchTextField.text = term;
     replaceTextField.text = "";
     // When searchBar open request arrives we need to focus the search bar's
     // input regardless of what else is happenning.
     searchTextField.forceActiveFocus();
-    controller.goToResultWithStartAt(offset);
   }
   function close() {
     const result = visible;
@@ -43,11 +28,16 @@ Cdt.Pane {
     replaceTextField.text = "";
     return result;
   }
-  TextSearchController {
-    id: controller
-    onSearchResultsChanged: root.searchResultsChanged()
-    onReplaceResults: (o, l, t) => root.replaceResults(o, l, t)
-    onSelectResult: (o, l) => root.selectResult(o, l)
+  visible: false
+  color: Theme.colorBgMedium
+  padding: Theme.basePadding
+  Keys.onEscapePressed: function(e) {
+    if (visible) {
+      close();
+      e.accepted = true;
+    } else {
+      e.accepted = false;
+    }
   }
   ColumnLayout {
     anchors.fill: parent
@@ -57,28 +47,28 @@ Cdt.Pane {
         id: searchTextField
         Layout.fillWidth: true
         placeholderText: "Search text"
-        onDisplayTextChanged: controller.search(displayText, root.text, true, true)
-        Keys.onReturnPressed: e => controller.goToSearchResult(!(e.modifiers & Qt.ShiftModifier))
-        Keys.onEnterPressed: e => controller.goToSearchResult(!(e.modifiers & Qt.ShiftModifier))
+        onDisplayTextChanged: search()
+        Keys.onReturnPressed: e => goToSearchResult(!(e.modifiers & Qt.ShiftModifier))
+        Keys.onEnterPressed: e => goToSearchResult(!(e.modifiers & Qt.ShiftModifier))
         KeyNavigation.right: prevResultBtn
         KeyNavigation.down: root.readOnly ? null : replaceTextField
       }
       Cdt.Text {
-        text: controller.searchResultsCount
+        id: searchResultCountText
       }
       Cdt.IconButton {
         id: prevResultBtn
         buttonIcon: "arrow_upward"
-        enabled: !controller.searchResultsEmpty
-        onClicked: controller.goToSearchResult(false)
+        enabled: !noSearchResults
+        onClicked: goToSearchResult(false)
         KeyNavigation.right: nextResultBtn
         KeyNavigation.down: root.readOnly ? null : replaceTextField
       }
       Cdt.IconButton {
         id: nextResultBtn
         buttonIcon: "arrow_downward"
-        enabled: !controller.searchResultsEmpty
-        onClicked: controller.goToSearchResult(true)
+        enabled: !noSearchResults
+        onClicked: goToSearchResult(true)
         KeyNavigation.down: root.readOnly ? null : replaceTextField
       }
     }
@@ -89,22 +79,22 @@ Cdt.Pane {
         id: replaceTextField
         Layout.fillWidth: true
         placeholderText: "Replace text"
-        Keys.onReturnPressed: controller.replaceSearchResultWith(replaceTextField.displayText, false)
-        Keys.onEnterPressed: controller.replaceSearchResultWith(replaceTextField.displayText, false)
+        Keys.onReturnPressed: replace(false)
+        Keys.onEnterPressed: replace(false)
         KeyNavigation.right: replaceBtn
         KeyNavigation.up: searchTextField
       }
       Cdt.Button {
         id: replaceBtn
         text: "Replace"
-        onClicked: controller.replaceSearchResultWith(replaceTextField.displayText, false)
+        onClicked: replace(false)
         KeyNavigation.right: replaceAllBtn
         KeyNavigation.up: searchTextField
       }
       Cdt.Button {
         id: replaceAllBtn
         text: "Replace All"
-        onClicked: controller.replaceSearchResultWith(replaceTextField.displayText, true)
+        onClicked: replace(true)
         KeyNavigation.up: searchTextField
       }
     }

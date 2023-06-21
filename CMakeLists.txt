@@ -139,12 +139,13 @@ qt_add_qml_module(cpp-dev-tools URI cdt VERSION 1.0
       qml/NewGitBranch.qml
       qml/GitCommit.qml
       qml/BigTextArea.qml
-      qml/TextSearchBar.qml
+      qml/TextAreaSearchBar.qml
       qml/SmallTextArea.qml
       qml/FileLinkLookup.qml
       qml/DynamicContextMenu.qml
       qml/TextAreaLine.qml
       qml/GitDiff.qml
+      qml/TextSearchBar.qml
   RESOURCES
       fonts/MaterialIcons-Regular.ttf
   RESOURCE_PREFIX /)

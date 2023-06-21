@@ -50,7 +50,7 @@ Cdt.Pane {
   ColumnLayout {
     anchors.fill: parent
     spacing: 0
-    Cdt.TextSearchBar {
+    Cdt.TextAreaSearchBar {
       id: searchBar
       Layout.fillWidth: true
       readOnly: true
@@ -120,7 +120,7 @@ Cdt.Pane {
           {
             text: "Find",
             shortcut: "Ctrl+F",
-            callback: () => searchBar.display(textModel.getSelectionOffset(), textModel.getSelectedText()),
+            callback: () => searchBar.displayAndGoToResult(textModel.getSelectionOffset(), textModel.getSelectedText()),
           },
           ...additionalMenuItems
         ]
