@@ -101,6 +101,11 @@ bool GitDiffModel::AreSearchResultsEmpty() const {
   return search_results.isEmpty();
 }
 
+bool GitDiffModel::IsSideBySideView() const {
+  return side_by_side_view && !raw_diff.contains("\ndeleted file") &&
+         !raw_diff.contains("\nnew file");
+}
+
 bool GitDiffModel::resetSelection() {
   return selection.Reset([this](int a, int b) { emit rehighlightLines(a, b); });
 }
@@ -231,6 +236,11 @@ QString GitDiffModel::getSelectedText() const {
   return GetSelectedTextInLine(s, s.first_line);
 }
 
+void GitDiffModel::toggleUnifiedView() {
+  side_by_side_view = !side_by_side_view;
+  emit isSideBySideViewChanged();
+}
+
 void GitDiffModel::selectInline(int line, int start, int end) {
   selection.SelectInline(line, start, end,
                          [this](int a, int b) { emit rehighlightLines(a, b); });
@@ -255,39 +265,13 @@ static int ParseLineNumber(const QString &str, QChar start) {
   return str.sliced(i, j - i).toInt();
 }
 
-static void WriteBeforeAfterBuffers(QList<DiffLine> &before_buff,
-                                    QList<DiffLine> &after_buff,
-                                    QList<DiffLine> &new_lines,
-                                    TextSegment header) {
-  int cnt = std::max(before_buff.size(), after_buff.size());
-  for (int i = 0; i < cnt; i++) {
-    DiffLine dl;
-    if (i < before_buff.size()) {
-      const DiffLine &before = before_buff[i];
-      dl.is_delete = before.is_delete;
-      dl.before_line_number = before.before_line_number;
-      dl.before_line = before.before_line;
-    }
-    if (i < after_buff.size()) {
-      const DiffLine &after = after_buff[i];
-      dl.is_add = after.is_add;
-      dl.after_line_number = after.after_line_number;
-      dl.after_line = after.after_line;
-    }
-    dl.header = header;
-    new_lines.append(dl);
-  }
-  before_buff.clear();
-  after_buff.clear();
-}
-
 void GitDiffModel::ParseDiff() {
   selected_side = 0;
   selection = TextSelection{};
   chunk_offsets.clear();
   int max_before_line_number = -1, max_after_line_number = -1;
   QList<DiffLine> new_lines;
-  if (side_by_side_view) {
+  if (IsSideBySideView()) {
     new_lines =
         ParseIntoSideBySideDiff(max_before_line_number, max_after_line_number);
   } else {
@@ -315,6 +299,32 @@ void GitDiffModel::ParseDiff() {
       m.horizontalAdvance(QString::number(max_after_line_number));
   emit modelChanged();
   emit goToLine(0);
+}
+
+static void WriteBeforeAfterBuffers(QList<DiffLine> &before_buff,
+                                    QList<DiffLine> &after_buff,
+                                    QList<DiffLine> &new_lines,
+                                    TextSegment header) {
+  int cnt = std::max(before_buff.size(), after_buff.size());
+  for (int i = 0; i < cnt; i++) {
+    DiffLine dl;
+    if (i < before_buff.size()) {
+      const DiffLine &before = before_buff[i];
+      dl.is_delete = before.is_delete;
+      dl.before_line_number = before.before_line_number;
+      dl.before_line = before.before_line;
+    }
+    if (i < after_buff.size()) {
+      const DiffLine &after = after_buff[i];
+      dl.is_add = after.is_add;
+      dl.after_line_number = after.after_line_number;
+      dl.after_line = after.after_line;
+    }
+    dl.header = header;
+    new_lines.append(dl);
+  }
+  before_buff.clear();
+  after_buff.clear();
 }
 
 QList<DiffLine> GitDiffModel::ParseIntoSideBySideDiff(

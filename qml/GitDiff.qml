@@ -234,7 +234,7 @@ Cdt.Pane {
           {
             text: "Toggle Unified Diff",
             shortcut: "Alt+U",
-            callback: () => diffModel.isSideBySideView = !diffModel.isSideBySideView,
+            callback: () => diffModel.toggleUnifiedView(),
           },
           ...additionalMenuItems
         ]

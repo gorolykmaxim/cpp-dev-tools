@@ -75,8 +75,7 @@ class GitDiffModel : public QAbstractListModel {
                  before_search_formatter CONSTANT)
   Q_PROPERTY(DiffSearchFormatter *afterSearchFormatter MEMBER
                  after_search_formatter CONSTANT)
-  Q_PROPERTY(bool isSideBySideView MEMBER side_by_side_view NOTIFY
-                 isSideBySideViewChanged)
+  Q_PROPERTY(bool isSideBySideView READ IsSideBySideView NOTIFY modelChanged)
  public:
   explicit GitDiffModel(QObject *parent = nullptr);
   int rowCount(const QModelIndex &parent) const;
@@ -87,6 +86,7 @@ class GitDiffModel : public QAbstractListModel {
   int GetChunkCount() const;
   QString GetSearchResultsCount() const;
   bool AreSearchResultsEmpty() const;
+  bool IsSideBySideView() const;
 
  public slots:
   void selectInline(int line, int start, int end);
@@ -100,6 +100,7 @@ class GitDiffModel : public QAbstractListModel {
   void goToSearchResult(bool next);
   void goToSearchResultInLineAndSide(int line, int side);
   QString getSelectedText() const;
+  void toggleUnifiedView();
 
  signals:
   void rawDiffChanged();
