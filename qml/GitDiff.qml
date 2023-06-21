@@ -78,75 +78,124 @@ Cdt.Pane {
         }
       }
       onCurrentIndexChanged: diffModel.selectCurrentChunk(currentIndex)
-      delegate: RowLayout {
-        id: listItem
-        property bool isSelected: ListView.isCurrentItem
-        property int itemIndex: index
-        width: listView.width
-        spacing: 0
-        Keys.onPressed: function(e) {
-          if (e.key === Qt.Key_Left && diffModel.selectedSide > 0) {
-            diffModel.selectedSide--;
-            e.accepted = true;
-          } else if (e.key === Qt.Key_Right && diffModel.selectedSide < 1) {
-            diffModel.selectedSide++;
-            e.accepted = true;
+      delegate: diffModel.isSideBySideView ? sideBySideLine : unifiedLine
+      Component {
+        id: sideBySideLine
+        RowLayout {
+          id: listItem
+          required property int index
+          required property string beforeLine
+          required property string afterLine
+          required property int beforeLineNumber
+          required property int afterLineNumber
+          required property bool isAdd
+          required property bool isDelete
+          property bool isSelected: ListView.isCurrentItem
+          width: listView.width
+          spacing: 0
+          Keys.onPressed: function(e) {
+            if (e.key === Qt.Key_Left && diffModel.selectedSide > 0) {
+              diffModel.selectedSide--;
+              e.accepted = true;
+            } else if (e.key === Qt.Key_Right && diffModel.selectedSide < 1) {
+              diffModel.selectedSide++;
+              e.accepted = true;
+            }
+            Common.handleListViewNavigation(e, listView);
           }
-          Common.handleListViewNavigation(e, listView);
-        }
-        Connections {
-          target: diffModel
-          function onRehighlightLines(first, last) {
-            beforeTextLine.rehighlightIfInRange(first, last);
-            afterTextLine.rehighlightIfInRange(first, last);
+          Connections {
+            target: diffModel
+            function onRehighlightLines(first, last) {
+              beforeTextLine.rehighlightIfInRange(first, last);
+              afterTextLine.rehighlightIfInRange(first, last);
+            }
+          }
+          Cdt.TextAreaLine {
+            id: beforeTextLine
+            Layout.fillHeight: true
+            Layout.preferredWidth: listItem.width / 2
+            clip: true
+            itemIndex: index
+            itemOffset: 0
+            lineNumberMaxWidth: diffModel.maxLineNumberWidthBefore
+            text: beforeLine
+            displayLineNumber: true
+            enabled: root.enabled
+            lineNumber: beforeLineNumber
+            formatters: [diffModel.syntaxFormatter, diffModel.beforeSearchFormatter, diffModel.beforeSelectionFormatter]
+            color: listItem.isSelected && listView.activeFocus && diffModel.selectedSide === 0 ? Theme.colorBgMedium : "transparent"
+            lineColor: isDelete ? "#4df85149" : (isAdd ? "#1af85149" : "transparent")
+            onInlineSelect: (l, s, e) => diffModel.selectInline(l, s, e)
+            onCtrlLeftClick: diffModel.selectLine(index)
+            onRightClick: contextMenu.open()
+            onPressed: {
+              listView.currentIndex = itemIndex;
+              listView.forceActiveFocus();
+              diffModel.selectedSide = 0;
+            }
+          }
+          Cdt.TextAreaLine {
+            id: afterTextLine
+            Layout.fillHeight: true
+            Layout.preferredWidth: listItem.width / 2
+            clip: true
+            itemIndex: index
+            itemOffset: 0
+            lineNumberMaxWidth: diffModel.maxLineNumberWidthAfter
+            text: afterLine
+            displayLineNumber: true
+            enabled: root.enabled
+            lineNumber: afterLineNumber
+            formatters: [diffModel.syntaxFormatter, diffModel.afterSearchFormatter, diffModel.afterSelectionFormatter]
+            color: listItem.isSelected && listView.activeFocus && diffModel.selectedSide === 1 ? Theme.colorBgMedium : "transparent"
+            lineColor: isAdd ? "#4d3fb950" : (isDelete ? "#262ea043" : "transparent")
+            onInlineSelect: (l, s, e) => diffModel.selectInline(l, s, e)
+            onCtrlLeftClick: diffModel.selectLine(index)
+            onRightClick: contextMenu.open()
+            onPressed: {
+              listView.currentIndex = itemIndex;
+              listView.forceActiveFocus();
+              diffModel.selectedSide = 1;
+            }
           }
         }
+      }
+      Component {
+        id: unifiedLine
         Cdt.TextAreaLine {
-          id: beforeTextLine
-          Layout.fillHeight: true
-          Layout.preferredWidth: listItem.width / 2
+          id: textLine
+          required property int index
+          required property string beforeLine
+          required property int beforeLineNumber
+          required property bool isDelete
+          required property bool isAdd
+          property bool isSelected: ListView.isCurrentItem
+          width: listView.width
           clip: true
-          itemIndex: listItem.itemIndex
+          itemIndex: index
           itemOffset: 0
-          lineNumberMaxWidth: diffModel.maxLineNumberWidthBefore
-          text: model.beforeLine
+          lineNumberMaxWidth: Math.max(diffModel.maxLineNumberWidthBefore, diffModel.maxLineNumberWidthAfter)
+          text: beforeLine
           displayLineNumber: true
           enabled: root.enabled
-          lineNumber: model.beforeLineNumber
+          lineNumber: beforeLineNumber
           formatters: [diffModel.syntaxFormatter, diffModel.beforeSearchFormatter, diffModel.beforeSelectionFormatter]
-          color: listItem.isSelected && listView.activeFocus && diffModel.selectedSide === 0 ? Theme.colorBgMedium : "transparent"
-          lineColor: model.isDelete ? "#4df85149" : (model.isAdd ? "#1af85149" : "transparent")
+          color: isSelected && listView.activeFocus ? Theme.colorBgMedium : "transparent"
+          lineColor: isDelete ? "#4df85149" : (isAdd ? "#4d3fb950" : "transparent")
           onInlineSelect: (l, s, e) => diffModel.selectInline(l, s, e)
-          onCtrlLeftClick: diffModel.selectLine(listItem.itemIndex)
+          onCtrlLeftClick: diffModel.selectLine(itemIndex)
           onRightClick: contextMenu.open()
           onPressed: {
             listView.currentIndex = itemIndex;
             listView.forceActiveFocus();
             diffModel.selectedSide = 0;
           }
-        }
-        Cdt.TextAreaLine {
-          id: afterTextLine
-          Layout.fillHeight: true
-          Layout.preferredWidth: listItem.width / 2
-          clip: true
-          itemIndex: listItem.itemIndex
-          itemOffset: 0
-          lineNumberMaxWidth: diffModel.maxLineNumberWidthAfter
-          text: model.afterLine
-          displayLineNumber: true
-          enabled: root.enabled
-          lineNumber: model.afterLineNumber
-          formatters: [diffModel.syntaxFormatter, diffModel.afterSearchFormatter, diffModel.afterSelectionFormatter]
-          color: listItem.isSelected && listView.activeFocus && diffModel.selectedSide === 1 ? Theme.colorBgMedium : "transparent"
-          lineColor: model.isAdd ? "#4d3fb950" : (model.isDelete ? "#262ea043" : "transparent")
-          onInlineSelect: (l, s, e) => diffModel.selectInline(l, s, e)
-          onCtrlLeftClick: diffModel.selectLine(listItem.itemIndex)
-          onRightClick: contextMenu.open()
-          onPressed: {
-            listView.currentIndex = itemIndex;
-            listView.forceActiveFocus();
-            diffModel.selectedSide = 1;
+          Keys.onPressed: e => Common.handleListViewNavigation(e, listView)
+          Connections {
+            target: diffModel
+            function onRehighlightLines(first, last) {
+              textLine.rehighlightIfInRange(first, last);
+            }
           }
         }
       }
@@ -181,6 +230,11 @@ Cdt.Pane {
             text: "Open Chunk In Editor",
             shortcut: "Ctrl+O",
             callback: () => diffModel.openFileInEditor(listView.currentIndex),
+          },
+          {
+            text: "Toggle Unified Diff",
+            shortcut: "Alt+U",
+            callback: () => diffModel.isSideBySideView = !diffModel.isSideBySideView,
           },
           ...additionalMenuItems
         ]

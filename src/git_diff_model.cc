@@ -26,10 +26,13 @@ GitDiffModel::GitDiffModel(QObject *parent)
       before_search_formatter(new DiffSearchFormatter(this, 0, search_results,
                                                       search_result_index)),
       after_search_formatter(new DiffSearchFormatter(this, 1, search_results,
-                                                     search_result_index)) {
+                                                     search_result_index)),
+      side_by_side_view(true) {
   connect(this, &GitDiffModel::rawDiffChanged, this, &GitDiffModel::ParseDiff);
   connect(this, &GitDiffModel::fileChanged, this,
           [this] { syntax_formatter->DetectLanguageByFile(file); });
+  connect(this, &GitDiffModel::isSideBySideViewChanged, this,
+          &GitDiffModel::ParseDiff);
 }
 
 int GitDiffModel::rowCount(const QModelIndex &) const { return lines.size(); }
@@ -122,9 +125,13 @@ void GitDiffModel::copySelection(int current_line) const {
 
 void GitDiffModel::openFileInEditor(int current_line) const {
   const DiffLine &line = lines[current_line];
-  LOG() << "Opening git diff chunk at line" << line.after_line_number << "of"
-        << file << "in editor";
-  Application::Get().editor.OpenFile(file, line.after_line_number, -1);
+  int line_number = line.after_line_number;
+  if (line_number < 0) {
+    line_number = line.before_line_number;
+  }
+  LOG() << "Opening git diff chunk at line" << line_number << "of" << file
+        << "in editor";
+  Application::Get().editor.OpenFile(file, line_number, -1);
 }
 
 void GitDiffModel::selectCurrentChunk(int current_line) {
@@ -275,54 +282,18 @@ static void WriteBeforeAfterBuffers(QList<DiffLine> &before_buff,
 }
 
 void GitDiffModel::ParseDiff() {
+  selected_side = 0;
+  selection = TextSelection{};
   chunk_offsets.clear();
+  int max_before_line_number = -1, max_after_line_number = -1;
   QList<DiffLine> new_lines;
-  int pos = 0;
-  bool is_header = true;
-  TextSegment header;
-  int before_line_number = -1, after_line_number = -1;
-  QList<DiffLine> before_buff, after_buff;
-  while (true) {
-    int i = raw_diff.indexOf('\n', pos);
-    if (i < 0) {
-      break;
-    }
-    QString line = raw_diff.sliced(pos, i - pos);
-    if (line.startsWith("@@")) {
-      chunk_offsets.append(new_lines.size());
-      is_header = false;
-      header.offset = pos;
-      header.length = line.size();
-      before_line_number = ParseLineNumber(line, '-');
-      after_line_number = ParseLineNumber(line, '+');
-    } else if (is_header) {
-    } else if (line.startsWith('-')) {
-      DiffLine dl;
-      dl.is_delete = true;
-      dl.before_line_number = before_line_number++;
-      dl.before_line = TextSegment{pos + 1, (int)line.size() - 1};
-      dl.header = header;
-      before_buff.append(dl);
-    } else if (line.startsWith('+')) {
-      DiffLine dl;
-      dl.is_add = true;
-      dl.after_line_number = after_line_number++;
-      dl.after_line = TextSegment{pos + 1, (int)line.size() - 1};
-      dl.header = header;
-      after_buff.append(dl);
-    } else if (line.startsWith(' ')) {
-      WriteBeforeAfterBuffers(before_buff, after_buff, new_lines, header);
-      DiffLine dl;
-      dl.header = header;
-      dl.before_line_number = before_line_number++;
-      dl.before_line = TextSegment{pos + 1, (int)line.size() - 1};
-      dl.after_line_number = after_line_number++;
-      dl.after_line = dl.before_line;
-      new_lines.append(dl);
-    }
-    pos = i + 1;
+  if (side_by_side_view) {
+    new_lines =
+        ParseIntoSideBySideDiff(max_before_line_number, max_after_line_number);
+  } else {
+    new_lines =
+        ParseIntoUnifiedDiff(max_before_line_number, max_after_line_number);
   }
-  WriteBeforeAfterBuffers(before_buff, after_buff, new_lines, header);
   if (!lines.isEmpty()) {
     beginRemoveRows(QModelIndex(), 0, lines.size() - 1);
     lines.clear();
@@ -339,11 +310,109 @@ void GitDiffModel::ParseDiff() {
   int size = ctx->contextProperty("monoFontSize").toInt();
   QFontMetrics m(QFont(family, size));
   before_line_number_max_width =
-      m.horizontalAdvance(QString::number(before_line_number));
+      m.horizontalAdvance(QString::number(max_before_line_number));
   after_line_number_max_width =
-      m.horizontalAdvance(QString::number(after_line_number));
+      m.horizontalAdvance(QString::number(max_after_line_number));
   emit modelChanged();
   emit goToLine(0);
+}
+
+QList<DiffLine> GitDiffModel::ParseIntoSideBySideDiff(
+    int &max_before_line_number, int &max_after_line_number) {
+  QList<DiffLine> new_lines;
+  int pos = 0;
+  bool is_header = true;
+  TextSegment header;
+  QList<DiffLine> before_buff, after_buff;
+  while (true) {
+    int i = raw_diff.indexOf('\n', pos);
+    if (i < 0) {
+      break;
+    }
+    QString line = raw_diff.sliced(pos, i - pos);
+    if (line.startsWith("@@")) {
+      chunk_offsets.append(new_lines.size());
+      is_header = false;
+      header.offset = pos;
+      header.length = line.size();
+      max_before_line_number = ParseLineNumber(line, '-');
+      max_after_line_number = ParseLineNumber(line, '+');
+    } else if (is_header) {
+    } else if (line.startsWith('-')) {
+      DiffLine dl;
+      dl.is_delete = true;
+      dl.before_line_number = max_before_line_number++;
+      dl.before_line = TextSegment{pos + 1, (int)line.size() - 1};
+      dl.header = header;
+      before_buff.append(dl);
+    } else if (line.startsWith('+')) {
+      DiffLine dl;
+      dl.is_add = true;
+      dl.after_line_number = max_after_line_number++;
+      dl.after_line = TextSegment{pos + 1, (int)line.size() - 1};
+      dl.header = header;
+      after_buff.append(dl);
+    } else if (line.startsWith(' ')) {
+      WriteBeforeAfterBuffers(before_buff, after_buff, new_lines, header);
+      DiffLine dl;
+      dl.header = header;
+      dl.before_line_number = max_before_line_number++;
+      dl.before_line = TextSegment{pos + 1, (int)line.size() - 1};
+      dl.after_line_number = max_after_line_number++;
+      dl.after_line = dl.before_line;
+      new_lines.append(dl);
+    }
+    pos = i + 1;
+  }
+  WriteBeforeAfterBuffers(before_buff, after_buff, new_lines, header);
+  return new_lines;
+}
+
+QList<DiffLine> GitDiffModel::ParseIntoUnifiedDiff(int &max_before_line_number,
+                                                   int &max_after_line_number) {
+  QList<DiffLine> new_lines;
+  int pos = 0;
+  bool is_header = true;
+  TextSegment header;
+  while (true) {
+    int i = raw_diff.indexOf('\n', pos);
+    if (i < 0) {
+      break;
+    }
+    QString line = raw_diff.sliced(pos, i - pos);
+    if (line.startsWith("@@")) {
+      chunk_offsets.append(new_lines.size());
+      is_header = false;
+      header.offset = pos;
+      header.length = line.size();
+      max_before_line_number = ParseLineNumber(line, '-');
+      max_after_line_number = ParseLineNumber(line, '+');
+    } else if (is_header) {
+    } else if (line.startsWith('-')) {
+      DiffLine dl;
+      dl.is_delete = true;
+      dl.before_line_number = max_before_line_number++;
+      dl.before_line = TextSegment{pos + 1, (int)line.size() - 1};
+      dl.header = header;
+      new_lines.append(dl);
+    } else if (line.startsWith('+')) {
+      DiffLine dl;
+      dl.is_add = true;
+      dl.before_line_number = max_after_line_number++;
+      dl.before_line = TextSegment{pos + 1, (int)line.size() - 1};
+      dl.header = header;
+      new_lines.append(dl);
+    } else if (line.startsWith(' ')) {
+      DiffLine dl;
+      dl.header = header;
+      dl.before_line_number = max_before_line_number++;
+      dl.before_line = TextSegment{pos + 1, (int)line.size() - 1};
+      max_after_line_number++;
+      new_lines.append(dl);
+    }
+    pos = i + 1;
+  }
+  return new_lines;
 }
 
 void GitDiffModel::SelectCurrentSearchResult() {
