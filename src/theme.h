@@ -20,6 +20,7 @@ class Theme : public QObject {
   Q_PROPERTY(QString colorText MEMBER kColorText CONSTANT)
   Q_PROPERTY(QString colorSubText MEMBER kColorSubText CONSTANT)
   Q_PROPERTY(QString colorHighlight MEMBER kColorHighlight CONSTANT)
+  Q_PROPERTY(QString colorSearchResult MEMBER kColorSearchResult CONSTANT)
  public:
   const int kBasePadding = 4;
   const int kBaseRadius = 4;
@@ -34,4 +35,5 @@ class Theme : public QObject {
   const QString kColorText = "#efefef";
   const QString kColorSubText = "#6d6d6d";
   const QString kColorHighlight = "#9ab8ef";
+  const QString kColorSearchResult = "#6b420f";
 };

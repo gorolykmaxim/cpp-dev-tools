@@ -767,7 +767,8 @@ SearchFormatter::SearchFormatter(QObject* parent,
                                  const QList<TextSegment>& results,
                                  const QHash<int, QList<int>>& index)
     : TextFormatter(parent), results(results), index(index) {
-  format.setBackground(ViewSystem::BrushFromHex("#6b420f"));
+  static const Theme kTheme;
+  format.setBackground(ViewSystem::BrushFromHex(kTheme.kColorSearchResult));
 }
 
 QList<TextFormat> SearchFormatter::Format(const QString&, LineInfo line) const {

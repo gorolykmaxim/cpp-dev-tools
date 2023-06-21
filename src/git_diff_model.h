@@ -18,6 +18,11 @@ struct DiffLine {
   TextSegment header;
 };
 
+struct DiffSearchResult : public TextSegment {
+  int line = 0;
+  int side = 0;
+};
+
 class DiffSelectionFormatter : public TextFormatter {
  public:
   DiffSelectionFormatter(QObject *parent, const int &selected_side, int side,
@@ -28,6 +33,20 @@ class DiffSelectionFormatter : public TextFormatter {
   const int &selected_side;
   int side;
   SelectionFormatter formatter;
+};
+
+class DiffSearchFormatter : public TextFormatter {
+ public:
+  DiffSearchFormatter(QObject *parent, int side,
+                      const QList<DiffSearchResult> &results,
+                      const QHash<int, QList<int>> &index);
+  QList<TextFormat> Format(const QString &text, LineInfo line) const;
+
+ private:
+  int side;
+  const QList<DiffSearchResult> &results;
+  const QHash<int, QList<int>> &index;
+  QTextCharFormat format;
 };
 
 class GitDiffModel : public QAbstractListModel {
@@ -48,6 +67,14 @@ class GitDiffModel : public QAbstractListModel {
                  before_selection_formatter CONSTANT)
   Q_PROPERTY(DiffSelectionFormatter *afterSelectionFormatter MEMBER
                  after_selection_formatter CONSTANT)
+  Q_PROPERTY(QString searchResultsCount READ GetSearchResultsCount NOTIFY
+                 searchResultsCountChanged)
+  Q_PROPERTY(bool searchResultsEmpty READ AreSearchResultsEmpty NOTIFY
+                 searchResultsCountChanged)
+  Q_PROPERTY(DiffSearchFormatter *beforeSearchFormatter MEMBER
+                 before_search_formatter CONSTANT)
+  Q_PROPERTY(DiffSearchFormatter *afterSearchFormatter MEMBER
+                 after_search_formatter CONSTANT)
  public:
   explicit GitDiffModel(QObject *parent = nullptr);
   int rowCount(const QModelIndex &parent) const;
@@ -56,15 +83,21 @@ class GitDiffModel : public QAbstractListModel {
   void SetSelectedSide(int side);
   int GetSelectedSide() const;
   int GetChunkCount() const;
+  QString GetSearchResultsCount() const;
+  bool AreSearchResultsEmpty() const;
 
  public slots:
   void selectInline(int line, int start, int end);
   void selectLine(int line);
   void selectAll();
   bool resetSelection();
-  void copySelection(int current_line);
-  void openFileInEditor(int current_line);
+  void copySelection(int current_line) const;
+  void openFileInEditor(int current_line) const;
   void selectCurrentChunk(int current_line);
+  void search(const QString &term);
+  void goToSearchResult(bool next);
+  void goToSearchResultInLineAndSide(int line, int side);
+  QString getSelectedText() const;
 
  signals:
   void rawDiffChanged();
@@ -73,9 +106,13 @@ class GitDiffModel : public QAbstractListModel {
   void fileChanged();
   void rehighlightLines(int first, int last);
   void currentChunkChanged();
+  void searchResultsCountChanged();
+  void goToLine(int line);
 
  private:
   void ParseDiff();
+  void SelectCurrentSearchResult();
+  QString GetSelectedTextInLine(const TextSelection &s, int i) const;
 
   QString raw_diff;
   int before_line_number_max_width;
@@ -89,6 +126,11 @@ class GitDiffModel : public QAbstractListModel {
   TextSelection selection;
   QList<int> chunk_offsets;
   int current_chunk;
+  QList<DiffSearchResult> search_results;
+  QHash<int, QList<int>> search_result_index;
+  int selected_result;
+  DiffSearchFormatter *before_search_formatter;
+  DiffSearchFormatter *after_search_formatter;
 };
 
 #endif  // GITDIFFMODEL_H

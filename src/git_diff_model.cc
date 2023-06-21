@@ -7,6 +7,7 @@
 #include <QQmlContext>
 
 #include "application.h"
+#include "theme.h"
 
 #define LOG() qDebug() << "[GitDiffModel]"
 
@@ -20,7 +21,12 @@ GitDiffModel::GitDiffModel(QObject *parent)
           new DiffSelectionFormatter(this, selected_side, 0, selection)),
       after_selection_formatter(
           new DiffSelectionFormatter(this, selected_side, 1, selection)),
-      current_chunk(0) {
+      current_chunk(0),
+      selected_result(0),
+      before_search_formatter(new DiffSearchFormatter(this, 0, search_results,
+                                                      search_result_index)),
+      after_search_formatter(new DiffSearchFormatter(this, 1, search_results,
+                                                     search_result_index)) {
   connect(this, &GitDiffModel::rawDiffChanged, this, &GitDiffModel::ParseDiff);
   connect(this, &GitDiffModel::fileChanged, this,
           [this] { syntax_formatter->DetectLanguageByFile(file); });
@@ -70,9 +76,7 @@ void GitDiffModel::SetSelectedSide(int side) {
   if (side == selected_side) {
     return;
   }
-  std::pair<int, int> redraw_range = selection.GetLineRange();
-  selection = TextSelection{};
-  emit rehighlightLines(redraw_range.first, redraw_range.second);
+  selection.Reset([this](int a, int b) { emit rehighlightLines(a, b); });
   selected_side = side;
   emit selectedSideChanged();
 }
@@ -81,37 +85,42 @@ int GitDiffModel::GetSelectedSide() const { return selected_side; }
 
 int GitDiffModel::GetChunkCount() const { return chunk_offsets.size(); }
 
+QString GitDiffModel::GetSearchResultsCount() const {
+  if (search_results.isEmpty()) {
+    return "No Results";
+  } else {
+    return QString::number(selected_result + 1) + " of " +
+           QString::number(search_results.size());
+  }
+}
+
+bool GitDiffModel::AreSearchResultsEmpty() const {
+  return search_results.isEmpty();
+}
+
 bool GitDiffModel::resetSelection() {
   return selection.Reset([this](int a, int b) { emit rehighlightLines(a, b); });
 }
 
-void GitDiffModel::copySelection(int current_line) {
+void GitDiffModel::copySelection(int current_line) const {
+  if (lines.isEmpty()) {
+    return;
+  }
   TextSelection s = selection.Normalize();
   if (s.first_line < 0) {
     s.first_line = s.last_line = current_line;
   }
   QStringList lines_to_copy;
   for (int i = s.first_line; i <= s.last_line; i++) {
-    const DiffLine &dl = lines[i];
-    if ((selected_side == 0 && dl.before_line_number < 0) ||
-        (selected_side == 1 && dl.after_line_number < 0)) {
-      continue;
+    QString txt = GetSelectedTextInLine(s, i);
+    if (!txt.isEmpty()) {
+      lines_to_copy.append(txt);
     }
-    TextSegment segment = selected_side == 0 ? dl.before_line : dl.after_line;
-    if (i == s.last_line && s.last_line_offset >= 0) {
-      segment.length = s.last_line_offset;
-    }
-    if (i == s.first_line && s.first_line_offset >= 0) {
-      segment.offset += s.first_line_offset;
-      segment.length -= s.first_line_offset;
-    }
-    QString text = raw_diff.sliced(segment.offset, segment.length);
-    lines_to_copy.append(text);
   }
   QGuiApplication::clipboard()->setText(lines_to_copy.join('\n'));
 }
 
-void GitDiffModel::openFileInEditor(int current_line) {
+void GitDiffModel::openFileInEditor(int current_line) const {
   const DiffLine &line = lines[current_line];
   LOG() << "Opening git diff chunk at line" << line.after_line_number << "of"
         << file << "in editor";
@@ -127,6 +136,92 @@ void GitDiffModel::selectCurrentChunk(int current_line) {
     }
   }
   emit currentChunkChanged();
+}
+
+void GitDiffModel::search(const QString &term) {
+  int prev_line = -1;
+  int prev_side = -1;
+  if (selected_result < search_results.size()) {
+    const DiffSearchResult &r = search_results[selected_result];
+    prev_line = r.line;
+    prev_side = r.side;
+  }
+  search_results.clear();
+  search_result_index.clear();
+  if (term.size() > 2) {
+    for (int i = 0; i < lines.size(); i++) {
+      const DiffLine &line = lines[i];
+      QList<TextSegment> sides_to_search = {line.before_line, line.after_line};
+      for (int j = 0; j < sides_to_search.size(); j++) {
+        TextSegment side = sides_to_search[j];
+        QString text = raw_diff.sliced(side.offset, side.length);
+        int pos = 0;
+        while (true) {
+          int k = text.indexOf(term, pos, Qt::CaseInsensitive);
+          if (k < 0) {
+            break;
+          }
+          DiffSearchResult result;
+          result.offset = k;
+          result.length = term.size();
+          result.side = j;
+          result.line = i;
+          search_result_index[i].append(search_results.size());
+          search_results.append(result);
+          pos = k + term.size();
+        }
+      }
+    }
+  }
+  if (selected_result >= search_results.size() ||
+      search_results[selected_result].line != prev_line ||
+      search_results[selected_result].side != prev_side) {
+    selected_result = 0;
+    for (int i = 0; i < search_results.size(); i++) {
+      const DiffSearchResult &r = search_results[i];
+      if (r.line >= prev_line && r.side >= prev_side) {
+        selected_result = i;
+        break;
+      }
+    }
+  }
+  emit rehighlightLines(0, lines.size() - 1);
+  SelectCurrentSearchResult();
+}
+
+void GitDiffModel::goToSearchResult(bool next) {
+  if (search_results.isEmpty()) {
+    return;
+  }
+  selected_result += next ? 1 : -1;
+  if (selected_result < 0) {
+    selected_result = search_results.size() - 1;
+  } else if (selected_result >= search_results.size()) {
+    selected_result = 0;
+  }
+  SelectCurrentSearchResult();
+}
+
+void GitDiffModel::goToSearchResultInLineAndSide(int line, int side) {
+  if (search_results.isEmpty()) {
+    return;
+  }
+  for (int sri : search_result_index[line]) {
+    if (search_results[sri].side != side) {
+      continue;
+    }
+    selected_result = sri;
+    SelectCurrentSearchResult();
+    break;
+  }
+}
+
+QString GitDiffModel::getSelectedText() const {
+  if (selection.first_line < 0 || selection.first_line >= lines.size()) {
+    return "";
+  }
+  TextSelection s = selection.Normalize();
+  return GetSelectedTextInLine(s, s.first_line);
 }
 
 void GitDiffModel::selectInline(int line, int start, int end) {
@@ -248,6 +343,40 @@ void GitDiffModel::ParseDiff() {
   after_line_number_max_width =
       m.horizontalAdvance(QString::number(after_line_number));
   emit modelChanged();
+  emit goToLine(0);
+}
+
+void GitDiffModel::SelectCurrentSearchResult() {
+  emit searchResultsCountChanged();
+  if (search_results.isEmpty()) {
+    resetSelection();
+    return;
+  }
+  const DiffSearchResult &result = search_results[selected_result];
+  SetSelectedSide(result.side);
+  selectInline(result.line, result.offset, result.offset + result.length);
+  emit goToLine(result.line);
+}
+
+QString GitDiffModel::GetSelectedTextInLine(const TextSelection &s,
+                                            int i) const {
+  if (i < 0 || i >= lines.size()) {
+    return "";
+  }
+  const DiffLine &dl = lines[i];
+  if ((selected_side == 0 && dl.before_line_number < 0) ||
+      (selected_side == 1 && dl.after_line_number < 0)) {
+    return "";
+  }
+  TextSegment segment = selected_side == 0 ? dl.before_line : dl.after_line;
+  if (i == s.last_line && s.last_line_offset >= 0) {
+    segment.length = s.last_line_offset;
+  }
+  if (i == s.first_line && s.first_line_offset >= 0) {
+    segment.offset += s.first_line_offset;
+    segment.length -= s.first_line_offset;
+  }
+  return raw_diff.sliced(segment.offset, segment.length);
 }
 
 DiffSelectionFormatter::DiffSelectionFormatter(QObject *parent,
@@ -266,4 +395,29 @@ QList<TextFormat> DiffSelectionFormatter::Format(const QString &text,
   } else {
     return {};
   }
+}
+
+DiffSearchFormatter::DiffSearchFormatter(QObject *parent, int side,
+                                         const QList<DiffSearchResult> &results,
+                                         const QHash<int, QList<int> > &index)
+    : TextFormatter(parent), side(side), results(results), index(index) {
+  static const Theme kTheme;
+  format.setBackground(ViewSystem::BrushFromHex(kTheme.kColorSearchResult));
+}
+
+QList<TextFormat> DiffSearchFormatter::Format(const QString &,
+                                              LineInfo line) const {
+  QList<TextFormat> fs;
+  for (int sri : index[line.number]) {
+    const DiffSearchResult &r = results[sri];
+    if (r.side != side) {
+      continue;
+    }
+    TextFormat f;
+    f.offset = r.offset;
+    f.length = r.length;
+    f.format = format;
+    fs.append(f);
+  }
+  return fs;
 }
