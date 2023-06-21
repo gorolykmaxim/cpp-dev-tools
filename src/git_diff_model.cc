@@ -19,7 +19,8 @@ GitDiffModel::GitDiffModel(QObject *parent)
       before_selection_formatter(
           new DiffSelectionFormatter(this, selected_side, 0, selection)),
       after_selection_formatter(
-          new DiffSelectionFormatter(this, selected_side, 1, selection)) {
+          new DiffSelectionFormatter(this, selected_side, 1, selection)),
+      current_chunk(0) {
   connect(this, &GitDiffModel::rawDiffChanged, this, &GitDiffModel::ParseDiff);
   connect(this, &GitDiffModel::fileChanged, this,
           [this] { syntax_formatter->DetectLanguageByFile(file); });
@@ -78,6 +79,8 @@ void GitDiffModel::SetSelectedSide(int side) {
 
 int GitDiffModel::GetSelectedSide() const { return selected_side; }
 
+int GitDiffModel::GetChunkCount() const { return chunk_offsets.size(); }
+
 bool GitDiffModel::resetSelection() {
   return selection.Reset([this](int a, int b) { emit rehighlightLines(a, b); });
 }
@@ -113,6 +116,17 @@ void GitDiffModel::openFileInEditor(int current_line) {
   LOG() << "Opening git diff chunk at line" << line.after_line_number << "of"
         << file << "in editor";
   Application::Get().editor.OpenFile(file, line.after_line_number, -1);
+}
+
+void GitDiffModel::selectCurrentChunk(int current_line) {
+  int i = 0;
+  for (; i < chunk_offsets.size(); i++) {
+    if (current_line < chunk_offsets[i]) {
+      current_chunk = i - 1;
+      break;
+    }
+  }
+  emit currentChunkChanged();
 }
 
 void GitDiffModel::selectInline(int line, int start, int end) {
@@ -166,6 +180,7 @@ static void WriteBeforeAfterBuffers(QList<DiffLine> &before_buff,
 }
 
 void GitDiffModel::ParseDiff() {
+  chunk_offsets.clear();
   QList<DiffLine> new_lines;
   int pos = 0;
   bool is_header = true;
@@ -179,6 +194,7 @@ void GitDiffModel::ParseDiff() {
     }
     QString line = raw_diff.sliced(pos, i - pos);
     if (line.startsWith("@@")) {
+      chunk_offsets.append(new_lines.size());
       is_header = false;
       header.offset = pos;
       header.length = line.size();

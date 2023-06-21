@@ -10,6 +10,9 @@ Cdt.Pane {
   id: root
   property alias file: diffModel.file
   property alias rawDiff: diffModel.rawDiff
+  property alias chunkCount: diffModel.chunkCount
+  property alias currentChunk: diffModel.currentChunk
+  property var additionalMenuItems: []
   color: Theme.colorBgDark
   GitDiffModel {
     id: diffModel
@@ -39,7 +42,7 @@ Cdt.Pane {
     highlightMoveDuration: 100
     ScrollBar.vertical: ScrollBar {}
     section.property: "header"
-    section.labelPositioning: ViewSection.CurrentLabelAtStart
+    section.labelPositioning: ViewSection.InlineLabels | ViewSection.CurrentLabelAtStart
     section.delegate: Cdt.Pane {
       required property string section
       width: listView.width
@@ -50,6 +53,7 @@ Cdt.Pane {
         color: Theme.colorSubText
       }
     }
+    onCurrentIndexChanged: diffModel.selectCurrentChunk(currentIndex)
     delegate: RowLayout {
       id: listItem
       property bool isSelected: ListView.isCurrentItem
@@ -125,33 +129,40 @@ Cdt.Pane {
         }
       }
     }
-    Menu {
+    Cdt.DynamicContextMenu {
       id: contextMenu
-      MenuItem {
-        text: "Copy"
-        shortcut: "Ctrl+C"
-        enabled: listView.activeFocus
-        onTriggered: diffModel.copySelection(listView.currentIndex)
-      }
-      MenuItem {
-        text: "Toggle Select"
-        shortcut: "Ctrl+S"
-        enabled: listView.activeFocus
-        onTriggered: diffModel.selectLine(listView.currentIndex)
-      }
-      MenuItem {
-        text: "Select All"
-        shortcut: "Ctrl+A"
-        enabled: listView.activeFocus
-        onTriggered: diffModel.selectAll()
-      }
-      MenuSeparator {}
-      MenuItem {
-        text: "Open Chunk In Editor"
-        shortcut: "Ctrl+O"
-        enabled: listView.activeFocus
-        onTriggered: diffModel.openFileInEditor(listView.currentIndex)
-      }
+      parentView: listView
+      itemsList: [
+        {
+          text: "Copy",
+          shortcut: "Ctrl+C",
+          callback: () => diffModel.copySelection(listView.currentIndex),
+        },
+        {
+          text: "Toggle Select",
+          shortcut: "Ctrl+S",
+          callback: () => diffModel.selectLine(listView.currentIndex),
+        },
+        {
+          text: "Select All",
+          shortcut: "Ctrl+A",
+          callback: () => diffModel.selectAll(),
+        },
+        {
+          text: "Find",
+          shortcut: "Ctrl+F",
+          callback: () => searchBar.display(textModel.getSelectionOffset(), textModel.getSelectedText()),
+        },
+        {
+          separator: true,
+        },
+        {
+          text: "Open Chunk In Editor",
+          shortcut: "Ctrl+O",
+          callback: () => diffModel.openFileInEditor(listView.currentIndex),
+        },
+        ...additionalMenuItems
+      ]
     }
   }
 }

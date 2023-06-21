@@ -94,7 +94,7 @@ class GitCommitController : public QObject {
   void loadLastCommitMessage();
   void resizeDiff(int width);
   void toggleUnifiedDiff();
-  void rollbackChunk(int pos);
+  void rollbackChunk(int chunk, int chunk_count);
   void openChunkInEditor(int pos);
 
  signals:

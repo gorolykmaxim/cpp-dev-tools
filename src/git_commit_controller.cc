@@ -186,15 +186,16 @@ void GitCommitController::toggleUnifiedDiff() {
   RedrawDiff();
 }
 
-void GitCommitController::rollbackChunk(int pos) {
+void GitCommitController::rollbackChunk(int chunk, int chunk_count) {
   const ChangedFile *f = files->GetSelected();
   if (!f) {
     return;
   }
-  LOG() << "Rolling back git diff chunk at" << pos << "in" << f->path;
+  LOG() << "Rolling back git diff chunk " << chunk << "of" << chunk_count
+        << "in" << f->path;
   QStringList input;
-  for (TextSection chunk : diff_chunks) {
-    if (pos >= chunk.start && pos < chunk.end) {
+  for (int i = 0; i < chunk_count; i++) {
+    if (chunk == i) {
       input.append("y\n");
     } else {
       input.append("n\n");

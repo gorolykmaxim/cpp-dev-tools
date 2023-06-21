@@ -110,6 +110,13 @@ SplitView {
     id: fileDiff
     file: controller.files.selectedFileName
     rawDiff: controller.rawDiff
+    additionalMenuItems: [
+      {
+        text: "Rollback Chunk",
+        shortcut: "Ctrl+Alt+Z",
+        callback: () => controller.rollbackChunk(currentChunk, chunkCount),
+      }
+    ]
   }
 //  Cdt.TextArea {
 //    id: fileDiff

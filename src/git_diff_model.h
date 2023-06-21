@@ -41,6 +41,8 @@ class GitDiffModel : public QAbstractListModel {
                  NOTIFY modelChanged)
   Q_PROPERTY(int selectedSide WRITE SetSelectedSide READ GetSelectedSide NOTIFY
                  selectedSideChanged)
+  Q_PROPERTY(int chunkCount READ GetChunkCount NOTIFY modelChanged)
+  Q_PROPERTY(int currentChunk MEMBER current_chunk NOTIFY currentChunkChanged)
   Q_PROPERTY(SyntaxFormatter *syntaxFormatter MEMBER syntax_formatter CONSTANT)
   Q_PROPERTY(DiffSelectionFormatter *beforeSelectionFormatter MEMBER
                  before_selection_formatter CONSTANT)
@@ -53,6 +55,7 @@ class GitDiffModel : public QAbstractListModel {
   QHash<int, QByteArray> roleNames() const;
   void SetSelectedSide(int side);
   int GetSelectedSide() const;
+  int GetChunkCount() const;
 
  public slots:
   void selectInline(int line, int start, int end);
@@ -61,6 +64,7 @@ class GitDiffModel : public QAbstractListModel {
   bool resetSelection();
   void copySelection(int current_line);
   void openFileInEditor(int current_line);
+  void selectCurrentChunk(int current_line);
 
  signals:
   void rawDiffChanged();
@@ -68,6 +72,7 @@ class GitDiffModel : public QAbstractListModel {
   void selectedSideChanged();
   void fileChanged();
   void rehighlightLines(int first, int last);
+  void currentChunkChanged();
 
  private:
   void ParseDiff();
@@ -82,6 +87,8 @@ class GitDiffModel : public QAbstractListModel {
   DiffSelectionFormatter *after_selection_formatter;
   QString file;
   TextSelection selection;
+  QList<int> chunk_offsets;
+  int current_chunk;
 };
 
 #endif  // GITDIFFMODEL_H
