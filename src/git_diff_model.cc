@@ -7,9 +7,15 @@
 #include <QQmlContext>
 
 #include "application.h"
+#include "database.h"
+#include "io_task.h"
 #include "theme.h"
 
 #define LOG() qDebug() << "[GitDiffModel]"
+
+static bool ReadBoolFromSql(QSqlQuery &query) {
+  return query.value(0).toBool();
+}
 
 GitDiffModel::GitDiffModel(QObject *parent)
     : QAbstractListModel(parent),
@@ -33,6 +39,19 @@ GitDiffModel::GitDiffModel(QObject *parent)
           [this] { syntax_formatter->DetectLanguageByFile(file); });
   connect(this, &GitDiffModel::isSideBySideViewChanged, this,
           &GitDiffModel::ParseDiff);
+  IoTask::Run<bool>(
+      this,
+      [] {
+        return Database::ExecQueryAndRead<bool>(
+                   "SELECT side_by_side_view FROM git_diff_context",
+                   ReadBoolFromSql)
+            .constFirst();
+      },
+      [this](bool side_by_side) {
+        LOG() << "Loaded diff view setting. Side-by-side view:" << side_by_side;
+        side_by_side_view = side_by_side;
+        emit isSideBySideViewChanged();
+      });
 }
 
 int GitDiffModel::rowCount(const QModelIndex &) const { return lines.size(); }
@@ -238,7 +257,10 @@ QString GitDiffModel::getSelectedText() const {
 
 void GitDiffModel::toggleUnifiedView() {
   side_by_side_view = !side_by_side_view;
+  LOG() << "Changing view: side-by-side =" << side_by_side_view;
   emit isSideBySideViewChanged();
+  Database::ExecCmdAsync("UPDATE git_diff_context SET side_by_side_view = ?",
+                         {side_by_side_view});
 }
 
 void GitDiffModel::selectInline(int line, int start, int end) {

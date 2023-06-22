@@ -100,6 +100,13 @@ void Database::Initialize() {
       "CREATE TABLE IF NOT EXISTS terminal("
       "name TEXT PRIMARY KEY, "
       "priority INT NOT NULL)");
+  ExecCmd(
+      "CREATE TABLE IF NOT EXISTS git_diff_context("
+      "id INT PRIMARY KEY DEFAULT 1, "
+      "side_by_side_view BOOL NOT NULL)");
+  ExecCmd(
+      "INSERT OR IGNORE INTO git_diff_context(side_by_side_view) "
+      "VALUES(TRUE)");
 }
 
 void Database::ExecQuery(QSqlQuery &sql, const QString &query,
