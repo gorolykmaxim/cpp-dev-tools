@@ -449,28 +449,6 @@ static QList<TextFormat> ParseJs(const QString &text) {
   return results;
 }
 
-OldSyntaxFormatter::OldSyntaxFormatter(QObject *parent)
-    : TextAreaFormatter(parent), formatter(this) {}
-
-QList<TextSectionFormat> OldSyntaxFormatter::Format(const QString &text,
-                                                    const QTextBlock &block) {
-  LineInfo line{block.position(), block.firstLineNumber()};
-  QList<TextFormat> fs = formatter.Format(text, line);
-  QList<TextSectionFormat> result;
-  for (const TextFormat &f : fs) {
-    TextSectionFormat tsf;
-    tsf.section.start = f.offset;
-    tsf.section.end = f.offset + f.length - 1;
-    tsf.format = f.format;
-    result.append(tsf);
-  }
-  return result;
-}
-
-void OldSyntaxFormatter::DetectLanguageByFile(const QString &file_name) {
-  formatter.DetectLanguageByFile(file_name);
-}
-
 QList<TextFormat> Syntax::FindStringsAndComments(
     const QString &text, const QString &comment_symbol) {
   return ParseStringsAndComments(text, comment_symbol);

@@ -22,14 +22,4 @@ class SyntaxFormatter : public TextFormatter {
   SyntaxFormatFunc format;
 };
 
-class OldSyntaxFormatter : public TextAreaFormatter {
- public:
-  explicit OldSyntaxFormatter(QObject *parent = nullptr);
-  QList<TextSectionFormat> Format(const QString &text, const QTextBlock &block);
-  void DetectLanguageByFile(const QString &file_name);
-
- private:
-  SyntaxFormatter formatter;
-};
-
 #endif  // SYNTAX_H
