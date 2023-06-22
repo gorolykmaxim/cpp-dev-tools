@@ -55,7 +55,7 @@ SplitView {
         MenuItem {
           enabled: changeList.activeFocus
           text: "Reset"
-          shortcut: "Alt+Shift+D"
+          shortcut: "Ctrl+Alt+Z"
           onTriggered: controller.resetSelectedFile()
         }
       }
