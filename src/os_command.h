@@ -20,7 +20,8 @@ class OsCommand {
                                 const QStringList& args = {},
                                 const QString& input = "",
                                 const QString& error_title = "",
-                                const QString& success_title = "");
+                                const QString& success_title = "",
+                                int expected_exit_code = 0);
   static void InitTerminals();
   static void OpenTerminalInCurrentDir();
 };

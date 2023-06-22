@@ -173,6 +173,7 @@ Promise<OsProcess> GitCommitController::ExecuteGitCommand(
 }
 
 void GitCommitController::DiffSelectedFile() {
+  static const QString kErrorTitle = "Git: Failed to get git diff";
   const ChangedFile *selected = files->GetSelected();
   if (!selected) {
     LOG() << "Clearing git diff view";
@@ -181,15 +182,26 @@ void GitCommitController::DiffSelectedFile() {
   }
   QString path = selected->path;
   LOG() << "Will get git diff of" << path;
-  OsCommand::Run("git", {"diff", "HEAD", "--", path}, "",
-                 "Git: Failed to get git diff")
-      .Then(this, [this, path](OsProcess p) {
-        if (p.exit_code == 0) {
-          SetDiff(p.output, "");
-        } else {
-          SetDiff("", "Failed to git diff '" + path + '\'');
-        }
-      });
+  Promise<OsProcess> git_diff;
+  if (selected->status == ChangedFile::kNew && !selected->is_staged) {
+    git_diff =
+        OsCommand::Run("git", {"diff", "--no-index", "--", "/dev/null", path},
+                       "", kErrorTitle, "", 1)
+            .Then<OsProcess>(this, [](OsProcess p) {
+              p.exit_code = p.exit_code == 1 ? 0 : p.exit_code;
+              return Promise<OsProcess>(p);
+            });
+  } else {
+    git_diff =
+        OsCommand::Run("git", {"diff", "HEAD", "--", path}, "", kErrorTitle);
+  }
+  git_diff.Then(this, [this, path](OsProcess p) {
+    if (p.exit_code == 0) {
+      SetDiff(p.output, "");
+    } else {
+      SetDiff("", "Failed to git diff '" + path + '\'');
+    }
+  });
 }
 
 void GitCommitController::SetDiff(const QString &diff, const QString &error) {

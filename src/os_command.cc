@@ -26,7 +26,8 @@ Promise<OsProcess> OsCommand::RunCmd(const QString &cmd,
 Promise<OsProcess> OsCommand::Run(const QString &cmd, const QStringList &args,
                                   const QString &input,
                                   const QString &error_title,
-                                  const QString &success_title) {
+                                  const QString &success_title,
+                                  int expected_exit_code) {
   LOG() << "Executing" << cmd << args.join(' ');
   auto promise = QSharedPointer<QPromise<OsProcess>>::create();
   auto data = QSharedPointer<OsProcess>::create();
@@ -46,22 +47,23 @@ Promise<OsProcess> OsCommand::Run(const QString &cmd, const QStringList &args,
                                      ' ' + proc->arguments().join(' ');
                      emit proc->finished(-1);
                    });
-  QObject::connect(
-      proc, &QProcess::finished, proc,
-      [promise, data, proc, error_title, success_title](int exit_code,
-                                                        QProcess::ExitStatus) {
-        data->exit_code = exit_code;
-        data->output.remove('\r');
-        Notification notification(exit_code != 0 ? error_title : success_title);
-        notification.is_error = exit_code != 0;
-        notification.description = data->output;
-        if (!notification.title.isEmpty()) {
-          Application::Get().notification.Post(notification);
-        }
-        promise->addResult(*data);
-        promise->finish();
-        proc->deleteLater();
-      });
+  QObject::connect(proc, &QProcess::finished, proc,
+                   [promise, data, proc, error_title, success_title,
+                    expected_exit_code](int exit_code, QProcess::ExitStatus) {
+                     data->exit_code = exit_code;
+                     data->output.remove('\r');
+                     Notification notification(exit_code != expected_exit_code
+                                                   ? error_title
+                                                   : success_title);
+                     notification.is_error = exit_code != expected_exit_code;
+                     notification.description = data->output;
+                     if (!notification.title.isEmpty()) {
+                       Application::Get().notification.Post(notification);
+                     }
+                     promise->addResult(*data);
+                     promise->finish();
+                     proc->deleteLater();
+                   });
   proc->start(cmd, args);
   if (!input.isEmpty()) {
     proc->write(input.toUtf8());
