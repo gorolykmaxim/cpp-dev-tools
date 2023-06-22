@@ -6,6 +6,7 @@
 #include <QQmlEngine>
 
 #include "os_command.h"
+#include "text_area_controller.h"
 #include "text_list_model.h"
 
 struct ChangedFile {
@@ -35,6 +36,17 @@ class ChangedFileListModel : public TextListModel {
   int GetRowCount() const;
 };
 
+class CommitMessageFormatter : public TextFormatter {
+ public:
+  explicit CommitMessageFormatter(QObject* parent);
+  QList<TextFormat> Format(const QString& text, LineInfo line) const;
+
+ private:
+  void FormatSuffixAfter(int offset, int length, QList<TextFormat>& fs) const;
+
+  QTextCharFormat format;
+};
+
 class GitCommitController : public QObject {
   Q_OBJECT
   QML_ELEMENT
@@ -43,6 +55,7 @@ class GitCommitController : public QObject {
   Q_PROPERTY(int sidebarWidth READ CalcSideBarWidth CONSTANT)
   Q_PROPERTY(QString diffError MEMBER diff_error NOTIFY diffErrorChanged)
   Q_PROPERTY(QString rawDiff MEMBER raw_diff NOTIFY rawDiffChanged)
+  Q_PROPERTY(CommitMessageFormatter* formatter MEMBER formatter CONSTANT)
  public:
   explicit GitCommitController(QObject* parent = nullptr);
   bool HasChanges() const;
@@ -72,6 +85,7 @@ class GitCommitController : public QObject {
   ChangedFileListModel* files;
   QString diff_error;
   QString raw_diff;
+  CommitMessageFormatter* formatter;
 };
 
 #endif  // GITCOMMITCONTROLLER_H

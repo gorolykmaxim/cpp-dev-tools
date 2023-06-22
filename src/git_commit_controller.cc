@@ -9,7 +9,9 @@
 #define LOG() qDebug() << "[GitCommitController]"
 
 GitCommitController::GitCommitController(QObject *parent)
-    : QObject(parent), files(new ChangedFileListModel(this)) {
+    : QObject(parent),
+      files(new ChangedFileListModel(this)),
+      formatter(new CommitMessageFormatter(this)) {
   // This re-runs git diff when user switches to a different changed file.
   connect(files, &TextListModel::selectedItemChanged, this, [this] {
     if (files->IsUpdating()) {
@@ -231,3 +233,30 @@ QVariantList ChangedFileListModel::GetRow(int i) const {
 }
 
 int ChangedFileListModel::GetRowCount() const { return list.size(); }
+
+CommitMessageFormatter::CommitMessageFormatter(QObject *parent)
+    : TextFormatter(parent) {
+  format.setBackground(QBrush(Qt::red));
+}
+
+QList<TextFormat> CommitMessageFormatter::Format(const QString &text,
+                                                 LineInfo line) const {
+  QList<TextFormat> fs;
+  if (line.number == 0 && text.size() >= 50) {
+    FormatSuffixAfter(50, text.size(), fs);
+  } else if (line.number == 1 && text.size() >= 1) {
+    FormatSuffixAfter(1, text.size(), fs);
+  } else if (line.number > 1 && text.size() >= 72) {
+    FormatSuffixAfter(72, text.size(), fs);
+  }
+  return fs;
+}
+
+void CommitMessageFormatter::FormatSuffixAfter(int offset, int length,
+                                               QList<TextFormat> &fs) const {
+  TextFormat f;
+  f.offset = offset - 1;
+  f.length = length - f.offset;
+  f.format = format;
+  fs.append(f);
+}

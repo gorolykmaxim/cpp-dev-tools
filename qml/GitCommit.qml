@@ -68,6 +68,7 @@ SplitView {
         id: commitMsg
         Layout.fillWidth: true
         Layout.fillHeight: true
+        formatter: controller.formatter
         placeholderText: "Commit Message"
         focus: controller.hasChanges
         enabled: controller.hasChanges
