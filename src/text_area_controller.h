@@ -114,7 +114,7 @@ class SearchFormatter : public TextFormatter {
 class TextSearchController : public QObject {
   Q_OBJECT
   QML_ELEMENT
-  Q_PROPERTY(QString searchResultsCount MEMBER search_results_count NOTIFY
+  Q_PROPERTY(QString searchResultsCount READ GetSearchResultsCount NOTIFY
                  searchResultsCountChanged)
   Q_PROPERTY(bool searchResultsEmpty READ AreSearchResultsEmpty NOTIFY
                  searchResultsCountChanged)
@@ -122,6 +122,7 @@ class TextSearchController : public QObject {
  public:
   explicit TextSearchController(QObject* parent = nullptr);
   bool AreSearchResultsEmpty() const;
+  QString GetSearchResultsCount() const;
 
  public slots:
   void search(const QString& term, const QString& text, bool select_result,
@@ -138,13 +139,11 @@ class TextSearchController : public QObject {
   void searchResultsChanged();
 
  private:
-  void UpdateSearchResultsCount();
   void DisplaySelectedSearchResult();
 
   int selected_result = 0;
   QList<TextSegment> results;
   QHash<int, QList<int>> index;
-  QString search_results_count = "0 Results";
   SearchFormatter* formatter;
 };
 
@@ -198,8 +197,8 @@ class BigTextAreaModel : public QAbstractListModel {
                  cursorFollowEndChanged)
   Q_PROPERTY(
       int cursorPosition MEMBER cursor_position NOTIFY cursorPositionChanged)
-  Q_PROPERTY(QList<TextFormatter*> formatters WRITE SetFormatters READ
-                 GetFormatters NOTIFY formattersChanged)
+  Q_PROPERTY(SelectionFormatter* selectionFormatter MEMBER selection_formatter
+                 CONSTANT)
   Q_PROPERTY(QFont font MEMBER font NOTIFY fontChanged)
   Q_PROPERTY(
       int lineNumberMaxWidth READ GetLineNumberMaxWidth NOTIFY fontChanged)
@@ -210,8 +209,6 @@ class BigTextAreaModel : public QAbstractListModel {
   QVariant data(const QModelIndex& index, int role) const;
   void SetText(const QString& text);
   QString GetText() const;
-  void SetFormatters(QList<TextFormatter*> formatters);
-  QList<TextFormatter*> GetFormatters() const;
   int GetLineNumberMaxWidth() const;
 
  public slots:
@@ -224,21 +221,18 @@ class BigTextAreaModel : public QAbstractListModel {
   int getSelectionOffset();
   QString getSelectedText();
   void rehighlight();
-  void rehighlightLine(int line);
 
  signals:
   void textChanged();
   void cursorFollowEndChanged();
   void goToLine(int line);
   void rehighlightLines(int first, int last);
-  void formattersChanged();
   void cursorPositionChanged();
   void fontChanged();
 
  private:
   int GetLineLength(int line) const;
   int GetLineWithOffset(int offset) const;
-  int GetCursorPositionLine() const;
   std::pair<int, int> GetSelectionRange(const TextSelection& s) const;
 
   bool cursor_follow_end;
@@ -247,7 +241,6 @@ class BigTextAreaModel : public QAbstractListModel {
   QList<int> line_start_offsets;
   TextSelection selection;
   SelectionFormatter* selection_formatter;
-  QList<TextFormatter*> formatters;
   QFont font;
 };
 

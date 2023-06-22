@@ -14,11 +14,10 @@ BigTextAreaModel::BigTextAreaModel(QObject* parent)
     : QAbstractListModel(parent),
       cursor_follow_end(false),
       cursor_position(-1),
-      selection_formatter(new SelectionFormatter(this, selection)),
-      formatters({selection_formatter}) {
+      selection_formatter(new SelectionFormatter(this, selection)) {
   connect(this, &BigTextAreaModel::cursorPositionChanged, this, [this] {
     if (cursor_position >= 0) {
-      emit goToLine(GetCursorPositionLine());
+      emit goToLine(GetLineWithOffset(cursor_position));
     }
   });
 }
@@ -83,21 +82,11 @@ void BigTextAreaModel::SetText(const QString& text) {
   if (cursor_follow_end) {
     emit goToLine(line_start_offsets.size() - 1);
   } else if (cursor_position >= 0) {
-    emit goToLine(GetCursorPositionLine());
+    emit goToLine(GetLineWithOffset(cursor_position));
   }
 }
 
 QString BigTextAreaModel::GetText() const { return text; }
-
-void BigTextAreaModel::SetFormatters(QList<TextFormatter*> formatters) {
-  this->formatters = formatters;
-  this->formatters.append(selection_formatter);
-  emit formattersChanged();
-}
-
-QList<TextFormatter*> BigTextAreaModel::GetFormatters() const {
-  return formatters;
-}
 
 int BigTextAreaModel::GetLineNumberMaxWidth() const {
   QFontMetrics m(font);
@@ -120,18 +109,14 @@ void BigTextAreaModel::selectAll() {
 }
 
 void BigTextAreaModel::selectSearchResult(int offset, int length) {
-  std::pair<int, int> redraw_range = selection.GetLineRange();
-  selection = TextSelection();
   if (length > 0) {
     int line = GetLineWithOffset(offset);
-    selection.first_line = selection.last_line = line;
-    selection.first_line_offset = offset - line_start_offsets[line];
-    selection.last_line_offset = selection.first_line_offset + length;
+    int line_offset = offset - line_start_offsets[line];
+    selectInline(line, line_offset, line_offset + length);
     emit goToLine(line);
+  } else {
+    resetSelection();
   }
-  emit rehighlightLines(redraw_range.first, redraw_range.second);
-  redraw_range = selection.GetLineRange();
-  emit rehighlightLines(redraw_range.first, redraw_range.second);
 }
 
 bool BigTextAreaModel::resetSelection() {
@@ -172,10 +157,6 @@ void BigTextAreaModel::rehighlight() {
   emit rehighlightLines(0, line_start_offsets.size());
 }
 
-void BigTextAreaModel::rehighlightLine(int line) {
-  emit rehighlightLines(line, line);
-}
-
 int BigTextAreaModel::GetLineLength(int line) const {
   if (line < 0 || line >= line_start_offsets.size()) {
     return 0;
@@ -193,10 +174,6 @@ int BigTextAreaModel::GetLineWithOffset(int offset) const {
     }
   }
   return 0;
-}
-
-int BigTextAreaModel::GetCursorPositionLine() const {
-  return GetLineWithOffset(cursor_position);
 }
 
 LineHighlighter::LineHighlighter(QObject* parent)
@@ -351,6 +328,15 @@ bool TextSearchController::AreSearchResultsEmpty() const {
   return results.isEmpty();
 }
 
+QString TextSearchController::GetSearchResultsCount() const {
+  if (results.isEmpty()) {
+    return "No Results";
+  } else {
+    return QString::number(selected_result + 1) + " of " +
+           QString::number(results.size());
+  }
+}
+
 void TextSearchController::search(const QString& term, const QString& text,
                                   bool select_result,
                                   bool notify_results_changed) {
@@ -397,7 +383,7 @@ void TextSearchController::search(const QString& term, const QString& text,
       emit selectResult(0, 0);
     }
   }
-  UpdateSearchResultsCount();
+  emit searchResultsCountChanged();
 }
 
 void TextSearchController::replaceSearchResultWith(const QString& text,
@@ -424,7 +410,7 @@ void TextSearchController::goToResultWithStartAt(int text_position) {
     if (results[i].offset == text_position) {
       selected_result = i;
       DisplaySelectedSearchResult();
-      UpdateSearchResultsCount();
+      emit searchResultsCountChanged();
       break;
     }
   }
@@ -441,16 +427,6 @@ void TextSearchController::goToSearchResult(bool next) {
     selected_result = results.size() - 1;
   }
   DisplaySelectedSearchResult();
-  UpdateSearchResultsCount();
-}
-
-void TextSearchController::UpdateSearchResultsCount() {
-  if (!results.isEmpty()) {
-    search_results_count = QString::number(selected_result + 1) + " of " +
-                           QString::number(results.size());
-  } else {
-    search_results_count = "No Results";
-  }
   emit searchResultsCountChanged();
 }
 

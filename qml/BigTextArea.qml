@@ -33,12 +33,11 @@ Cdt.Pane {
     textModel.goToLine(line);
   }
   function rehighlightLine(line) {
-    textModel.rehighlightLine(line);
+    textModel.rehighlightLines(line, line);
   }
   color: Theme.colorBgDark
   BigTextAreaModel {
     id: textModel
-    formatters: root.formatters.concat([searchBar.formatter])
     onGoToLine: function(line) {
       listView.currentIndex = line;
       listView.positionViewAtIndex(listView.currentIndex, ListView.Center);
@@ -79,7 +78,7 @@ Cdt.Pane {
         itemOffset: model.offset
         lineNumberMaxWidth: textModel.lineNumberMaxWidth
         text: model.text
-        formatters: textModel.formatters
+        formatters: [...root.formatters, searchBar.formatter, textModel.selectionFormatter]
         displayLineNumber: root.displayLineNumbers
         enabled: root.enabled
         width: listView.width

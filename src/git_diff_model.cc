@@ -451,12 +451,12 @@ void GitDiffModel::SelectCurrentSearchResult() {
   emit searchResultsCountChanged();
   if (search_results.isEmpty()) {
     resetSelection();
-    return;
+  } else {
+    const DiffSearchResult &result = search_results[selected_result];
+    SetSelectedSide(result.side);
+    selectInline(result.line, result.offset, result.offset + result.length);
+    emit goToLine(result.line);
   }
-  const DiffSearchResult &result = search_results[selected_result];
-  SetSelectedSide(result.side);
-  selectInline(result.line, result.offset, result.offset + result.length);
-  emit goToLine(result.line);
 }
 
 QString GitDiffModel::GetSelectedTextInLine(const TextSelection &s,
