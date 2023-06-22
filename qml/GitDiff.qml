@@ -82,8 +82,10 @@ Cdt.Pane {
         color: Theme.colorBgBlack
         padding: Theme.basePadding
         Cdt.Text {
+          anchors.fill: parent
           text: section
           color: Theme.colorSubText
+          wrapMode: Text.WordWrap
         }
       }
       onCurrentIndexChanged: diffModel.selectCurrentChunk(currentIndex)
