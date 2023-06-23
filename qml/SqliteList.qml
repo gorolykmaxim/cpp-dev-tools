@@ -53,19 +53,19 @@ Loader {
         id: contextMenu
         MenuItem {
           text: "Select"
-          enabled: input.activeFocus && (databaseList.currentItem?.itemModel?.existsOnDisk || false)
+          enabled: (input.activeFocus || databaseList.activeFocus) && (databaseList.currentItem?.itemModel?.existsOnDisk || false)
           shortcut: "Enter"
           onTriggered: controller.useSelectedDatabase()
         }
         MenuItem {
           text: "Change Path"
-          enabled: input.activeFocus && controller.isDatabaseSelected
+          enabled: (input.activeFocus || databaseList.activeFocus) && controller.isDatabaseSelected
           shortcut: "Alt+E"
           onTriggered: root.sourceComponent = updateDatabasePathView
         }
         MenuItem {
           text: "Remove From List"
-          enabled: input.activeFocus && controller.isDatabaseSelected
+          enabled: (input.activeFocus || databaseList.activeFocus) && controller.isDatabaseSelected
           shortcut: "Alt+Shift+D"
           onTriggered: controller.removeSelectedDatabase()
         }

@@ -57,18 +57,18 @@ Loader {
         id: contextMenu
         MenuItem {
           text: "Open"
-          enabled: input.activeFocus && (projectList.currentItem?.itemModel?.existsOnDisk || false)
+          enabled: (input.activeFocus || projectList.activeFocus) && (projectList.currentItem?.itemModel?.existsOnDisk || false)
           onTriggered: input.enterPressed()
         }
         MenuItem {
           text: "Change Path"
-          enabled: input.activeFocus
+          enabled: (input.activeFocus || projectList.activeFocus)
           shortcut: "Alt+E"
           onTriggered: controller.displayChangeProjectPath()
         }
         MenuItem {
           text: "Remove From List"
-          enabled: input.activeFocus
+          enabled: (input.activeFocus || projectList.activeFocus)
           shortcut: "Alt+Shift+D"
           onTriggered: controller.deleteSelectedProject()
         }

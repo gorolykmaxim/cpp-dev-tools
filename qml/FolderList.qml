@@ -58,7 +58,7 @@ Loader {
         id: contextMenu
         MenuItem {
           text: "Remove Folder"
-          enabled: input.activeFocus
+          enabled: input.activeFocus || folderList.activeFocus
           shortcut: "Alt+Shift+D"
           onTriggered: folderList.ifCurrentItem('title', folderRemoved)
         }
