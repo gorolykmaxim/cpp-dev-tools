@@ -29,7 +29,6 @@ Cdt.Pane {
     return result;
   }
   visible: false
-  color: Theme.colorBgMedium
   padding: Theme.basePadding
   Keys.onEscapePressed: function(e) {
     if (visible) {

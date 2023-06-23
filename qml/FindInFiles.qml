@@ -21,7 +21,6 @@ SplitView {
     spacing: 0
     Cdt.Pane {
       focus: true
-      color: Theme.colorBgMedium
       padding: Theme.basePadding
       Layout.fillWidth: true
       Column {
@@ -129,9 +128,14 @@ SplitView {
         }
         Cdt.Text {
           text: controller.searchStatus
-          color: Theme.colorSubText
+          color: Theme.colorPlaceholder
         }
       }
+    }
+    Rectangle {
+      Layout.fillWidth: true
+      height: 1
+      color: Theme.colorBorder
     }
     Cdt.TextList {
       id: searchResultsList
@@ -160,15 +164,16 @@ SplitView {
     SplitView.fillWidth: true
     SplitView.fillHeight: true
     spacing: 0
-    Cdt.Pane {
-      padding: Theme.basePadding
-      color: Theme.colorBgMedium
+    Cdt.Text {
       Layout.fillWidth: true
-      Cdt.Text {
-        text: controller.selectedFilePath
-        elide: Text.ElideLeft
-        width: parent.width
-      }
+      padding: Theme.basePadding
+      text: controller.selectedFilePath
+      elide: Text.ElideLeft
+    }
+    Rectangle {
+      Layout.fillWidth: true
+      height: 1
+      color: Theme.colorBorder
     }
     Cdt.BigTextArea {
       id: filePreviewArea

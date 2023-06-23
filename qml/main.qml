@@ -49,7 +49,7 @@ ApplicationWindow {
     anchors.fill: parent
     focus: !searchUserCommandDialog.visible && !alertDialog.visible
     background: Rectangle {
-      color: Theme.colorBgBlack
+      color: Theme.colorBackground
     }
     Loader {
       anchors.fill: parent

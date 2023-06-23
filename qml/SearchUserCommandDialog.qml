@@ -22,10 +22,10 @@ Dialog {
   visible: false
   anchors.centerIn: parent
   background: Rectangle {
-    color: Theme.colorBgMedium
+    color: Theme.colorBackground
     radius: Theme.baseRadius
     border.width: 1
-    border.color: Theme.colorBgLight
+    border.color: Theme.colorBorder
   }
   SearchUserCommandController {
     id: controller

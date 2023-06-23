@@ -200,8 +200,8 @@ SelectionFormatter::SelectionFormatter(QObject* parent,
                                        const TextSelection& selection)
     : TextFormatter(parent), selection(selection) {
   static const Theme kTheme;
-  format.setForeground(ViewSystem::BrushFromHex(kTheme.kColorBgBlack));
-  format.setBackground(ViewSystem::BrushFromHex(kTheme.kColorHighlight));
+  format.setForeground(ViewSystem::BrushFromHex(kTheme.kColorText));
+  format.setBackground(ViewSystem::BrushFromHex(kTheme.kColorTextSelection));
 }
 
 QList<TextFormat> SelectionFormatter::Format(const QString& text,
@@ -497,7 +497,7 @@ FileLinkFormatter::FileLinkFormatter(QObject* parent,
       current_line(current_line),
       current_line_link(current_line_link) {
   static const Theme kTheme;
-  format.setForeground(ViewSystem::BrushFromHex(kTheme.kColorHighlight));
+  format.setForeground(ViewSystem::BrushFromHex(kTheme.kColorPrimary));
 }
 
 QList<TextFormat> FileLinkFormatter::Format(const QString&,

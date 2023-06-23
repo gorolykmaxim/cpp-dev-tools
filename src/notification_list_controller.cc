@@ -110,7 +110,7 @@ int NotificationListModel::GetRowCount() const {
 QString NotificationListModel::GetTitleColorOf(int i) const {
   static const Theme kTheme;
   if (i <= last_seen_notification) {
-    return kTheme.kColorSubText;
+    return kTheme.kColorPlaceholder;
   } else {
     return kTheme.kColorText;
   }

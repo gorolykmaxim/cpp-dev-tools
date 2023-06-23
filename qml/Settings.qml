@@ -22,7 +22,6 @@ Loader {
     Cdt.Pane {
       anchors.fill: parent
       focus: true
-      color: Theme.colorBgMedium
       padding: Theme.basePadding
       ColumnLayout {
         id: settingsRoot
@@ -85,8 +84,8 @@ Loader {
             Rectangle {
               Layout.fillWidth: true
               height: 80
-              color: Theme.colorBgDark
-              border.color: Theme.colorBgBlack
+              color: Theme.colorBackground
+              border.color: Theme.colorBorder
               border.width: 1
               radius: Theme.baseRadius
               visible: controller.displayTerminalPriority
@@ -94,7 +93,6 @@ Loader {
                 id: terminalPriorityList
                 anchors.fill: parent
                 anchors.margins: 1
-                color: "transparent"
                 model: controller.terminals
                 highlightCurrentItemWithoutFocus: false
                 onItemRightClicked: contextMenu.open()

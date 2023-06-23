@@ -11,7 +11,6 @@ ColumnLayout {
   }
   Cdt.Pane {
     Layout.fillWidth: true
-    color: Theme.colorBgMedium
     padding: Theme.basePadding
     RowLayout {
       width: parent.width
@@ -32,7 +31,7 @@ ColumnLayout {
         Cdt.Text {
           Layout.fillWidth: true
           text: controller.executionStatus
-          color: Theme.colorSubText
+          color: Theme.colorPlaceholder
         }
       }
     }
@@ -40,7 +39,7 @@ ColumnLayout {
   Rectangle {
     Layout.fillWidth: true
     height: 1
-    color: Theme.colorBgBlack
+    color: Theme.colorBorder
   }
   Cdt.FileLinkLookup {
     id: linkLookup

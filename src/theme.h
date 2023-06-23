@@ -10,30 +10,32 @@ class Theme : public QObject {
   Q_PROPERTY(int basePadding MEMBER kBasePadding CONSTANT)
   Q_PROPERTY(int baseRadius MEMBER kBaseRadius CONSTANT)
   Q_PROPERTY(int centeredViewWidth MEMBER kCenteredViewWidth CONSTANT)
-  Q_PROPERTY(QString colorBgHighlight MEMBER kColorBgHighlight CONSTANT)
-  Q_PROPERTY(QString colorBgBright MEMBER kColorBgBright CONSTANT)
-  Q_PROPERTY(QString colorBgLight MEMBER kColorBgLight CONSTANT)
-  Q_PROPERTY(QString colorBgDimmed MEMBER kColorBgDimmed CONSTANT)
-  Q_PROPERTY(QString colorBgMedium MEMBER kColorBgMedium CONSTANT)
-  Q_PROPERTY(QString colorBgDark MEMBER kColorBgDark CONSTANT)
-  Q_PROPERTY(QString colorBgBlack MEMBER kColorBgBlack CONSTANT)
   Q_PROPERTY(QString colorText MEMBER kColorText CONSTANT)
-  Q_PROPERTY(QString colorSubText MEMBER kColorSubText CONSTANT)
-  Q_PROPERTY(QString colorHighlight MEMBER kColorHighlight CONSTANT)
+  Q_PROPERTY(QString colorBackground MEMBER kColorBackground CONSTANT)
+  Q_PROPERTY(QString colorBorder MEMBER kColorBorder CONSTANT)
+  Q_PROPERTY(QString colorPrimary MEMBER kColorPrimary CONSTANT)
+  Q_PROPERTY(QString colorPlaceholder MEMBER kColorPlaceholder CONSTANT)
+  Q_PROPERTY(QString colorCurrentLine MEMBER kColorCurrentLine CONSTANT)
+  Q_PROPERTY(QString colorTextSelection MEMBER kColorTextSelection CONSTANT)
+  Q_PROPERTY(
+      QString colorButtonPrimaryLight MEMBER kColorButtonPrimaryLight CONSTANT)
+  Q_PROPERTY(
+      QString colorButtonPrimaryDark MEMBER kColorButtonPrimaryDark CONSTANT)
+  Q_PROPERTY(QString colorButtonBorder MEMBER kColorButtonBorder CONSTANT)
   Q_PROPERTY(QString colorSearchResult MEMBER kColorSearchResult CONSTANT)
  public:
   const int kBasePadding = 4;
   const int kBaseRadius = 4;
   const int kCenteredViewWidth = 500;
-  const QString kColorBgHighlight = "#46607c";
-  const QString kColorBgBright = "#6a6a6a";
-  const QString kColorBgLight = "#585859";
-  const QString kColorBgDimmed = "#494949";
-  const QString kColorBgMedium = "#383838";
-  const QString kColorBgDark = "#282828";
-  const QString kColorBgBlack = "#191919";
   const QString kColorText = "#efefef";
-  const QString kColorSubText = "#6d6d6d";
-  const QString kColorHighlight = "#9ab8ef";
+  const QString kColorBackground = "#232527";
+  const QString kColorBorder = "#3a3b3b";
+  const QString kColorPrimary = "#3784ff";
+  const QString kColorPlaceholder = "#9fa0a0";
+  const QString kColorCurrentLine = "#2f3138";
+  const QString kColorTextSelection = "#3f638b";
+  const QString kColorButtonPrimaryLight = "#3182e6";
+  const QString kColorButtonPrimaryDark = "#2a6dcc";
+  const QString kColorButtonBorder = "#1c1a19";
   const QString kColorSearchResult = "#6b420f";
 };

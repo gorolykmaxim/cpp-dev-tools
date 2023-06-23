@@ -24,7 +24,6 @@ Loader {
       Component.onCompleted: controller.displayProjectList()
       Cdt.Pane {
         Layout.fillWidth: true
-        color: Theme.colorBgMedium
         padding: Theme.basePadding
         focus: true
         RowLayout {

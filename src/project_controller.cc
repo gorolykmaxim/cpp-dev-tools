@@ -38,7 +38,7 @@ QVariantList ProjectListModel::GetRow(int i) const {
   UiIcon icon;
   QString name = project.GetFolderName();
   if (project.is_missing_on_disk) {
-    title_color = kTheme.kColorSubText;
+    title_color = kTheme.kColorPlaceholder;
     icon.icon = "not_interested";
     icon.color = title_color;
     name = "[Not Found] " + name;

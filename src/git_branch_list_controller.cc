@@ -40,7 +40,7 @@ QVariantList GitBranchListModel::GetRow(int i) const {
   QString title = b.name;
   QString title_color;
   if (b.is_remote) {
-    title_color = kTheme.kColorSubText;
+    title_color = kTheme.kColorPlaceholder;
   }
   if (b.is_current) {
     title = "[Current] " + title;

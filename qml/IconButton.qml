@@ -7,14 +7,15 @@ QtQuick.Button {
   property string buttonIcon: ""
   padding: Theme.basePadding
   background: Rectangle {
-    color: enabled && hovered && !pressed ? Theme.colorBgLight : "transparent"
-    border.color: parent.activeFocus ? Theme.colorHighlight : "transparent"
-    border.width: parent.activeFocus ? 2 : 0
-    radius: Theme.baseRadius
+    color: "transparent"
   }
   contentItem: Cdt.Icon {
     icon: buttonIcon
-    color: !parent.enabled ? Theme.colorSubText : (parent.checked ? Theme.colorHighlight : Theme.colorText)
+    color: !parent.enabled ?
+             Theme.colorPlaceholder :
+             (parent.activeFocus || checked ?
+                (pressed || (checked && parent.activeFocus) ? "#43b7ff" : Theme.colorPrimary) :
+                (pressed ? Theme.colorText : Theme.colorPlaceholder))
   }
   Keys.onReturnPressed: checkable ? toggle() : clicked()
   Keys.onEnterPressed: checkable ? toggle() : clicked()

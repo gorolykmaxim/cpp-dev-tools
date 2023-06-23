@@ -14,7 +14,6 @@ Cdt.Pane {
   property alias currentChunk: diffModel.currentChunk
   property alias errorMessage: errorText.text
   property var additionalMenuItems: []
-  color: Theme.colorBgDark
   GitDiffModel {
     id: diffModel
     onGoToLine: function(line) {
@@ -39,8 +38,7 @@ Cdt.Pane {
     id: errorText
     visible: text
     anchors.fill: parent
-    textColor: "red"
-    color: "transparent"
+    color: "red"
   }
   ColumnLayout {
     visible: !errorText.visible
@@ -79,12 +77,14 @@ Cdt.Pane {
       section.delegate: Cdt.Pane {
         required property string section
         width: listView.width
-        color: Theme.colorBgBlack
         padding: Theme.basePadding
+        color: Theme.colorBackground
+        border.width: 1
+        border.color: Theme.colorBorder
         Cdt.Text {
           anchors.fill: parent
           text: section
-          color: Theme.colorSubText
+          color: Theme.colorPlaceholder
           wrapMode: Text.WordWrap
         }
       }
@@ -134,7 +134,7 @@ Cdt.Pane {
             enabled: root.enabled
             lineNumber: beforeLineNumber
             formatters: [diffModel.syntaxFormatter, diffModel.beforeSearchFormatter, diffModel.beforeSelectionFormatter]
-            color: listItem.isSelected && listView.activeFocus && diffModel.selectedSide === 0 ? Theme.colorBgMedium : "transparent"
+            color: listItem.isSelected && listView.activeFocus && diffModel.selectedSide === 0 ? Theme.colorCurrentLine : "transparent"
             lineColor: isDelete ? "#4df85149" : (isAdd ? "#1af85149" : "transparent")
             onInlineSelect: (l, s, e) => diffModel.selectInline(l, s, e)
             onCtrlLeftClick: diffModel.selectLine(index)
@@ -158,7 +158,7 @@ Cdt.Pane {
             enabled: root.enabled
             lineNumber: afterLineNumber
             formatters: [diffModel.syntaxFormatter, diffModel.afterSearchFormatter, diffModel.afterSelectionFormatter]
-            color: listItem.isSelected && listView.activeFocus && diffModel.selectedSide === 1 ? Theme.colorBgMedium : "transparent"
+            color: listItem.isSelected && listView.activeFocus && diffModel.selectedSide === 1 ? Theme.colorCurrentLine : "transparent"
             lineColor: isAdd ? "#4d3fb950" : (isDelete ? "#262ea043" : "transparent")
             onInlineSelect: (l, s, e) => diffModel.selectInline(l, s, e)
             onCtrlLeftClick: diffModel.selectLine(index)
@@ -191,7 +191,7 @@ Cdt.Pane {
           enabled: root.enabled
           lineNumber: beforeLineNumber
           formatters: [diffModel.syntaxFormatter, diffModel.beforeSearchFormatter, diffModel.beforeSelectionFormatter]
-          color: isSelected && listView.activeFocus ? Theme.colorBgMedium : "transparent"
+          color: isSelected && listView.activeFocus ? Theme.colorCurrentLine : "transparent"
           lineColor: isDelete ? "#4df85149" : (isAdd ? "#4d3fb950" : "transparent")
           onInlineSelect: (l, s, e) => diffModel.selectInline(l, s, e)
           onCtrlLeftClick: diffModel.selectLine(itemIndex)

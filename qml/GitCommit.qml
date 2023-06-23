@@ -78,7 +78,6 @@ SplitView {
       Cdt.Pane {
         id: commitButtons
         Layout.fillWidth: true
-        color: Theme.colorBgMedium
         padding: Theme.basePadding
         enabled: controller.hasChanges
         KeyNavigation.right: fileDiff

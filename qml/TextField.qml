@@ -8,16 +8,17 @@ QtQuick.TextField {
   id: textField
   color: Theme.colorText
   enabled: visible
-  placeholderTextColor: Theme.colorSubText
+  placeholderTextColor: Theme.colorPlaceholder
   padding: Theme.basePadding
   selectByMouse: true
-  selectionColor: Theme.colorHighlight
+  selectedTextColor: Theme.colorText
+  selectionColor: Theme.colorTextSelection
   onPressed: e => Common.handleRightClick(textField, contextMenu, e)
   renderType: Text.NativeRendering
   background: Rectangle {
-    color: Theme.colorBgDark
-    border.color: parent.activeFocus ? Theme.colorHighlight : Theme.colorBgBlack
-    border.width: parent.activeFocus ? 2 : 1
+    color: parent.activeFocus ? Theme.colorBackground : Theme.colorBorder
+    border.color: Theme.colorBorder
+    border.width: 1
     radius: Theme.baseRadius
   }
   Menu {

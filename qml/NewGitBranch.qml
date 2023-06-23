@@ -8,7 +8,6 @@ Cdt.Pane {
   signal back()
   anchors.fill: parent
   focus: true
-  color: Theme.colorBgMedium
   Keys.onEscapePressed: back()
   NewGitBranchController {
     id: controller

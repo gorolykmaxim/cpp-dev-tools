@@ -73,7 +73,7 @@ Qml.MenuBar {
   }
   background: Rectangle {
     implicitHeight: 1
-    color: Theme.colorBgDark
+    color: Theme.colorBackground
   }
   delegate: Qml.MenuBarItem {
     padding: Theme.basePadding
@@ -84,7 +84,7 @@ Qml.MenuBar {
     background: Rectangle {
       implicitWidth: 1
       implicitHeight: 1
-      color: parent.highlighted ? Theme.colorBgMedium : Theme.colorBgDark
+      color: "transparent"
     }
   }
 
@@ -97,8 +97,8 @@ Qml.MenuBar {
         implicitWidth: menuRoot.maxItemWidth
         implicitHeight: 1
         border.width: 1
-        border.color: Theme.colorBgMedium
-        color: Theme.colorBgDark
+        border.color: Theme.colorBorder
+        color: Theme.colorBackground
       }
       delegate: Qml.MenuItem {
         horizontalPadding: Theme.basePadding * 3
@@ -111,11 +111,11 @@ Qml.MenuBar {
           Cdt.Text {
             Layout.alignment: Qt.AlignRight
             text: parent.parent.action.shortcut
-            color: Theme.colorSubText
+            color: Theme.colorPlaceholder
           }
         }
         background: Rectangle {
-          color: parent.highlighted ? Theme.colorBgMedium : "transparent"
+          color: "transparent"
         }
       }
     }

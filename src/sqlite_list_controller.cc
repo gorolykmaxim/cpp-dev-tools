@@ -57,7 +57,7 @@ QVariantList SqliteFileListModel::GetRow(int i) const {
     title = "[Selected] " + title;
   }
   if (file.is_missing_on_disk) {
-    title_color = kTheme.kColorSubText;
+    title_color = kTheme.kColorPlaceholder;
     icon.icon = "not_interested";
     icon.color = title_color;
     title = "[Not Found] " + title;

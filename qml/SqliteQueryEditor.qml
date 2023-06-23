@@ -15,41 +15,37 @@ Loader {
       spacing: 0
       Cdt.SqliteFileSelectedChecker {
         id: dbFile
+        Layout.fillWidth: true
         onDisplayOpenSqliteFileView: root.sourceComponent = openView
       }
-      Cdt.Pane {
+      SplitView {
+        id: splitView
         Layout.fillWidth: true
         Layout.fillHeight: true
-        focus: true
-        color: Theme.colorBgDark
+        handle: Cdt.SplitViewHandle {
+          viewId: "SqliteQueryEditor"
+          view: splitView
+        }
         SqliteQueryEditorController {
           id: controller
         }
-        SplitView {
-          id: splitView
-          anchors.fill: parent
-          handle: Cdt.SplitViewHandle {
-            viewId: "SqliteQueryEditor"
-            view: splitView
-          }
-          Cdt.SmallTextArea {
-            SplitView.minimumWidth: 300
-            SplitView.fillHeight: true
-            focus: true
-            enabled: dbFile.isSelected
-            text: controller.query
-            placeholderText: "Enter SQL queries here"
-            formatter: controller.formatter
-            onTextChanged: controller.query = text
-            KeyNavigation.right: tableView
-            onCtrlEnterPressed: controller.executeQuery(text, effectiveCursorPosition)
-          }
-          Cdt.TableView {
-            id: tableView
-            SplitView.fillWidth: true
-            SplitView.fillHeight: true
-            model: controller.model
-          }
+        Cdt.SmallTextArea {
+          SplitView.minimumWidth: 300
+          SplitView.fillHeight: true
+          focus: true
+          enabled: dbFile.isSelected
+          text: controller.query
+          placeholderText: "Enter SQL queries here"
+          formatter: controller.formatter
+          onTextChanged: controller.query = text
+          KeyNavigation.right: tableView
+          onCtrlEnterPressed: controller.executeQuery(text, effectiveCursorPosition)
+        }
+        Cdt.TableView {
+          id: tableView
+          SplitView.fillWidth: true
+          SplitView.fillHeight: true
+          model: controller.model
         }
       }
     }

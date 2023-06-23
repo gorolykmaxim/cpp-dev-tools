@@ -20,7 +20,6 @@ Loader {
       spacing: 0
       Cdt.Pane {
         Layout.fillWidth: true
-        color: Theme.colorBgMedium
         padding: Theme.basePadding
         focus: true
         RowLayout {

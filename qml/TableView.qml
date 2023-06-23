@@ -20,7 +20,7 @@ QtQuick.FocusScope {
     anchors.fill: parent
     visible: tableView.model.placeholderText
     text: tableView.model.placeholderText
-    textColor: tableView.model.placeholderColor
+    color: tableView.model.placeholderColor
   }
   ColumnLayout {
     spacing: 0
@@ -35,9 +35,12 @@ QtQuick.FocusScope {
         text: display
         padding: Theme.basePadding
         elide: Text.ElideRight
+        horizontalAlignment: Text.AlignHCenter
         background: QtQuick.Rectangle {
           anchors.fill: parent
-          color: Theme.colorBgMedium
+          color: Theme.colorBackground
+          border.width: 1
+          border.color: Theme.colorBorder
         }
       }
     }
@@ -53,15 +56,16 @@ QtQuick.FocusScope {
         return w < 0 ? Math.max(tableView.width / tableView.columns, 150) : w;
       }
       delegate: Cdt.Text {
+        required property int row
         text: display
         elide: Text.ElideRight
         padding: Theme.basePadding
         maximumLineCount: 1
         background: QtQuick.Rectangle {
           anchors.fill: parent
-          color: Theme.colorBgDark
+          color: row % 2 > 0 ? Theme.colorBackground : "#323231"
           border.width: 1
-          border.color: current && tableView.activeFocus ? Theme.colorHighlight : Theme.colorBgMedium
+          border.color: current && tableView.activeFocus ? Theme.colorPrimary : "transparent"
         }
         QtQuick.MouseArea {
           anchors.fill: parent

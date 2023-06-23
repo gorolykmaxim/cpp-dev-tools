@@ -11,9 +11,9 @@ Cdt.Pane {
   property bool highlightCurrentItemWithoutFocus: true
   property alias model: list.model
   property alias currentItem: list.currentItem
-  color: Theme.colorBgDark
   signal itemLeftClicked(clickedItemModel: QtObject, event: QtObject);
   signal itemRightClicked(clickedItemModel: QtObject, event: QtObject);
+  padding: Theme.basePadding
   function ifCurrentItem(field, fn) {
     if (list.currentItem) {
       fn(list.currentItem.itemModel[field]);
@@ -40,7 +40,7 @@ Cdt.Pane {
     anchors.fill: parent
     visible: list.model.placeholderText
     text: list.model.placeholderText
-    textColor: list.model.placeholderColor
+    color: list.model.placeholderColor
   }
   ListView {
     id: list
@@ -67,11 +67,13 @@ Cdt.Pane {
     highlightMoveDuration: 100
     ScrollBar.vertical: ScrollBar {}
     delegate: Rectangle {
-      property var isSelected: ListView.isCurrentItem && (highlightCurrentItemWithoutFocus || list.activeFocus)
+      property bool isCurrentItem: ListView.isCurrentItem
+      property bool isHighlighted: highlightCurrentItemWithoutFocus || list.activeFocus
       property var itemModel: model
       width: list.width
       height: row.height
-      color: (ListView.isCurrentItem || mouseArea.containsMouse) && !(mouseArea.pressedButtons & Qt.LeftButton) ? Theme.colorBgMedium : "transparent"
+      radius: Theme.baseRadius
+      color: isCurrentItem && !(mouseArea.pressedButtons & Qt.LeftButton) ? (isHighlighted ? Theme.colorPrimary : Theme.colorBorder) : "transparent"
       RowLayout {
         id: row
         width: parent.width
@@ -94,28 +96,26 @@ Cdt.Pane {
             width: text ? parent.width : null
             text: itemModel.title || ""
             elide: root.elide
-            highlight: isSelected
-            textColor: itemModel.titleColor || Theme.colorText
+            textColor: isCurrentItem && isHighlighted ? Theme.colorText : (itemModel.titleColor || Theme.colorText)
           }
           Cdt.Text {
             width: text ? parent.width : null
             elide: root.elide
             text: itemModel.subTitle || ""
-            color: Theme.colorSubText
+            color: isCurrentItem && isHighlighted ? Theme.colorText : Theme.colorPlaceholder
           }
         }
         Cdt.Text {
           Layout.alignment: Qt.AlignRight
           Layout.margins: Theme.basePadding
           text: itemModel.rightText || ""
-          color: Theme.colorSubText
+          color: isCurrentItem && isHighlighted ? Theme.colorText : Theme.colorPlaceholder
         }
       }
       MouseArea {
         id: mouseArea
         anchors.fill: parent
         acceptedButtons: Qt.LeftButton | Qt.RightButton
-        hoverEnabled: true
         onPressed: e => {
           root.forceActiveFocus();
           list.currentIndex = index;

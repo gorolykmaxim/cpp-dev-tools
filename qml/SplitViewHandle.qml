@@ -15,5 +15,5 @@ Rectangle {
   }
   implicitWidth: Theme.basePadding
   implicitHeight: Theme.basePadding
-  color: parent.resizing ? Theme.colorHighlight : Theme.colorBgBlack
+  color: parent.resizing ? Theme.colorPrimary : Theme.colorBorder
 }

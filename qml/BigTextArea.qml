@@ -9,7 +9,6 @@ import cdt
 Cdt.Pane {
   id: root
   property string text: ""
-  property string currentLineColor: Theme.colorBgMedium
   property bool highlightCurrentLineWithoutFocus: false
   property bool monoFont: true
   property alias cursorFollowEnd: textModel.cursorFollowEnd
@@ -35,7 +34,6 @@ Cdt.Pane {
   function rehighlightLine(line) {
     textModel.rehighlightLines(line, line);
   }
-  color: Theme.colorBgDark
   BigTextAreaModel {
     id: textModel
     onGoToLine: function(line) {
@@ -56,6 +54,12 @@ Cdt.Pane {
       onSearchResultsChanged: textModel.rehighlight()
       onSelectResult: (o, l) => textModel.selectSearchResult(o, l)
       KeyNavigation.down: visible ? listView : null
+    }
+    Rectangle {
+      Layout.fillWidth: true
+      height: 1
+      color: Theme.colorBorder
+      visible: searchBar.visible
     }
     ListView {
       id: listView
@@ -82,7 +86,7 @@ Cdt.Pane {
         displayLineNumber: root.displayLineNumbers
         enabled: root.enabled
         width: listView.width
-        color: ListView.isCurrentItem && (root.highlightCurrentLineWithoutFocus || listView.activeFocus) ? root.currentLineColor : "transparent"
+        color: ListView.isCurrentItem && (root.highlightCurrentLineWithoutFocus || listView.activeFocus) ? Theme.colorCurrentLine : "transparent"
         onInlineSelect: (l, s, e) => textModel.selectInline(l, s, e)
         onPressed: {
           listView.currentIndex = index;

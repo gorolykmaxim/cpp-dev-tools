@@ -34,10 +34,10 @@ Dialog {
   visible: false
   anchors.centerIn: parent
   background: Rectangle {
-    color: Theme.colorBgMedium
+    color: Theme.colorBackground
     radius: Theme.baseRadius
     border.width: 1
-    border.color: Theme.colorBgLight
+    border.color: Theme.colorBorder
   }
   ColumnLayout {
     anchors.fill: parent
@@ -58,8 +58,6 @@ Dialog {
         Layout.fillWidth: true
         Layout.fillHeight: true
         text: dialogText
-        color: "transparent"
-        currentLineColor: Theme.colorBgLight
         monoFont: false
         KeyNavigation.down: dialogCancel.visible ? dialogCancel : dialogOk
       }

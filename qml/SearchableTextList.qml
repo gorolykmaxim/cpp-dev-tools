@@ -22,7 +22,6 @@ FocusScope {
     anchors.fill: parent
     Cdt.Pane {
       Layout.fillWidth: true
-      color: Theme.colorBgMedium
       padding: Theme.basePadding
       visible: !searchableModel.placeholderText
       focus: true

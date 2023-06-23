@@ -18,7 +18,7 @@ SqliteQueryEditorController::SqliteQueryEditorController(QObject *parent)
   SqliteFile file = app.sqlite.GetSelectedFile();
   LOG() << "Loading last edited query for database" << file.path;
   model->SetPlaceholder("Query results with be displayed here",
-                        Theme().kColorSubText);
+                        Theme().kColorPlaceholder);
   IoTask::Run<QList<QString>>(
       this,
       [file] {

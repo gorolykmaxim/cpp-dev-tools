@@ -29,7 +29,7 @@ Cdt.Pane {
     Cdt.Text {
       visible: root.displayLineNumber
       text: lineNumber !== null ? (lineNumber > 0 ? lineNumber : '') : itemIndex + 1
-      color: Theme.colorSubText
+      color: Theme.colorPlaceholder
       Layout.fillHeight: true
       Layout.minimumWidth: root.lineNumberMaxWidth
       Layout.leftMargin: Theme.basePadding
@@ -57,7 +57,7 @@ Cdt.Pane {
         selectedTextColor: "transparent"
         text: root.text
         textFormat: TextEdit.PlainText
-        color: root.enabled ? Theme.colorText : Theme.colorSubText
+        color: root.enabled ? Theme.colorText : Theme.colorPlaceholder
         font.family: root.monoFont ? monoFontFamily : null
         font.pointSize: root.monoFont ? monoFontSize : -1
         renderType: Text.NativeRendering

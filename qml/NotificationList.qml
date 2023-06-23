@@ -42,7 +42,6 @@ Loader {
       Keys.onEscapePressed: backBtn.clicked()
       Cdt.Pane {
         Layout.fillWidth: true
-        color: Theme.colorBgMedium
         padding: Theme.basePadding
         RowLayout {
           anchors.fill: parent
@@ -64,7 +63,7 @@ Loader {
             Cdt.Text {
               Layout.fillWidth: true
               text: controller.selectedNotificationTime
-              color: Theme.colorSubText
+              color: Theme.colorPlaceholder
             }
           }
           Cdt.Button {
@@ -77,7 +76,7 @@ Loader {
       Rectangle {
         Layout.fillWidth: true
         height: 1
-        color: Theme.colorBgBlack
+        color: Theme.colorBorder
       }
       Cdt.FileLinkLookup {
         id: linkLookup
