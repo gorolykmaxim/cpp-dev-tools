@@ -70,13 +70,13 @@ void BigTextAreaModel::SetText(const QString& text) {
     new_lines.append(i + 1);
     pos = new_lines.constLast();
   }
+  this->text = text;
   if (new_lines.isEmpty()) {
     return;
   }
   beginInsertRows(QModelIndex(), line_start_offsets.size(),
                   line_start_offsets.size() + new_lines.size() - 1);
   line_start_offsets.append(new_lines);
-  this->text = text;
   endInsertRows();
   emit textChanged();
   if (cursor_follow_end) {
