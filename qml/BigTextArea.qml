@@ -82,6 +82,7 @@ Cdt.Pane {
         itemOffset: model.offset
         lineNumberMaxWidth: textModel.lineNumberMaxWidth
         text: model.text
+        monoFont: root.monoFont
         formatters: [...root.formatters, searchBar.formatter, textModel.selectionFormatter]
         displayLineNumber: root.displayLineNumbers
         enabled: root.enabled

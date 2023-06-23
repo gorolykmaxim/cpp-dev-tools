@@ -58,8 +58,8 @@ Cdt.Pane {
         text: root.text
         textFormat: TextEdit.PlainText
         color: root.enabled ? Theme.colorText : Theme.colorPlaceholder
-        font.family: root.monoFont ? monoFontFamily : null
-        font.pointSize: root.monoFont ? monoFontSize : -1
+        font.family: root.monoFont ? monoFontFamily : Qt.application.font.family
+        font.pointSize: root.monoFont ? monoFontSize : Qt.application.font.pointSize
         renderType: Text.NativeRendering
         wrapMode: Text.WordWrap
         onSelectedTextChanged: {
