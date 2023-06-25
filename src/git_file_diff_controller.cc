@@ -31,7 +31,7 @@ void GitFileDiffController::showDiff() {
         if (p.exit_code == 0) {
           SetDiff(p.output, "");
         } else {
-          SetDiff("", error_msg);
+          SetDiff("", error_msg + ":\n" + p.output);
         }
       });
 }
