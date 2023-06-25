@@ -13,6 +13,7 @@ ColumnLayout {
     spacing: Theme.basePadding
     Layout.margins: Theme.basePadding
     Cdt.TextField {
+      text: controller.branchesToCompare
       onDisplayTextChanged: controller.setBranchesToCompare(displayText)
       placeholderText: "branch1..branch2"
       focus: true
@@ -24,6 +25,7 @@ ColumnLayout {
     }
     Cdt.TextField {
       id: filePathTextField
+      text: controller.filePath
       onDisplayTextChanged: controller.setFilePath(displayText)
       placeholderText: "File path"
       Layout.fillWidth: true
@@ -43,7 +45,7 @@ ColumnLayout {
     id: gitDiff
     rawDiff: controller.rawDiff
     enabled: controller.rawDiff
-    file: controller.file
+    file: filePathTextField.displayText
     errorMessage: controller.diffError
     Layout.fillWidth: true
     Layout.fillHeight: true
