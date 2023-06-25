@@ -85,6 +85,8 @@ void UserCommandSystem::RegisterCommands() {
   RegisterCommand("Git", "Branches", "Ctrl+B", [] {
     Application::Get().view.SetCurrentView("GitBranchList.qml");
   });
+  RegisterCommand("Git", "Log", "Ctrl+L",
+                  [] { Application::Get().view.SetCurrentView("GitLog.qml"); });
   RegisterCommand("Window", "Default Size", "Ctrl+Shift+M",
                   [] { Application::Get().view.SetDefaultWindowSize(); });
   LOG() << "Comitting changes to user command list";
