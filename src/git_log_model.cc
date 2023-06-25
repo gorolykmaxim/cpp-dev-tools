@@ -14,12 +14,21 @@ static bool ParseCommitLinePart(const QString& line, QString& result,
   return true;
 }
 
-GitLogModel::GitLogModel(QObject* parent) : TextListModel(parent) {
+GitLogModel::GitLogModel(QObject* parent)
+    : TextListModel(parent), branch("HEAD") {
   SetRoleNames({{0, "title"}, {1, "rightText"}});
   SetEmptyListPlaceholder("Git log is empty");
   Application::Get().view.SetWindowTitle("Git Log");
+  load();
+}
+
+void GitLogModel::load() {
+  if (!list.isEmpty()) {
+    LoadRemoved(list.size());
+    list.clear();
+  }
   SetPlaceholder("Loading git log...");
-  OsCommand::Run("git", {"log", "--pretty=format:%h;%an;%ai;%s"}, "",
+  OsCommand::Run("git", {"log", "--pretty=format:%h;%an;%ai;%s", branch}, "",
                  "Git: Failed to query git log")
       .Then(this, [this](OsProcess p) {
         if (p.exit_code == 0) {
@@ -42,7 +51,7 @@ GitLogModel::GitLogModel(QObject* parent) : TextListModel(parent) {
           LoadNew(0, list.size());
           SetPlaceholder();
         } else {
-          SetPlaceholder("Failed to fetch git log", "red");
+          SetPlaceholder("Failed to fetch git log:\n" + p.output, "red");
         }
       });
 }
