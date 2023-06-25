@@ -50,7 +50,6 @@ void GitLogModel::load() {
       .Then(this, [this](OsProcess p) {
         if (p.exit_code == 0) {
           for (QString line : p.output.split('\n')) {
-            line.remove('\r');
             int pos = 0;
             GitCommit commit;
             if (!ParseCommitLinePart(line, commit.sha, pos)) {
