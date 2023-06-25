@@ -5,14 +5,19 @@
 
 #define LOG() qDebug() << "[GitLogModel]"
 
-static bool ParseCommitLinePart(const QString& line, QString& result,
-                                int& pos) {
+static bool ParseCommitLinePart(const QString& line, QString& result, int& pos,
+                                bool& error) {
   int i = line.indexOf(';', pos);
   if (i < 0) {
+    error = true;
     return false;
   }
   result = line.sliced(pos, i - pos);
   pos = i + 1;
+  if (pos >= line.size()) {
+    error = true;
+    return false;
+  }
   return true;
 }
 
@@ -45,27 +50,30 @@ void GitLogModel::load(int item_to_select) {
   }
   OsCommand::Run("git", args, "", "Git: Failed to query git log")
       .Then(this, [this, item_to_select](OsProcess p) {
+        bool error = p.exit_code != 0;
         if (p.exit_code == 0) {
           for (const QString& line : p.output.split('\n')) {
             int pos = 0;
             GitCommit commit;
-            if (!ParseCommitLinePart(line, commit.sha, pos)) {
-              continue;
+            if (!ParseCommitLinePart(line, commit.sha, pos, error)) {
+              break;
             }
-            if (!ParseCommitLinePart(line, commit.author, pos)) {
-              continue;
+            if (!ParseCommitLinePart(line, commit.author, pos, error)) {
+              break;
             }
-            if (!ParseCommitLinePart(line, commit.date, pos)) {
-              continue;
+            if (!ParseCommitLinePart(line, commit.date, pos, error)) {
+              break;
             }
             commit.title = line.sliced(pos);
             list.append(commit);
           }
           LOG() << "Loaded git log of" << list.size() << "commits";
           Load(item_to_select);
-          SetPlaceholder();
-        } else {
+        }
+        if (error) {
           SetPlaceholder("Failed to fetch git log:\n" + p.output, "red");
+        } else {
+          SetPlaceholder();
         }
       });
 }
