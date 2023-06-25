@@ -56,6 +56,7 @@ class TextListModel : public QAbstractListModel {
                                const QString& color = "");
   void SetPlaceholder(const QString& text = "", const QString& color = "");
   bool IsUpdating() const;
+  void ReSelectItem(int index);
 
   int min_filter_sub_match_length = 2;
 
@@ -89,8 +90,6 @@ class TextListModel : public QAbstractListModel {
   int selected_item_index = -1;
 
  private:
-  void ReSelectItem(int index);
-
   Placeholder empty_list_placeholder;
   Placeholder placeholder;
 };

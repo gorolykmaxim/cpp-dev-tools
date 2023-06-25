@@ -17,10 +17,7 @@ Loader {
     ColumnLayout {
       anchors.fill: parent
       spacing: 0
-      Component.onCompleted: {
-        viewSystem.windowTitle = "Git Log"
-        logModel.load(-1);
-      }
+      Component.onCompleted: viewSystem.windowTitle = "Git Log"
       Cdt.Pane {
         id: controlsPane
         Layout.fillWidth: true
@@ -99,14 +96,20 @@ Loader {
     id: createView
     Cdt.NewGitBranch {
       branchBasis: logModel.selectedCommitSha
-      onBack: root.sourceComponent = listView
+      onBack: {
+        root.sourceComponent = listView;
+        logModel.load();
+      }
     }
   }
   Component {
     id: showView
     Cdt.GitShow {
       sha: logModel.selectedCommitSha
-      onBack: root.sourceComponent = listView
+      onBack: {
+        root.sourceComponent = listView;
+        logModel.load(true);
+      }
     }
   }
 }

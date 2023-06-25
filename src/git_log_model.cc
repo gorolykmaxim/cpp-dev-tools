@@ -24,8 +24,8 @@ static bool ParseCommitLinePart(const QString& line, QString& result, int& pos,
 GitLogModel::GitLogModel(QObject* parent) : TextListModel(parent) {
   SetRoleNames({{0, "title"}, {1, "rightText"}});
   SetEmptyListPlaceholder("Git log is empty");
-  connect(&Application::Get().git, &GitSystem::pull, this,
-          [this] { load(-1); });
+  connect(&Application::Get().git, &GitSystem::pull, this, [this] { load(); });
+  load();
 }
 
 QString GitLogModel::GetSelectedCommitSha() const {
@@ -37,7 +37,11 @@ void GitLogModel::setBranchOrFile(const QString& value) {
   branch_or_file = value;
 }
 
-void GitLogModel::load(int item_to_select) {
+void GitLogModel::load(bool only_reselect) {
+  if (only_reselect) {
+    ReSelectItem(-1);
+    return;
+  }
   list.clear();
   SetPlaceholder("Loading git log...");
   QStringList args = {"log", "--pretty=format:%h;%an;%ai;%s"};
@@ -50,7 +54,7 @@ void GitLogModel::load(int item_to_select) {
     args.append(branch_or_file);
   }
   OsCommand::Run("git", args, "", "Git: Failed to query git log")
-      .Then(this, [this, item_to_select](OsProcess p) {
+      .Then(this, [this](OsProcess p) {
         bool error = p.exit_code != 0;
         if (p.exit_code == 0) {
           for (const QString& line : p.output.split('\n', Qt::SkipEmptyParts)) {
@@ -69,7 +73,7 @@ void GitLogModel::load(int item_to_select) {
             list.append(commit);
           }
           LOG() << "Loaded git log of" << list.size() << "commits";
-          Load(item_to_select);
+          Load();
         }
         if (error) {
           SetPlaceholder("Failed to fetch git log:\n" + p.output, "red");
