@@ -62,6 +62,21 @@ void GitLogModel::load() {
       });
 }
 
+void GitLogModel::checkout() {
+  int i = GetSelectedItemIndex();
+  if (i < 0) {
+    return;
+  }
+  const GitCommit& commit = list[i];
+  OsCommand::Run("git", {"checkout", commit.sha}, "",
+                 "Git: Failed to checkout " + commit.sha)
+      .Then(this, [this](OsProcess p) {
+        if (p.exit_code == 0) {
+          load();
+        }
+      });
+}
+
 QVariantList GitLogModel::GetRow(int i) const {
   const GitCommit& c = list[i];
   return {c.title, "<b>" + c.author + "</b> " + c.date};

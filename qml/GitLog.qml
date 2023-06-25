@@ -1,5 +1,6 @@
 import QtQuick
 import QtQuick.Layouts
+import Qt.labs.platform
 import cdt
 import "." as Cdt
 
@@ -51,5 +52,15 @@ ColumnLayout {
     focus: true
     model: logModel
     highlightCurrentItemWithoutFocus: false
+    onItemRightClicked: contextMenu.open()
+  }
+  Menu {
+    id: contextMenu
+    MenuItem {
+      text: "Checkout"
+      shortcut: "Alt+C"
+      enabled: gitLogList.activeFocus
+      onTriggered: logModel.checkout()
+    }
   }
 }
