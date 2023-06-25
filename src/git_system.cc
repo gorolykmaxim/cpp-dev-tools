@@ -134,8 +134,14 @@ void GitSystem::refreshBranchesIfProjectSelected() {
 
 Promise<OsProcess> GitSystem::CreateBranch(const QString& name,
                                            const QString& basis) {
-  return ExecuteGitCommand({"checkout", "-b", name, basis}, "",
-                           "Git: Branch '" + name + "' created");
+  QStringList args = {"checkout", "-b", name};
+  if (!basis.startsWith("(HEAD detached at")) {
+    // Specifying such branch as basis will fail. At the same time in such case
+    // we don't need to specify basis because we know that the specified
+    // detached branch IS our current branch.
+    args.append(basis);
+  }
+  return ExecuteGitCommand(args, "", "Git: Branch '" + name + "' created");
 }
 
 bool GitSystem::IsLookingForBranches() const { return is_looking_for_branches; }
