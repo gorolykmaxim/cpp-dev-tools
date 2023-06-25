@@ -27,10 +27,9 @@ Loader {
           anchors.fill: parent
           spacing: Theme.basePadding
           Cdt.TextField {
-            text: logModel.branch
-            Layout.minimumWidth: 100
-            onDisplayTextChanged: logModel.branch = displayText
-            placeholderText: "Branch"
+            Layout.minimumWidth: 150
+            onDisplayTextChanged: logModel.setBranchOrFile(displayText)
+            placeholderText: "Branch or File"
             KeyNavigation.right: searchTextField
             Keys.onEnterPressed: logModel.load()
             Keys.onReturnPressed: logModel.load()
