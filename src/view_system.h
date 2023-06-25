@@ -63,6 +63,7 @@ class ViewSystem : public QObject {
                  windowDimensionsChanaged)
  public:
   static QBrush BrushFromHex(const QString& hex);
+  static int CalcWidthInMonoFont(const QString& str);
   void SetCurrentView(const QString& current_view);
   QString GetCurrentView() const;
   void DisplayAlertDialog(AlertDialog dialog);

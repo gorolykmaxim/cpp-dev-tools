@@ -30,15 +30,8 @@ GitCommitController::GitCommitController(QObject *parent)
 bool GitCommitController::HasChanges() const { return !files->list.isEmpty(); }
 
 int GitCommitController::CalcSideBarWidth() const {
-  static const Theme kTheme;
-  QString kDummyGitCommitHeader(50, 'a');
-  Application &app = Application::Get();
-  QQmlContext *ctx = app.qml_engine.rootContext();
-  QString family = ctx->contextProperty("monoFontFamily").toString();
-  int size = ctx->contextProperty("monoFontSize").toInt();
-  QFont font(family, size);
-  QFontMetrics metrics(font);
-  return metrics.horizontalAdvance(kDummyGitCommitHeader) + kTheme.kBasePadding;
+  return ViewSystem::CalcWidthInMonoFont(QString(50, 'a')) +
+         Theme().kBasePadding;
 }
 
 void GitCommitController::findChangedFiles() {
@@ -292,7 +285,7 @@ QString ChangedFileListModel::GetStats() const {
     additions += f.additions;
     removals += f.removals;
   }
-  return FormatStats(additions, removals);
+  return GitSystem::FormatChangeStats(additions, removals);
 }
 
 QVariantList ChangedFileListModel::GetRow(int i) const {
@@ -307,21 +300,11 @@ QVariantList ChangedFileListModel::GetRow(int i) const {
   if (f.is_staged) {
     icon = "check_box";
   }
-  return {f.path, color, icon, color, FormatStats(f.additions, f.removals)};
+  return {f.path, color, icon, color,
+          GitSystem::FormatChangeStats(f.additions, f.removals)};
 }
 
 int ChangedFileListModel::GetRowCount() const { return list.size(); }
-
-QString ChangedFileListModel::FormatStats(int additions, int removals) {
-  QStringList stats;
-  if (additions > 0) {
-    stats.append('+' + QString::number(additions));
-  }
-  if (removals > 0) {
-    stats.append('-' + QString::number(removals));
-  }
-  return stats.join(", ");
-}
 
 CommitMessageFormatter::CommitMessageFormatter(QObject *parent)
     : TextFormatter(parent) {

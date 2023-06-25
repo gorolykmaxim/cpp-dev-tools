@@ -86,6 +86,8 @@ qt_add_executable(cpp-dev-tools
   src/git_diff_model.cc
   src/git_log_model.h
   src/git_log_model.cc
+  src/git_show_model.h
+  src/git_show_model.cc
   src/main.cc)
 if(NOT MSVC)
   # TODO: figure out how to enable all warnings in MSVC without triggering
@@ -148,6 +150,7 @@ qt_add_qml_module(cpp-dev-tools URI cdt VERSION 1.0
       qml/GitDiff.qml
       qml/TextSearchBar.qml
       qml/GitLog.qml
+      qml/GitShow.qml
   RESOURCES
       fonts/MaterialIcons-Regular.ttf
   RESOURCE_PREFIX /)

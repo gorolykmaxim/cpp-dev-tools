@@ -18,6 +18,7 @@ class GitSystem : public QObject {
                  currentBranchChanged)
  public:
   static QList<QString> FindIgnoredPathsSync();
+  static QString FormatChangeStats(int additions, int removals);
   void Push();
   void Pull();
   bool IsLookingForBranches() const;

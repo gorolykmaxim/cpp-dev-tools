@@ -1,7 +1,10 @@
 #include "view_system.h"
 
 #include <QBrush>
+#include <QFont>
+#include <QFontMetrics>
 #include <QGuiApplication>
+#include <QQmlContext>
 #include <QScreen>
 
 #include "database.h"
@@ -37,6 +40,16 @@ QDebug operator<<(QDebug debug, const WindowDimensions &dimensions) {
 
 QBrush ViewSystem::BrushFromHex(const QString &hex) {
   return QBrush(QColor::fromString(hex));
+}
+
+int ViewSystem::CalcWidthInMonoFont(const QString &str) {
+  Application &app = Application::Get();
+  QQmlContext *ctx = app.qml_engine.rootContext();
+  QString family = ctx->contextProperty("monoFontFamily").toString();
+  int size = ctx->contextProperty("monoFontSize").toInt();
+  QFont font(family, size);
+  QFontMetrics metrics(font);
+  return metrics.horizontalAdvance(str);
 }
 
 void ViewSystem::SetCurrentView(const QString &current_view) {

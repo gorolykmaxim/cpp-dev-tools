@@ -60,9 +60,17 @@ Loader {
         model: logModel
         highlightCurrentItemWithoutFocus: false
         onItemRightClicked: contextMenu.open()
+        Keys.onEnterPressed: root.sourceComponent = showView
+        Keys.onReturnPressed: root.sourceComponent = showView
       }
       Menu {
         id: contextMenu
+        MenuItem {
+          text: "Show"
+          shortcut: "Enter"
+          enabled: gitLogList.activeFocus
+          onTriggered: root.sourceComponent = showView
+        }
         MenuItem {
           text: "Checkout"
           shortcut: "Alt+C"
@@ -88,6 +96,13 @@ Loader {
     id: createView
     Cdt.NewGitBranch {
       branchBasis: logModel.selectedCommitSha
+      onBack: root.sourceComponent = listView
+    }
+  }
+  Component {
+    id: showView
+    Cdt.GitShow {
+      sha: logModel.selectedCommitSha
       onBack: root.sourceComponent = listView
     }
   }

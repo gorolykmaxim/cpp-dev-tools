@@ -42,6 +42,17 @@ QList<QString> GitSystem::FindIgnoredPathsSync() {
   return results;
 }
 
+QString GitSystem::FormatChangeStats(int additions, int removals) {
+  QStringList stats;
+  if (additions > 0) {
+    stats.append('+' + QString::number(additions));
+  }
+  if (removals > 0) {
+    stats.append('-' + QString::number(removals));
+  }
+  return stats.join(", ");
+}
+
 void GitSystem::Pull() {
   Application::Get().notification.Post(Notification("Git: Pulling changes..."));
   ExecuteGitCommand({"pull", "origin", GetCurrentBranchName()},

@@ -41,9 +41,6 @@ class ChangedFileListModel : public TextListModel {
 
  signals:
   void statsChanged();
-
- private:
-  static QString FormatStats(int additions, int removals);
 };
 
 class CommitMessageFormatter : public TextFormatter {
