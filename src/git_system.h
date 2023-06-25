@@ -37,6 +37,7 @@ class GitSystem : public QObject {
  signals:
   void isLookingForBranchesChanged();
   void currentBranchChanged();
+  void pull();
 
  private:
   Promise<OsProcess> ExecuteGitCommand(const QStringList& args,

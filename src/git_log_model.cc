@@ -24,6 +24,8 @@ static bool ParseCommitLinePart(const QString& line, QString& result, int& pos,
 GitLogModel::GitLogModel(QObject* parent) : TextListModel(parent) {
   SetRoleNames({{0, "title"}, {1, "rightText"}});
   SetEmptyListPlaceholder("Git log is empty");
+  connect(&Application::Get().git, &GitSystem::pull, this,
+          [this] { load(-1); });
 }
 
 QString GitLogModel::GetSelectedCommitSha() const {
@@ -36,7 +38,6 @@ void GitLogModel::setBranchOrFile(const QString& value) {
 }
 
 void GitLogModel::load(int item_to_select) {
-  Application::Get().view.SetWindowTitle("Git Log");
   list.clear();
   SetPlaceholder("Loading git log...");
   QStringList args = {"log", "--pretty=format:%h;%an;%ai;%s"};

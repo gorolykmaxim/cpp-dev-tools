@@ -17,7 +17,10 @@ Loader {
     ColumnLayout {
       anchors.fill: parent
       spacing: 0
-      Component.onCompleted: logModel.load(-1)
+      Component.onCompleted: {
+        viewSystem.windowTitle = "Git Log"
+        logModel.load(-1);
+      }
       Cdt.Pane {
         id: controlsPane
         Layout.fillWidth: true

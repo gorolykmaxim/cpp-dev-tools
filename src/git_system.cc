@@ -56,7 +56,8 @@ QString GitSystem::FormatChangeStats(int additions, int removals) {
 void GitSystem::Pull() {
   Application::Get().notification.Post(Notification("Git: Pulling changes..."));
   ExecuteGitCommand({"pull", "origin", GetCurrentBranchName()},
-                    "Git: Failed to pull changes", "Git: Changes pulled");
+                    "Git: Failed to pull changes", "Git: Changes pulled")
+      .Then(this, [this](OsProcess) { emit pull(); });
 }
 
 void GitSystem::Push() {
