@@ -49,19 +49,33 @@ void GitShowModel::FetchCommitInfo() {
       "git", {"show", "--format=commit %H%nAuthor: %an %ae%nDate: %ad%n%n%B",
               "--numstat", sha})
       .Then(this, [this](OsProcess p) {
+        bool error = p.exit_code != 0;
         if (p.exit_code == 0) {
-          int i = p.output.lastIndexOf("\n\n");
-          raw_commit_info = p.output.sliced(0, i + 1);
-          QString numstat = p.output.sliced(i);
-          for (const QString &line : numstat.split('\n', Qt::SkipEmptyParts)) {
-            QStringList parts = line.split('\t');
-            files.append({parts[2], parts[0].toInt(), parts[1].toInt()});
+          int i = p.output.lastIndexOf("\n\n\n");
+          if (i < 0) {
+            LOG() << "Failed to parse git show:" << p.output;
+            error = true;
+          } else {
+            raw_commit_info = p.output.sliced(0, i);
+            QString numstat = p.output.sliced(i + 3);
+            QStringList lines = numstat.split('\n', Qt::SkipEmptyParts);
+            for (const QString &line : lines) {
+              QStringList parts = line.split('\t');
+              if (parts.size() < 3) {
+                error = true;
+                LOG() << "Failed to parse git show numstat line:" << line;
+                break;
+              }
+              files.append({parts[2], parts[0].toInt(), parts[1].toInt()});
+            }
+            Load();
+            emit changeListChanged();
           }
-          Load();
-          emit changeListChanged();
-          SetPlaceholder();
-        } else {
+        }
+        if (error) {
           SetPlaceholder("Failed to get details about " + sha, "red");
+        } else {
+          SetPlaceholder();
         }
       });
 }
