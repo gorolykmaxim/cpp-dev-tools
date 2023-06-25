@@ -28,6 +28,7 @@ Loader {
           spacing: Theme.basePadding
           Cdt.TextField {
             Layout.minimumWidth: 150
+            text: logModel.branchOrFile
             onDisplayTextChanged: logModel.setBranchOrFile(displayText)
             placeholderText: "Branch or File"
             KeyNavigation.right: searchTextField
@@ -37,7 +38,7 @@ Loader {
           Cdt.TextField {
             id: searchTextField
             text: logModel.searchTerm
-            onDisplayTextChanged: logModel.searchTerm = displayText
+            onDisplayTextChanged: logModel.setSearchTerm(displayText)
             placeholderText: "Search term"
             focus: true
             Layout.fillWidth: true

@@ -1,6 +1,8 @@
 #include "git_log_model.h"
 
 #include "application.h"
+#include "database.h"
+#include "io_task.h"
 #include "os_command.h"
 
 #define LOG() qDebug() << "[GitLogModel]"
@@ -21,11 +23,35 @@ static bool ParseCommitLinePart(const QString& line, QString& result, int& pos,
   return true;
 }
 
+using GitLogOptions = std::pair<QString, QString>;
+
+static GitLogOptions ReadOptionsFromSql(QSqlQuery& sql) {
+  return std::make_pair(sql.value(0).toString(), sql.value(1).toString());
+}
+
 GitLogModel::GitLogModel(QObject* parent) : TextListModel(parent) {
   SetRoleNames({{0, "title"}, {1, "rightText"}});
   SetEmptyListPlaceholder("Git log is empty");
-  connect(&Application::Get().git, &GitSystem::pull, this, [this] { load(); });
-  load();
+  Application& app = Application::Get();
+  connect(&app.git, &GitSystem::pull, this, [this] { load(); });
+  QUuid project_id = app.project.GetCurrentProject().id;
+  IoTask::Run<QList<GitLogOptions>>(
+      this,
+      [project_id] {
+        return Database::ExecQueryAndRead<GitLogOptions>(
+            "SELECT branch_or_file, search_term FROM git_log_context WHERE "
+            "project_id=?",
+            ReadOptionsFromSql, {project_id});
+      },
+      [this](QList<GitLogOptions> result) {
+        if (!result.isEmpty()) {
+          const GitLogOptions& opts = result.constFirst();
+          branch_or_file = opts.first;
+          search_term = opts.second;
+          emit optionsChanged();
+        }
+        load();
+      });
 }
 
 QString GitLogModel::GetSelectedCommitSha() const {
@@ -35,6 +61,12 @@ QString GitLogModel::GetSelectedCommitSha() const {
 
 void GitLogModel::setBranchOrFile(const QString& value) {
   branch_or_file = value;
+  SaveOptions();
+}
+
+void GitLogModel::setSearchTerm(const QString& value) {
+  search_term = value;
+  SaveOptions();
 }
 
 void GitLogModel::load(bool only_reselect) {
@@ -121,3 +153,10 @@ QVariantList GitLogModel::GetRow(int i) const {
 }
 
 int GitLogModel::GetRowCount() const { return list.size(); }
+
+void GitLogModel::SaveOptions() const {
+  QUuid project_id = Application::Get().project.GetCurrentProject().id;
+  Database::ExecCmdAsync(
+      "INSERT OR REPLACE INTO git_log_context VALUES(?, ?, ?)",
+      {project_id, branch_or_file, search_term});
+}

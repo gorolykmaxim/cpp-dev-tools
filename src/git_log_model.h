@@ -16,7 +16,8 @@ struct GitCommit {
 class GitLogModel : public TextListModel {
   Q_OBJECT
   QML_ELEMENT
-  Q_PROPERTY(QString searchTerm MEMBER search_term NOTIFY searchTermChanged)
+  Q_PROPERTY(QString branchOrFile MEMBER branch_or_file NOTIFY optionsChanged)
+  Q_PROPERTY(QString searchTerm MEMBER search_term NOTIFY optionsChanged)
   Q_PROPERTY(QString selectedCommitSha READ GetSelectedCommitSha NOTIFY
                  selectedItemChanged)
  public:
@@ -27,6 +28,7 @@ class GitLogModel : public TextListModel {
 
  public slots:
   void setBranchOrFile(const QString& value);
+  void setSearchTerm(const QString& value);
   void load(bool only_reselect = false);
   void checkout();
   void cherryPick();
@@ -37,9 +39,11 @@ class GitLogModel : public TextListModel {
 
  signals:
   void branchChanged();
-  void searchTermChanged();
+  void optionsChanged();
 
  private:
+  void SaveOptions() const;
+
   QString branch_or_file;
   QString search_term;
 };

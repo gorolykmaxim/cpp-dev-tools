@@ -107,6 +107,12 @@ void Database::Initialize() {
   ExecCmd(
       "INSERT OR IGNORE INTO git_diff_context(side_by_side_view) "
       "VALUES(TRUE)");
+  ExecCmd(
+      "CREATE TABLE IF NOT EXISTS git_log_context("
+      "project_id BLOB PRIMARY KEY, "
+      "branch_or_file TEXT, "
+      "search_term TEXT, "
+      "FOREIGN KEY(project_id) REFERENCES project(id) ON DELETE CASCADE)");
 }
 
 void Database::ExecQuery(QSqlQuery &sql, const QString &query,
