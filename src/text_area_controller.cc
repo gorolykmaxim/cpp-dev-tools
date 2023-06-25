@@ -162,9 +162,10 @@ int BigTextAreaModel::GetLineLength(int line) const {
     return 0;
   }
   int start = line_start_offsets[line];
-  int end = line < line_start_offsets.size() - 1 ? line_start_offsets[line + 1]
-                                                 : text.size();
-  return std::max(end - start - 1, 0);
+  int end = line < line_start_offsets.size() - 1
+                ? line_start_offsets[line + 1] - 1
+                : text.size();
+  return std::max(end - start, 0);
 }
 
 int BigTextAreaModel::GetLineWithOffset(int offset) const {
