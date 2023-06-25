@@ -17,6 +17,7 @@ class GitLogModel : public TextListModel {
   Q_OBJECT
   QML_ELEMENT
   Q_PROPERTY(QString branch MEMBER branch NOTIFY branchChanged)
+  Q_PROPERTY(QString searchTerm MEMBER search_term NOTIFY searchTermChanged)
  public:
   explicit GitLogModel(QObject* parent = nullptr);
 
@@ -31,9 +32,11 @@ class GitLogModel : public TextListModel {
 
  signals:
   void branchChanged();
+  void searchTermChanged();
 
  private:
   QString branch;
+  QString search_term;
 };
 
 #endif  // GITLOGMODEL_H

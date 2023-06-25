@@ -28,8 +28,14 @@ void GitLogModel::load() {
     list.clear();
   }
   SetPlaceholder("Loading git log...");
-  OsCommand::Run("git", {"log", "--pretty=format:%h;%an;%ai;%s", branch}, "",
-                 "Git: Failed to query git log")
+  QStringList args = {"log", "--pretty=format:%h;%an;%ai;%s"};
+  if (!search_term.isEmpty()) {
+    args.append({"--grep", search_term});
+  }
+  if (!branch.isEmpty()) {
+    args.append(branch);
+  }
+  OsCommand::Run("git", args, "", "Git: Failed to query git log")
       .Then(this, [this](OsProcess p) {
         if (p.exit_code == 0) {
           for (QString line : p.output.split('\n')) {

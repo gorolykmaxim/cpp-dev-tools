@@ -19,8 +19,19 @@ ColumnLayout {
       spacing: Theme.basePadding
       Cdt.TextField {
         text: logModel.branch
+        Layout.minimumWidth: 100
         onDisplayTextChanged: logModel.branch = displayText
         placeholderText: "Branch"
+        KeyNavigation.right: searchTextField
+        Keys.onEnterPressed: logModel.load()
+        Keys.onReturnPressed: logModel.load()
+      }
+      Cdt.TextField {
+        id: searchTextField
+        text: logModel.searchTerm
+        onDisplayTextChanged: logModel.searchTerm = displayText
+        placeholderText: "Search term"
+        focus: true
         Layout.fillWidth: true
         KeyNavigation.right: searchBtn
         Keys.onEnterPressed: logModel.load()
@@ -29,7 +40,6 @@ ColumnLayout {
       Cdt.Button {
         id: searchBtn
         text: "Search"
-        focus: true
         onClicked: logModel.load()
       }
     }
