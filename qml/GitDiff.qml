@@ -12,7 +12,7 @@ Cdt.Pane {
   property alias rawDiff: diffModel.rawDiff
   property alias chunkCount: diffModel.chunkCount
   property alias currentChunk: diffModel.currentChunk
-  property alias errorMessage: errorText.text
+  property string errorMessage: ""
   property var additionalMenuItems: []
   GitDiffModel {
     id: diffModel
@@ -37,8 +37,9 @@ Cdt.Pane {
   Cdt.PlaceholderText {
     id: errorText
     visible: text
+    text: errorMessage || (!rawDiff ? "No differences found" : "")
     anchors.fill: parent
-    color: "red"
+    color: errorMessage ? "red" : Theme.colorPlaceholder
   }
   ColumnLayout {
     visible: !errorText.visible
