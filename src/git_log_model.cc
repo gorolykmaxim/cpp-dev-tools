@@ -3,6 +3,8 @@
 #include "application.h"
 #include "os_command.h"
 
+#define LOG() qDebug() << "[GitLogModel]"
+
 static bool ParseCommitLinePart(const QString& line, QString& result,
                                 int& pos) {
   int i = line.indexOf(';', pos);
@@ -29,6 +31,8 @@ void GitLogModel::load() {
   }
   SetPlaceholder("Loading git log...");
   QStringList args = {"log", "--pretty=format:%h;%an;%ai;%s"};
+  LOG() << "Loading git log. search_term:" << search_term
+        << "branch:" << branch;
   if (!search_term.isEmpty()) {
     args.append({"--grep", search_term});
   }
@@ -54,6 +58,7 @@ void GitLogModel::load() {
             commit.title = line.sliced(pos);
             list.append(commit);
           }
+          LOG() << "Loaded git log of" << list.size() << "commits";
           LoadNew(0, list.size());
           SetPlaceholder();
         } else {
@@ -68,6 +73,7 @@ void GitLogModel::checkout() {
     return;
   }
   const GitCommit& commit = list[i];
+  LOG() << "Checking-out commit" << commit.sha;
   OsCommand::Run("git", {"checkout", commit.sha}, "",
                  "Git: Failed to checkout " + commit.sha)
       .Then(this, [this](OsProcess p) {
