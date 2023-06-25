@@ -53,7 +53,7 @@ void GitLogModel::load(int item_to_select) {
       .Then(this, [this, item_to_select](OsProcess p) {
         bool error = p.exit_code != 0;
         if (p.exit_code == 0) {
-          for (const QString& line : p.output.split('\n')) {
+          for (const QString& line : p.output.split('\n', Qt::SkipEmptyParts)) {
             int pos = 0;
             GitCommit commit;
             if (!ParseCommitLinePart(line, commit.sha, pos, error)) {
