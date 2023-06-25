@@ -33,30 +33,50 @@ SplitView {
       viewId: "GitCommitSidebar"
       view: sidebar
     }
-    Cdt.TextList {
-      id: changeList
+    ColumnLayout {
       SplitView.fillWidth: true
       SplitView.fillHeight: true
-      model: controller.files
-      enabled: controller.hasChanges
-      highlightCurrentItemWithoutFocus: false
-      onItemRightClicked: contextMenu.open()
-      Keys.onEnterPressed: controller.toggleStagedSelectedFile()
-      Keys.onReturnPressed: controller.toggleStagedSelectedFile()
-      KeyNavigation.down: commitMsg
-      KeyNavigation.right: fileDiff
-      Menu {
-        id: contextMenu
-        MenuItem {
-          enabled: changeList.activeFocus
-          text: "Toggle Staged"
-          onTriggered: controller.toggleStagedSelectedFile()
+      spacing: 0
+      RowLayout {
+        Layout.fillWidth: true
+        Layout.leftMargin: Theme.basePadding * 2
+        Layout.rightMargin: Theme.basePadding * 2
+        Layout.topMargin: Theme.basePadding
+        Layout.bottomMargin: Theme.basePadding
+        Cdt.Text {
+          Layout.fillWidth: true
+          text: "Changes:"
         }
-        MenuItem {
-          enabled: changeList.activeFocus
-          text: "Reset"
-          shortcut: "Ctrl+Alt+Z"
-          onTriggered: controller.resetSelectedFile()
+        Cdt.Text {
+          text: controller.files.stats
+          color: Theme.colorPlaceholder
+        }
+      }
+      Cdt.TextList {
+        id: changeList
+        Layout.fillWidth: true
+        Layout.fillHeight: true
+        model: controller.files
+        enabled: controller.hasChanges
+        highlightCurrentItemWithoutFocus: false
+        onItemRightClicked: contextMenu.open()
+        Keys.onEnterPressed: controller.toggleStagedSelectedFile()
+        Keys.onReturnPressed: controller.toggleStagedSelectedFile()
+        KeyNavigation.down: commitMsg
+        KeyNavigation.right: fileDiff
+        Menu {
+          id: contextMenu
+          MenuItem {
+            enabled: changeList.activeFocus
+            text: "Toggle Staged"
+            onTriggered: controller.toggleStagedSelectedFile()
+          }
+          MenuItem {
+            enabled: changeList.activeFocus
+            text: "Reset"
+            shortcut: "Ctrl+Alt+Z"
+            onTriggered: controller.resetSelectedFile()
+          }
         }
       }
     }

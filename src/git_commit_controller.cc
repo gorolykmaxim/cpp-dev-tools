@@ -45,35 +45,86 @@ void GitCommitController::findChangedFiles() {
   LOG() << "Looking for changed files";
   OsCommand::Run("git", {"status", "--porcelain=v1"}, "",
                  "Git: Failed to detect changes")
-      .Then(this, [this](OsProcess p) {
-        bool was_empty = files->list.isEmpty();
-        files->list.clear();
-        if (p.exit_code != 0) {
-          files->SetPlaceholder("Failed to detect git changes", "red");
-        } else {
-          for (QString line : p.output.split('\n', Qt::SkipEmptyParts)) {
-            ChangedFile f;
-            f.is_staged = !line.startsWith(' ') && !line.startsWith('?');
-            int status = f.is_staged ? 0 : 1;
-            if (line[status] == '?' || line[status] == 'A') {
-              f.status = ChangedFile::kNew;
-            } else if (line[status] == 'M') {
-              f.status = ChangedFile::kModified;
-            } else if (line[status] == 'D') {
-              f.status = ChangedFile::kDeleted;
+      .Then<OsProcess>(
+          this,
+          [this](OsProcess p) {
+            bool was_empty = files->list.isEmpty();
+            files->list.clear();
+            if (p.exit_code != 0) {
+              files->SetPlaceholder("Failed to detect git changes", "red");
+            } else {
+              for (QString line : p.output.split('\n', Qt::SkipEmptyParts)) {
+                ChangedFile f;
+                f.is_staged = !line.startsWith(' ') && !line.startsWith('?');
+                int status = f.is_staged ? 0 : 1;
+                if (line[status] == '?' || line[status] == 'A') {
+                  f.status = ChangedFile::kNew;
+                } else if (line[status] == 'M') {
+                  f.status = ChangedFile::kModified;
+                } else if (line[status] == 'D') {
+                  f.status = ChangedFile::kDeleted;
+                }
+                f.path = line.sliced(3);
+                files->list.append(f);
+              }
             }
-            f.path = line.sliced(3);
-            files->list.append(f);
+            std::sort(files->list.begin(), files->list.end(),
+                      [](const ChangedFile &a, const ChangedFile &b) {
+                        return a.path > b.path;
+                      });
+            LOG() << "Found" << files->list.size() << "changed files";
+            if (files->list.isEmpty() != was_empty) {
+              emit filesChanged();
+            }
+            return OsCommand::Run("git", {"diff", "HEAD", "--numstat"}, "",
+                                  "Git: Failed to collect diff statistics");
+          })
+      .Then(this, [this](OsProcess p) {
+        if (p.exit_code != 0) {
+          files->SetPlaceholder("Failed to collect git diff statistics", "red");
+        } else {
+          for (const QString &line : p.output.split('\n', Qt::SkipEmptyParts)) {
+            QStringList parts = line.split('\t', Qt::SkipEmptyParts);
+            QString file = parts[2];
+            for (ChangedFile &f : files->list) {
+              if (f.path == file) {
+                f.additions = parts[0].toInt();
+                f.removals = parts[1].toInt();
+                break;
+              }
+            }
           }
-        }
-        std::sort(files->list.begin(), files->list.end(),
-                  [](const ChangedFile &a, const ChangedFile &b) {
-                    return a.path > b.path;
-                  });
-        LOG() << "Found" << files->list.size() << "changed files";
-        files->Load(-1);
-        if (files->list.isEmpty() != was_empty) {
-          emit filesChanged();
+          // Count added lines for unstaged files manually because git diff
+          // won't tell about them.
+          QList<QString> untracked_files;
+          for (ChangedFile &f : files->list) {
+            if (!f.is_staged && f.status == ChangedFile::kNew) {
+              untracked_files.append(f.path);
+            }
+          }
+          IoTask::Run<QHash<QString, int>>(
+              this,
+              [untracked_files] {
+                QHash<QString, int> additions;
+                for (const QString &path : untracked_files) {
+                  QFile file(path);
+                  if (!file.open(QIODevice::ReadOnly)) {
+                    additions[path] = 0;
+                  } else {
+                    additions[path] = QString(file.readAll()).count('\n');
+                  }
+                }
+                return additions;
+              },
+              [this](QHash<QString, int> additions) {
+                for (ChangedFile &f : files->list) {
+                  if (additions.contains(f.path)) {
+                    f.additions = additions[f.path];
+                  }
+                }
+                emit files->statsChanged();
+                files->Load(-1);
+              });
         }
       });
 }
@@ -213,8 +264,13 @@ void GitCommitController::SetDiff(const QString &diff, const QString &error) {
 
 ChangedFileListModel::ChangedFileListModel(QObject *parent)
     : TextListModel(parent) {
-  SetRoleNames(
-      {{0, "title"}, {1, "titleColor"}, {2, "icon"}, {3, "iconColor"}});
+  SetRoleNames({
+      {0, "title"},
+      {1, "titleColor"},
+      {2, "icon"},
+      {3, "iconColor"},
+      {4, "rightText"},
+  });
   searchable_roles = {0};
   SetEmptyListPlaceholder("No git changes found");
 }
@@ -229,6 +285,16 @@ QString ChangedFileListModel::GetSelectedFileName() const {
   return file ? file->path : "";
 }
 
+QString ChangedFileListModel::GetStats() const {
+  int additions = 0;
+  int removals = 0;
+  for (const ChangedFile &f : list) {
+    additions += f.additions;
+    removals += f.removals;
+  }
+  return FormatStats(additions, removals);
+}
+
 QVariantList ChangedFileListModel::GetRow(int i) const {
   const ChangedFile &f = list[i];
   QString color;
@@ -241,10 +307,21 @@ QVariantList ChangedFileListModel::GetRow(int i) const {
   if (f.is_staged) {
     icon = "check_box";
   }
-  return {f.path, color, icon, color};
+  return {f.path, color, icon, color, FormatStats(f.additions, f.removals)};
 }
 
 int ChangedFileListModel::GetRowCount() const { return list.size(); }
+
+QString ChangedFileListModel::FormatStats(int additions, int removals) {
+  QStringList stats;
+  if (additions > 0) {
+    stats.append('+' + QString::number(additions));
+  }
+  if (removals > 0) {
+    stats.append('-' + QString::number(removals));
+  }
+  return stats.join(", ");
+}
 
 CommitMessageFormatter::CommitMessageFormatter(QObject *parent)
     : TextFormatter(parent) {

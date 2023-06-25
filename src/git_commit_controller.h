@@ -17,6 +17,8 @@ struct ChangedFile {
   };
   Status status = kNew;
   bool is_staged = false;
+  int additions = 0;
+  int removals = 0;
   QString path;
 };
 
@@ -24,16 +26,24 @@ class ChangedFileListModel : public TextListModel {
   Q_OBJECT
   Q_PROPERTY(QString selectedFileName READ GetSelectedFileName NOTIFY
                  selectedItemChanged)
+  Q_PROPERTY(QString stats READ GetStats NOTIFY statsChanged)
  public:
   explicit ChangedFileListModel(QObject* parent);
   const ChangedFile* GetSelected() const;
   QString GetSelectedFileName() const;
+  QString GetStats() const;
 
   QList<ChangedFile> list;
 
  protected:
   QVariantList GetRow(int i) const;
   int GetRowCount() const;
+
+ signals:
+  void statsChanged();
+
+ private:
+  static QString FormatStats(int additions, int removals);
 };
 
 class CommitMessageFormatter : public TextFormatter {
