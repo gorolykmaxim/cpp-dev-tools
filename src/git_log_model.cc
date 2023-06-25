@@ -30,12 +30,9 @@ void GitLogModel::setBranchOrFile(const QString& value) {
   branch_or_file = value;
 }
 
-void GitLogModel::load() {
+void GitLogModel::load(int item_to_select) {
   Application::Get().view.SetWindowTitle("Git Log");
-  if (!list.isEmpty()) {
-    LoadRemoved(list.size());
-    list.clear();
-  }
+  list.clear();
   SetPlaceholder("Loading git log...");
   QStringList args = {"log", "--pretty=format:%h;%an;%ai;%s"};
   LOG() << "Loading git log. search_term:" << search_term
@@ -47,9 +44,9 @@ void GitLogModel::load() {
     args.append(branch_or_file);
   }
   OsCommand::Run("git", args, "", "Git: Failed to query git log")
-      .Then(this, [this](OsProcess p) {
+      .Then(this, [this, item_to_select](OsProcess p) {
         if (p.exit_code == 0) {
-          for (QString line : p.output.split('\n')) {
+          for (const QString& line : p.output.split('\n')) {
             int pos = 0;
             GitCommit commit;
             if (!ParseCommitLinePart(line, commit.sha, pos)) {
@@ -65,7 +62,7 @@ void GitLogModel::load() {
             list.append(commit);
           }
           LOG() << "Loaded git log of" << list.size() << "commits";
-          LoadNew(0, list.size());
+          Load(item_to_select);
           SetPlaceholder();
         } else {
           SetPlaceholder("Failed to fetch git log:\n" + p.output, "red");

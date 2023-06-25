@@ -17,7 +17,7 @@ Loader {
     ColumnLayout {
       anchors.fill: parent
       spacing: 0
-      Component.onCompleted: logModel.load()
+      Component.onCompleted: logModel.load(-1)
       Cdt.Pane {
         id: controlsPane
         Layout.fillWidth: true

@@ -27,7 +27,7 @@ class GitLogModel : public TextListModel {
 
  public slots:
   void setBranchOrFile(const QString& value);
-  void load();
+  void load(int item_to_select = 0);
   void checkout();
   void cherryPick();
 
