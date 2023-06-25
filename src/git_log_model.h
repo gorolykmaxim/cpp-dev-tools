@@ -18,8 +18,11 @@ class GitLogModel : public TextListModel {
   QML_ELEMENT
   Q_PROPERTY(QString branch MEMBER branch NOTIFY branchChanged)
   Q_PROPERTY(QString searchTerm MEMBER search_term NOTIFY searchTermChanged)
+  Q_PROPERTY(QString selectedCommitSha READ GetSelectedCommitSha NOTIFY
+                 selectedItemChanged)
  public:
   explicit GitLogModel(QObject* parent = nullptr);
+  QString GetSelectedCommitSha() const;
 
   QList<GitCommit> list;
 

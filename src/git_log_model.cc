@@ -21,7 +21,11 @@ GitLogModel::GitLogModel(QObject* parent)
   SetRoleNames({{0, "title"}, {1, "rightText"}});
   SetEmptyListPlaceholder("Git log is empty");
   Application::Get().view.SetWindowTitle("Git Log");
-  load();
+}
+
+QString GitLogModel::GetSelectedCommitSha() const {
+  int i = GetSelectedItemIndex();
+  return i < 0 ? "" : list[i].sha;
 }
 
 void GitLogModel::load() {
