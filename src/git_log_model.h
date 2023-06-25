@@ -26,6 +26,7 @@ class GitLogModel : public TextListModel {
  public slots:
   void load();
   void checkout();
+  void cherryPick();
 
  protected:
   QVariantList GetRow(int i) const;

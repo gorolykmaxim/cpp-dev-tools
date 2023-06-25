@@ -83,6 +83,22 @@ void GitLogModel::checkout() {
       });
 }
 
+void GitLogModel::cherryPick() {
+  int i = GetSelectedItemIndex();
+  if (i < 0) {
+    return;
+  }
+  const GitCommit& commit = list[i];
+  LOG() << "Cherry-picking commit" << commit.sha;
+  OsCommand::Run("git", {"cherry-pick", commit.sha}, "",
+                 "Git: Failed to cherry-pick " + commit.sha)
+      .Then(this, [this](OsProcess p) {
+        if (p.exit_code == 0) {
+          load();
+        }
+      });
+}
+
 QVariantList GitLogModel::GetRow(int i) const {
   const GitCommit& c = list[i];
   return {c.title, "<b>" + c.author + "</b> " + c.date};

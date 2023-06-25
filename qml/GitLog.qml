@@ -62,5 +62,11 @@ ColumnLayout {
       enabled: gitLogList.activeFocus
       onTriggered: logModel.checkout()
     }
+    MenuItem {
+      text: "Cherry-Pick"
+      shortcut: "Alt+P"
+      enabled: gitLogList.activeFocus
+      onTriggered: logModel.cherryPick()
+    }
   }
 }
