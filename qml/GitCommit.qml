@@ -57,6 +57,7 @@ SplitView {
         Layout.fillHeight: true
         model: controller.files
         enabled: controller.hasChanges
+        focus: controller.hasChanges
         highlightCurrentItemWithoutFocus: false
         onItemRightClicked: contextMenu.open()
         Keys.onEnterPressed: controller.toggleStagedSelectedFile()
@@ -91,7 +92,6 @@ SplitView {
         onTextUpdated: controller.setMessage(text)
         formatter: controller.formatter
         placeholderText: "Commit Message"
-        focus: controller.hasChanges
         enabled: controller.hasChanges
         KeyNavigation.down: commitButtons
         KeyNavigation.right: fileDiff
