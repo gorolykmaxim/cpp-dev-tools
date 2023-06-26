@@ -2,7 +2,6 @@
 
 #include "application.h"
 #include "database.h"
-#include "io_task.h"
 #include "os_command.h"
 
 #define LOG() qDebug() << "[GitLogModel]"
@@ -23,35 +22,23 @@ static bool ParseCommitLinePart(const QString& line, QString& result, int& pos,
   return true;
 }
 
-using GitLogOptions = std::pair<QString, QString>;
-
-static GitLogOptions ReadOptionsFromSql(QSqlQuery& sql) {
-  return std::make_pair(sql.value(0).toString(), sql.value(1).toString());
-}
-
 GitLogModel::GitLogModel(QObject* parent) : TextListModel(parent) {
   SetRoleNames({{0, "title"}, {1, "rightText"}});
   SetEmptyListPlaceholder("Git log is empty");
   Application& app = Application::Get();
   connect(&app.git, &GitSystem::pull, this, [this] { load(); });
   QUuid project_id = app.project.GetCurrentProject().id;
-  IoTask::Run<QList<GitLogOptions>>(
-      this,
-      [project_id] {
-        return Database::ExecQueryAndRead<GitLogOptions>(
-            "SELECT branch_or_file, search_term FROM git_log_context WHERE "
-            "project_id=?",
-            ReadOptionsFromSql, {project_id});
-      },
-      [this](QList<GitLogOptions> result) {
-        if (!result.isEmpty()) {
-          const GitLogOptions& opts = result.constFirst();
-          branch_or_file = opts.first;
-          search_term = opts.second;
-          emit optionsChanged();
-        }
-        load();
-      });
+  Database::LoadState(this,
+                      "SELECT branch_or_file, search_term FROM "
+                      "git_log_context WHERE project_id=?",
+                      {project_id}, [this](QVariantList result) {
+                        if (!result.isEmpty()) {
+                          branch_or_file = result[0].toString();
+                          search_term = result[1].toString();
+                          emit optionsChanged();
+                        }
+                        load();
+                      });
 }
 
 QString GitLogModel::GetSelectedCommitSha() const {

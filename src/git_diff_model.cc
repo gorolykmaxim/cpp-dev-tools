@@ -8,14 +8,9 @@
 
 #include "application.h"
 #include "database.h"
-#include "io_task.h"
 #include "theme.h"
 
 #define LOG() qDebug() << "[GitDiffModel]"
-
-static bool ReadBoolFromSql(QSqlQuery &query) {
-  return query.value(0).toBool();
-}
 
 GitDiffModel::GitDiffModel(QObject *parent)
     : QAbstractListModel(parent),
@@ -39,19 +34,16 @@ GitDiffModel::GitDiffModel(QObject *parent)
           [this] { syntax_formatter->DetectLanguageByFile(file); });
   connect(this, &GitDiffModel::isSideBySideViewChanged, this,
           &GitDiffModel::ParseDiff);
-  IoTask::Run<bool>(
-      this,
-      [] {
-        return Database::ExecQueryAndRead<bool>(
-                   "SELECT side_by_side_view FROM git_diff_context",
-                   ReadBoolFromSql)
-            .constFirst();
-      },
-      [this](bool side_by_side) {
-        LOG() << "Loaded diff view setting. Side-by-side view:" << side_by_side;
-        side_by_side_view = side_by_side;
-        emit isSideBySideViewChanged();
-      });
+  Database::LoadState(this, "SELECT side_by_side_view FROM git_diff_context",
+                      {}, [this](QVariantList data) {
+                        if (data.isEmpty()) {
+                          return;
+                        }
+                        side_by_side_view = data[0].toBool();
+                        LOG() << "Loaded diff view setting. Side-by-side view:"
+                              << side_by_side_view;
+                        emit isSideBySideViewChanged();
+                      });
 }
 
 int GitDiffModel::rowCount(const QModelIndex &) const { return lines.size(); }

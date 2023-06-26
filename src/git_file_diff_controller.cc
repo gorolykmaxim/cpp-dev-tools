@@ -2,39 +2,26 @@
 
 #include "application.h"
 #include "database.h"
-#include "io_task.h"
 #include "os_command.h"
 
 #define LOG() qDebug() << "[GitFileDiffController]"
-
-using FileDiffOptions = std::pair<QString, QString>;
-
-static FileDiffOptions ReadFromSql(QSqlQuery &sql) {
-  return std::make_pair(sql.value(0).toString(), sql.value(1).toString());
-}
 
 GitFileDiffController::GitFileDiffController(QObject *parent)
     : QObject(parent) {
   Application &app = Application::Get();
   app.view.SetWindowTitle("Git File Diff");
   QUuid project_id = app.project.GetCurrentProject().id;
-  IoTask::Run<QList<FileDiffOptions>>(
-      this,
-      [project_id] {
-        return Database::ExecQueryAndRead<FileDiffOptions>(
-            "SELECT branches_to_compare, file_path FROM git_file_diff_context "
-            "WHERE project_id=?",
-            ReadFromSql, {project_id});
-      },
-      [this](QList<FileDiffOptions> result) {
-        if (result.isEmpty()) {
-          return;
-        }
-        const FileDiffOptions &opts = result.constFirst();
-        branches_to_compare = opts.first;
-        file_path = opts.second;
-        emit optionsChanged();
-      });
+  Database::LoadState(this,
+                      "SELECT branches_to_compare, file_path FROM "
+                      "git_file_diff_context WHERE project_id=?",
+                      {project_id}, [this](QVariantList result) {
+                        if (result.isEmpty()) {
+                          return;
+                        }
+                        branches_to_compare = result[0].toString();
+                        file_path = result[1].toString();
+                        emit optionsChanged();
+                      });
 }
 
 QString GitFileDiffController::GetFile() const { return file_path; }

@@ -64,4 +64,7 @@ class Database {
   static void ExecCmdsAsync(const QList<Cmd>& cmds);
   static QString ReadStringFromSql(QSqlQuery& sql);
   static int ReadIntFromSql(QSqlQuery& sql);
+  static void LoadState(QObject* ctx, const QString& query,
+                        const QVariantList& args,
+                        std::function<void(QVariantList)>&& cb);
 };

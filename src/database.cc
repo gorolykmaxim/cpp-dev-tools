@@ -2,8 +2,11 @@
 
 #include <QDebug>
 #include <QSqlError>
+#include <QSqlRecord>
 #include <QStandardPaths>
 #include <QUuid>
+
+#include "io_task.h"
 
 #define LOG() qDebug() << "[Database]"
 
@@ -170,6 +173,32 @@ QString Database::ReadStringFromSql(QSqlQuery &sql) {
 }
 
 int Database::ReadIntFromSql(QSqlQuery &sql) { return sql.value(0).toInt(); }
+
+static QVariantList ReadFromSql(QSqlQuery &sql) {
+  QVariantList res;
+  for (int i = 0; i < sql.record().count(); i++) {
+    res.append(sql.value(i));
+  }
+  return res;
+}
+
+void Database::LoadState(QObject *ctx, const QString &query,
+                         const QVariantList &args,
+                         std::function<void(QVariantList)> &&cb) {
+  IoTask::Run<QList<QVariantList>>(
+      ctx,
+      [query, args] {
+        return Database::ExecQueryAndRead<QVariantList>(query, ReadFromSql,
+                                                        args);
+      },
+      [cb = std::move(cb)](QList<QVariantList> results) {
+        if (results.isEmpty()) {
+          cb({});
+        } else {
+          cb(results.constFirst());
+        }
+      });
+}
 
 Database::Transaction::Transaction() {
   LOG() << "Begin transaction";
