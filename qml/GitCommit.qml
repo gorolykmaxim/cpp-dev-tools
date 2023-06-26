@@ -14,7 +14,6 @@ SplitView {
   }
   GitCommitController {
     id: controller
-    onCommitMessageChanged: txt => commitMsg.text = txt
   }
   Connections {
     target: appWindow
@@ -88,6 +87,8 @@ SplitView {
         id: commitMsg
         Layout.fillWidth: true
         Layout.fillHeight: true
+        text: controller.message
+        onTextUpdated: controller.setMessage(text)
         formatter: controller.formatter
         placeholderText: "Commit Message"
         focus: controller.hasChanges
@@ -107,13 +108,13 @@ SplitView {
           Cdt.Button {
             text: "Commit All"
             focus: true
-            onClicked: controller.commit(commitMsg.text, true, amendCheckBox.checked)
+            onClicked: controller.commit(true, amendCheckBox.checked)
             KeyNavigation.right: commitBtn
           }
           Cdt.Button {
             id: commitBtn
             text: "Commit"
-            onClicked: controller.commit(commitMsg.text, false, amendCheckBox.checked)
+            onClicked: controller.commit(false, amendCheckBox.checked)
             KeyNavigation.right: amendCheckBox
           }
           Cdt.CheckBox {

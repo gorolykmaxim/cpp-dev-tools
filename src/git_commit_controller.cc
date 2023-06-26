@@ -3,6 +3,7 @@
 #include <QQmlContext>
 
 #include "application.h"
+#include "database.h"
 #include "io_task.h"
 #include "theme.h"
 
@@ -23,8 +24,19 @@ GitCommitController::GitCommitController(QObject *parent)
   // by a modifying git command or gets manually reloaded by the user.
   connect(files, &TextListModel::preSelectCurrentIndex, this,
           &GitCommitController::DiffSelectedFile);
-  Application::Get().view.SetWindowTitle("Git Commit");
+  Application &app = Application::Get();
+  app.view.SetWindowTitle("Git Commit");
   findChangedFiles();
+  QUuid project_id = app.project.GetCurrentProject().id;
+  Database::LoadState(
+      this, "SELECT message FROM git_commit_context WHERE project_id=?",
+      {project_id}, [this](QVariantList result) {
+        if (result.isEmpty()) {
+          return;
+        }
+        message = result[0].toString();
+        emit messageChanged();
+      });
 }
 
 bool GitCommitController::HasChanges() const { return !files->list.isEmpty(); }
@@ -153,8 +165,7 @@ void GitCommitController::resetSelectedFile() {
   }
 }
 
-void GitCommitController::commit(const QString &msg, bool commit_all,
-                                 bool amend) {
+void GitCommitController::commit(bool commit_all, bool amend) {
   LOG() << "Committing"
         << "all files:" << commit_all;
   QStringList args = {"commit", "-F", "-"};
@@ -164,10 +175,11 @@ void GitCommitController::commit(const QString &msg, bool commit_all,
   if (amend) {
     args.append("--amend");
   }
-  ExecuteGitCommand(args, msg, "Git: Failed to commit")
+  ExecuteGitCommand(args, message, "Git: Failed to commit")
       .Then(this, [this](OsProcess p) {
         if (p.exit_code == 0) {
-          emit commitMessageChanged("");
+          setMessage("");
+          emit messageChanged();
         }
       });
 }
@@ -181,7 +193,8 @@ void GitCommitController::loadLastCommitMessage() {
           if (p.output.endsWith('\n')) {
             p.output.removeLast();
           }
-          emit commitMessageChanged(p.output);
+          setMessage(p.output);
+          emit messageChanged();
         }
       });
 }
@@ -203,6 +216,14 @@ void GitCommitController::rollbackChunk(int chunk, int chunk_count) {
   }
   ExecuteGitCommand({"checkout", "-p", "--", f->path}, input.join(""),
                     "Git: Failed to rollback diff chunk");
+}
+
+void GitCommitController::setMessage(const QString &value) {
+  message = value;
+  QUuid project_id = Application::Get().project.GetCurrentProject().id;
+  Database::ExecCmdAsync(
+      "INSERT OR REPLACE INTO git_commit_context VALUES(?, ?)",
+      {project_id, message});
 }
 
 Promise<OsProcess> GitCommitController::ExecuteGitCommand(

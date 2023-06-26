@@ -62,6 +62,7 @@ class GitCommitController : public QObject {
   Q_PROPERTY(int sidebarWidth READ CalcSideBarWidth CONSTANT)
   Q_PROPERTY(QString diffError MEMBER diff_error NOTIFY diffErrorChanged)
   Q_PROPERTY(QString rawDiff MEMBER raw_diff NOTIFY rawDiffChanged)
+  Q_PROPERTY(QString message MEMBER message NOTIFY messageChanged)
   Q_PROPERTY(CommitMessageFormatter* formatter MEMBER formatter CONSTANT)
  public:
   explicit GitCommitController(QObject* parent = nullptr);
@@ -72,15 +73,16 @@ class GitCommitController : public QObject {
   void findChangedFiles();
   void toggleStagedSelectedFile();
   void resetSelectedFile();
-  void commit(const QString& msg, bool commit_all, bool amend);
+  void commit(bool commit_all, bool amend);
   void loadLastCommitMessage();
   void rollbackChunk(int chunk, int chunk_count);
+  void setMessage(const QString& value);
 
  signals:
   void filesChanged();
-  void commitMessageChanged(const QString& msg);
   void diffErrorChanged();
   void rawDiffChanged();
+  void messageChanged();
 
  private:
   Promise<OsProcess> ExecuteGitCommand(const QStringList& args,
@@ -92,6 +94,7 @@ class GitCommitController : public QObject {
   ChangedFileListModel* files;
   QString diff_error;
   QString raw_diff;
+  QString message;
   CommitMessageFormatter* formatter;
 };
 

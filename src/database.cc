@@ -122,6 +122,11 @@ void Database::Initialize() {
       "branches_to_compare TEXT, "
       "file_path TEXT, "
       "FOREIGN KEY(project_id) REFERENCES project(id) ON DELETE CASCADE)");
+  ExecCmd(
+      "CREATE TABLE IF NOT EXISTS git_commit_context("
+      "project_id BLOB PRIMARY KEY, "
+      "message TEXT, "
+      "FOREIGN KEY(project_id) REFERENCES project(id) ON DELETE CASCADE)");
 }
 
 void Database::ExecQuery(QSqlQuery &sql, const QString &query,
