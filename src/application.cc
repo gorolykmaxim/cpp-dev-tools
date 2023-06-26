@@ -43,6 +43,7 @@ Application::Application(int argc, char** argv)
 #else
   qml_engine.rootContext()->setContextProperty("monoFontFamily", "Consolas");
   qml_engine.rootContext()->setContextProperty("monoFontSize", 10);
+  gui_app.setWindowIcon(QIcon(":/cdt/win/cpp-dev-tools.ico"));
 #endif
 }
 

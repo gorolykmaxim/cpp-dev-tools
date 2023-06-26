@@ -100,6 +100,10 @@ endif()
 target_include_directories(cpp-dev-tools PRIVATE src)
 target_link_libraries(cpp-dev-tools PRIVATE
   Qt6::Quick Qt6::QuickControls2 Qt6::Gui Qt6::Concurrent Qt6::Sql skypjack_entt)
+set(RESOURCES fonts/MaterialIcons-Regular.ttf)
+if(WIN32)
+  list(APPEND RESOURCES win/cpp-dev-tools.ico)
+endif()
 qt_add_qml_module(cpp-dev-tools URI cdt VERSION 1.0
   QML_FILES
       qml/main.qml
@@ -155,14 +159,19 @@ qt_add_qml_module(cpp-dev-tools URI cdt VERSION 1.0
       qml/GitShow.qml
       qml/GitFileDiff.qml
   RESOURCES
-      fonts/MaterialIcons-Regular.ttf
+      ${RESOURCES}
   RESOURCE_PREFIX /)
 if(CMAKE_BUILD_TYPE STREQUAL "Release")
+  if(APPLE)
     target_sources(cpp-dev-tools PRIVATE mac/cpp-dev-tools.icns)
     set_target_properties(cpp-dev-tools PROPERTIES
       MACOSX_BUNDLE true
       MACOSX_BUNDLE_INFO_PLIST ${PROJECT_SOURCE_DIR}/mac/Info.plist)
     set_source_files_properties(mac/cpp-dev-tools.icns PROPERTIES MACOSX_PACKAGE_LOCATION "Resources")
+  else()
+    set_target_properties(cpp-dev-tools PROPERTIES WIN32_EXECUTABLE true)
+    target_sources(cpp-dev-tools PRIVATE ${PROJECT_SOURCE_DIR}/win/cpp-dev-tools.rc)
+  endif()
 endif()
 
 qt_add_executable(example-test test/main.cc test/example_test.h
