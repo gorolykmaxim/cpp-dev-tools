@@ -1,4 +1,5 @@
 import QtQuick
+import QtQuick.Controls
 import QtQuick.Layouts
 import cdt
 import "." as Cdt
@@ -13,13 +14,14 @@ ColumnLayout {
     spacing: Theme.basePadding
     Layout.margins: Theme.basePadding
     Cdt.TextField {
+      id: branchTextField
       text: controller.branchesToCompare
       onDisplayTextChanged: controller.setBranchesToCompare(displayText)
       placeholderText: "branch1..branch2"
       focus: true
       Layout.minimumWidth: 200
       KeyNavigation.right: filePathTextField
-      KeyNavigation.down: gitDiff
+      KeyNavigation.down: gitDiffFiles.visible ? gitDiffFiles : gitDiff
       Keys.onEnterPressed: controller.showDiff()
       Keys.onReturnPressed: controller.showDiff()
     }
@@ -30,7 +32,7 @@ ColumnLayout {
       placeholderText: "File path"
       Layout.fillWidth: true
       KeyNavigation.right: compareBtn
-      KeyNavigation.down: gitDiff
+      KeyNavigation.down: gitDiffFiles.visible ? gitDiffFiles : gitDiff
       Keys.onEnterPressed: controller.showDiff()
       Keys.onReturnPressed: controller.showDiff()
     }
@@ -38,16 +40,34 @@ ColumnLayout {
       id: compareBtn
       text: "Compare"
       onClicked: controller.showDiff()
-      KeyNavigation.down: gitDiff
+      KeyNavigation.down: gitDiffFiles.visible ? gitDiffFiles : gitDiff
     }
   }
-  Cdt.GitDiff {
-    id: gitDiff
-    rawDiff: controller.rawDiff
-    enabled: controller.rawDiff
-    file: filePathTextField.displayText
-    errorMessage: controller.diffError
+  SplitView {
+    id: mainView
     Layout.fillWidth: true
     Layout.fillHeight: true
+    handle: Cdt.SplitViewHandle {
+      viewId: "GitFileDiffWindow"
+      view: mainView
+    }
+    Cdt.TextList {
+      id: gitDiffFiles
+      SplitView.minimumWidth: 200
+      SplitView.fillHeight: true
+      highlightCurrentItemWithoutFocus: false
+      model: controller.files
+      visible: controller.files.moreThanOne
+      KeyNavigation.right: gitDiff
+    }
+    Cdt.GitDiff {
+      id: gitDiff
+      SplitView.fillWidth: true
+      SplitView.fillHeight: true
+      rawDiff: controller.rawDiff
+      enabled: controller.rawDiff
+      file: controller.files.selected
+      errorMessage: controller.diffError
+    }
   }
 }

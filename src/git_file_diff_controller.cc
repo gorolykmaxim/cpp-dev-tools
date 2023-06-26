@@ -7,7 +7,17 @@
 #define LOG() qDebug() << "[GitFileDiffController]"
 
 GitFileDiffController::GitFileDiffController(QObject *parent)
-    : QObject(parent) {
+    : QObject(parent), files(new GitFileDiffModel(this)) {
+  // This re-runs git diff when user switches to a different file.
+  connect(files, &TextListModel::selectedItemChanged, this, [this] {
+    if (files->IsUpdating()) {
+      return;
+    }
+    DiffSelectedFile();
+  });
+  // This re-runs git diff when changes list gets initially loaded.
+  connect(files, &TextListModel::preSelectCurrentIndex, this,
+          &GitFileDiffController::DiffSelectedFile);
   Application &app = Application::Get();
   app.view.SetWindowTitle("Git File Diff");
   QUuid project_id = app.project.GetCurrentProject().id;
@@ -39,15 +49,20 @@ void GitFileDiffController::setFilePath(const QString &value) {
 void GitFileDiffController::showDiff() {
   LOG() << "Finding diff for file:" << file_path
         << "between branches:" << branches_to_compare;
-  QString error_msg = "Git: Failed to compute diff for " + file_path;
-  OsCommand::Run("git", {"diff", branches_to_compare, "--", file_path}, "",
-                 error_msg)
-      .Then(this, [this, error_msg](OsProcess p) {
+  QString err =
+      "Git: Failed to determine the list of files changed in " + file_path;
+  OsCommand::Run("git",
+                 {"diff", "--name-only", branches_to_compare, "--", file_path},
+                 "", err)
+      .Then(this, [this, err](OsProcess p) {
+        files->files.clear();
         if (p.exit_code == 0) {
-          SetDiff(p.output, "");
+          files->files = p.output.split('\n', Qt::SkipEmptyParts);
         } else {
-          SetDiff("", error_msg + ":\n" + p.output);
+          SetDiff("", err + ": " + p.output);
         }
+        files->Load();
+        emit files->filesChanged();
       });
 }
 
@@ -63,3 +78,35 @@ void GitFileDiffController::SaveOptions() const {
       "INSERT OR REPLACE INTO git_file_diff_context VALUES(?, ?, ?)",
       {project_id, branches_to_compare, file_path});
 }
+
+void GitFileDiffController::DiffSelectedFile() {
+  QString file = files->GetSelectedFile();
+  if (file.isEmpty()) {
+    SetDiff("", "");
+    return;
+  }
+  QString err = "Git: Failed to compute diff for " + file;
+  OsCommand::Run("git", {"diff", branches_to_compare, "--", file}, "", err)
+      .Then(this, [this, err](OsProcess p) {
+        if (p.exit_code == 0) {
+          SetDiff(p.output, "");
+        } else {
+          SetDiff("", err + ":\n" + p.output);
+        }
+      });
+}
+
+GitFileDiffModel::GitFileDiffModel(QObject *parent) : TextListModel(parent) {
+  SetRoleNames({{0, "title"}});
+}
+
+bool GitFileDiffModel::HasMoreThanOne() const { return files.size() > 1; }
+
+QString GitFileDiffModel::GetSelectedFile() const {
+  int i = GetSelectedItemIndex();
+  return i < 0 ? "" : files[i];
+}
+
+QVariantList GitFileDiffModel::GetRow(int i) const { return {files[i]}; }
+
+int GitFileDiffModel::GetRowCount() const { return files.size(); }
