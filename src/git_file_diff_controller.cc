@@ -82,7 +82,7 @@ void GitFileDiffController::SaveOptions() const {
 void GitFileDiffController::DiffSelectedFile() {
   QString file = files->GetSelectedFile();
   if (file.isEmpty()) {
-    SetDiff("", "");
+    SetDiff("", diff_error);
     return;
   }
   QString err = "Git: Failed to compute diff for " + file;
