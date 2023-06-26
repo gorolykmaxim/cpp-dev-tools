@@ -157,6 +157,13 @@ qt_add_qml_module(cpp-dev-tools URI cdt VERSION 1.0
   RESOURCES
       fonts/MaterialIcons-Regular.ttf
   RESOURCE_PREFIX /)
+if(CMAKE_BUILD_TYPE STREQUAL "Release")
+    target_sources(cpp-dev-tools PRIVATE mac/cpp-dev-tools.icns)
+    set_target_properties(cpp-dev-tools PROPERTIES
+      MACOSX_BUNDLE true
+      MACOSX_BUNDLE_INFO_PLIST ${PROJECT_SOURCE_DIR}/mac/Info.plist)
+    set_source_files_properties(mac/cpp-dev-tools.icns PROPERTIES MACOSX_PACKAGE_LOCATION "Resources")
+endif()
 
 qt_add_executable(example-test test/main.cc test/example_test.h
   test/another_example_test.h)
