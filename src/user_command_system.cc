@@ -87,7 +87,7 @@ void UserCommandSystem::RegisterCommands() {
   });
   RegisterCommand("Git", "Log", "Ctrl+L",
                   [] { Application::Get().view.SetCurrentView("GitLog.qml"); });
-  RegisterCommand("Git", "File Diff", "Ctrl+Shift+D", [] {
+  RegisterCommand("Git", "File Diff", "F8", [] {
     Application::Get().view.SetCurrentView("GitFileDiff.qml");
   });
   RegisterCommand("Window", "Default Size", "Ctrl+Shift+M",
