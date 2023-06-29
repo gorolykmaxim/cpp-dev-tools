@@ -275,11 +275,29 @@ Promise<int> TaskSystem::RunExecutableTask(entt::entity task_e,
   return RunProcess(exec_e, t.path);
 }
 
+static void CreateCmakeQueryFiles(const QString& path) {
+  QString cmake_query = path + "/.cmake/api/v1/query";
+  if (!QFile::exists(cmake_query)) {
+    QDir().mkpath(cmake_query);
+  }
+  for (const QString& query :
+       {cmake_query + "/cmakeFiles-v1", cmake_query + "/codemodel-v2"}) {
+    if (!QFile::exists(query)) {
+      QFile(query).open(QFile::WriteOnly);
+    }
+  }
+}
+
 Promise<int> TaskSystem::RunCmakeTask(entt::entity task_e,
                                       entt::entity exec_e) {
   auto& t = registry.get<CmakeTask>(task_e);
   auto exists = QSharedPointer<bool>::create(false);
-  return IoTask::Run([t, exists] { *exists = QFile::exists(t.build_path); })
+  return IoTask::Run([t, exists] {
+           *exists = QFile::exists(t.build_path);
+           if (!*exists) {
+             CreateCmakeQueryFiles(t.build_path);
+           }
+         })
       .Then<int>(this,
                  [t, this, exec_e]() {
                    return RunProcess(exec_e, "cmake",
@@ -425,16 +443,7 @@ static void CreateCmakeTasks(TasksInfo& info, const QString& project_path,
   });
   // Create queries for the next CMake execution if they don't exist already
   for (const QString& path : info.cmake_build_folders) {
-    QString cmake_query = path + "/.cmake/api/v1/query";
-    if (!QFile::exists(cmake_query)) {
-      QDir().mkpath(cmake_query);
-    }
-    for (const QString& query :
-         {cmake_query + "/cmakeFiles-v1", cmake_query + "/codemodel-v2"}) {
-      if (!QFile::exists(query)) {
-        QFile(query).open(QFile::WriteOnly);
-      }
-    }
+    CreateCmakeQueryFiles(path);
   }
   // Find which build directories correspond to which source directories
   QHash<QString, QStringList> cmake_source_to_builds;
