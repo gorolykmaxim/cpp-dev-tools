@@ -18,6 +18,18 @@ struct ExecutableTask {
   QString path;
 };
 
+struct CmakeTask {
+  QString source_path;
+  QString build_path;
+};
+
+struct CmakeTargetTask {
+  QString build_folder;
+  QString target_name;
+  QString executable;
+  bool run_after_build = false;
+};
+
 typedef QString TaskId;
 
 struct TaskExecution {
@@ -57,6 +69,8 @@ class TaskSystem : public QObject {
   void FindTasks();
   void ClearTasks();
   QString GetTaskName(int i) const;
+  QString GetTaskDetails(int i) const;
+  QString GetTaskIcon(int i) const;
   int GetTaskCount() const;
   QString GetCurrentTaskName() const;
   void SetSelectedExecutionId(QUuid id);
@@ -76,14 +90,19 @@ class TaskSystem : public QObject {
   void selectedExecutionChanged();
 
  private:
-  Promise<int> RunTask(entt::entity e, int i);
-  Promise<int> RunTaskUntilFail(entt::entity e, int i);
-  Promise<int> RunProcess(entt::entity e);
+  Promise<int> RunTask(const TaskId& id, entt::entity e);
+  Promise<int> RunTaskUntilFail(const TaskId& id, entt::entity e);
+  Promise<int> RunExecutableTask(entt::entity task_e, entt::entity exec_e);
+  Promise<int> RunCmakeTask(entt::entity task_e, entt::entity exec_e);
+  Promise<int> RunCmakeTargetTask(entt::entity task_e, entt::entity exec_e);
+  Promise<int> RunProcess(entt::entity e, const QString& exe,
+                          const QStringList& args = {});
   void AppendToExecutionOutput(entt::entity entity, bool is_stderr);
   void AppendToExecutionOutput(entt::entity entity, QString data,
                                bool is_stderr);
   void FinishExecution(entt::entity entity, int exit_code);
   const TaskExecution* FindExecutionById(QUuid id) const;
+  bool FindTaskById(const TaskId& id, entt::entity& entity) const;
 
   entt::registry registry;
   QList<entt::entity> tasks;

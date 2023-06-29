@@ -24,6 +24,7 @@ class OsCommand {
                                 int expected_exit_code = 0);
   static void InitTerminals();
   static void OpenTerminalInCurrentDir();
+  static void LoadEnvironmentVariablesOnMac(QObject* ctx);
 };
 
 #endif  // OSCOMMAND_H

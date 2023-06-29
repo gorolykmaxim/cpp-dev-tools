@@ -8,6 +8,10 @@
 
 class IoTask {
  public:
+  static Promise<void> Run(std::function<void()>&& cb) {
+    return QtConcurrent::run(&Application::Get().io_thread_pool, std::move(cb));
+  }
+
   template <typename T>
   static QFuture<T> Run(std::function<T()>&& cb) {
     return QtConcurrent::run(&Application::Get().io_thread_pool, std::move(cb));

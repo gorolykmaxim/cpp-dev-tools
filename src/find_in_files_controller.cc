@@ -84,28 +84,6 @@ static bool IsBinaryFile(const QString& line, bool& seen_replacement_char,
   return seen_replacement_char && seen_null;
 }
 
-static bool MatchesWildcard(const QString& str, const QString& pattern) {
-  QStringList parts = pattern.split('*');
-  int pos = 0;
-  for (int i = 0; i < parts.size(); i++) {
-    const QString& part = parts[i];
-    if (part.isEmpty()) {
-      continue;
-    }
-    int j = str.indexOf(part, pos, Qt::CaseSensitive);
-    if (j < 0) {
-      return false;
-    }
-    if (i == 0 && j != 0) {
-      return false;
-    } else if (i == parts.size() - 1 && part.size() + j != str.size()) {
-      return false;
-    }
-    pos = part.size() + j + 1;
-  }
-  return true;
-}
-
 static QString HighlightMatch(const QString& line, int match_pos,
                               int match_length) {
   const static int kMaxLength = 200;
@@ -239,12 +217,12 @@ void FindInFilesController::search() {
                 break;
               }
             }
-            bool not_included =
-                !options.files_to_include.isEmpty() &&
-                !MatchesWildcard(file.fileName(), options.files_to_include);
-            bool excluded =
-                !options.files_to_exclude.isEmpty() &&
-                MatchesWildcard(file.fileName(), options.files_to_exclude);
+            bool not_included = !options.files_to_include.isEmpty() &&
+                                !Path::MatchesWildcard(
+                                    file.fileName(), options.files_to_include);
+            bool excluded = !options.files_to_exclude.isEmpty() &&
+                            Path::MatchesWildcard(file.fileName(),
+                                                  options.files_to_exclude);
             if (file_excluded || not_included || excluded ||
                 !file.open(QIODevice::ReadOnly)) {
               continue;

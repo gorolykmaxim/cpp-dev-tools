@@ -173,3 +173,33 @@ void OsCommand::OpenTerminalInCurrentDir() {
         TryOpenNextTerminal(terminals, failures);
       });
 }
+
+void OsCommand::LoadEnvironmentVariablesOnMac(QObject *ctx) {
+  Run("zsh", {"-c", "env"})
+      .Then<OsProcess>(
+          ctx,
+          [](OsProcess p) {
+            if (p.exit_code != 0) {
+              LOG() << "Failed to read environment variables via zsh:"
+                    << p.output;
+              return Run("bash", {"-c", "env"});
+            } else {
+              return Promise<OsProcess>(p);
+            }
+          })
+      .Then(ctx, [](OsProcess p) {
+        if (p.exit_code != 0) {
+          LOG() << "Failed to read environment variables via bash:" << p.output;
+          return;
+        }
+        for (const QString &line : p.output.split('\n', Qt::SkipEmptyParts)) {
+          int i = line.indexOf('=');
+          if (i < 0) {
+            continue;
+          }
+          QString name = line.sliced(0, i);
+          QString value = line.sliced(i + 1);
+          qputenv(name.toStdString().c_str(), value.toUtf8());
+        }
+      });
+}

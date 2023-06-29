@@ -11,15 +11,8 @@ TaskListModel::TaskListModel(QObject *parent) : TextListModel(parent) {
 }
 
 QVariantList TaskListModel::GetRow(int i) const {
-  Application &app = Application::Get();
-  QString name = app.task.GetTaskName(i);
-  QString details;
-  if (app.task.IsTask<ExecutableTask>(i)) {
-    details = app.task.GetTask<ExecutableTask>(i).path;
-  } else {
-    details = app.task.GetTask<TaskId>(i);
-  }
-  return {name, details, "code"};
+  TaskSystem &task = Application::Get().task;
+  return {task.GetTaskName(i), task.GetTaskDetails(i), task.GetTaskIcon(i)};
 }
 
 int TaskListModel::GetRowCount() const {
