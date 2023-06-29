@@ -395,23 +395,25 @@ struct TasksInfo {
 
 static TasksInfo ScanDirectoryForTasksInfo(const QString& directory) {
   TasksInfo info;
-  QDirIterator it(directory, QDir::Files | QDir::Hidden,
-                  QDirIterator::Subdirectories);
-  while (it.hasNext()) {
-    QString path = it.next();
-    path.replace(directory, ".");
-    if (it.fileInfo().isExecutable()) {
-      info.executables.append(path);
-    } else if (it.fileName() == "CMakeCache.txt") {
-      info.cmake_build_folders.append(Path::GetFolderPath(path));
-    } else if (it.fileName() == "CMakeLists.txt") {
-      info.cmake_source_folders.append(Path::GetFolderPath(path));
-    } else if (Path::MatchesWildcard(
-                   path, "*/.cmake/api/v1/reply/cmakeFiles-v1-*.json")) {
-      info.cmake_cmake_file_replies.append(path);
-    } else if (Path::MatchesWildcard(path,
-                                     "*/.cmake/api/v1/reply/target-*.json")) {
-      info.cmake_target_replies.append(path);
+  QDir::Filters top_filters = QDir::AllEntries | QDir::NoDotAndDotDot;
+  for (const QString& dir : QDir(directory).entryList(top_filters)) {
+    QDir::Filters filters = QDir::Files | QDir::Hidden;
+    QDirIterator it(dir, filters, QDirIterator::Subdirectories);
+    while (it.hasNext()) {
+      QString path = "./" + dir + '/' + it.next();
+      if (it.fileInfo().isExecutable()) {
+        info.executables.append(path);
+      } else if (it.fileName() == "CMakeCache.txt") {
+        info.cmake_build_folders.append(Path::GetFolderPath(path));
+      } else if (it.fileName() == "CMakeLists.txt") {
+        info.cmake_source_folders.append(Path::GetFolderPath(path));
+      } else if (Path::MatchesWildcard(
+                     path, "*/.cmake/api/v1/reply/cmakeFiles-v1-*.json")) {
+        info.cmake_cmake_file_replies.append(path);
+      } else if (Path::MatchesWildcard(path,
+                                       "*/.cmake/api/v1/reply/target-*.json")) {
+        info.cmake_target_replies.append(path);
+      }
     }
   }
   return info;
