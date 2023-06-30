@@ -151,8 +151,8 @@ void GitDiffModel::openFileInEditor(int current_line) const {
 }
 
 void GitDiffModel::selectCurrentChunk(int current_line) {
-  int i = 0;
-  for (; i < chunk_offsets.size(); i++) {
+  current_chunk = chunk_offsets.size() - 1;
+  for (int i = 0; i < chunk_offsets.size(); i++) {
     if (current_line < chunk_offsets[i]) {
       current_chunk = i - 1;
       break;
