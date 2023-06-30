@@ -46,12 +46,14 @@ struct Settings {
   Q_GADGET
   Q_PROPERTY(QString openInEditorCommand MEMBER open_in_editor_command)
   Q_PROPERTY(int taskHistoryLimit MEMBER task_history_limit)
+  Q_PROPERTY(bool shouldRunWithConsoleOnWin MEMBER run_with_console_on_win)
  public:
   bool operator==(const Settings& another) const;
   bool operator!=(const Settings& another) const;
 
   QString open_in_editor_command;
   int task_history_limit;
+  bool run_with_console_on_win;
   QStringList external_search_folders;
   QStringList documentation_folders;
   QStringList terminals;

@@ -1,5 +1,9 @@
 #include "task_system.h"
 
+#ifdef WIN32
+#include <windows.h>
+#endif
+
 #include "application.h"
 #include "database.h"
 #include "io_task.h"
@@ -60,6 +64,13 @@ void TaskSystem::executeTask(int i, bool repeat_until_fail) {
   emit taskListRefreshed();
   SetSelectedExecutionId(exec.id);
   Application::Get().view.SetCurrentView("TaskExecution.qml");
+}
+
+TaskContext TaskSystem::ReadContextFromSql(QSqlQuery& sql) {
+  TaskContext context;
+  context.history_limit = sql.value(0).toInt();
+  context.run_with_console_on_win = sql.value(1).toBool();
+  return context;
 }
 
 void TaskSystem::KillAllTasks() {
@@ -140,11 +151,11 @@ void TaskSystem::FinishExecution(entt::entity entity, int exit_code) {
       "INSERT INTO task_execution VALUES(?,?,?,?,?,?,?,?)",
       {exec.id, project.id, exec.start_time, exec.task_id, exec.task_name,
        *exec.exit_code, indices.join(','), exec.output}));
-  if (history_limit > 0) {
+  if (context.history_limit > 0) {
     cmds.append(
         Database::Cmd("DELETE FROM task_execution WHERE id NOT IN (SELECT id "
                       "FROM task_execution ORDER BY start_time DESC LIMIT ?)",
-                      {history_limit}));
+                      {context.history_limit}));
   }
   Database::ExecCmdsAsync(cmds);
   registry.destroy(entity);
@@ -343,6 +354,14 @@ Promise<int> TaskSystem::RunProcess(entt::entity e, const QString& exe,
   }
   AppendToExecutionOutput(e, cmd + '\n', false);
   LOG() << "Running" << cmd;
+#ifdef WIN32
+  if (context.run_with_console_on_win) {
+    p.setCreateProcessArgumentsModifier(
+        [](QProcess::CreateProcessArguments* args) {
+          args->flags |= CREATE_NEW_CONSOLE;
+        });
+  }
+#endif
   connect(
       &p, &QProcess::readyReadStandardError, this,
       [e, this] { AppendToExecutionOutput(e, true); }, Qt::QueuedConnection);
@@ -690,9 +709,11 @@ QUuid TaskSystem::GetSelectedExecutionId() const {
 
 void TaskSystem::Initialize() {
   LOG() << "Initializing";
-  history_limit =
-      Database::ExecQueryAndReadSync<int>(
-          "SELECT history_limit FROM task_context", &Database::ReadIntFromSql)
+  context =
+      Database::ExecQueryAndReadSync<TaskContext>(
+          "SELECT history_limit, run_with_console_on_win FROM task_context",
+          &TaskSystem::ReadContextFromSql)
           .constFirst();
-  LOG() << "Task history limit:" << history_limit;
+  LOG() << "Task history limit:" << context.history_limit
+        << "run with console on Windows:" << context.run_with_console_on_win;
 }

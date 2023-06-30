@@ -72,7 +72,8 @@ void Database::Initialize() {
   ExecCmd(
       "CREATE TABLE IF NOT EXISTS task_context("
       "id INT PRIMARY KEY DEFAULT 1,"
-      "history_limit INT)");
+      "history_limit INT,"
+      "run_with_console_on_win BOOL DEFAULT FALSE)");
   ExecCmd("INSERT OR IGNORE INTO task_context(history_limit) VALUES(10)");
   ExecCmd(
       "CREATE TABLE IF NOT EXISTS documentation_folder("

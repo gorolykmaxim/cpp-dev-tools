@@ -57,6 +57,19 @@ Loader {
               }
               onDisplayTextChanged: controller.settings.taskHistoryLimit = displayText
               Layout.fillWidth: true
+              KeyNavigation.down: runWithConsoleOnWinCheckBox
+            }
+            Cdt.Text {
+              visible: Qt.platform.os === "windows"
+              text: "Run Tasks With Their Own Windows Console"
+              Layout.minimumWidth: 200
+            }
+            Cdt.CheckBox {
+              id: runWithConsoleOnWinCheckBox
+              visible: Qt.platform.os === "windows"
+              checked: controller.settings.shouldRunWithConsoleOnWin
+              onCheckedChanged: controller.settings.shouldRunWithConsoleOnWin = checked
+              Layout.fillWidth: true
               KeyNavigation.down: configureExternalSearchFoldersBtn
             }
             Cdt.Button {

@@ -52,9 +52,11 @@ void SettingsController::save() {
   }
   cmds.append(external_search_folders->MakeCommandsToUpdateDatabase());
   cmds.append(documentation_folders->MakeCommandsToUpdateDatabase());
-  app.task.history_limit = settings.task_history_limit;
-  cmds.append(Database::Cmd("UPDATE task_context SET history_limit=?",
-                            {settings.task_history_limit}));
+  app.task.context = TaskContext{settings.task_history_limit,
+                                 settings.run_with_console_on_win};
+  cmds.append(Database::Cmd(
+      "UPDATE task_context SET history_limit=?, run_with_console_on_win=?",
+      {settings.task_history_limit, settings.run_with_console_on_win}));
   for (int i = 0; i < terminals->list.size(); i++) {
     cmds.append(Database::Cmd("UPDATE terminal SET priority=? WHERE name=?",
                               {i, terminals->list[i]}));
@@ -85,11 +87,13 @@ void SettingsController::Load() {
             &Database::ReadStringFromSql);
         settings.documentation_folders = Database::ExecQueryAndRead<QString>(
             "SELECT * FROM documentation_folder", &Database::ReadStringFromSql);
-        settings.task_history_limit =
-            Database::ExecQueryAndRead<int>(
-                "SELECT history_limit FROM task_context",
-                &Database::ReadIntFromSql)
-                .constFirst();
+        TaskContext context = Database::ExecQueryAndRead<TaskContext>(
+                                  "SELECT history_limit, "
+                                  "run_with_console_on_win FROM task_context",
+                                  &TaskSystem::ReadContextFromSql)
+                                  .constFirst();
+        settings.task_history_limit = context.history_limit;
+        settings.run_with_console_on_win = context.run_with_console_on_win;
         settings.terminals = Database::ExecQueryAndRead<QString>(
             "SELECT name FROM terminal ORDER BY priority",
             &Database::ReadStringFromSql);
@@ -153,6 +157,7 @@ int FolderListModel::GetRowCount() const { return list.size(); }
 bool Settings::operator==(const Settings &another) const {
   return open_in_editor_command == another.open_in_editor_command &&
          task_history_limit == another.task_history_limit &&
+         run_with_console_on_win == another.run_with_console_on_win &&
          external_search_folders == another.external_search_folders &&
          documentation_folders == another.documentation_folders &&
          terminals == another.terminals;

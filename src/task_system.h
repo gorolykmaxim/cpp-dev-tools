@@ -46,6 +46,11 @@ struct TaskExecution {
   bool operator!=(const TaskExecution& another) const;
 };
 
+struct TaskContext {
+  int history_limit;
+  bool run_with_console_on_win;
+};
+
 class TaskSystem : public QObject {
   Q_OBJECT
   Q_PROPERTY(
@@ -61,6 +66,7 @@ class TaskSystem : public QObject {
     return registry.all_of<T>(tasks[i]);
   }
 
+  static TaskContext ReadContextFromSql(QSqlQuery& sql);
   void KillAllTasks();
   Promise<QList<TaskExecution>> FetchExecutions(QUuid project_id) const;
   Promise<TaskExecution> FetchExecution(QUuid execution_id,
@@ -77,7 +83,7 @@ class TaskSystem : public QObject {
   QUuid GetSelectedExecutionId() const;
   void Initialize();
 
-  int history_limit;
+  TaskContext context;
 
  public slots:
   void executeTask(int i, bool repeat_until_fail = false);
