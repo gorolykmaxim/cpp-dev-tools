@@ -7,6 +7,7 @@ set(CMAKE_AUTOMOC ON)
 find_package(Qt6 6.3 COMPONENTS
   Quick QuickControls2 Gui Concurrent Sql Test REQUIRED)
 add_subdirectory(lib/skypjack_entt)
+add_subdirectory(lib/googletest)
 qt_add_executable(cpp-dev-tools
   src/database.h
   src/database.cc
@@ -179,3 +180,6 @@ qt_add_executable(example-test test/main.cc test/example_test.h
 target_include_directories(example-test PRIVATE test)
 target_link_libraries(example-test PRIVATE Qt6::Core Qt6::Test Qt6::Concurrent
   Qt6::Gui)
+
+add_executable(example-gtest test/gtest-example.cc)
+target_link_libraries(example-gtest gtest gmock gtest_main)
