@@ -9,8 +9,9 @@ TestExecutionModel::TestExecutionModel(QObject* parent)
                 {1, "subTitle"},
                 {2, "icon"},
                 {3, "iconColor"},
-                {4, "rightText"}});
-  searchable_roles = {0, 1};
+                {4, "rightText"},
+                {5, "testStatus"}});
+  searchable_roles = {0, 1, 5};
   SetEmptyListPlaceholder("No tests executed yet");
   connect(this, &TextListModel::selectedItemChanged, this,
           [this] { emit selectedTestOutputChanged(); });
@@ -132,15 +133,23 @@ QVariantList TestExecutionModel::GetRow(int i) const {
   static const Theme kTheme;
   const Test& t = tests[i];
   QString color;
+  QString status;
   if (t.status == TestStatus::kCompleted) {
     color = kTheme.kColorGreen;
+    status = "completed";
   } else if (t.status == TestStatus::kFailed) {
     color = "red";
+    status = "failed";
   } else {
     color = kTheme.kColorBorder;
+    status = "running";
   }
-  return {t.test_case, t.test_suite, "fiber_manual_record", color,
-          FormatDuration(t.duration)};
+  return {t.test_case,
+          t.test_suite,
+          "fiber_manual_record",
+          color,
+          FormatDuration(t.duration),
+          status};
 }
 
 int TestExecutionModel::GetRowCount() const { return tests.size(); }
