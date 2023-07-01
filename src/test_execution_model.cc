@@ -82,10 +82,12 @@ QString TestExecutionModel::GetProgressBarColor() const {
 }
 
 void TestExecutionModel::StartTest(const QString& test_suite,
-                                   const QString& test_case) {
+                                   const QString& test_case,
+                                   const QString& rerun_id) {
   Test test;
   test.test_suite = test_suite;
   test.test_case = test_case;
+  test.rerun_id = rerun_id;
   last_test_start = std::chrono::system_clock::now();
   tests.append(test);
   emit statusChanged();
@@ -116,6 +118,14 @@ void TestExecutionModel::FinishCurrentTest(bool success) {
 void TestExecutionModel::SetTestCount(int count) {
   test_count = count;
   emit statusChanged();
+}
+
+void TestExecutionModel::rerunSelectedTest(bool repeat_until_fail) {
+  int i = GetSelectedItemIndex();
+  if (i < 0) {
+    return;
+  }
+  emit rerunTest(tests[i].rerun_id, repeat_until_fail);
 }
 
 QVariantList TestExecutionModel::GetRow(int i) const {

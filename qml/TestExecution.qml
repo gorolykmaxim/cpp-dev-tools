@@ -1,6 +1,7 @@
 import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
+import Qt.labs.platform
 import cdt
 import "." as Cdt
 
@@ -50,12 +51,28 @@ ColumnLayout {
       view: splitView
     }
     Cdt.SearchableTextList {
+      id: testList
       SplitView.minimumWidth: 300
       SplitView.fillHeight: true
       searchPlaceholderText: "Search test"
       focus: true
       searchableModel: testModel
       KeyNavigation.right: testOutput
+      Menu {
+        id: contextMenu
+        MenuItem {
+          text: "Re-Run"
+          enabled: testList.activeFocus
+          shortcut: "Alt+Shift+R"
+          onTriggered: testModel.rerunSelectedTest(false)
+        }
+        MenuItem {
+          text: "Re-Run Until Fails"
+          enabled: testList.activeFocus
+          shortcut: "Ctrl+Alt+Shift+R"
+          onTriggered: testModel.rerunSelectedTest(true)
+        }
+      }
     }
     Cdt.FileLinkLookup {
       id: linkLookup
