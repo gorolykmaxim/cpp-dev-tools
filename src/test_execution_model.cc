@@ -146,13 +146,13 @@ QVariantList TestExecutionModel::GetRow(int i) const {
   QString status;
   if (t.status == TestStatus::kCompleted) {
     color = kTheme.kColorGreen;
-    status = "completed";
+    status = "status:completed";
   } else if (t.status == TestStatus::kFailed) {
     color = "red";
-    status = "failed";
+    status = "status:failed";
   } else {
     color = kTheme.kColorBorder;
-    status = "running";
+    status = "status:running";
   }
   return {t.test_case,
           t.test_suite,
