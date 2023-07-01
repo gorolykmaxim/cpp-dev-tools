@@ -65,10 +65,14 @@ void UserCommandSystem::RegisterCommands() {
   });
   RegisterCommand("View", "Terminal", "F12",
                   [] { OsCommand::OpenTerminalInCurrentDir(); });
-  RegisterCommand("Run", "Run Last Task", "Ctrl+R",
-                  [] { Application::Get().task.executeTask(0); });
-  RegisterCommand("Run", "Run Last Task Until Fails", "Ctrl+Shift+R",
-                  [] { Application::Get().task.executeTask(0, true); });
+  RegisterCommand("Run", "Run Last Task", "Ctrl+R", [] {
+    Application& app = Application::Get();
+    app.task.RunTaskOfExecution(app.task.GetLastExecution(), false);
+  });
+  RegisterCommand("Run", "Run Last Task Until Fails", "Ctrl+Shift+R", [] {
+    Application& app = Application::Get();
+    app.task.RunTaskOfExecution(app.task.GetLastExecution(), true);
+  });
   RegisterCommand("Run", "Terminate Task Execution", "Ctrl+Shift+T", [] {
     Application::Get().task.cancelSelectedExecution(false);
   });

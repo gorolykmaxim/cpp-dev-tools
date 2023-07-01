@@ -48,6 +48,7 @@ void Database::Initialize() {
       "start_time DATETIME, "
       "task_id TEXT, "
       "task_name TEXT, "
+      "task_data BLOB, "
       "exit_code INT, "
       "stderr_line_indices TEXT, "
       "output TEXT, "

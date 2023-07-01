@@ -7,23 +7,23 @@ Cdt.SearchableTextList {
   id: list
   anchors.fill: parent
   searchPlaceholderText: "Search task"
-  searchableModel: controller.tasks
+  searchableModel: listModel
   focus: true
   onItemRightClicked: contextMenu.open()
-  onItemSelected: taskSystem.executeTask(controller.selectedTaskIndex, false)
-  TaskListController {
-    id: controller
+  onItemSelected: listModel.executeCurrentTask(false)
+  TaskListModel {
+    id: listModel
   }
   Menu {
     id: contextMenu
     MenuItem {
       text: "Run"
-      onTriggered: taskSystem.executeTask(controller.selectedTaskIndex, false)
+      onTriggered: listModel.executeCurrentTask(false)
     }
     MenuItem {
       text: "Run Until Fails"
       shortcut: "Alt+Shift+R"
-      onTriggered: taskSystem.executeTask(controller.selectedTaskIndex, true)
+      onTriggered: listModel.executeCurrentTask(true)
     }
   }
 }

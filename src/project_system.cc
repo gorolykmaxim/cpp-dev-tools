@@ -45,9 +45,9 @@ void ProjectSystem::SetCurrentProject(Project project) {
     current_project = Project();
     Database::ExecCmdAsync("UPDATE project SET is_opened=false");
     emit currentProjectChanged();
+    app.task.ClearLastTaskExecution();
     app.sqlite.SetSelectedFile(SqliteFile());
     app.task.KillAllTasks();
-    app.task.ClearTasks();
     app.git.ClearBranches();
     app.notification.ClearNotifications();
     app.view.SetCurrentView("SelectProject.qml");
@@ -61,6 +61,7 @@ void ProjectSystem::SetCurrentProject(Project project) {
         {project.is_opened, project.last_open_time, project.id});
     current_project = project;
     emit currentProjectChanged();
+    app.task.LoadLastTaskExecution();
     app.sqlite.InitializeSelectedFile();
     app.git.FindBranches();
     app.view.SetCurrentView("TaskList.qml");

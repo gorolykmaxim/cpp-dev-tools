@@ -12,6 +12,8 @@
 
 #define LOG() qDebug() << "[TaskSystem]"
 
+bool TaskExecution::IsNull() const { return id.isNull(); }
+
 UiIcon TaskExecution::GetStatusAsIcon() const {
   static const Theme kTheme;
   UiIcon icon;
@@ -36,34 +38,6 @@ bool TaskExecution::operator==(const TaskExecution& another) const {
 
 bool TaskExecution::operator!=(const TaskExecution& another) const {
   return !(*this == another);
-}
-
-void TaskSystem::executeTask(int i, bool repeat_until_fail) {
-  if (i < 0 || i >= tasks.size()) {
-    return;
-  }
-  auto& task_id = GetTask<TaskId>(i);
-  LOG() << "Executing" << task_id;
-  entt::entity entity = registry.create();
-  auto& exec = registry.emplace<TaskExecution>(entity);
-  exec.id = QUuid::createUuid();
-  exec.start_time = QDateTime::currentDateTime();
-  exec.task_id = task_id;
-  exec.task_name = GetTaskName(i);
-  registry.emplace<QProcess>(entity);
-  Promise<int> proc;
-  if (repeat_until_fail) {
-    proc = RunTaskUntilFail(task_id, entity);
-  } else {
-    proc = RunTask(task_id, entity);
-  }
-  proc.Then(this, [this, entity](int exit_code) {
-    FinishExecution(entity, exit_code);
-  });
-  tasks.move(i, 0);
-  emit taskListRefreshed();
-  SetSelectedExecutionId(exec.id);
-  Application::Get().view.SetCurrentView("TaskExecution.qml");
 }
 
 TaskContext TaskSystem::ReadContextFromSql(QSqlQuery& sql) {
@@ -91,16 +65,44 @@ static std::function<TaskExecution(QSqlQuery&)> MakeReadExecutionFromSql(
     exec.start_time = query.value(1).toDateTime();
     exec.task_id = query.value(2).toString();
     exec.task_name = query.value(3).toString();
-    exec.exit_code = query.value(4).toInt();
+    exec.task_data = query.value(4).toByteArray();
+    exec.exit_code = query.value(5).toInt();
     if (include_output) {
-      QString indices = query.value(5).toString();
+      QString indices = query.value(6).toString();
       for (const QString& i : indices.split(',', Qt::SkipEmptyParts)) {
         exec.stderr_line_indices.insert(i.toInt());
       }
-      exec.output = query.value(6).toString();
+      exec.output = query.value(7).toString();
     }
     return exec;
   };
+}
+
+void TaskSystem::LoadLastTaskExecution() {
+  QUuid id = Application::Get().project.GetCurrentProject().id;
+  IoTask::Run<QList<TaskExecution>>(
+      this,
+      [id] {
+        return Database::ExecQueryAndRead(
+            "SELECT id, start_time, task_id, task_name, task_data, exit_code "
+            "FROM task_execution WHERE project_id = ? ORDER BY start_time DESC",
+            MakeReadExecutionFromSql(false), {id});
+      },
+      [this](QList<TaskExecution> execs) {
+        if (!execs.isEmpty()) {
+          last_execution = execs.constFirst();
+          LOG() << "Loaded task of last execution:" << last_execution.task_id;
+          emit currentTaskChanged();
+        } else {
+          LOG() << "No last task execution was found";
+        }
+      });
+}
+
+void TaskSystem::ClearLastTaskExecution() {
+  LOG() << "Resetting last execution";
+  last_execution = TaskExecution{};
+  emit currentTaskChanged();
 }
 
 void TaskSystem::AppendToExecutionOutput(entt::entity entity, bool is_stderr) {
@@ -148,9 +150,9 @@ void TaskSystem::FinishExecution(entt::entity entity, int exit_code) {
   }
   QList<Database::Cmd> cmds;
   cmds.append(Database::Cmd(
-      "INSERT INTO task_execution VALUES(?,?,?,?,?,?,?,?)",
+      "INSERT INTO task_execution VALUES(?,?,?,?,?,?,?,?,?)",
       {exec.id, project.id, exec.start_time, exec.task_id, exec.task_name,
-       *exec.exit_code, indices.join(','), exec.output}));
+       exec.task_data, *exec.exit_code, indices.join(','), exec.output}));
   if (context.history_limit > 0) {
     cmds.append(
         Database::Cmd("DELETE FROM task_execution WHERE id NOT IN (SELECT id "
@@ -171,16 +173,6 @@ const TaskExecution* TaskSystem::FindExecutionById(QUuid id) const {
   return nullptr;
 }
 
-bool TaskSystem::FindTaskById(const TaskId& id, entt::entity& entity) const {
-  for (auto [e, task_id] : registry.view<TaskId>().each()) {
-    if (task_id == id) {
-      entity = e;
-      return true;
-    }
-  }
-  return false;
-}
-
 Promise<QList<TaskExecution>> TaskSystem::FetchExecutions(
     QUuid project_id) const {
   LOG() << "Fetching executions for project" << project_id;
@@ -194,7 +186,7 @@ Promise<QList<TaskExecution>> TaskSystem::FetchExecutions(
             });
   return IoTask::Run<QList<TaskExecution>>([project_id, execs] {
     QList<TaskExecution> result = Database::ExecQueryAndRead<TaskExecution>(
-        "SELECT id, start_time, task_id, task_name, exit_code FROM "
+        "SELECT id, start_time, task_id, task_name, task_data, exit_code FROM "
         "task_execution "
         "WHERE project_id=? ORDER BY start_time",
         MakeReadExecutionFromSql(false), {project_id});
@@ -218,7 +210,8 @@ Promise<TaskExecution> TaskSystem::FetchExecution(QUuid execution_id,
     return Promise<TaskExecution>(*exec);
   }
   return IoTask::Run<TaskExecution>([execution_id, include_output] {
-    QString query = "SELECT id, start_time, task_id, task_name, exit_code";
+    QString query =
+        "SELECT id, start_time, task_id, task_name, task_data, exit_code";
     if (include_output) {
       query += ", stderr_line_indices, output";
     }
@@ -229,8 +222,12 @@ Promise<TaskExecution> TaskSystem::FetchExecution(QUuid execution_id,
   });
 }
 
-bool TaskSystem::IsExecutionRunning(QUuid execution_id) const {
-  return FindExecutionById(execution_id);
+QList<TaskExecution> TaskSystem::GetActiveExecutions() const {
+  QList<TaskExecution> execs;
+  for (auto [_, exec] : registry.view<const TaskExecution>().each()) {
+    execs.append(exec);
+  }
+  return execs;
 }
 
 void TaskSystem::cancelSelectedExecution(bool forcefully) {
@@ -249,44 +246,82 @@ void TaskSystem::cancelSelectedExecution(bool forcefully) {
   }
 }
 
-Promise<int> TaskSystem::RunTask(const TaskId& id, entt::entity e) {
-  entt::entity task_e;
-  if (FindTaskById(id, task_e)) {
-    if (registry.any_of<ExecutableTask>(task_e)) {
-      return RunExecutableTask(task_e, e);
-    } else if (registry.any_of<CmakeTask>(task_e)) {
-      return RunCmakeTask(task_e, e);
-    } else if (registry.any_of<CmakeTargetTask>(task_e)) {
-      return RunCmakeTargetTask(task_e, e);
-    } else {
-      LOG() << "Can't execute task" << id << "with unsupported type";
-    }
+void TaskSystem::RunExecution(entt::entity entity, bool repeat_until_fail) {
+  auto& task_id = registry.get<TaskId>(entity);
+  LOG() << "Executing" << task_id << "repeat until fail:" << repeat_until_fail;
+  auto& exec = registry.emplace<TaskExecution>(entity);
+  exec.id = QUuid::createUuid();
+  exec.start_time = QDateTime::currentDateTime();
+  exec.task_id = task_id;
+  exec.task_name = GetTaskName(registry, entity);
+  if (registry.any_of<CmakeTask>(entity)) {
+    const auto& t = registry.get<CmakeTask>(entity);
+    QJsonObject o;
+    o["source_path"] = t.source_path;
+    o["build_path"] = t.build_path;
+    exec.task_data = QJsonDocument(o).toJson();
+  } else if (registry.any_of<CmakeTargetTask>(entity)) {
+    const auto& t = registry.get<CmakeTargetTask>(entity);
+    QJsonObject o;
+    o["build_folder"] = t.build_folder;
+    o["target_name"] = t.target_name;
+    o["executable"] = t.executable;
+    o["run_after_build"] = t.run_after_build;
+    exec.task_data = QJsonDocument(o).toJson();
+  } else if (registry.any_of<ExecutableTask>(entity)) {
+    const auto& t = registry.get<ExecutableTask>(entity);
+    QJsonObject o;
+    o["path"] = t.path;
+    exec.task_data = QJsonDocument(o).toJson();
   } else {
-    LOG() << "Can't execute task" << id << "because it no longer exists";
+    qFatal() << "Failed to execute task" << task_id << "of unknown type";
+  }
+  registry.emplace<QProcess>(entity);
+  Promise<int> proc;
+  if (repeat_until_fail) {
+    proc = RunTaskUntilFail(entity);
+  } else {
+    proc = RunTask(entity);
+  }
+  proc.Then(this, [this, entity](int exit_code) {
+    FinishExecution(entity, exit_code);
+  });
+  last_execution = exec;
+  emit currentTaskChanged();
+  SetSelectedExecutionId(exec.id);
+  Application::Get().view.SetCurrentView("TaskExecution.qml");
+}
+
+Promise<int> TaskSystem::RunTask(entt::entity e) {
+  if (registry.any_of<ExecutableTask>(e)) {
+    return RunExecutableTask(e);
+  } else if (registry.any_of<CmakeTask>(e)) {
+    return RunCmakeTask(e);
+  } else if (registry.any_of<CmakeTargetTask>(e)) {
+    return RunCmakeTargetTask(e);
   }
   return Promise<int>(-1);
 }
 
-Promise<int> TaskSystem::RunTaskUntilFail(const TaskId& id, entt::entity e) {
-  return RunTask(id, e).Then<int>(this, [e, this, id](int exit_code) {
+Promise<int> TaskSystem::RunTaskUntilFail(entt::entity e) {
+  return RunTask(e).Then<int>(this, [e, this](int exit_code) {
     if (exit_code != 0) {
       return Promise<int>(exit_code);
     } else {
       auto& exec = registry.get<TaskExecution>(e);
       exec.output.clear();
       exec.stderr_line_indices.clear();
-      return RunTaskUntilFail(id, e);
+      return RunTaskUntilFail(e);
     }
   });
 }
 
-Promise<int> TaskSystem::RunExecutableTask(entt::entity task_e,
-                                           entt::entity exec_e) {
-  auto& t = registry.get<ExecutableTask>(task_e);
-  return RunProcess(exec_e, t.path);
+Promise<int> TaskSystem::RunExecutableTask(entt::entity e) {
+  auto& t = registry.get<ExecutableTask>(e);
+  return RunProcess(e, t.path);
 }
 
-static void CreateCmakeQueryFiles(const QString& path) {
+void TaskSystem::CreateCmakeQueryFilesSync(const QString& path) {
   QString cmake_query = path + "/.cmake/api/v1/query";
   if (!QFile::exists(cmake_query)) {
     QDir().mkpath(cmake_query);
@@ -294,24 +329,73 @@ static void CreateCmakeQueryFiles(const QString& path) {
   for (const QString& query :
        {cmake_query + "/cmakeFiles-v1", cmake_query + "/codemodel-v2"}) {
     if (!QFile::exists(query)) {
+      LOG() << "Creating CMake query file" << query;
       QFile(query).open(QFile::WriteOnly);
     }
   }
 }
 
-Promise<int> TaskSystem::RunCmakeTask(entt::entity task_e,
-                                      entt::entity exec_e) {
-  auto& t = registry.get<CmakeTask>(task_e);
+QString TaskSystem::GetTaskName(const entt::registry& registry,
+                                entt::entity e) {
+  if (registry.any_of<ExecutableTask>(e)) {
+    auto& t = registry.get<const ExecutableTask>(e);
+    return Path::GetFileName(t.path);
+  } else if (registry.any_of<CmakeTask>(e)) {
+    auto& t = registry.get<CmakeTask>(e);
+    return "CMake " + t.source_path;
+  } else if (registry.any_of<CmakeTargetTask>(e)) {
+    auto& t = registry.get<CmakeTargetTask>(e);
+    QString result = "Build ";
+    if (t.run_after_build) {
+      result += "& Run ";
+    }
+    return result + t.target_name;
+  } else {
+    return registry.get<TaskId>(e);
+  }
+}
+
+void TaskSystem::RunTaskOfExecution(const TaskExecution& exec,
+                                    bool repeat_until_fail) {
+  if (exec.IsNull()) {
+    return;
+  }
+  LOG() << "Running task of execution" << exec.id;
+  QJsonDocument d = QJsonDocument::fromJson(exec.task_data);
+  if (exec.task_id.startsWith("cmake:")) {
+    CmakeTask t{
+        d["source_path"].toString(),
+        d["build_path"].toString(),
+    };
+    RunTask(exec.task_id, t, repeat_until_fail);
+  } else if (exec.task_id.startsWith("cmake-target:")) {
+    CmakeTargetTask t{
+        d["build_folder"].toString(),
+        d["target_name"].toString(),
+        d["executable"].toString(),
+        d["run_after_build"].toBool(),
+    };
+    RunTask(exec.task_id, t, repeat_until_fail);
+  } else if (exec.task_id.startsWith("exec:")) {
+    ExecutableTask t{d["path"].toString()};
+    RunTask(exec.task_id, t, repeat_until_fail);
+  } else {
+    qFatal() << "Failed to execute task" << exec.task_id << "of unknown type";
+  }
+}
+
+Promise<int> TaskSystem::RunCmakeTask(entt::entity e) {
+  auto& t = registry.get<CmakeTask>(e);
   auto exists = QSharedPointer<bool>::create(false);
   return IoTask::Run([t, exists] {
            *exists = QFile::exists(t.build_path);
            if (!*exists) {
-             CreateCmakeQueryFiles(t.build_path);
+             CreateCmakeQueryFilesSync(t.build_path);
            }
          })
       .Then<int>(this,
-                 [t, this, exec_e]() {
-                   return RunProcess(exec_e, "cmake",
+                 [t, this, e]() {
+                   return RunProcess(e, "cmake",
                                      {"-B", t.build_path, "-S", t.source_path});
                  })
       .Then<int>(this, [t, exists](int exit_code) {
@@ -326,17 +410,16 @@ Promise<int> TaskSystem::RunCmakeTask(entt::entity task_e,
       });
 }
 
-Promise<int> TaskSystem::RunCmakeTargetTask(entt::entity task_e,
-                                            entt::entity exec_e) {
-  auto& t = registry.get<CmakeTargetTask>(task_e);
-  Promise<int> r = RunProcess(exec_e, "cmake",
-                              {"--build", t.build_folder, "-t", t.target_name});
+Promise<int> TaskSystem::RunCmakeTargetTask(entt::entity e) {
+  auto& t = registry.get<CmakeTargetTask>(e);
+  Promise<int> r =
+      RunProcess(e, "cmake", {"--build", t.build_folder, "-t", t.target_name});
   if (t.run_after_build) {
-    r = r.Then<int>(this, [this, exec_e, t](int code) {
+    r = r.Then<int>(this, [this, e, t](int code) {
       if (code != 0) {
         return Promise<int>(code);
       }
-      return RunProcess(exec_e, t.build_folder + t.executable);
+      return RunProcess(e, t.build_folder + t.executable);
     });
   }
   return r;
@@ -389,312 +472,8 @@ Promise<int> TaskSystem::RunProcess(entt::entity e, const QString& exe,
   return promise->future();
 }
 
-static TaskExecution ReadTaskExecutionStartTime(QSqlQuery& query) {
-  TaskExecution exec;
-  exec.task_id = query.value(0).toString();
-  exec.start_time = query.value(1).toDateTime();
-  return exec;
-}
-
-template <typename T>
-static void CopyTaskComp(entt::registry& source_r, entt::registry& target_r,
-                         entt::entity source_e, entt::entity target_e) {
-  if (source_r.all_of<T>(source_e)) {
-    target_r.emplace<T>(target_e, source_r.get<T>(source_e));
-  }
-}
-
-struct TasksInfo {
-  QStringList executables;
-  QStringList cmake_build_folders;
-  QStringList cmake_source_folders;
-  QStringList cmake_cmake_file_replies;
-  QStringList cmake_target_replies;
-};
-
-static void ScanFile(TasksInfo& info, const QString& root, QString path,
-                     QFileInfo file_info) {
-  path.replace(root, ".");
-  if (file_info.isExecutable()) {
-    info.executables.append(path);
-  } else if (file_info.fileName() == "CMakeCache.txt") {
-    info.cmake_build_folders.append(Path::GetFolderPath(path));
-  } else if (file_info.fileName() == "CMakeLists.txt") {
-    info.cmake_source_folders.append(Path::GetFolderPath(path));
-  } else if (Path::MatchesWildcard(
-                 path, "*/.cmake/api/v1/reply/cmakeFiles-v1-*.json")) {
-    info.cmake_cmake_file_replies.append(path);
-  } else if (Path::MatchesWildcard(path,
-                                   "*/.cmake/api/v1/reply/target-*.json")) {
-    info.cmake_target_replies.append(path);
-  }
-}
-
-static TasksInfo ScanDirectoryForTasksInfo(const QString& directory) {
-  TasksInfo info;
-  // Skip such hidden top-level folders as .git to improve performance.
-  QDir::Filters top_filters = QDir::AllEntries | QDir::NoDotAndDotDot;
-  QFileInfoList list = QDir(directory).entryInfoList(top_filters);
-  for (const QFileInfo& i : list) {
-    if (!i.isDir()) {
-      ScanFile(info, directory, i.filePath(), i);
-    } else {
-      QDir::Filters filters = QDir::Files | QDir::Hidden;
-      QDirIterator it(i.filePath(), filters, QDirIterator::Subdirectories);
-      while (it.hasNext()) {
-        QString path = it.next();
-        ScanFile(info, directory, path, it.fileInfo());
-      }
-    }
-  }
-  LOG() << directory;
-  return info;
-}
-
-static void CreateExecutableTasks(const TasksInfo& info,
-                                  entt::registry& registry,
-                                  QList<entt::entity>& tasks) {
-  for (const QString& path : info.executables) {
-    entt::entity entity = registry.create();
-    registry.emplace<TaskId>(entity, "exec:" + path);
-    auto& t = registry.emplace<ExecutableTask>(entity);
-    t.path = path;
-    tasks.append(entity);
-  }
-}
-
-static void CreateCmakeTasks(TasksInfo& info, const QString& project_path,
-                             entt::registry& registry,
-                             QList<entt::entity>& tasks) {
-  // Remove build folders that are inside other build folders
-  info.cmake_build_folders.removeIf([&info](const QString& p) {
-    for (const QString& p1 : info.cmake_build_folders) {
-      if (p != p1 && p.startsWith(p1)) {
-        return true;
-      }
-    }
-    return false;
-  });
-  // Create queries for the next CMake execution if they don't exist already
-  for (const QString& path : info.cmake_build_folders) {
-    CreateCmakeQueryFiles(path);
-  }
-  // Find which build directories correspond to which source directories
-  QHash<QString, QStringList> cmake_source_to_builds;
-  for (const QString& path : info.cmake_cmake_file_replies) {
-    QFile f(path);
-    if (!f.open(QIODevice::ReadOnly)) {
-      continue;
-    }
-    QJsonDocument doc = QJsonDocument::fromJson(f.readAll());
-    QJsonObject paths = doc["paths"].toObject();
-    QString build = paths["build"].toString();
-    build.replace(project_path, ".");
-    if (!build.endsWith('/')) {
-      build += '/';
-    }
-    QString source = paths["source"].toString();
-    source.replace(project_path, ".");
-    if (!source.endsWith('/')) {
-      source += '/';
-    }
-    cmake_source_to_builds[source].append(build);
-  }
-  // Determine a name for a new build folder
-  QString new_build_folder = "./build/";
-  int build_gen = 1;
-  while (info.cmake_build_folders.contains(new_build_folder)) {
-    new_build_folder = "./build-gen-" + QString::number(build_gen++) + '/';
-  }
-  // Create tasks for running CMake build generation
-  for (const QString& path : info.cmake_source_folders) {
-    QStringList build_folders = {new_build_folder};
-    build_folders.append(cmake_source_to_builds[path]);
-    for (const QString& build_folder : build_folders) {
-      entt::entity entity = registry.create();
-      registry.emplace<TaskId>(entity, "cmake:" + path + ':' + build_folder);
-      auto& t = registry.emplace<CmakeTask>(entity);
-      t.source_path = path;
-      t.build_path = build_folder;
-      tasks.append(entity);
-    }
-  }
-  // Create tasks for building and running CMake targets
-  for (const QString& path : info.cmake_target_replies) {
-    QFile f(path);
-    if (!f.open(QIODevice::ReadOnly)) {
-      continue;
-    }
-    QJsonDocument doc = QJsonDocument::fromJson(f.readAll());
-    if (doc["type"].toString() != "EXECUTABLE") {
-      continue;
-    }
-    QString target = doc["name"].toString();
-    QString exec_path;
-    QJsonArray artifacts = doc["artifacts"].toArray();
-    if (!artifacts.isEmpty()) {
-      exec_path = artifacts[0].toObject()["path"].toString();
-    }
-    QString build_folder;
-    for (const QString& build_path : info.cmake_build_folders) {
-      if (path.startsWith(build_path)) {
-        build_folder = build_path;
-        break;
-      }
-    }
-    for (bool run_after_build : {false, true}) {
-      entt::entity entity = registry.create();
-      registry.emplace<TaskId>(
-          entity, "cmake-target:" + target + ':' + exec_path + ':' +
-                      build_folder + ':' + QString::number(run_after_build));
-      auto& t = registry.emplace<CmakeTargetTask>(entity);
-      t.target_name = target;
-      t.build_folder = build_folder;
-      t.executable = exec_path;
-      t.run_after_build = run_after_build;
-      tasks.append(entity);
-    }
-  }
-}
-
-static void SortFoundTasks(entt::registry& registry, QList<entt::entity>& tasks,
-                           const QList<TaskExecution>& active_execs) {
-  // First, sort tasks in their natural "by-ID" order
-  std::sort(tasks.begin(), tasks.end(),
-            [&registry](entt::entity a, entt::entity b) {
-              return registry.get<TaskId>(a) < registry.get<TaskId>(b);
-            });
-  // Move executed tasks to the beginning so the most recently executed
-  // task is first.
-  QList<TaskExecution> execs = Database::ExecQueryAndRead<TaskExecution>(
-      "SELECT task_id, MAX(start_time) as start_time "
-      "FROM task_execution "
-      "GROUP BY task_id "
-      "ORDER BY start_time ASC",
-      ReadTaskExecutionStartTime);
-  // Merge active executions with finished ones to account for start times
-  // of executions that are still running.
-  for (const TaskExecution& active : active_execs) {
-    bool updated = false;
-    for (TaskExecution& exec : execs) {
-      if (exec.task_id == active.task_id &&
-          active.start_time > exec.start_time) {
-        exec.start_time = active.start_time;
-        updated = true;
-        break;
-      }
-    }
-    if (!updated) {
-      execs.append(active);
-    }
-  }
-  std::sort(execs.begin(), execs.end(),
-            [](const TaskExecution& a, const TaskExecution& b) {
-              return a.start_time < b.start_time;
-            });
-  for (const TaskExecution& exec : execs) {
-    int index = -1;
-    for (int i = 0; i < tasks.size(); i++) {
-      auto& task_id = registry.get<TaskId>(tasks.at(i));
-      if (task_id == exec.task_id) {
-        index = i;
-        break;
-      }
-    }
-    if (index >= 0) {
-      tasks.move(index, 0);
-    }
-  }
-}
-
-void TaskSystem::FindTasks() {
-  QString project_path = Application::Get().project.GetCurrentProject().path;
-  LOG() << "Refreshing task list";
-  QList<TaskExecution> active_execs;
-  for (auto [_, exec] : registry.view<const TaskExecution>().each()) {
-    active_execs.append(exec);
-  }
-  auto task_entities = QSharedPointer<QList<entt::entity>>::create();
-  auto task_registry = QSharedPointer<entt::registry>::create();
-  IoTask::Run(
-      this,
-      [project_path, active_execs, task_entities, task_registry] {
-        TasksInfo info = ScanDirectoryForTasksInfo(project_path);
-        CreateExecutableTasks(info, *task_registry, *task_entities);
-        CreateCmakeTasks(info, project_path, *task_registry, *task_entities);
-        SortFoundTasks(*task_registry, *task_entities, active_execs);
-      },
-      [this, task_entities, task_registry]() {
-        registry.destroy(tasks.begin(), tasks.end());
-        tasks.clear();
-        for (entt::entity entity : *task_entities) {
-          entt::entity e = registry.create();
-          tasks.append(e);
-          CopyTaskComp<TaskId>(*task_registry, registry, entity, e);
-          CopyTaskComp<ExecutableTask>(*task_registry, registry, entity, e);
-          CopyTaskComp<CmakeTask>(*task_registry, registry, entity, e);
-          CopyTaskComp<CmakeTargetTask>(*task_registry, registry, entity, e);
-        }
-        emit taskListRefreshed();
-      });
-}
-
-void TaskSystem::ClearTasks() {
-  registry.destroy(tasks.begin(), tasks.end());
-  tasks.clear();
-  emit taskListRefreshed();
-}
-
-QString TaskSystem::GetTaskName(int i) const {
-  entt::entity e = tasks[i];
-  if (registry.any_of<ExecutableTask>(e)) {
-    auto& t = registry.get<const ExecutableTask>(e);
-    return Path::GetFileName(t.path);
-  } else if (registry.any_of<CmakeTask>(e)) {
-    auto& t = registry.get<CmakeTask>(e);
-    return "CMake " + t.source_path;
-  } else if (registry.any_of<CmakeTargetTask>(e)) {
-    auto& t = registry.get<CmakeTargetTask>(e);
-    QString result = "Build ";
-    if (t.run_after_build) {
-      result += "& Run ";
-    }
-    return result + t.target_name;
-  } else {
-    return registry.get<TaskId>(e);
-  }
-}
-
-QString TaskSystem::GetTaskDetails(int i) const {
-  entt::entity e = tasks[i];
-  if (registry.any_of<ExecutableTask>(e)) {
-    return registry.get<ExecutableTask>(e).path;
-  } else if (registry.any_of<CmakeTask>(e)) {
-    auto& t = registry.get<CmakeTask>(e);
-    return "cmake -B " + t.build_path + " -S " + t.source_path;
-  } else if (registry.any_of<CmakeTargetTask>(e)) {
-    auto& t = registry.get<CmakeTargetTask>(e);
-    return "cmake --build " + t.build_folder + " -t " + t.target_name;
-  } else {
-    return registry.get<TaskId>(e);
-  }
-}
-
-QString TaskSystem::GetTaskIcon(int i) const {
-  if (registry.any_of<CmakeTask, CmakeTargetTask>(tasks[i])) {
-    return "change_history";
-  } else {
-    return "code";
-  }
-}
-
-int TaskSystem::GetTaskCount() const { return tasks.size(); }
-
 QString TaskSystem::GetCurrentTaskName() const {
-  if (tasks.isEmpty()) {
-    return "";
-  }
-  return GetTaskName(0);
+  return last_execution.task_name;
 }
 
 void TaskSystem::SetSelectedExecutionId(QUuid id) {
@@ -716,4 +495,8 @@ void TaskSystem::Initialize() {
           .constFirst();
   LOG() << "Task history limit:" << context.history_limit
         << "run with console on Windows:" << context.run_with_console_on_win;
+}
+
+const TaskExecution& TaskSystem::GetLastExecution() const {
+  return last_execution;
 }

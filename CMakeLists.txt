@@ -26,8 +26,8 @@ qt_add_executable(cpp-dev-tools
   src/user_command_system.cc
   src/search_user_command_controller.h
   src/search_user_command_controller.cc
-  src/task_list_controller.h
-  src/task_list_controller.cc
+  src/task_list_model.h
+  src/task_list_model.cc
   src/project_system.h
   src/project_system.cc
   src/view_system.h
@@ -36,8 +36,8 @@ qt_add_executable(cpp-dev-tools
   src/task_system.cc
   src/text_area_controller.h
   src/text_area_controller.cc
-  src/task_execution_list_controller.h
-  src/task_execution_list_controller.cc
+  src/task_execution_list_model.h
+  src/task_execution_list_model.cc
   src/task_execution_controller.h
   src/task_execution_controller.cc
   src/editor_system.h
