@@ -129,6 +129,12 @@ void Database::Initialize() {
       "project_id BLOB PRIMARY KEY, "
       "message TEXT, "
       "FOREIGN KEY(project_id) REFERENCES project(id) ON DELETE CASCADE)");
+  ExecCmd(
+      "CREATE TABLE IF NOT EXISTS cmake_context("
+      "project_id BLOB PRIMARY KEY, "
+      "source_folder TEXT, "
+      "build_folder TEXT, "
+      "FOREIGN KEY(project_id) REFERENCES project(id) ON DELETE CASCADE)");
 }
 
 void Database::ExecQuery(QSqlQuery &sql, const QString &query,

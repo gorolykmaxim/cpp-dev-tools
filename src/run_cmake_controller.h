@@ -29,6 +29,8 @@ class RunCmakeController : public QObject {
   void displayChooseSourceFolderView();
 
  private:
+  void SaveState() const;
+
   QString source_folder;
   QString build_folder;
 };
