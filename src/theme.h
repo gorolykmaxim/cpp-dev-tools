@@ -23,6 +23,7 @@ class Theme : public QObject {
       QString colorButtonPrimaryDark MEMBER kColorButtonPrimaryDark CONSTANT)
   Q_PROPERTY(QString colorButtonBorder MEMBER kColorButtonBorder CONSTANT)
   Q_PROPERTY(QString colorSearchResult MEMBER kColorSearchResult CONSTANT)
+  Q_PROPERTY(QString colorGreen MEMBER kColorGreen CONSTANT)
  public:
   const int kBasePadding = 4;
   const int kBaseRadius = 4;
@@ -38,4 +39,5 @@ class Theme : public QObject {
   const QString kColorButtonPrimaryDark = "#2a6dcc";
   const QString kColorButtonBorder = "#1c1a19";
   const QString kColorSearchResult = "#6b420f";
+  const QString kColorGreen = "#28c83f";
 };
