@@ -73,6 +73,9 @@ void UserCommandSystem::RegisterCommands() {
     Application& app = Application::Get();
     app.task.RunTaskOfExecution(app.task.GetLastExecution(), true);
   });
+  RegisterCommand("Run", "Run CMake", "Ctrl+Shift+G", [] {
+    Application::Get().view.SetCurrentView("RunCmake.qml");
+  });
   RegisterCommand("Run", "Terminate Task Execution", "Ctrl+Shift+T", [] {
     Application::Get().task.cancelSelectedExecution(false);
   });

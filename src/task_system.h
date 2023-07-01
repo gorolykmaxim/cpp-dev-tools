@@ -14,11 +14,15 @@
 #include "promise.h"
 #include "ui_icon.h"
 
+typedef QString TaskId;
+
 struct ExecutableTask {
   QString path;
 };
 
 struct CmakeTask {
+  TaskId GetId() const;
+
   QString source_path;
   QString build_path;
 };
@@ -29,8 +33,6 @@ struct CmakeTargetTask {
   QString executable;
   bool run_after_build = false;
 };
-
-typedef QString TaskId;
 
 struct TaskExecution {
   QUuid id;

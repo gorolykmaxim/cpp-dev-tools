@@ -28,6 +28,10 @@ bool ChooseFileController::CanOpen() const {
   }
 }
 
+QString ChooseFileController::GetDefaultFolder() const {
+  return QStandardPaths::writableLocation(QStandardPaths::HomeLocation) + '/';
+}
+
 static bool Compare(const FileSuggestion& a, const FileSuggestion& b) {
   if (a.is_dir != b.is_dir) {
     return a.is_dir > b.is_dir;
@@ -118,10 +122,6 @@ void ChooseFileController::openOrCreateFile() {
                            &ChooseFileController::CreateFile);
         }
       });
-}
-
-void ChooseFileController::initialize() {
-  SetPath(QStandardPaths::writableLocation(QStandardPaths::HomeLocation) + '/');
 }
 
 void ChooseFileController::CreateFile() {

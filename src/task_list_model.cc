@@ -103,22 +103,14 @@ static void CreateCmakeTasks(TasksInfo& info, const QString& project_path,
     }
     cmake_source_to_builds[source].append(build);
   }
-  // Determine a name for a new build folder
-  QString new_build_folder = "./build/";
-  int build_gen = 1;
-  while (info.cmake_build_folders.contains(new_build_folder)) {
-    new_build_folder = "./build-gen-" + QString::number(build_gen++) + '/';
-  }
   // Create tasks for running CMake build generation
   for (const QString& path : info.cmake_source_folders) {
-    QStringList build_folders = {new_build_folder};
-    build_folders.append(cmake_source_to_builds[path]);
-    for (const QString& build_folder : build_folders) {
+    for (const QString& build_folder : cmake_source_to_builds[path]) {
       entt::entity entity = registry.create();
-      registry.emplace<TaskId>(entity, "cmake:" + path + ':' + build_folder);
       auto& t = registry.emplace<CmakeTask>(entity);
       t.source_path = path;
       t.build_path = build_folder;
+      registry.emplace<TaskId>(entity, t.GetId());
       tasks.append(entity);
     }
   }

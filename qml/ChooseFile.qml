@@ -8,9 +8,10 @@ ColumnLayout {
   id: root
   property alias allowCreating: controller.allowCreating
   property alias chooseFolder: controller.chooseFolder
+  property string startingFolder
   signal fileChosen(string path)
   signal cancelled()
-  Component.onCompleted: controller.initialize()
+  Component.onCompleted: controller.path = startingFolder || controller.defaultFolder
   ChooseFileController {
     id: controller
     onFileChosen: (path) => root.fileChosen(path)

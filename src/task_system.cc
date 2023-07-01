@@ -388,7 +388,7 @@ Promise<int> TaskSystem::RunCmakeTask(entt::entity e) {
   auto& t = registry.get<CmakeTask>(e);
   auto exists = QSharedPointer<bool>::create(false);
   return IoTask::Run([t, exists] {
-           *exists = QFile::exists(t.build_path);
+           *exists = !QDir(t.build_path).isEmpty();
            if (!*exists) {
              CreateCmakeQueryFilesSync(t.build_path);
            }
@@ -499,4 +499,8 @@ void TaskSystem::Initialize() {
 
 const TaskExecution& TaskSystem::GetLastExecution() const {
   return last_execution;
+}
+
+TaskId CmakeTask::GetId() const {
+  return "cmake:" + source_path + ':' + build_path;
 }

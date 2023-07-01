@@ -31,16 +31,17 @@ class ChooseFileController : public QObject {
       bool allowCreating MEMBER allow_creating NOTIFY allowCreatingChanged)
   Q_PROPERTY(bool canOpen READ CanOpen NOTIFY pathChanged)
   Q_PROPERTY(bool chooseFolder MEMBER choose_folder NOTIFY chooseFolderChanged)
+  Q_PROPERTY(QString defaultFolder READ GetDefaultFolder CONSTANT)
  public:
   explicit ChooseFileController(QObject* parent = nullptr);
   void SetPath(const QString& path);
   QString GetPath() const;
   bool CanOpen() const;
+  QString GetDefaultFolder() const;
 
  public slots:
   void pickSelectedSuggestion();
   void openOrCreateFile();
-  void initialize();
 
  signals:
   void pathChanged();
