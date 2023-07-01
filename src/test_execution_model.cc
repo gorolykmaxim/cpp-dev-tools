@@ -3,6 +3,8 @@
 #include "application.h"
 #include "theme.h"
 
+#define LOG() qDebug() << "[TestExecutionModel]"
+
 TestExecutionModel::TestExecutionModel(QObject* parent)
     : TextListModel(parent), test_count(-1) {
   SetRoleNames({{0, "title"},
@@ -85,6 +87,7 @@ QString TestExecutionModel::GetProgressBarColor() const {
 void TestExecutionModel::StartTest(const QString& test_suite,
                                    const QString& test_case,
                                    const QString& rerun_id) {
+  LOG() << "New test started:" << test_suite << test_case << rerun_id;
   Test test;
   test.test_suite = test_suite;
   test.test_case = test_case;
@@ -99,6 +102,7 @@ void TestExecutionModel::AppendOutputToCurrentTest(const QString& output) {
   Q_ASSERT(!tests.isEmpty());
   Test& test = tests.last();
   Q_ASSERT(test.status == TestStatus::kRunning);
+  LOG() << "Output added to" << test.test_suite << test.test_case;
   test.output += output;
   if (tests.size() - 1 == GetSelectedItemIndex()) {
     emit selectedTestOutputChanged();
@@ -109,6 +113,8 @@ void TestExecutionModel::FinishCurrentTest(bool success) {
   Q_ASSERT(!tests.isEmpty());
   Test& test = tests.last();
   Q_ASSERT(test.status == TestStatus::kRunning);
+  LOG() << "Test finished:" << test.test_suite << test.test_case
+        << "success:" << success;
   test.status = success ? TestStatus::kCompleted : TestStatus::kFailed;
   test.duration = std::chrono::duration_cast<std::chrono::milliseconds>(
       std::chrono::system_clock::now() - last_test_start);
@@ -117,6 +123,7 @@ void TestExecutionModel::FinishCurrentTest(bool success) {
 }
 
 void TestExecutionModel::SetTestCount(int count) {
+  LOG() << "Total test count set to" << count;
   test_count = count;
   emit statusChanged();
 }
@@ -126,7 +133,10 @@ void TestExecutionModel::rerunSelectedTest(bool repeat_until_fail) {
   if (i < 0) {
     return;
   }
-  emit rerunTest(tests[i].rerun_id, repeat_until_fail);
+  QString id = tests[i].rerun_id;
+  LOG() << "Re-running test with ID" << id
+        << "repeat until fail:" << repeat_until_fail;
+  emit rerunTest(id, repeat_until_fail);
 }
 
 QVariantList TestExecutionModel::GetRow(int i) const {
