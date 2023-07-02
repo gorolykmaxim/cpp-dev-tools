@@ -19,7 +19,7 @@ QTestExecutionModel::QTestExecutionModel(QObject* parent)
   connect(&app.task, &TaskSystem::executionFinished, this,
           [this, &app](QUuid id) {
             if (app.task.GetSelectedExecutionId() == id) {
-              SetTestCount(tests_seen);
+              SetTestCount(-1);
             }
           });
   connect(this, &TestExecutionModel::rerunTest, this,
@@ -92,7 +92,7 @@ void QTestExecutionModel::ReloadExecution() {
         }
         Load(GetRowCount() - 1);
         if (exec.exit_code) {
-          SetTestCount(tests_seen);
+          SetTestCount(-1);
         }
       });
 }

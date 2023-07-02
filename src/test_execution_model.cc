@@ -131,6 +131,9 @@ void TestExecutionModel::FinishCurrentTest(bool success) {
 }
 
 void TestExecutionModel::SetTestCount(int count) {
+  if (count < 0) {
+    count = GetCurrentTestCount();
+  }
   FinishTestPreparationIfNecessary(count > GetCurrentTestCount());
   LOG() << "Total test count set to" << count;
   test_count = count;

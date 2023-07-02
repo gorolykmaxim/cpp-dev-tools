@@ -18,8 +18,8 @@ GTestExecutionModel::GTestExecutionModel(QObject* parent)
           });
   connect(&app.task, &TaskSystem::executionFinished, this,
           [this, &app](QUuid id) {
-            if (app.task.GetSelectedExecutionId() == id && test_count < 0) {
-              SetTestCount(0);
+            if (app.task.GetSelectedExecutionId() == id) {
+              SetTestCount(-1);
             }
           });
   connect(this, &TestExecutionModel::rerunTest, this,
@@ -89,8 +89,8 @@ void GTestExecutionModel::ReloadExecution() {
           AppendOutputToCurrentTest(line + '\n');
         }
         Load(GetRowCount() - 1);
-        if (test_count < 0 && exec.exit_code) {
-          SetTestCount(0);
+        if (exec.exit_code) {
+          SetTestCount(-1);
         }
       });
 }
