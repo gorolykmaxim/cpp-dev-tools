@@ -168,6 +168,7 @@ qt_add_qml_module(cpp-dev-tools URI cdt VERSION 1.0
       qml/RunCmake.qml
       qml/TestExecution.qml
       qml/QtestExecution.qml
+      qml/SetTestFilter.qml
   RESOURCES
       ${RESOURCES}
   RESOURCE_PREFIX /)

@@ -223,6 +223,9 @@ TaskListModel::TaskListModel(QObject* parent) : TextListModel(parent) {
   SetRoleNames({{0, "title"}, {1, "subTitle"}, {2, "icon"}});
   searchable_roles = {0, 1};
   SetEmptyListPlaceholder("No tasks found");
+}
+
+void TaskListModel::displayTaskList() {
   Application& app = Application::Get();
   app.view.SetWindowTitle("Tasks");
   const Project& project = app.project.GetCurrentProject();
@@ -253,13 +256,14 @@ TaskListModel::TaskListModel(QObject* parent) : TextListModel(parent) {
           CopyTaskComp<CmakeTask>(*task_registry, registry, entity, e);
           CopyTaskComp<CmakeTargetTask>(*task_registry, registry, entity, e);
         }
-        Load();
+        Load(-1);
         SetPlaceholder();
       });
 }
 
 void TaskListModel::executeCurrentTask(bool repeat_until_fail,
-                                       const QString& view) {
+                                       const QString& view,
+                                       const QStringList& args) {
   Application& app = Application::Get();
   int i = GetSelectedItemIndex();
   if (i < 0) {
@@ -272,11 +276,13 @@ void TaskListModel::executeCurrentTask(bool repeat_until_fail,
     app.task.RunTask(registry.get<TaskId>(e), registry.get<CmakeTask>(e),
                      repeat_until_fail, view);
   } else if (registry.any_of<CmakeTargetTask>(e)) {
-    app.task.RunTask(registry.get<TaskId>(e), registry.get<CmakeTargetTask>(e),
-                     repeat_until_fail, view);
+    CmakeTargetTask t = registry.get<CmakeTargetTask>(e);
+    t.executable_args = args;
+    app.task.RunTask(registry.get<TaskId>(e), t, repeat_until_fail, view);
   } else if (registry.any_of<ExecutableTask>(e)) {
-    app.task.RunTask(registry.get<TaskId>(e), registry.get<ExecutableTask>(e),
-                     repeat_until_fail, view);
+    ExecutableTask t = registry.get<ExecutableTask>(e);
+    t.args = args;
+    app.task.RunTask(registry.get<TaskId>(e), t, repeat_until_fail, view);
   }
 }
 
