@@ -43,6 +43,11 @@ Loader {
           onTriggered: listModel.executeCurrentTask(false, "GtestExecution.qml", [])
         }
         MenuItem {
+          text: "Run as Google Test With Filter"
+          shortcut: "Ctrl+Alt+G"
+          onTriggered: root.sourceComponent = gtestFilterView
+        }
+        MenuItem {
           text: "Run Until Fails"
           shortcut: "Alt+Shift+R"
           onTriggered: listModel.executeCurrentTask(true, "TaskExecution.qml", [])
@@ -62,6 +67,11 @@ Loader {
           shortcut: "Alt+Shift+G"
           onTriggered: listModel.executeCurrentTask(true, "GtestExecution.qml", [])
         }
+        MenuItem {
+          text: "Run as Google Test With Filter Until Fails"
+          shortcut: "Ctrl+Alt+Shift+G"
+          onTriggered: root.sourceComponent = gtestFilterUntilFailView
+        }
       }
     }
   }
@@ -78,6 +88,22 @@ Loader {
     Cdt.SetTestFilter {
       windowTitle: "Run QtTest With Filter Until Fails"
       onFilterChosen: filter => listModel.executeCurrentTask(true, "QtestExecution.qml", [filter])
+      onBack: root.sourceComponent = listView
+    }
+  }
+  Component {
+    id: gtestFilterView
+    Cdt.SetTestFilter {
+      windowTitle: "Run Google Test With Filter"
+      onFilterChosen: filter => listModel.executeCurrentTask(false, "GtestExecution.qml", ["--gtest_filter=" + filter])
+      onBack: root.sourceComponent = listView
+    }
+  }
+  Component {
+    id: gtestFilterUntilFailView
+    Cdt.SetTestFilter {
+      windowTitle: "Run Google Test With Filter Until Fails"
+      onFilterChosen: filter => listModel.executeCurrentTask(true, "GtestExecution.qml", ["--gtest_filter=" + filter])
       onBack: root.sourceComponent = listView
     }
   }
