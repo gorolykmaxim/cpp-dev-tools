@@ -19,7 +19,6 @@ QTestExecutionModel::QTestExecutionModel(QObject* parent)
   connect(&app.task, &TaskSystem::executionFinished, this,
           [this, &app](QUuid id) {
             if (app.task.GetSelectedExecutionId() == id) {
-              LOG() << "Tests seen:" << tests_seen;
               SetTestCount(tests_seen);
             }
           });
@@ -67,6 +66,7 @@ void QTestExecutionModel::ReloadExecution() {
             }
           }
           if (current_test_suite.isEmpty()) {
+            AppendTestPreparationOutput(line + '\n');
             continue;
           }
           QString test_id_start = current_test_suite + "::";
@@ -83,7 +83,6 @@ void QTestExecutionModel::ReloadExecution() {
           }
         }
         if (exec.exit_code) {
-          LOG() << "Tests seen:" << tests_seen;
           SetTestCount(tests_seen);
         }
       });

@@ -41,6 +41,7 @@ class TestExecutionModel : public TextListModel {
   void StartTest(const QString& test_suite, const QString& test_case,
                  const QString& rerun_id);
   void AppendOutputToCurrentTest(const QString& output);
+  void AppendTestPreparationOutput(const QString& output);
   void FinishCurrentTest(bool success);
   void SetTestCount(int count);
   bool IsSelectedTestRerunnable() const;
@@ -58,6 +59,8 @@ class TestExecutionModel : public TextListModel {
   void rerunTest(const QString& id, bool repeat_until_fail);
 
  private:
+  void FinishTestPreparationIfNecessary(bool success);
+
   std::chrono::system_clock::time_point last_test_start;
   QList<Test> tests;
   int test_count;

@@ -55,8 +55,12 @@ QString TestExecutionModel::GetStatus() const {
     }
     return result + " for " + duration + "...";
   } else if (failed > 0) {
-    return QString::number(failed) + " of " + QString::number(test_count) +
-           " failed in " + duration;
+    if (test_count < failed) {
+      return "No tests found";
+    } else {
+      return QString::number(failed) + " of " + QString::number(test_count) +
+             " failed in " + duration;
+    }
   } else {
     return "Executed " + QString::number(tests.size()) + " in " + duration;
   }
@@ -85,6 +89,7 @@ QString TestExecutionModel::GetProgressBarColor() const {
 void TestExecutionModel::StartTest(const QString& test_suite,
                                    const QString& test_case,
                                    const QString& rerun_id) {
+  FinishTestPreparationIfNecessary(true);
   LOG() << "New test started:" << test_suite << test_case << rerun_id;
   Test test;
   test.test_suite = test_suite;
@@ -106,6 +111,13 @@ void TestExecutionModel::AppendOutputToCurrentTest(const QString& output) {
   }
 }
 
+void TestExecutionModel::AppendTestPreparationOutput(const QString& output) {
+  if (tests.isEmpty()) {
+    StartTest("", "Before Tests Start", "");
+  }
+  AppendOutputToCurrentTest(output);
+}
+
 void TestExecutionModel::FinishCurrentTest(bool success) {
   Q_ASSERT(!tests.isEmpty());
   Test& test = tests.last();
@@ -120,6 +132,7 @@ void TestExecutionModel::FinishCurrentTest(bool success) {
 }
 
 void TestExecutionModel::SetTestCount(int count) {
+  FinishTestPreparationIfNecessary(false);
   LOG() << "Total test count set to" << count;
   test_count = count;
   emit statusChanged();
@@ -165,3 +178,10 @@ QVariantList TestExecutionModel::GetRow(int i) const {
 }
 
 int TestExecutionModel::GetRowCount() const { return tests.size(); }
+
+void TestExecutionModel::FinishTestPreparationIfNecessary(bool success) {
+  if (tests.size() != 1 || tests[0].status != TestStatus::kRunning) {
+    return;
+  }
+  FinishCurrentTest(success);
+}
