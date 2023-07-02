@@ -6,7 +6,7 @@ Environment variables you need to set:
 - CMAKE_PREFIX_PATH
 
 Dependencies you need to install manually:
-- Qt 6.3 for MacOS
+- Qt 6.5.1 for MacOS
 
 On windows you need to have a ninja binary as well as a vcvars64.bat on your PATH.
 
