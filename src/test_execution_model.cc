@@ -5,7 +5,7 @@
 #define LOG() qDebug() << "[TestExecutionModel]"
 
 TestExecutionModel::TestExecutionModel(QObject* parent)
-    : TextListModel(parent), test_count(-1) {
+    : TextListModel(parent), test_count(-1), has_preparation_test(false) {
   SetRoleNames({{0, "title"},
                 {1, "subTitle"},
                 {2, "icon"},
@@ -46,23 +46,23 @@ QString TestExecutionModel::GetStatus() const {
     }
   }
   QString duration = FormatDuration(total);
-  if (test_count < 0 || tests.size() < test_count) {
-    QString result = "Running (" + QString::number(tests.size()) + " of ";
+  if (test_count < 0 || GetCurrentTestCount() < test_count) {
+    QString result =
+        "Running (" + QString::number(GetCurrentTestCount()) + " of ";
     if (test_count < 0) {
       result += "\?\?)";
     } else {
       result += QString::number(test_count) + ')';
     }
     return result + " for " + duration + "...";
+  } else if (test_count == 0) {
+    return "No tests found";
   } else if (failed > 0) {
-    if (test_count < failed) {
-      return "No tests found";
-    } else {
-      return QString::number(failed) + " of " + QString::number(test_count) +
-             " failed in " + duration;
-    }
+    return QString::number(failed) + " of " + QString::number(test_count) +
+           " failed in " + duration;
   } else {
-    return "Executed " + QString::number(tests.size()) + " in " + duration;
+    return "Executed " + QString::number(GetCurrentTestCount()) + " in " +
+           duration;
   }
 }
 
@@ -70,7 +70,7 @@ float TestExecutionModel::GetProgress() const {
   if (test_count <= 0) {
     return 0;
   } else {
-    return (float)tests.size() / test_count;
+    return (float)GetCurrentTestCount() / test_count;
   }
 }
 
@@ -114,6 +114,7 @@ void TestExecutionModel::AppendOutputToCurrentTest(const QString& output) {
 void TestExecutionModel::AppendTestPreparationOutput(const QString& output) {
   if (tests.isEmpty()) {
     StartTest("", "Before Tests Start", "");
+    has_preparation_test = true;
   }
   AppendOutputToCurrentTest(output);
 }
@@ -132,7 +133,7 @@ void TestExecutionModel::FinishCurrentTest(bool success) {
 }
 
 void TestExecutionModel::SetTestCount(int count) {
-  FinishTestPreparationIfNecessary(false);
+  FinishTestPreparationIfNecessary(count > GetCurrentTestCount());
   LOG() << "Total test count set to" << count;
   test_count = count;
   emit statusChanged();
@@ -184,4 +185,17 @@ void TestExecutionModel::FinishTestPreparationIfNecessary(bool success) {
     return;
   }
   FinishCurrentTest(success);
+}
+
+int TestExecutionModel::GetCurrentTestCount() const {
+  int result = 0;
+  for (const Test& t : tests) {
+    if (t.status != TestStatus::kRunning) {
+      result++;
+    }
+  }
+  if (has_preparation_test) {
+    result--;
+  }
+  return std::max(result, 0);
 }

@@ -75,6 +75,11 @@ void UserCommandSystem::RegisterCommands() {
     app.task.RunTaskOfExecution(app.task.GetLastExecution(), false,
                                 "QtestExecution.qml");
   });
+  RegisterCommand("Run", "Run Last Task as Google Test", "Ctrl+G", [] {
+    Application& app = Application::Get();
+    app.task.RunTaskOfExecution(app.task.GetLastExecution(), false,
+                                "GtestExecution.qml");
+  });
   RegisterCommand("Run", "Run Last Task Until Fails", "Ctrl+Shift+R", [] {
     Application& app = Application::Get();
     app.task.RunTaskOfExecution(app.task.GetLastExecution(), true,
@@ -85,6 +90,12 @@ void UserCommandSystem::RegisterCommands() {
                     Application& app = Application::Get();
                     app.task.RunTaskOfExecution(app.task.GetLastExecution(),
                                                 true, "QtestExecution.qml");
+                  });
+  RegisterCommand("Run", "Run Last Task as Google Test Until Fails",
+                  "Ctrl+Shift+G", [] {
+                    Application& app = Application::Get();
+                    app.task.RunTaskOfExecution(app.task.GetLastExecution(),
+                                                true, "GtestExecution.qml");
                   });
   RegisterCommand("Run", "Run CMake", "Ctrl+Shift+C", [] {
     Application::Get().view.SetCurrentView("RunCmake.qml");

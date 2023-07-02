@@ -60,10 +60,12 @@ class TestExecutionModel : public TextListModel {
 
  private:
   void FinishTestPreparationIfNecessary(bool success);
+  int GetCurrentTestCount() const;
 
   std::chrono::system_clock::time_point last_test_start;
   QList<Test> tests;
   int test_count;
+  bool has_preparation_test;
 };
 
 #endif  // TESTEXECUTIONMODEL_H

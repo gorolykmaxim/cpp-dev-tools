@@ -31,6 +31,12 @@ Cdt.SearchableTextList {
       onTriggered: viewSystem.currentView = "QtestExecution.qml"
     }
     MenuItem {
+      text: "Open as Google Test"
+      enabled: execList.activeFocus
+      shortcut: "Alt+G"
+      onTriggered: viewSystem.currentView = "GtestExecution.qml"
+    }
+    MenuItem {
       text: "Re-Run"
       enabled: execList.activeFocus
       shortcut: "Alt+Shift+R"
@@ -40,6 +46,11 @@ Cdt.SearchableTextList {
       text: "Run as QtTest"
       shortcut: "Alt+Shift+Y"
       onTriggered: listModel.rerunSelectedExecution(false, "QtestExecution.qml")
+    }
+    MenuItem {
+      text: "Run as Google Test"
+      shortcut: "Alt+Shift+G"
+      onTriggered: listModel.rerunSelectedExecution(false, "GtestExecution.qml")
     }
     MenuItem {
       text: "Re-Run Until Fails"
@@ -52,6 +63,12 @@ Cdt.SearchableTextList {
       enabled: execList.activeFocus
       shortcut: "Ctrl+Alt+Shift+Y"
       onTriggered: listModel.rerunSelectedExecution(true, "QtestExecution.qml")
+    }
+    MenuItem {
+      text: "Re-Run as Google Test Until Fails"
+      enabled: execList.activeFocus
+      shortcut: "Ctrl+Alt+Shift+G"
+      onTriggered: listModel.rerunSelectedExecution(true, "GtestExecution.qml")
     }
     MenuItem {
       text: "Terminate"

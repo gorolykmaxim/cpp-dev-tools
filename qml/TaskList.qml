@@ -38,6 +38,11 @@ Loader {
           onTriggered: root.sourceComponent = qtestFilterView
         }
         MenuItem {
+          text: "Run as Google Test"
+          shortcut: "Alt+G"
+          onTriggered: listModel.executeCurrentTask(false, "GtestExecution.qml", [])
+        }
+        MenuItem {
           text: "Run Until Fails"
           shortcut: "Alt+Shift+R"
           onTriggered: listModel.executeCurrentTask(true, "TaskExecution.qml", [])
@@ -51,6 +56,11 @@ Loader {
           text: "Run as QtTest With Filter Until Fails"
           shortcut: "Ctrl+Alt+Shift+Y"
           onTriggered: root.sourceComponent = qtestFilterUntilFailView
+        }
+        MenuItem {
+          text: "Run as Google Test Until Fails"
+          shortcut: "Alt+Shift+G"
+          onTriggered: listModel.executeCurrentTask(true, "GtestExecution.qml", [])
         }
       }
     }
