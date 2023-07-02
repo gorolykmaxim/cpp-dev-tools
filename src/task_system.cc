@@ -267,12 +267,22 @@ void TaskSystem::RunExecution(entt::entity entity, bool repeat_until_fail,
     o["build_folder"] = t.build_folder;
     o["target_name"] = t.target_name;
     o["executable"] = t.executable;
+    QJsonArray args;
+    for (const QString& arg : t.executable_args) {
+      args.append(arg);
+    }
+    o["executable_args"] = args;
     o["run_after_build"] = t.run_after_build;
     exec.task_data = QJsonDocument(o).toJson();
   } else if (registry.any_of<ExecutableTask>(entity)) {
     const auto& t = registry.get<ExecutableTask>(entity);
     QJsonObject o;
     o["path"] = t.path;
+    QJsonArray args;
+    for (const QString& arg : t.args) {
+      args.append(arg);
+    }
+    o["args"] = args;
     exec.task_data = QJsonDocument(o).toJson();
   } else {
     qFatal() << "Failed to execute task" << task_id << "of unknown type";
@@ -319,7 +329,7 @@ Promise<int> TaskSystem::RunTaskUntilFail(entt::entity e) {
 
 Promise<int> TaskSystem::RunExecutableTask(entt::entity e) {
   auto& t = registry.get<ExecutableTask>(e);
-  return RunProcess(e, t.path);
+  return RunProcess(e, t.path, t.args);
 }
 
 void TaskSystem::CreateCmakeQueryFilesSync(const QString& path) {
@@ -357,8 +367,8 @@ QString TaskSystem::GetTaskName(const entt::registry& registry,
 }
 
 void TaskSystem::RunTaskOfExecution(const TaskExecution& exec,
-                                    bool repeat_until_fail,
-                                    const QString& view) {
+                                    bool repeat_until_fail, const QString& view,
+                                    const QStringList& executable_args) {
   if (exec.IsNull()) {
     return;
   }
@@ -371,15 +381,37 @@ void TaskSystem::RunTaskOfExecution(const TaskExecution& exec,
     };
     RunTask(exec.task_id, t, repeat_until_fail, view);
   } else if (exec.task_id.startsWith("cmake-target:")) {
-    CmakeTargetTask t{
-        d["build_folder"].toString(),
-        d["target_name"].toString(),
-        d["executable"].toString(),
-        d["run_after_build"].toBool(),
-    };
+    CmakeTargetTask t;
+    t.build_folder = d["build_folder"].toString();
+    t.target_name = d["target_name"].toString();
+    t.executable = d["executable"].toString();
+    t.run_after_build = d["run_after_build"].toBool();
+    if (executable_args.isEmpty()) {
+      for (const QJsonValue& arg : d["executable_args"].toArray()) {
+        t.executable_args.append(arg.toString());
+      }
+    } else {
+      for (const QString& arg : executable_args) {
+        if (!t.executable_args.contains(arg)) {
+          t.executable_args.append(arg);
+        }
+      }
+    }
     RunTask(exec.task_id, t, repeat_until_fail, view);
   } else if (exec.task_id.startsWith("exec:")) {
-    ExecutableTask t{d["path"].toString()};
+    ExecutableTask t;
+    t.path = d["path"].toString();
+    if (executable_args.isEmpty()) {
+      for (const QJsonValue& arg : d["args"].toArray()) {
+        t.args.append(arg.toString());
+      }
+    } else {
+      for (const QString& arg : executable_args) {
+        if (!t.args.contains(arg)) {
+          t.args.append(arg);
+        }
+      }
+    }
     RunTask(exec.task_id, t, repeat_until_fail, view);
   } else {
     qFatal() << "Failed to execute task" << exec.task_id << "of unknown type";
@@ -421,7 +453,7 @@ Promise<int> TaskSystem::RunCmakeTargetTask(entt::entity e) {
       if (code != 0) {
         return Promise<int>(code);
       }
-      return RunProcess(e, t.build_folder + t.executable);
+      return RunProcess(e, t.build_folder + t.executable, t.executable_args);
     });
   }
   return r;

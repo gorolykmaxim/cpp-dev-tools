@@ -1,6 +1,5 @@
 #include "test_execution_model.h"
 
-#include "application.h"
 #include "theme.h"
 
 #define LOG() qDebug() << "[TestExecutionModel]"
@@ -17,7 +16,6 @@ TestExecutionModel::TestExecutionModel(QObject* parent)
   SetEmptyListPlaceholder("No tests executed yet");
   connect(this, &TextListModel::selectedItemChanged, this,
           [this] { emit selectedTestOutputChanged(); });
-  Application::Get().view.SetWindowTitle("Tests");
 }
 
 QString TestExecutionModel::GetSelectedTestOutput() const {
@@ -101,7 +99,6 @@ void TestExecutionModel::StartTest(const QString& test_suite,
 void TestExecutionModel::AppendOutputToCurrentTest(const QString& output) {
   Q_ASSERT(!tests.isEmpty());
   Test& test = tests.last();
-  Q_ASSERT(test.status == TestStatus::kRunning);
   LOG() << "Output added to" << test.test_suite << test.test_case;
   test.output += output;
   if (tests.size() - 1 == GetSelectedItemIndex()) {
@@ -126,6 +123,11 @@ void TestExecutionModel::SetTestCount(int count) {
   LOG() << "Total test count set to" << count;
   test_count = count;
   emit statusChanged();
+}
+
+bool TestExecutionModel::IsSelectedTestRerunnable() const {
+  int i = GetSelectedItemIndex();
+  return i < 0 ? false : !tests[i].rerun_id.isEmpty();
 }
 
 void TestExecutionModel::rerunSelectedTest(bool repeat_until_fail) {

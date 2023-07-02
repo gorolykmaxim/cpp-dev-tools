@@ -95,6 +95,8 @@ qt_add_executable(cpp-dev-tools
   src/run_cmake_controller.cc
   src/test_execution_model.h
   src/test_execution_model.cc
+  src/qtest_execution_model.h
+  src/qtest_execution_model.cc
   src/main.cc)
 if(NOT MSVC)
   # TODO: figure out how to enable all warnings in MSVC without triggering
@@ -165,6 +167,7 @@ qt_add_qml_module(cpp-dev-tools URI cdt VERSION 1.0
       qml/GitFileDiff.qml
       qml/RunCmake.qml
       qml/TestExecution.qml
+      qml/QtestExecution.qml
   RESOURCES
       ${RESOURCES}
   RESOURCE_PREFIX /)

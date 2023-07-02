@@ -26,6 +26,8 @@ class TestExecutionModel : public TextListModel {
   QML_ELEMENT
   Q_PROPERTY(QString selectedTestOutput READ GetSelectedTestOutput NOTIFY
                  selectedTestOutputChanged)
+  Q_PROPERTY(bool isSelectedTestRerunnable READ IsSelectedTestRerunnable NOTIFY
+                 selectedItemChanged)
   Q_PROPERTY(QString status READ GetStatus NOTIFY statusChanged)
   Q_PROPERTY(float progress READ GetProgress NOTIFY statusChanged)
   Q_PROPERTY(
@@ -41,6 +43,7 @@ class TestExecutionModel : public TextListModel {
   void AppendOutputToCurrentTest(const QString& output);
   void FinishCurrentTest(bool success);
   void SetTestCount(int count);
+  bool IsSelectedTestRerunnable() const;
 
  public slots:
   void rerunSelectedTest(bool repeat_until_fail);

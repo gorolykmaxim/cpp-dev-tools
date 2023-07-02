@@ -88,7 +88,3 @@ void TaskExecutionListModel::removeFinishedExecutions() {
       },
       [this] { Reload(); });
 }
-
-void TaskExecutionListModel::openExecutionOutput() const {
-  Application::Get().view.SetCurrentView("TaskExecution.qml");
-}

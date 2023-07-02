@@ -57,18 +57,19 @@ ColumnLayout {
       searchPlaceholderText: "Search test"
       focus: true
       searchableModel: testModel
+      onItemRightClicked: contextMenu.open()
       KeyNavigation.right: testOutput
       Menu {
         id: contextMenu
         MenuItem {
           text: "Re-Run"
-          enabled: testList.activeFocus
+          enabled: testList.activeFocus && testModel.isSelectedTestRerunnable
           shortcut: "Alt+Shift+R"
           onTriggered: testModel.rerunSelectedTest(false)
         }
         MenuItem {
           text: "Re-Run Until Fails"
-          enabled: testList.activeFocus
+          enabled: testList.activeFocus && testModel.isSelectedTestRerunnable
           shortcut: "Ctrl+Alt+Shift+R"
           onTriggered: testModel.rerunSelectedTest(true)
         }

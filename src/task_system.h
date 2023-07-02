@@ -18,6 +18,7 @@ typedef QString TaskId;
 
 struct ExecutableTask {
   QString path;
+  QStringList args;
 };
 
 struct CmakeTask {
@@ -31,6 +32,7 @@ struct CmakeTargetTask {
   QString build_folder;
   QString target_name;
   QString executable;
+  QStringList executable_args;
   bool run_after_build = false;
 };
 
@@ -74,7 +76,8 @@ class TaskSystem : public QObject {
   }
 
   void RunTaskOfExecution(const TaskExecution& exec, bool repeat_until_fail,
-                          const QString& view);
+                          const QString& view,
+                          const QStringList& executable_args = {});
   void KillAllTasks();
   void LoadLastTaskExecution();
   void ClearLastTaskExecution();

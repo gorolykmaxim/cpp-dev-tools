@@ -11,7 +11,7 @@ Cdt.SearchableTextList {
   searchPlaceholderText: "Search execution"
   searchableModel: listModel
   focus: true
-  onItemSelected: listModel.openExecutionOutput()
+  onItemSelected: viewSystem.currentView = "TaskExecution.qml"
   onItemRightClicked: Common.handleRightClick(execList, contextMenu)
   TaskExecutionListModel {
     id: listModel
@@ -22,7 +22,13 @@ Cdt.SearchableTextList {
       text: "Open Output"
       enabled: execList.activeFocus
       shortcut: "Enter"
-      onTriggered: listModel.openExecutionOutput()
+      onTriggered: viewSystem.currentView = "TaskExecution.qml"
+    }
+    MenuItem {
+      text: "Open as QtTest"
+      enabled: execList.activeFocus
+      shortcut: "Alt+Y"
+      onTriggered: viewSystem.currentView = "QtestExecution.qml"
     }
     MenuItem {
       text: "Re-Run"
@@ -31,10 +37,21 @@ Cdt.SearchableTextList {
       onTriggered: listModel.rerunSelectedExecution(false, "TaskExecution.qml")
     }
     MenuItem {
+      text: "Run as QtTest"
+      shortcut: "Alt+Shift+Y"
+      onTriggered: listModel.rerunSelectedExecution(false, "QtestExecution.qml")
+    }
+    MenuItem {
       text: "Re-Run Until Fails"
       enabled: execList.activeFocus
       shortcut: "Ctrl+Alt+Shift+R"
       onTriggered: listModel.rerunSelectedExecution(true, "TaskExecution.qml")
+    }
+    MenuItem {
+      text: "Re-Run as QtTest Until Fails"
+      enabled: execList.activeFocus
+      shortcut: "Ctrl+Alt+Shift+Y"
+      onTriggered: listModel.rerunSelectedExecution(true, "QtestExecution.qml")
     }
     MenuItem {
       text: "Terminate"

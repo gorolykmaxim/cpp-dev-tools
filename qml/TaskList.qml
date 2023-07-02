@@ -21,9 +21,19 @@ Cdt.SearchableTextList {
       onTriggered: listModel.executeCurrentTask(false, "TaskExecution.qml")
     }
     MenuItem {
+      text: "Run as QtTest"
+      shortcut: "Alt+Y"
+      onTriggered: listModel.executeCurrentTask(false, "QtestExecution.qml")
+    }
+    MenuItem {
       text: "Run Until Fails"
       shortcut: "Alt+Shift+R"
       onTriggered: listModel.executeCurrentTask(true, "TaskExecution.qml")
+    }
+    MenuItem {
+      text: "Run as QtTest Until Fails"
+      shortcut: "Alt+Shift+Y"
+      onTriggered: listModel.executeCurrentTask(true, "QtestExecution.qml")
     }
   }
 }
