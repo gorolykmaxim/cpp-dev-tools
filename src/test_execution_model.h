@@ -45,6 +45,7 @@ class TestExecutionModel : public TextListModel {
   void FinishCurrentTest(bool success);
   void SetTestCount(int count);
   bool IsSelectedTestRerunnable() const;
+  void Clear();
 
  public slots:
   void rerunSelectedTest(bool repeat_until_fail);

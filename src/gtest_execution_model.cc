@@ -45,6 +45,12 @@ void GTestExecutionModel::ReloadExecution() {
         this->exec = exec;
         emit taskNameChanged();
         QStringList lines = exec.output.split('\n', Qt::SkipEmptyParts);
+        if (lines.size() < current_output_line) {
+          current_output_line = 0;
+          test_count = -1;
+          current_test_case.clear();
+          Clear();
+        }
         for (; current_output_line < lines.size(); current_output_line++) {
           const QString& line = lines[current_output_line];
           LOG() << "New raw line:" << line;
@@ -82,6 +88,7 @@ void GTestExecutionModel::ReloadExecution() {
           }
           AppendOutputToCurrentTest(line + '\n');
         }
+        Load(GetRowCount() - 1);
         if (test_count < 0 && exec.exit_code) {
           SetTestCount(0);
         }

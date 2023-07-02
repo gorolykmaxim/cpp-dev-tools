@@ -98,7 +98,6 @@ void TestExecutionModel::StartTest(const QString& test_suite,
   last_test_start = std::chrono::system_clock::now();
   tests.append(test);
   emit statusChanged();
-  Load(tests.size() - 1);
 }
 
 void TestExecutionModel::AppendOutputToCurrentTest(const QString& output) {
@@ -129,7 +128,6 @@ void TestExecutionModel::FinishCurrentTest(bool success) {
   test.duration = std::chrono::duration_cast<std::chrono::milliseconds>(
       std::chrono::system_clock::now() - last_test_start);
   emit statusChanged();
-  Load(tests.size() - 1);
 }
 
 void TestExecutionModel::SetTestCount(int count) {
@@ -142,6 +140,13 @@ void TestExecutionModel::SetTestCount(int count) {
 bool TestExecutionModel::IsSelectedTestRerunnable() const {
   int i = GetSelectedItemIndex();
   return i < 0 ? false : !tests[i].rerun_id.isEmpty();
+}
+
+void TestExecutionModel::Clear() {
+  test_count = -1;
+  has_preparation_test = false;
+  tests.clear();
+  selectItemByIndex(-1);
 }
 
 void TestExecutionModel::rerunSelectedTest(bool repeat_until_fail) {
