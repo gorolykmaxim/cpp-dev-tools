@@ -10,6 +10,7 @@ Cdt.Pane {
   anchors.fill: parent
   focus: true
   Component.onCompleted: viewSystem.windowTitle = windowTitle
+  Keys.onEscapePressed: back()
   RowLayout {
     anchors.centerIn: parent
     width: Theme.centeredViewWidth
