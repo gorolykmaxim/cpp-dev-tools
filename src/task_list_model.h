@@ -13,7 +13,7 @@ class TaskListModel : public TextListModel {
   explicit TaskListModel(QObject* parent = nullptr);
 
  public slots:
-  void executeCurrentTask(bool repeat_until_fail);
+  void executeCurrentTask(bool repeat_until_fail, const QString& view);
 
  protected:
   QVariantList GetRow(int i) const override;

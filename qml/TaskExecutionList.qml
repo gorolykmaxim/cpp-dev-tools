@@ -28,13 +28,13 @@ Cdt.SearchableTextList {
       text: "Re-Run"
       enabled: execList.activeFocus
       shortcut: "Alt+Shift+R"
-      onTriggered: listModel.rerunSelectedExecution(false)
+      onTriggered: listModel.rerunSelectedExecution(false, "TaskExecution.qml")
     }
     MenuItem {
       text: "Re-Run Until Fails"
       enabled: execList.activeFocus
       shortcut: "Ctrl+Alt+Shift+R"
-      onTriggered: listModel.rerunSelectedExecution(true)
+      onTriggered: listModel.rerunSelectedExecution(true, "TaskExecution.qml")
     }
     MenuItem {
       text: "Terminate"

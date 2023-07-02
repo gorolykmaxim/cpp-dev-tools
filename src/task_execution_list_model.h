@@ -21,7 +21,7 @@ class TaskExecutionListModel : public TextListModel {
   QList<TaskExecution> list;
 
  public slots:
-  void rerunSelectedExecution(bool repeat_until_fail);
+  void rerunSelectedExecution(bool repeat_until_fail, const QString& view);
   void removeFinishedExecutions();
   void openExecutionOutput() const;
 

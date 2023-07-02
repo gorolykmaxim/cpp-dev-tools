@@ -61,7 +61,7 @@ void RunCmakeController::runCmake() {
   LOG() << "Running CMake in build folder:" << build_folder
         << "and source folder:" << source_folder;
   CmakeTask t{source_folder, build_folder};
-  Application::Get().task.RunTask(t.GetId(), t, false);
+  Application::Get().task.RunTask(t.GetId(), t, false, "TaskExecution.qml");
 }
 
 void RunCmakeController::SaveState() const {

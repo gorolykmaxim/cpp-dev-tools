@@ -10,7 +10,7 @@ Cdt.SearchableTextList {
   searchableModel: listModel
   focus: true
   onItemRightClicked: contextMenu.open()
-  onItemSelected: listModel.executeCurrentTask(false)
+  onItemSelected: listModel.executeCurrentTask(false, "TaskExecution.qml")
   TaskListModel {
     id: listModel
   }
@@ -18,12 +18,12 @@ Cdt.SearchableTextList {
     id: contextMenu
     MenuItem {
       text: "Run"
-      onTriggered: listModel.executeCurrentTask(false)
+      onTriggered: listModel.executeCurrentTask(false, "TaskExecution.qml")
     }
     MenuItem {
       text: "Run Until Fails"
       shortcut: "Alt+Shift+R"
-      onTriggered: listModel.executeCurrentTask(true)
+      onTriggered: listModel.executeCurrentTask(true, "TaskExecution.qml")
     }
   }
 }

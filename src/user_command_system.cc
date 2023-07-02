@@ -67,11 +67,13 @@ void UserCommandSystem::RegisterCommands() {
                   [] { OsCommand::OpenTerminalInCurrentDir(); });
   RegisterCommand("Run", "Run Last Task", "Ctrl+R", [] {
     Application& app = Application::Get();
-    app.task.RunTaskOfExecution(app.task.GetLastExecution(), false);
+    app.task.RunTaskOfExecution(app.task.GetLastExecution(), false,
+                                "TaskExecution.qml");
   });
   RegisterCommand("Run", "Run Last Task Until Fails", "Ctrl+Shift+R", [] {
     Application& app = Application::Get();
-    app.task.RunTaskOfExecution(app.task.GetLastExecution(), true);
+    app.task.RunTaskOfExecution(app.task.GetLastExecution(), true,
+                                "TaskExecution.qml");
   });
   RegisterCommand("Run", "Run CMake", "Ctrl+Shift+G", [] {
     Application::Get().view.SetCurrentView("RunCmake.qml");

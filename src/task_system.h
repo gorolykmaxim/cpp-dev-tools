@@ -65,14 +65,16 @@ class TaskSystem : public QObject {
   static QString GetTaskName(const entt::registry& registry, entt::entity e);
 
   template <typename T>
-  void RunTask(const TaskId& id, T t, bool repeat_until_fail) {
+  void RunTask(const TaskId& id, T t, bool repeat_until_fail,
+               const QString& view) {
     entt::entity e = registry.create();
     registry.emplace<TaskId>(e, id);
     registry.emplace<T>(e, t);
-    RunExecution(e, repeat_until_fail);
+    RunExecution(e, repeat_until_fail, view);
   }
 
-  void RunTaskOfExecution(const TaskExecution& exec, bool repeat_until_fail);
+  void RunTaskOfExecution(const TaskExecution& exec, bool repeat_until_fail,
+                          const QString& view);
   void KillAllTasks();
   void LoadLastTaskExecution();
   void ClearLastTaskExecution();
@@ -99,7 +101,8 @@ class TaskSystem : public QObject {
   void selectedExecutionChanged();
 
  private:
-  void RunExecution(entt::entity e, bool repeat_until_fail);
+  void RunExecution(entt::entity e, bool repeat_until_fail,
+                    const QString& view);
   Promise<int> RunTask(entt::entity e);
   Promise<int> RunTaskUntilFail(entt::entity e);
   Promise<int> RunExecutableTask(entt::entity e);

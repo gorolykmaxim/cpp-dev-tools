@@ -258,7 +258,8 @@ TaskListModel::TaskListModel(QObject* parent) : TextListModel(parent) {
       });
 }
 
-void TaskListModel::executeCurrentTask(bool repeat_until_fail) {
+void TaskListModel::executeCurrentTask(bool repeat_until_fail,
+                                       const QString& view) {
   Application& app = Application::Get();
   int i = GetSelectedItemIndex();
   if (i < 0) {
@@ -269,13 +270,13 @@ void TaskListModel::executeCurrentTask(bool repeat_until_fail) {
         << "repeat until fail:" << repeat_until_fail;
   if (registry.any_of<CmakeTask>(e)) {
     app.task.RunTask(registry.get<TaskId>(e), registry.get<CmakeTask>(e),
-                     repeat_until_fail);
+                     repeat_until_fail, view);
   } else if (registry.any_of<CmakeTargetTask>(e)) {
     app.task.RunTask(registry.get<TaskId>(e), registry.get<CmakeTargetTask>(e),
-                     repeat_until_fail);
+                     repeat_until_fail, view);
   } else if (registry.any_of<ExecutableTask>(e)) {
     app.task.RunTask(registry.get<TaskId>(e), registry.get<ExecutableTask>(e),
-                     repeat_until_fail);
+                     repeat_until_fail, view);
   }
 }
 

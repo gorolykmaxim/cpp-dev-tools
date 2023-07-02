@@ -66,14 +66,15 @@ bool TaskExecutionListModel::IsSelectedExecutionRunning() const {
   return app.task.FindExecutionById(id);
 }
 
-void TaskExecutionListModel::rerunSelectedExecution(bool repeat_until_fail) {
+void TaskExecutionListModel::rerunSelectedExecution(bool repeat_until_fail,
+                                                    const QString& view) {
   int i = GetSelectedItemIndex();
   if (i < 0) {
     return;
   }
   const TaskExecution& exec = list[i];
   LOG() << "Rerunning execution" << exec.id;
-  Application::Get().task.RunTaskOfExecution(exec, repeat_until_fail);
+  Application::Get().task.RunTaskOfExecution(exec, repeat_until_fail, view);
 }
 
 void TaskExecutionListModel::removeFinishedExecutions() {

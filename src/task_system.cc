@@ -246,7 +246,8 @@ void TaskSystem::cancelSelectedExecution(bool forcefully) {
   }
 }
 
-void TaskSystem::RunExecution(entt::entity entity, bool repeat_until_fail) {
+void TaskSystem::RunExecution(entt::entity entity, bool repeat_until_fail,
+                              const QString& view) {
   auto& task_id = registry.get<TaskId>(entity);
   LOG() << "Executing" << task_id << "repeat until fail:" << repeat_until_fail;
   auto& exec = registry.emplace<TaskExecution>(entity);
@@ -289,7 +290,7 @@ void TaskSystem::RunExecution(entt::entity entity, bool repeat_until_fail) {
   last_execution = exec;
   emit currentTaskChanged();
   SetSelectedExecutionId(exec.id);
-  Application::Get().view.SetCurrentView("TaskExecution.qml");
+  Application::Get().view.SetCurrentView(view);
 }
 
 Promise<int> TaskSystem::RunTask(entt::entity e) {
@@ -356,7 +357,8 @@ QString TaskSystem::GetTaskName(const entt::registry& registry,
 }
 
 void TaskSystem::RunTaskOfExecution(const TaskExecution& exec,
-                                    bool repeat_until_fail) {
+                                    bool repeat_until_fail,
+                                    const QString& view) {
   if (exec.IsNull()) {
     return;
   }
@@ -367,7 +369,7 @@ void TaskSystem::RunTaskOfExecution(const TaskExecution& exec,
         d["source_path"].toString(),
         d["build_path"].toString(),
     };
-    RunTask(exec.task_id, t, repeat_until_fail);
+    RunTask(exec.task_id, t, repeat_until_fail, view);
   } else if (exec.task_id.startsWith("cmake-target:")) {
     CmakeTargetTask t{
         d["build_folder"].toString(),
@@ -375,10 +377,10 @@ void TaskSystem::RunTaskOfExecution(const TaskExecution& exec,
         d["executable"].toString(),
         d["run_after_build"].toBool(),
     };
-    RunTask(exec.task_id, t, repeat_until_fail);
+    RunTask(exec.task_id, t, repeat_until_fail, view);
   } else if (exec.task_id.startsWith("exec:")) {
     ExecutableTask t{d["path"].toString()};
-    RunTask(exec.task_id, t, repeat_until_fail);
+    RunTask(exec.task_id, t, repeat_until_fail, view);
   } else {
     qFatal() << "Failed to execute task" << exec.task_id << "of unknown type";
   }
