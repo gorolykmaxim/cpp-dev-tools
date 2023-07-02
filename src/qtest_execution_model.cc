@@ -50,6 +50,7 @@ void QTestExecutionModel::ReloadExecution() {
           QRegularExpressionMatch m = kSuiteStartRegex.match(line);
           if (m.hasMatch()) {
             current_test_suite = m.captured(1);
+            current_test_case.clear();
             LOG() << "Test suite started:" << current_test_suite;
             continue;
           }
