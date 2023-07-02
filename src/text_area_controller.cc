@@ -528,15 +528,18 @@ FileLinkLookupController::FileLinkLookupController(QObject* parent)
                                       current_line_link)) {}
 
 void FileLinkLookupController::findFileLinks(const QString& text) {
-  static const QRegularExpression kUnix(
+  static const QRegularExpression kUnix1(
       "([A-Z]?\\:?\\/[^:\\n]+):([0-9]+):?([0-9]+)?");
+  static const QRegularExpression kUnix2(
+      "([A-Z]?\\:?\\/[^:\\n]+)\\(([0-9]+):?([0-9]+)?\\)");
   static const QRegularExpression kWin1(
       "([A-Z]\\:\\\\[^:\\n]+)\\(([0-9]+),?([0-9]+)?\\)");
   static const QRegularExpression kWin2(
       "([A-Z]\\:\\\\[^:\\n]+):([0-9]+):([0-9]+)?");
   links.clear();
   index.clear();
-  FindFileLinks(kUnix, text);
+  FindFileLinks(kUnix1, text);
+  FindFileLinks(kUnix2, text);
   FindFileLinks(kWin1, text);
   FindFileLinks(kWin2, text);
 }
