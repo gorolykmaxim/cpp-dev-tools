@@ -251,6 +251,12 @@ void UserCommandSystem::Initialize() {
                    user_cmd_index);
   RegisterLocalCmd("FileLinkLookup", "Next File Link", "Ctrl+Alt+Down", cmds,
                    user_cmd_index);
+  RegisterLocalCmd("KeyboardShortcuts", "Reset Changed", "Alt+R", cmds,
+                   user_cmd_index);
+  RegisterLocalCmd("KeyboardShortcuts", "Restore Default", "Alt+D", cmds,
+                   user_cmd_index);
+  RegisterLocalCmd("KeyboardShortcuts", "Restore All Defaults", "Alt+Shift+D",
+                   cmds, user_cmd_index);
   Database::ExecCmdsAsync(cmds);
   LOG() << "Loading context user command shortcuts";
   user_cmds = Database::ExecQueryAndReadSync<UserCommand>(

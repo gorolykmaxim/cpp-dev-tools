@@ -7,7 +7,7 @@
 
 KeyboardShortcutsModel::KeyboardShortcutsModel(QObject* parent)
     : TextListModel(parent), selected_command(-1) {
-  SetRoleNames({{0, "title"}, {1, "rightText"}});
+  SetRoleNames({{0, "title"}, {1, "rightText"}, {2, "rightTextColor"}});
   searchable_roles = {0, 1};
 }
 
@@ -39,8 +39,8 @@ void KeyboardShortcutsModel::load() {
       this,
       [] {
         return Database::ExecQueryAndRead<UserCommand>(
-            "SELECT \"group\", name, shortcut FROM user_command ORDER BY "
-            "global DESC, \"group\", name",
+            "SELECT \"group\", name, shortcut FROM user_command "
+            "ORDER BY global DESC, \"group\", name",
             &UserCommandSystem::ReadUserCommandFromSql);
       },
       [this](QList<UserCommand> cmds) {
@@ -51,7 +51,7 @@ void KeyboardShortcutsModel::load() {
 
 QVariantList KeyboardShortcutsModel::GetRow(int i) const {
   const UserCommand& cmd = list[i];
-  return {cmd.group + " > " + cmd.name, cmd.shortcut};
+  return {cmd.group + " > " + cmd.name, cmd.shortcut, ""};
 }
 
 int KeyboardShortcutsModel::GetRowCount() const { return list.size(); }

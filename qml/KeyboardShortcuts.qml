@@ -1,5 +1,6 @@
 import QtQuick
 import QtQuick.Layouts
+import Qt.labs.platform
 import "." as Cdt
 import cdt
 
@@ -22,12 +23,6 @@ ColumnLayout {
       text: shortcutModel.selectedShortcut
       placeholderText: "Shortcut"
       Layout.fillWidth: true
-      KeyNavigation.right: resetBtn
-      KeyNavigation.down: list
-    }
-    Cdt.Button {
-      id: resetBtn
-      text: "Reset Shortcut"
       KeyNavigation.right: backBtn
       KeyNavigation.down: list
     }
@@ -46,6 +41,25 @@ ColumnLayout {
     searchableModel: shortcutModel
     focus: true
     onItemSelected: shortcutModel.selectCurrentCommand()
+    onItemRightClicked: contextMenu.open()
     KeyNavigation.up: shortcutTextField
+  }
+  Menu {
+    id: contextMenu
+    MenuItem {
+      text: "Reset Change"
+      shortcut: gSC("KeyboardShortcuts", "Reset Changed")
+      enabled: list.activeFocus
+    }
+    MenuItem {
+      text: "Restore Default"
+      shortcut: gSC("KeyboardShortcuts", "Restore Default")
+      enabled: list.activeFocus
+    }
+    MenuItem {
+      text: "Restore All Defaults"
+      shortcut: gSC("KeyboardShortcuts", "Restore All Defaults")
+      enabled: list.activeFocus
+    }
   }
 }
