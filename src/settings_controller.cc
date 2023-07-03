@@ -11,7 +11,8 @@ SettingsController::SettingsController(QObject *parent)
           this, "external_search_folder", UiIcon("find_in_page"))),
       documentation_folders(new FolderListModel(this, "documentation_folder",
                                                 UiIcon("description"))),
-      terminals(new TerminalListModel(this)) {
+      terminals(new TerminalListModel(this)),
+      shortcuts(new KeyboardShortcutsModel(this)) {
   Application::Get().view.SetWindowTitle("Settings");
   Load();
 }
@@ -30,6 +31,12 @@ void SettingsController::configureDocumentationFolders() {
   LOG() << "Opening documentation folder editor";
   Application::Get().view.SetWindowTitle("Documentation Folders");
   emit openDocumentationFoldersEditor();
+}
+
+void SettingsController::keyboardShortcuts() {
+  LOG() << "Opening keyboard shortcuts";
+  Application::Get().view.SetWindowTitle("Keyboard Shortcuts");
+  emit openKeyboardShortcuts();
 }
 
 void SettingsController::goToSettings() {

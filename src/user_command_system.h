@@ -1,6 +1,7 @@
 #pragma once
 
 #include <QObject>
+#include <QSqlQuery>
 #include <functional>
 
 #include "text_list_model.h"
@@ -34,6 +35,7 @@ class UserCommandSystem : public QObject {
       GlobalUserCommandListModel* userCommands MEMBER user_commands CONSTANT)
  public:
   UserCommandSystem();
+  static UserCommand ReadUserCommandFromSql(QSqlQuery& sql);
   void Initialize();
   const QList<GlobalUserCommand>& GetUserCommands() const;
 

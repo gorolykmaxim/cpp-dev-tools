@@ -5,6 +5,7 @@
 #include <QtQmlIntegration>
 
 #include "database.h"
+#include "keyboard_shortcuts_model.h"
 #include "text_list_model.h"
 #include "ui_icon.h"
 
@@ -68,6 +69,7 @@ class SettingsController : public QObject {
   Q_PROPERTY(FolderListModel* documentationFolders MEMBER documentation_folders
                  CONSTANT)
   Q_PROPERTY(TerminalListModel* terminals MEMBER terminals CONSTANT)
+  Q_PROPERTY(KeyboardShortcutsModel* shortcuts MEMBER shortcuts CONSTANT)
   Q_PROPERTY(bool displayTerminalPriority READ ShouldDisplayTerminalPriority
                  NOTIFY settingsChanged)
  public:
@@ -77,6 +79,7 @@ class SettingsController : public QObject {
  public slots:
   void configureExternalSearchFolders();
   void configureDocumentationFolders();
+  void keyboardShortcuts();
   void goToSettings();
   void save();
   void moveSelectedTerminal(bool up);
@@ -85,6 +88,7 @@ class SettingsController : public QObject {
   void settingsChanged();
   void openExternalSearchFoldersEditor();
   void openDocumentationFoldersEditor();
+  void openKeyboardShortcuts();
   void openSettings();
 
  private:
@@ -94,6 +98,7 @@ class SettingsController : public QObject {
   FolderListModel* external_search_folders;
   FolderListModel* documentation_folders;
   TerminalListModel* terminals;
+  KeyboardShortcutsModel* shortcuts;
 };
 
 #endif  // SETTINGSCONTROLLER_H

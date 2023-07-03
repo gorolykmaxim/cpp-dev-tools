@@ -5,14 +5,6 @@
 
 #define LOG() qDebug() << "[UserCommandSystem]"
 
-static UserCommand ReadFromSql(QSqlQuery& sql) {
-  UserCommand cmd;
-  cmd.group = sql.value(0).toString();
-  cmd.name = sql.value(1).toString();
-  cmd.shortcut = sql.value(2).toString();
-  return cmd;
-}
-
 QString UserCommand::GetFormattedShortcut() const {
   QString result = shortcut.toUpper();
 #if __APPLE__
@@ -37,6 +29,14 @@ int GlobalUserCommandListModel::GetRowCount() const { return list.size(); }
 
 UserCommandSystem::UserCommandSystem()
     : user_commands(new GlobalUserCommandListModel(this)) {}
+
+UserCommand UserCommandSystem::ReadUserCommandFromSql(QSqlQuery& sql) {
+  UserCommand cmd;
+  cmd.group = sql.value(0).toString();
+  cmd.name = sql.value(1).toString();
+  cmd.shortcut = sql.value(2).toString();
+  return cmd;
+}
 
 static void RegisterCmd(const QString& group, const QString& name,
                         const QString& shortcut, QList<Database::Cmd>& cmds,
@@ -156,7 +156,7 @@ void UserCommandSystem::Initialize() {
   QList<UserCommand> user_cmds = Database::ExecQueryAndReadSync<UserCommand>(
       "SELECT \"group\", name, shortcut FROM user_command WHERE "
       "global=true",
-      ReadFromSql);
+      &UserCommandSystem::ReadUserCommandFromSql);
   for (const UserCommand& cmd : user_cmds) {
     for (GlobalUserCommand& gcmd : user_commands->list) {
       if (cmd.group == gcmd.group && cmd.name == gcmd.name) {
@@ -256,7 +256,7 @@ void UserCommandSystem::Initialize() {
   user_cmds = Database::ExecQueryAndReadSync<UserCommand>(
       "SELECT \"group\", name, shortcut FROM user_command WHERE "
       "global=false",
-      ReadFromSql);
+      &UserCommandSystem::ReadUserCommandFromSql);
   for (const UserCommand& cmd : user_cmds) {
     user_cmd_index[cmd.group][cmd.name] = cmd.shortcut;
   }

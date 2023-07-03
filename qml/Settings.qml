@@ -15,6 +15,7 @@ Loader {
     id: controller
     onOpenExternalSearchFoldersEditor: sourceComponent = externalSearchFolderEditorView
     onOpenDocumentationFoldersEditor: sourceComponent = documentationFolderEditorView
+    onOpenKeyboardShortcuts: sourceComponent = keyboardShortcutsView
     onOpenSettings: sourceComponent = settingsView
   }
   Component {
@@ -86,6 +87,14 @@ Loader {
               Layout.columnSpan: 2
               Layout.alignment: Qt.AlignHCenter
               onClicked: controller.configureDocumentationFolders()
+              KeyNavigation.down: keyboardShortcutsBtn
+            }
+            Cdt.Button {
+              id: keyboardShortcutsBtn
+              text: "Keyboard Shortcuts"
+              Layout.columnSpan: 2
+              Layout.alignment: Qt.AlignHCenter
+              onClicked: controller.keyboardShortcuts()
               KeyNavigation.down: terminalPriorityList
             }
             Cdt.Text {
@@ -153,6 +162,13 @@ Loader {
       foldersModel: controller.documentationFolders
       onFolderAdded: folder => controller.documentationFolders.addFolder(folder)
       onFolderRemoved: folder => controller.documentationFolders.removeFolder(folder)
+      onBack: controller.goToSettings()
+    }
+  }
+  Component {
+    id: keyboardShortcutsView
+    Cdt.KeyboardShortcuts {
+      shortcutModel: controller.shortcuts
       onBack: controller.goToSettings()
     }
   }
