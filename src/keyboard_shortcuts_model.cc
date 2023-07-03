@@ -25,7 +25,13 @@ QString KeyboardShortcutsModel::GetSelectedCommand() const {
 }
 
 QString KeyboardShortcutsModel::GetSelectedShortcut() const {
-  return selected_command < 0 ? "" : list[selected_command].shortcut;
+  if (selected_command < 0) {
+    return "";
+  }
+  if (new_shortcut.contains(selected_command)) {
+    return new_shortcut[selected_command];
+  }
+  return list[selected_command].shortcut;
 }
 
 QList<Database::Cmd> KeyboardShortcutsModel::MakeCommandsToUpdateDatabase()
