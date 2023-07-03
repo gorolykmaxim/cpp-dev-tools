@@ -109,7 +109,7 @@ Cdt.Pane {
           Layout.alignment: Qt.AlignRight
           Layout.margins: Theme.basePadding
           text: itemModel.rightText || ""
-          color: isCurrentItem && isHighlighted ? Theme.colorText : Theme.colorPlaceholder
+          color: isCurrentItem && isHighlighted ? Theme.colorText : (itemModel.rightTextColor || Theme.colorPlaceholder)
         }
       }
       MouseArea {
