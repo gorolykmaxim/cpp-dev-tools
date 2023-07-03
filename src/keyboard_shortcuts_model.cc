@@ -108,12 +108,14 @@ void KeyboardShortcutsModel::restoreDefaultOfCurrentShortcut() {
   if (i < 0) {
     return;
   }
-  LOG() << "Restoring shortcut" << i << "to its default value";
-  const UserCommand& cmd = list[i];
-  Application& app = Application::Get();
-  new_shortcut[i] = app.user_command.GetDefaultShortcut(cmd.group, cmd.name);
-  if (i == selected_command) {
-    emit selectedCommandChanged();
+  RestoreDefaultOfShortcut(i);
+  Load(-1);
+}
+
+void KeyboardShortcutsModel::restoreDefaultOfAllShortcuts() {
+  LOG() << "Restoring all shortcuts to their default values";
+  for (int i = 0; i < list.size(); i++) {
+    RestoreDefaultOfShortcut(i);
   }
   Load(-1);
 }
@@ -131,3 +133,18 @@ QVariantList KeyboardShortcutsModel::GetRow(int i) const {
 }
 
 int KeyboardShortcutsModel::GetRowCount() const { return list.size(); }
+
+void KeyboardShortcutsModel::RestoreDefaultOfShortcut(int i) {
+  const UserCommand& cmd = list[i];
+  Application& app = Application::Get();
+  QString shortcut = app.user_command.GetDefaultShortcut(cmd.group, cmd.name);
+  if ((new_shortcut.contains(i) && new_shortcut[i] == shortcut) ||
+      (!new_shortcut.contains(i) && shortcut == cmd.shortcut)) {
+    return;
+  }
+  LOG() << "Restoring shortcut" << i << "to its default value";
+  new_shortcut[i] = shortcut;
+  if (i == selected_command) {
+    emit selectedCommandChanged();
+  }
+}

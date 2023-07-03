@@ -28,6 +28,7 @@ class KeyboardShortcutsModel : public TextListModel {
   void resetCurrentShortcut();
   void resetAllShortcuts();
   void restoreDefaultOfCurrentShortcut();
+  void restoreDefaultOfAllShortcuts();
 
  protected:
   QVariantList GetRow(int i) const;
@@ -37,6 +38,8 @@ class KeyboardShortcutsModel : public TextListModel {
   void selectedCommandChanged();
 
  private:
+  void RestoreDefaultOfShortcut(int i);
+
   QList<UserCommand> list;
   QHash<int, QString> new_shortcut;
   int selected_command;

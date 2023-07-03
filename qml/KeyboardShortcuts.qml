@@ -70,6 +70,7 @@ ColumnLayout {
       text: "Restore All Defaults"
       shortcut: gSC("KeyboardShortcuts", "Restore All Defaults")
       enabled: list.activeFocus
+      onTriggered: shortcutModel.restoreDefaultOfAllShortcuts()
     }
   }
 }
