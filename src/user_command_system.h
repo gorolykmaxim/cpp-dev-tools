@@ -39,6 +39,7 @@ class UserCommandSystem : public QObject {
   void Initialize();
   const QList<GlobalUserCommand>& GetUserCommands() const;
   void ReloadCommands();
+  QString GetDefaultShortcut(const QString& group, const QString& name) const;
 
  public slots:
   void executeCommand(int i);
@@ -50,4 +51,5 @@ class UserCommandSystem : public QObject {
 
   GlobalUserCommandListModel* user_commands;
   UserCommandIndex user_cmd_index;
+  UserCommandIndex default_user_cmd_index;
 };

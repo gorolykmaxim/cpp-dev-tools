@@ -47,12 +47,14 @@ UserCommand UserCommandSystem::ReadUserCommandFromSql(QSqlQuery& sql) {
 static void RegisterCmd(const QString& group, const QString& name,
                         const QString& shortcut, QList<Database::Cmd>& cmds,
                         GlobalUserCommandListModel* model,
+                        UserCommandIndex& default_cmd_index,
                         std::function<void()>&& cb) {
   LOG() << "Registering user command" << group << name;
   model->list.append(GlobalUserCommand{{group, name, shortcut}, cb});
   cmds.append(
       Database::Cmd("INSERT OR IGNORE INTO user_command VALUES(?,?,?,?)",
                     {group, name, shortcut, true}));
+  default_cmd_index[group][name] = shortcut;
 }
 
 static void RegisterLocalCmd(const QString& group, const QString& name,
@@ -69,93 +71,110 @@ static void RegisterLocalCmd(const QString& group, const QString& name,
 void UserCommandSystem::Initialize() {
   QList<Database::Cmd> cmds;
   RegisterCmd("File", "Close Project", "Ctrl+W", cmds, user_commands,
+              default_user_cmd_index,
               [] { Application::Get().project.SetCurrentProject(Project()); });
   RegisterCmd("File", "Settings", "Ctrl+,", cmds, user_commands,
+              default_user_cmd_index,
               [] { Application::Get().view.SetCurrentView("Settings.qml"); });
-  RegisterCmd("Edit", "Find In Files", "Ctrl+Shift+F", cmds, user_commands, [] {
-    Application::Get().view.SetCurrentView("FindInFiles.qml");
-  });
+  RegisterCmd("Edit", "Find In Files", "Ctrl+Shift+F", cmds, user_commands,
+              default_user_cmd_index, [] {
+                Application::Get().view.SetCurrentView("FindInFiles.qml");
+              });
   RegisterCmd("View", "Commands", "Ctrl+P", cmds, user_commands,
+              default_user_cmd_index,
               [] { Application::Get().view.DisplaySearchUserCommandDialog(); });
   RegisterCmd("View", "Tasks", "Ctrl+T", cmds, user_commands,
+              default_user_cmd_index,
               [] { Application::Get().view.SetCurrentView("TaskList.qml"); });
-  RegisterCmd("View", "Task Executions", "Ctrl+E", cmds, user_commands, [] {
-    Application::Get().view.SetCurrentView("TaskExecutionList.qml");
-  });
-  RegisterCmd("View", "Notifications", "Ctrl+N", cmds, user_commands, [] {
-    Application::Get().view.SetCurrentView("NotificationList.qml");
-  });
-  RegisterCmd("View", "Documentation", "F1", cmds, user_commands, [] {
-    Application::Get().view.SetCurrentView("Documentation.qml");
-  });
+  RegisterCmd("View", "Task Executions", "Ctrl+E", cmds, user_commands,
+              default_user_cmd_index, [] {
+                Application::Get().view.SetCurrentView("TaskExecutionList.qml");
+              });
+  RegisterCmd("View", "Notifications", "Ctrl+N", cmds, user_commands,
+              default_user_cmd_index, [] {
+                Application::Get().view.SetCurrentView("NotificationList.qml");
+              });
+  RegisterCmd("View", "Documentation", "F1", cmds, user_commands,
+              default_user_cmd_index, [] {
+                Application::Get().view.SetCurrentView("Documentation.qml");
+              });
   RegisterCmd("View", "SQLite Databases", "Ctrl+Shift+D", cmds, user_commands,
+              default_user_cmd_index,
               [] { Application::Get().view.SetCurrentView("SqliteList.qml"); });
-  RegisterCmd("View", "SQLite Tables", "Ctrl+Shift+S", cmds, user_commands, [] {
-    Application::Get().view.SetCurrentView("SqliteTable.qml");
-  });
-  RegisterCmd(
-      "View", "SQLite Query Editor", "Ctrl+Shift+E", cmds, user_commands,
-      [] { Application::Get().view.SetCurrentView("SqliteQueryEditor.qml"); });
+  RegisterCmd("View", "SQLite Tables", "Ctrl+Shift+S", cmds, user_commands,
+              default_user_cmd_index, [] {
+                Application::Get().view.SetCurrentView("SqliteTable.qml");
+              });
+  RegisterCmd("View", "SQLite Query Editor", "Ctrl+Shift+E", cmds,
+              user_commands, default_user_cmd_index, [] {
+                Application::Get().view.SetCurrentView("SqliteQueryEditor.qml");
+              });
   RegisterCmd("View", "Terminal", "F12", cmds, user_commands,
+              default_user_cmd_index,
               [] { OsCommand::OpenTerminalInCurrentDir(); });
-  RegisterCmd("Run", "Run Last Task", "Ctrl+R", cmds, user_commands, [] {
-    Application& app = Application::Get();
-    app.task.RunTaskOfExecution(app.task.GetLastExecution(), false,
-                                "TaskExecution.qml");
-  });
+  RegisterCmd("Run", "Run Last Task", "Ctrl+R", cmds, user_commands,
+              default_user_cmd_index, [] {
+                Application& app = Application::Get();
+                app.task.RunTaskOfExecution(app.task.GetLastExecution(), false,
+                                            "TaskExecution.qml");
+              });
   RegisterCmd("Run", "Run Last Task as QtTest", "Ctrl+Y", cmds, user_commands,
-              [] {
+              default_user_cmd_index, [] {
                 Application& app = Application::Get();
                 app.task.RunTaskOfExecution(app.task.GetLastExecution(), false,
                                             "QtestExecution.qml");
               });
   RegisterCmd("Run", "Run Last Task as Google Test", "Ctrl+G", cmds,
-              user_commands, [] {
+              user_commands, default_user_cmd_index, [] {
                 Application& app = Application::Get();
                 app.task.RunTaskOfExecution(app.task.GetLastExecution(), false,
                                             "GtestExecution.qml");
               });
   RegisterCmd("Run", "Run Last Task Until Fails", "Ctrl+Shift+R", cmds,
-              user_commands, [] {
+              user_commands, default_user_cmd_index, [] {
                 Application& app = Application::Get();
                 app.task.RunTaskOfExecution(app.task.GetLastExecution(), true,
                                             "TaskExecution.qml");
               });
   RegisterCmd("Run", "Run Last Task as QtTest Until Fails", "Ctrl+Shift+Y",
-              cmds, user_commands, [] {
+              cmds, user_commands, default_user_cmd_index, [] {
                 Application& app = Application::Get();
                 app.task.RunTaskOfExecution(app.task.GetLastExecution(), true,
                                             "QtestExecution.qml");
               });
   RegisterCmd("Run", "Run Last Task as Google Test Until Fails", "Ctrl+Shift+G",
-              cmds, user_commands, [] {
+              cmds, user_commands, default_user_cmd_index, [] {
                 Application& app = Application::Get();
                 app.task.RunTaskOfExecution(app.task.GetLastExecution(), true,
                                             "GtestExecution.qml");
               });
   RegisterCmd("Run", "Run CMake", "Ctrl+Shift+C", cmds, user_commands,
+              default_user_cmd_index,
               [] { Application::Get().view.SetCurrentView("RunCmake.qml"); });
   RegisterCmd("Run", "Terminate Task Execution", "Ctrl+Shift+T", cmds,
-              user_commands,
+              user_commands, default_user_cmd_index,
               [] { Application::Get().task.cancelSelectedExecution(false); });
   RegisterCmd("Run", "Kill Task Execution", "Ctrl+Alt+Shift+T", cmds,
-              user_commands,
+              user_commands, default_user_cmd_index,
               [] { Application::Get().task.cancelSelectedExecution(true); });
   RegisterCmd("Git", "Pull", "Ctrl+Shift+P", cmds, user_commands,
-              [] { Application::Get().git.Pull(); });
+              default_user_cmd_index, [] { Application::Get().git.Pull(); });
   RegisterCmd("Git", "Push", "Ctrl+Shift+K", cmds, user_commands,
-              [] { Application::Get().git.Push(); });
+              default_user_cmd_index, [] { Application::Get().git.Push(); });
   RegisterCmd("Git", "Commit", "Ctrl+K", cmds, user_commands,
+              default_user_cmd_index,
               [] { Application::Get().view.SetCurrentView("GitCommit.qml"); });
-  RegisterCmd("Git", "Branches", "Ctrl+B", cmds, user_commands, [] {
-    Application::Get().view.SetCurrentView("GitBranchList.qml");
-  });
+  RegisterCmd(
+      "Git", "Branches", "Ctrl+B", cmds, user_commands, default_user_cmd_index,
+      [] { Application::Get().view.SetCurrentView("GitBranchList.qml"); });
   RegisterCmd("Git", "Log", "Ctrl+L", cmds, user_commands,
+              default_user_cmd_index,
               [] { Application::Get().view.SetCurrentView("GitLog.qml"); });
-  RegisterCmd("Git", "File Diff", "F8", cmds, user_commands, [] {
-    Application::Get().view.SetCurrentView("GitFileDiff.qml");
-  });
+  RegisterCmd(
+      "Git", "File Diff", "F8", cmds, user_commands, default_user_cmd_index,
+      [] { Application::Get().view.SetCurrentView("GitFileDiff.qml"); });
   RegisterCmd("Window", "Default Size", "Ctrl+Shift+M", cmds, user_commands,
+              default_user_cmd_index,
               [] { Application::Get().view.SetDefaultWindowSize(); });
   Database::ExecCmdsAsync(cmds);
   LOG() << "Loading global user command shortcuts";
@@ -256,6 +275,9 @@ void UserCommandSystem::Initialize() {
                    user_cmd_index);
   RegisterLocalCmd("KeyboardShortcuts", "Restore All Defaults", "Alt+Shift+D",
                    cmds, user_cmd_index);
+  for (const QString& group : user_cmd_index.keys()) {
+    default_user_cmd_index[group] = user_cmd_index[group];
+  }
   Database::ExecCmdsAsync(cmds);
   LOG() << "Loading context user command shortcuts";
   user_cmds = Database::ExecQueryAndReadSync<UserCommand>(
@@ -282,6 +304,11 @@ void UserCommandSystem::ReloadCommands() {
             kSelectLocalCmdsSql, &UserCommandSystem::ReadUserCommandFromSql);
       },
       [this](QList<UserCommand> cmds) { UpdateLocalShortcuts(cmds); });
+}
+
+QString UserCommandSystem::GetDefaultShortcut(const QString& group,
+                                              const QString& name) const {
+  return default_user_cmd_index[group][name];
 }
 
 void UserCommandSystem::executeCommand(int i) {

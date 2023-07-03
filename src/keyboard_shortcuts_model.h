@@ -27,6 +27,7 @@ class KeyboardShortcutsModel : public TextListModel {
   void setSelectedShortcut(const QString& shortcut);
   void resetCurrentShortcut();
   void resetAllShortcuts();
+  void restoreDefaultOfCurrentShortcut();
 
  protected:
   QVariantList GetRow(int i) const;

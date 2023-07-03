@@ -103,6 +103,21 @@ void KeyboardShortcutsModel::resetAllShortcuts() {
   }
 }
 
+void KeyboardShortcutsModel::restoreDefaultOfCurrentShortcut() {
+  int i = GetSelectedItemIndex();
+  if (i < 0) {
+    return;
+  }
+  LOG() << "Restoring shortcut" << i << "to its default value";
+  const UserCommand& cmd = list[i];
+  Application& app = Application::Get();
+  new_shortcut[i] = app.user_command.GetDefaultShortcut(cmd.group, cmd.name);
+  if (i == selected_command) {
+    emit selectedCommandChanged();
+  }
+  Load(-1);
+}
+
 QVariantList KeyboardShortcutsModel::GetRow(int i) const {
   static const Theme kTheme;
   const UserCommand& cmd = list[i];
