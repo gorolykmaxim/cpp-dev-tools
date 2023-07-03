@@ -2,7 +2,6 @@
 
 #include "application.h"
 #include "database.h"
-#include "io_task.h"
 
 #define LOG() qDebug() << "[UserCommandSystem]"
 
@@ -49,6 +48,18 @@ static void RegisterCmd(const QString& group, const QString& name,
       Database::Cmd("INSERT OR IGNORE INTO user_command VALUES(?,?,?,?)",
                     {group, name, shortcut, true}));
 }
+
+static void RegisterLocalCmd(const QString& group, const QString& name,
+                             const QString& shortcut,
+                             QList<Database::Cmd>& cmds,
+                             UserCommandIndex& index) {
+  LOG() << "Registering context menu user command" << group << name;
+  index[group][name] = shortcut;
+  cmds.append(
+      Database::Cmd("INSERT OR IGNORE INTO user_command VALUES(?,?,?,?)",
+                    {group, name, shortcut, false}));
+}
+
 void UserCommandSystem::Initialize() {
   QList<Database::Cmd> cmds;
   RegisterCmd("File", "Close Project", "Ctrl+W", cmds, user_commands,
@@ -141,26 +152,114 @@ void UserCommandSystem::Initialize() {
   RegisterCmd("Window", "Default Size", "Ctrl+Shift+M", cmds, user_commands,
               [] { Application::Get().view.SetDefaultWindowSize(); });
   Database::ExecCmdsAsync(cmds);
-  LOG() << "Comitting changes to user command list";
-  IoTask::Run<QList<UserCommand>>(
-      this,
-      [] {
-        return Database::ExecQueryAndRead<UserCommand>(
-            "SELECT \"group\", name, shortcut FROM user_command WHERE "
-            "global=true",
-            ReadFromSql);
-      },
-      [this](QList<UserCommand> cmds) {
-        for (const UserCommand& cmd : cmds) {
-          for (GlobalUserCommand& gcmd : user_commands->list) {
-            if (cmd.group == gcmd.group && cmd.name == gcmd.name) {
-              gcmd.shortcut = cmd.shortcut;
-              break;
-            }
-          }
-        }
-        user_commands->Load();
-      });
+  LOG() << "Loading global user command shortcuts";
+  QList<UserCommand> user_cmds = Database::ExecQueryAndReadSync<UserCommand>(
+      "SELECT \"group\", name, shortcut FROM user_command WHERE "
+      "global=true",
+      ReadFromSql);
+  for (const UserCommand& cmd : user_cmds) {
+    for (GlobalUserCommand& gcmd : user_commands->list) {
+      if (cmd.group == gcmd.group && cmd.name == gcmd.name) {
+        gcmd.shortcut = cmd.shortcut;
+        break;
+      }
+    }
+  }
+  LOG() << "Committing global user command list";
+  user_commands->Load();
+  cmds.clear();
+  RegisterLocalCmd("TaskList", "Run as QtTest", "Alt+Y", cmds, user_cmd_index);
+  RegisterLocalCmd("TaskList", "Run as QtTest With Filter", "Ctrl+Alt+Y", cmds,
+                   user_cmd_index);
+  RegisterLocalCmd("TaskList", "Run as Google Test", "Alt+G", cmds,
+                   user_cmd_index);
+  RegisterLocalCmd("TaskList", "Run as Google Test With Filter", "Ctrl+Alt+G",
+                   cmds, user_cmd_index);
+  RegisterLocalCmd("TaskList", "Run Until Fails", "Alt+Shift+R", cmds,
+                   user_cmd_index);
+  RegisterLocalCmd("TaskList", "Run as QtTest Until Fails", "Alt+Shift+Y", cmds,
+                   user_cmd_index);
+  RegisterLocalCmd("TaskList", "Run as QtTest With Filter Until Fails",
+                   "Ctrl+Alt+Shift+Y", cmds, user_cmd_index);
+  RegisterLocalCmd("TaskList", "Run as Google Test Until Fails", "Alt+Shift+G",
+                   cmds, user_cmd_index);
+  RegisterLocalCmd("TaskList", "Run as Google Test With Filter Until Fails",
+                   "Ctrl+Alt+Shift+G", cmds, user_cmd_index);
+  RegisterLocalCmd("FolderList", "Remove Folder", "Alt+Shift+D", cmds,
+                   user_cmd_index);
+  RegisterLocalCmd("TaskExecutionList", "Open as QtTest", "Alt+Y", cmds,
+                   user_cmd_index);
+  RegisterLocalCmd("TaskExecutionList", "Open as Google Test", "Alt+G", cmds,
+                   user_cmd_index);
+  RegisterLocalCmd("TaskExecutionList", "Re-Run", "Alt+Shift+R", cmds,
+                   user_cmd_index);
+  RegisterLocalCmd("TaskExecutionList", "Re-Run as QtTest", "Alt+Shift+Y", cmds,
+                   user_cmd_index);
+  RegisterLocalCmd("TaskExecutionList", "Re-Run as Google Test", "Alt+Shift+G",
+                   cmds, user_cmd_index);
+  RegisterLocalCmd("TaskExecutionList", "Re-Run Until Fails",
+                   "Ctrl+Alt+Shift+R", cmds, user_cmd_index);
+  RegisterLocalCmd("TaskExecutionList", "Re-Run as QtTest Until Fails",
+                   "Ctrl+Alt+Shift+Y", cmds, user_cmd_index);
+  RegisterLocalCmd("TaskExecutionList", "Re-Run as Google Test Until Fails",
+                   "Ctrl+Alt+Shift+G", cmds, user_cmd_index);
+  RegisterLocalCmd("TaskExecutionList", "Terminate", "Alt+Shift+T", cmds,
+                   user_cmd_index);
+  RegisterLocalCmd("TaskExecutionList", "Kill", "Alt+Shift+K", cmds,
+                   user_cmd_index);
+  RegisterLocalCmd("TaskExecutionList", "Remove Finished Executions",
+                   "Alt+Shift+D", cmds, user_cmd_index);
+  RegisterLocalCmd("SqliteList", "Change Path", "Alt+E", cmds, user_cmd_index);
+  RegisterLocalCmd("SqliteList", "Remove From List", "Alt+Shift+D", cmds,
+                   user_cmd_index);
+  RegisterLocalCmd("TableView", "Copy Cell Value", "Ctrl+C", cmds,
+                   user_cmd_index);
+  RegisterLocalCmd("TableView", "Inspect Cell Value", "Ctrl+I", cmds,
+                   user_cmd_index);
+  RegisterLocalCmd("NotificationList", "Clear Notifications", "Alt+Shift+D",
+                   cmds, user_cmd_index);
+  RegisterLocalCmd("Settings", "Move Up", "Shift+Up", cmds, user_cmd_index);
+  RegisterLocalCmd("Settings", "Move Down", "Shift+Down", cmds, user_cmd_index);
+  RegisterLocalCmd("GitDiff", "Open Chunk In Editor", "Ctrl+O", cmds,
+                   user_cmd_index);
+  RegisterLocalCmd("GitDiff", "Toggle Unified Diff", "Alt+U", cmds,
+                   user_cmd_index);
+  RegisterLocalCmd("GitCommit", "Reset", "Ctrl+Alt+Z", cmds, user_cmd_index);
+  RegisterLocalCmd("GitCommit", "Rollback Chunk", "Ctrl+Alt+Z", cmds,
+                   user_cmd_index);
+  RegisterLocalCmd("GitBranchList", "New Branch", "Alt+N", cmds,
+                   user_cmd_index);
+  RegisterLocalCmd("GitBranchList", "Merge Into Current", "Alt+M", cmds,
+                   user_cmd_index);
+  RegisterLocalCmd("GitBranchList", "Delete", "Alt+D", cmds, user_cmd_index);
+  RegisterLocalCmd("GitBranchList", "Force Delete", "Alt+Shift+D", cmds,
+                   user_cmd_index);
+  RegisterLocalCmd("SelectProject", "Change Path", "Alt+E", cmds,
+                   user_cmd_index);
+  RegisterLocalCmd("SelectProject", "Remove From List", "Alt+Shift+D", cmds,
+                   user_cmd_index);
+  RegisterLocalCmd("GitLog", "Checkout", "Alt+C", cmds, user_cmd_index);
+  RegisterLocalCmd("GitLog", "Cherry-Pick", "Alt+P", cmds, user_cmd_index);
+  RegisterLocalCmd("GitLog", "New Branch", "Alt+N", cmds, user_cmd_index);
+  RegisterLocalCmd("TestExecution", "Re-Run", "Alt+Shift+R", cmds,
+                   user_cmd_index);
+  RegisterLocalCmd("TestExecution", "Re-Run Until Fails", "Ctrl+Alt+Shift+R",
+                   cmds, user_cmd_index);
+  RegisterLocalCmd("FileLinkLookup", "Open File In Editor", "Ctrl+O", cmds,
+                   user_cmd_index);
+  RegisterLocalCmd("FileLinkLookup", "Previous File Link", "Ctrl+Alt+Up", cmds,
+                   user_cmd_index);
+  RegisterLocalCmd("FileLinkLookup", "Next File Link", "Ctrl+Alt+Down", cmds,
+                   user_cmd_index);
+  Database::ExecCmdsAsync(cmds);
+  LOG() << "Loading context user command shortcuts";
+  user_cmds = Database::ExecQueryAndReadSync<UserCommand>(
+      "SELECT \"group\", name, shortcut FROM user_command WHERE "
+      "global=false",
+      ReadFromSql);
+  for (const UserCommand& cmd : user_cmds) {
+    user_cmd_index[cmd.group][cmd.name] = cmd.shortcut;
+  }
 }
 
 const QList<GlobalUserCommand>& UserCommandSystem::GetUserCommands() const {
@@ -174,4 +273,9 @@ void UserCommandSystem::executeCommand(int i) {
   GlobalUserCommand& cmd = user_commands->list[i];
   LOG() << "Executing user command" << cmd.group << cmd.name;
   cmd.callback();
+}
+
+QString UserCommandSystem::getShortcut(const QString& group,
+                                       const QString& name) const {
+  return user_cmd_index[group][name];
 }

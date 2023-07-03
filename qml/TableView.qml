@@ -90,13 +90,13 @@ QtQuick.FocusScope {
       MenuItem {
         text: "Copy Cell Value"
         enabled: tableView.activeFocus
-        shortcut: "Ctrl+C"
+        shortcut: gSC("TableView", "Copy Cell Value")
         onTriggered: tableView.model.copyCurrentValue()
       }
       MenuItem {
         text: "Inspect Cell Value"
         enabled: tableView.activeFocus
-        shortcut: "Ctrl+I"
+        shortcut: gSC("TableView", "Inspect Cell Value")
         onTriggered: tableView.model.displayCurrentValueInDialog()
       }
     }

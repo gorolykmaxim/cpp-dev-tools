@@ -63,13 +63,13 @@ Loader {
         MenuItem {
           text: "Change Path"
           enabled: (input.activeFocus || projectList.activeFocus)
-          shortcut: "Alt+E"
+          shortcut: gSC("SelectProject", "Change Path")
           onTriggered: controller.displayChangeProjectPath()
         }
         MenuItem {
           text: "Remove From List"
           enabled: (input.activeFocus || projectList.activeFocus)
-          shortcut: "Alt+Shift+D"
+          shortcut: gSC("SelectProject", "Remove From List")
           onTriggered: controller.deleteSelectedProject()
         }
       }

@@ -29,47 +29,47 @@ Loader {
         }
         MenuItem {
           text: "Run as QtTest"
-          shortcut: "Alt+Y"
+          shortcut: gSC("TaskList", "Run as QtTest")
           onTriggered: listModel.executeCurrentTask(false, "QtestExecution.qml", [])
         }
         MenuItem {
           text: "Run as QtTest With Filter"
-          shortcut: "Ctrl+Alt+Y"
+          shortcut: gSC("TaskList", "Run as QtTest With Filter")
           onTriggered: root.sourceComponent = qtestFilterView
         }
         MenuItem {
           text: "Run as Google Test"
-          shortcut: "Alt+G"
+          shortcut: gSC("TaskList", "Run as Google Test")
           onTriggered: listModel.executeCurrentTask(false, "GtestExecution.qml", [])
         }
         MenuItem {
           text: "Run as Google Test With Filter"
-          shortcut: "Ctrl+Alt+G"
+          shortcut: gSC("TaskList", "Run as Google Test With Filter")
           onTriggered: root.sourceComponent = gtestFilterView
         }
         MenuItem {
           text: "Run Until Fails"
-          shortcut: "Alt+Shift+R"
+          shortcut: gSC("TaskList", "Run Until Fails")
           onTriggered: listModel.executeCurrentTask(true, "TaskExecution.qml", [])
         }
         MenuItem {
           text: "Run as QtTest Until Fails"
-          shortcut: "Alt+Shift+Y"
+          shortcut: gSC("TaskList", "Run as QtTest Until Fails")
           onTriggered: listModel.executeCurrentTask(true, "QtestExecution.qml", [])
         }
         MenuItem {
           text: "Run as QtTest With Filter Until Fails"
-          shortcut: "Ctrl+Alt+Shift+Y"
+          shortcut: gSC("TaskList", "Run as QtTest With Filter Until Fails")
           onTriggered: root.sourceComponent = qtestFilterUntilFailView
         }
         MenuItem {
           text: "Run as Google Test Until Fails"
-          shortcut: "Alt+Shift+G"
+          shortcut: gSC("TaskList", "Run as Google Test Until Fails")
           onTriggered: listModel.executeCurrentTask(true, "GtestExecution.qml", [])
         }
         MenuItem {
           text: "Run as Google Test With Filter Until Fails"
-          shortcut: "Ctrl+Alt+Shift+G"
+          shortcut: gSC("TaskList", "Run as Google Test With Filter Until Fails")
           onTriggered: root.sourceComponent = gtestFilterUntilFailView
         }
       }

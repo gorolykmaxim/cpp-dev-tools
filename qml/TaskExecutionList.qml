@@ -27,65 +27,65 @@ Cdt.SearchableTextList {
     MenuItem {
       text: "Open as QtTest"
       enabled: execList.activeFocus
-      shortcut: "Alt+Y"
+      shortcut: gSC("TaskExecutionList", "Open as QtTest")
       onTriggered: viewSystem.currentView = "QtestExecution.qml"
     }
     MenuItem {
       text: "Open as Google Test"
       enabled: execList.activeFocus
-      shortcut: "Alt+G"
+      shortcut: gSC("TaskExecutionList", "Open as Google Test")
       onTriggered: viewSystem.currentView = "GtestExecution.qml"
     }
     MenuItem {
       text: "Re-Run"
       enabled: execList.activeFocus
-      shortcut: "Alt+Shift+R"
+      shortcut: gSC("TaskExecutionList", "Re-Run")
       onTriggered: listModel.rerunSelectedExecution(false, "TaskExecution.qml")
     }
     MenuItem {
-      text: "Run as QtTest"
-      shortcut: "Alt+Shift+Y"
+      text: "Re-Run as QtTest"
+      shortcut: gSC("TaskExecutionList", "Re-Run as QtTest")
       onTriggered: listModel.rerunSelectedExecution(false, "QtestExecution.qml")
     }
     MenuItem {
-      text: "Run as Google Test"
-      shortcut: "Alt+Shift+G"
+      text: "Re-Run as Google Test"
+      shortcut: gSC("TaskExecutionList", "Re-Run as Google Test")
       onTriggered: listModel.rerunSelectedExecution(false, "GtestExecution.qml")
     }
     MenuItem {
       text: "Re-Run Until Fails"
       enabled: execList.activeFocus
-      shortcut: "Ctrl+Alt+Shift+R"
+      shortcut: gSC("TaskExecutionList", "Re-Run Until Fails")
       onTriggered: listModel.rerunSelectedExecution(true, "TaskExecution.qml")
     }
     MenuItem {
       text: "Re-Run as QtTest Until Fails"
       enabled: execList.activeFocus
-      shortcut: "Ctrl+Alt+Shift+Y"
+      shortcut: gSC("TaskExecutionList", "Re-Run as QtTest Until Fails")
       onTriggered: listModel.rerunSelectedExecution(true, "QtestExecution.qml")
     }
     MenuItem {
       text: "Re-Run as Google Test Until Fails"
       enabled: execList.activeFocus
-      shortcut: "Ctrl+Alt+Shift+G"
+      shortcut: gSC("TaskExecutionList", "Re-Run as Google Test Until Fails")
       onTriggered: listModel.rerunSelectedExecution(true, "GtestExecution.qml")
     }
     MenuItem {
       text: "Terminate"
       enabled: execList.activeFocus && listModel.executionRunning
-      shortcut: "Alt+Shift+T"
+      shortcut: gSC("TaskExecutionList", "Terminate")
       onTriggered: taskSystem.cancelSelectedExecution(id, false)
     }
     MenuItem {
       text: "Kill"
       enabled: execList.activeFocus && listModel.executionRunning
-      shortcut: "Alt+Shift+K"
+      shortcut: gSC("TaskExecutionList", "Kill")
       onTriggered: taskSystem.cancelSelectedExecution(id, true)
     }
     MenuItem {
       text: "Remove Finished Executions"
       enabled: execList.activeFocus
-      shortcut: "Alt+Shift+D"
+      shortcut: gSC("TaskExecutionList", "Remove Finished Executions")
       onTriggered: listModel.removeFinishedExecutions()
     }
   }

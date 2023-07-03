@@ -74,7 +74,7 @@ SplitView {
           MenuItem {
             enabled: changeList.activeFocus
             text: "Reset"
-            shortcut: "Ctrl+Alt+Z"
+            shortcut: gSC("GitCommit", "Reset")
             onTriggered: controller.resetSelectedFile()
           }
         }
@@ -139,7 +139,7 @@ SplitView {
     additionalMenuItems: [
       {
         text: "Rollback Chunk",
-        shortcut: "Ctrl+Alt+Z",
+        shortcut: gSC("GitCommit", "Rollback Chunk"),
         callback: () => controller.rollbackChunk(currentChunk, chunkCount),
       }
     ]

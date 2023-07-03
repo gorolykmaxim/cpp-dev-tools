@@ -7,17 +7,17 @@ FileLinkLookupController {
     },
     {
       text: "Open File In Editor",
-      shortcut: "Ctrl+O",
+      shortcut: gSC("FileLinkLookup", "Open File In Editor"),
       callback: () => openCurrentFileLink()
     },
     {
       text: "Previous File Link",
-      shortcut: "Ctrl+Alt+Up",
+      shortcut: gSC("FileLinkLookup", "Previous File Link"),
       callback: () => goToLink(false)
     },
     {
       text: "Next File Link",
-      shortcut: "Ctrl+Alt+Down",
+      shortcut: gSC("FileLinkLookup", "Next File Link"),
       callback: () => goToLink(true)
     },
   ]

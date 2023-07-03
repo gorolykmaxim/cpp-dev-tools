@@ -60,13 +60,13 @@ Loader {
         MenuItem {
           text: "Change Path"
           enabled: (input.activeFocus || databaseList.activeFocus) && controller.isDatabaseSelected
-          shortcut: "Alt+E"
+          shortcut: gSC("SqliteList", "Change Path")
           onTriggered: root.sourceComponent = updateDatabasePathView
         }
         MenuItem {
           text: "Remove From List"
           enabled: (input.activeFocus || databaseList.activeFocus) && controller.isDatabaseSelected
-          shortcut: "Alt+Shift+D"
+          shortcut: gSC("SqliteList", "Remove From List")
           onTriggered: controller.removeSelectedDatabase()
         }
       }

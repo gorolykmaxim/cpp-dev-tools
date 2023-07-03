@@ -59,7 +59,7 @@ Loader {
         MenuItem {
           text: "Remove Folder"
           enabled: input.activeFocus || folderList.activeFocus
-          shortcut: "Alt+Shift+D"
+          shortcut: gSC("FolderList", "Remove Folder")
           onTriggered: folderList.ifCurrentItem('title', folderRemoved)
         }
       }

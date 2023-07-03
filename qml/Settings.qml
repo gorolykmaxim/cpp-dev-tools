@@ -115,13 +115,13 @@ Loader {
                   MenuItem {
                     text: "Move Up"
                     enabled: terminalPriorityList.activeFocus
-                    shortcut: "Shift+Up"
+                    shortcut: gSC("Settings", "Move Up")
                     onTriggered: controller.moveSelectedTerminal(true)
                   }
                   MenuItem {
                     text: "Move Down"
                     enabled: terminalPriorityList.activeFocus
-                    shortcut: "Shift+Down"
+                    shortcut: gSC("Settings", "Move Down")
                     onTriggered: controller.moveSelectedTerminal(false)
                   }
                 }

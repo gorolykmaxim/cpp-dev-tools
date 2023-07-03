@@ -64,13 +64,13 @@ ColumnLayout {
         MenuItem {
           text: "Re-Run"
           enabled: testList.activeFocus && testModel.isSelectedTestRerunnable
-          shortcut: "Alt+Shift+R"
+          shortcut: gSC("TestExecution", "Re-Run")
           onTriggered: testModel.rerunSelectedTest(false)
         }
         MenuItem {
           text: "Re-Run Until Fails"
           enabled: testList.activeFocus && testModel.isSelectedTestRerunnable
-          shortcut: "Ctrl+Alt+Shift+R"
+          shortcut: gSC("TestExecution", "Re-Run Until Fails")
           onTriggered: testModel.rerunSelectedTest(true)
         }
       }

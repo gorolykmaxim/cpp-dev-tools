@@ -31,25 +31,25 @@ Loader {
         }
         MenuItem {
           text: "New Branch"
-          shortcut: "Alt+N"
+          shortcut: gSC("GitBranchList", "New Branch")
           enabled: list.activeFocus
           onTriggered: root.sourceComponent = createView
         }
         MenuItem {
           text: "Merge Into Current"
-          shortcut: "Alt+M"
+          shortcut: gSC("GitBranchList", "Merge Into Current")
           enabled: list.activeFocus
           onTriggered: gitSystem.mergeBranchIntoCurrent(controller.selectedBranchIndex)
         }
         MenuItem {
           text: "Delete"
-          shortcut: "Alt+D"
+          shortcut: gSC("GitBranchList", "Delete")
           enabled: list.activeFocus && controller.isLocalBranchSelected
           onTriggered: gitSystem.deleteBranch(controller.selectedBranchIndex, false)
         }
         MenuItem {
           text: "Force Delete"
-          shortcut: "Alt+Shift+D"
+          shortcut: gSC("GitBranchList", "Force Delete")
           enabled: list.activeFocus && controller.isLocalBranchSelected
           onTriggered: gitSystem.deleteBranch(controller.selectedBranchIndex, true)
         }

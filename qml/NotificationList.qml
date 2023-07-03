@@ -28,7 +28,7 @@ Loader {
         MenuItem {
           text: "Clear Notifications"
           enabled: list.activeFocus
-          shortcut: "Alt+Shift+D"
+          shortcut: gSC("NotificationList", "Clear Notifications")
           onTriggered: controller.clearNotifications()
         }
       }

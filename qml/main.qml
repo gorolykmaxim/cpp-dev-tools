@@ -35,6 +35,9 @@ ApplicationWindow {
       showNormal();
     }
   }
+  function gSC(group, name) {
+    return userCommandSystem.getShortcut(group, name)
+  }
   Timer {
     id: windowDimensionsDebounce
     interval: 100

@@ -5,6 +5,8 @@
 
 #include "text_list_model.h"
 
+using UserCommandIndex = QHash<QString, QHash<QString, QString>>;
+
 struct UserCommand {
   QString GetFormattedShortcut() const;
 
@@ -37,7 +39,9 @@ class UserCommandSystem : public QObject {
 
  public slots:
   void executeCommand(int i);
+  QString getShortcut(const QString& group, const QString& name) const;
 
  private:
   GlobalUserCommandListModel* user_commands;
+  UserCommandIndex user_cmd_index;
 };

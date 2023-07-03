@@ -240,12 +240,12 @@ Cdt.Pane {
           },
           {
             text: "Open Chunk In Editor",
-            shortcut: "Ctrl+O",
+            shortcut: gSC("GitDiff", "Open Chunk In Editor"),
             callback: () => diffModel.openFileInEditor(listView.currentIndex),
           },
           {
             text: "Toggle Unified Diff",
-            shortcut: "Alt+U",
+            shortcut: gSC("GitDiff", "Toggle Unified Diff"),
             callback: () => diffModel.toggleUnifiedView(),
           },
           ...additionalMenuItems

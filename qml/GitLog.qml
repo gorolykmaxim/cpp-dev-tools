@@ -74,19 +74,19 @@ Loader {
         }
         MenuItem {
           text: "Checkout"
-          shortcut: "Alt+C"
+          shortcut: gSC("GitLog", "Checkout")
           enabled: gitLogList.activeFocus
           onTriggered: logModel.checkout()
         }
         MenuItem {
           text: "Cherry-Pick"
-          shortcut: "Alt+P"
+          shortcut: gSC("GitLog", "Cherry-Pick")
           enabled: gitLogList.activeFocus
           onTriggered: logModel.cherryPick()
         }
         MenuItem {
           text: "New Branch"
-          shortcut: "Alt+N"
+          shortcut: gSC("GitLog", "New Branch")
           enabled: gitLogList.activeFocus
           onTriggered: root.sourceComponent = createView
         }
