@@ -86,6 +86,14 @@ void KeyboardShortcutsModel::setSelectedShortcut(const QString& shortcut) {
   Load(-1);
 }
 
+void KeyboardShortcutsModel::resetCurrentShortcut() {
+  int i = GetSelectedItemIndex();
+  LOG() << "Reseting modification to shortcut" << i;
+  if (new_shortcut.remove(i)) {
+    Load(-1);
+  }
+}
+
 QVariantList KeyboardShortcutsModel::GetRow(int i) const {
   static const Theme kTheme;
   const UserCommand& cmd = list[i];

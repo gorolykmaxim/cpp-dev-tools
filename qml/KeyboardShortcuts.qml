@@ -52,6 +52,7 @@ ColumnLayout {
       text: "Reset Change"
       shortcut: gSC("KeyboardShortcuts", "Reset Changed")
       enabled: list.activeFocus
+      onTriggered: shortcutModel.resetCurrentShortcut()
     }
     MenuItem {
       text: "Restore Default"
