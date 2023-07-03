@@ -94,6 +94,15 @@ void KeyboardShortcutsModel::resetCurrentShortcut() {
   }
 }
 
+void KeyboardShortcutsModel::resetAllShortcuts() {
+  LOG() << "Reseting all shortcut modifications";
+  bool reload_after = !new_shortcut.isEmpty();
+  new_shortcut.clear();
+  if (reload_after) {
+    Load(-1);
+  }
+}
+
 QVariantList KeyboardShortcutsModel::GetRow(int i) const {
   static const Theme kTheme;
   const UserCommand& cmd = list[i];

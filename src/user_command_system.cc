@@ -250,6 +250,8 @@ void UserCommandSystem::Initialize() {
                    user_cmd_index);
   RegisterLocalCmd("KeyboardShortcuts", "Reset Changed", "Alt+R", cmds,
                    user_cmd_index);
+  RegisterLocalCmd("KeyboardShortcuts", "Reset All Changes", "Alt+Shift+R",
+                   cmds, user_cmd_index);
   RegisterLocalCmd("KeyboardShortcuts", "Restore Default", "Alt+D", cmds,
                    user_cmd_index);
   RegisterLocalCmd("KeyboardShortcuts", "Restore All Defaults", "Alt+Shift+D",
