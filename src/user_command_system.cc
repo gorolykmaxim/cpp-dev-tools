@@ -118,7 +118,7 @@ void UserCommandSystem::Initialize() {
                 app.task.RunTaskOfExecution(app.task.GetLastExecution(), false,
                                             "TaskExecution.qml");
               });
-  RegisterCmd("Run", "Run Last Task as QtTest", "Ctrl+Y", cmds, user_commands,
+  RegisterCmd("Run", "Run Last Task as QtTest", "Ctrl+U", cmds, user_commands,
               default_user_cmd_index, [] {
                 Application& app = Application::Get();
                 app.task.RunTaskOfExecution(app.task.GetLastExecution(), false,
@@ -136,7 +136,7 @@ void UserCommandSystem::Initialize() {
                 app.task.RunTaskOfExecution(app.task.GetLastExecution(), true,
                                             "TaskExecution.qml");
               });
-  RegisterCmd("Run", "Run Last Task as QtTest Until Fails", "Ctrl+Shift+Y",
+  RegisterCmd("Run", "Run Last Task as QtTest Until Fails", "Ctrl+Shift+U",
               cmds, user_commands, default_user_cmd_index, [] {
                 Application& app = Application::Get();
                 app.task.RunTaskOfExecution(app.task.GetLastExecution(), true,
@@ -184,8 +184,8 @@ void UserCommandSystem::Initialize() {
   LOG() << "Committing global user command list";
   user_commands->Load();
   cmds.clear();
-  RegisterLocalCmd("TaskList", "Run as QtTest", "Alt+Y", cmds, user_cmd_index);
-  RegisterLocalCmd("TaskList", "Run as QtTest With Filter", "Ctrl+Alt+Y", cmds,
+  RegisterLocalCmd("TaskList", "Run as QtTest", "Alt+U", cmds, user_cmd_index);
+  RegisterLocalCmd("TaskList", "Run as QtTest With Filter", "Ctrl+Alt+U", cmds,
                    user_cmd_index);
   RegisterLocalCmd("TaskList", "Run as Google Test", "Alt+G", cmds,
                    user_cmd_index);
@@ -193,30 +193,30 @@ void UserCommandSystem::Initialize() {
                    cmds, user_cmd_index);
   RegisterLocalCmd("TaskList", "Run Until Fails", "Alt+Shift+R", cmds,
                    user_cmd_index);
-  RegisterLocalCmd("TaskList", "Run as QtTest Until Fails", "Alt+Shift+Y", cmds,
+  RegisterLocalCmd("TaskList", "Run as QtTest Until Fails", "Alt+Shift+U", cmds,
                    user_cmd_index);
   RegisterLocalCmd("TaskList", "Run as QtTest With Filter Until Fails",
-                   "Ctrl+Alt+Shift+Y", cmds, user_cmd_index);
+                   "Ctrl+Alt+Shift+U", cmds, user_cmd_index);
   RegisterLocalCmd("TaskList", "Run as Google Test Until Fails", "Alt+Shift+G",
                    cmds, user_cmd_index);
   RegisterLocalCmd("TaskList", "Run as Google Test With Filter Until Fails",
                    "Ctrl+Alt+Shift+G", cmds, user_cmd_index);
   RegisterLocalCmd("FolderList", "Remove Folder", "Alt+Shift+D", cmds,
                    user_cmd_index);
-  RegisterLocalCmd("TaskExecutionList", "Open as QtTest", "Alt+Y", cmds,
+  RegisterLocalCmd("TaskExecutionList", "Open as QtTest", "Alt+U", cmds,
                    user_cmd_index);
   RegisterLocalCmd("TaskExecutionList", "Open as Google Test", "Alt+G", cmds,
                    user_cmd_index);
   RegisterLocalCmd("TaskExecutionList", "Re-Run", "Alt+Shift+R", cmds,
                    user_cmd_index);
-  RegisterLocalCmd("TaskExecutionList", "Re-Run as QtTest", "Alt+Shift+Y", cmds,
+  RegisterLocalCmd("TaskExecutionList", "Re-Run as QtTest", "Alt+Shift+U", cmds,
                    user_cmd_index);
   RegisterLocalCmd("TaskExecutionList", "Re-Run as Google Test", "Alt+Shift+G",
                    cmds, user_cmd_index);
   RegisterLocalCmd("TaskExecutionList", "Re-Run Until Fails",
                    "Ctrl+Alt+Shift+R", cmds, user_cmd_index);
   RegisterLocalCmd("TaskExecutionList", "Re-Run as QtTest Until Fails",
-                   "Ctrl+Alt+Shift+Y", cmds, user_cmd_index);
+                   "Ctrl+Alt+Shift+U", cmds, user_cmd_index);
   RegisterLocalCmd("TaskExecutionList", "Re-Run as Google Test Until Fails",
                    "Ctrl+Alt+Shift+G", cmds, user_cmd_index);
   RegisterLocalCmd("TaskExecutionList", "Terminate", "Alt+Shift+T", cmds,
