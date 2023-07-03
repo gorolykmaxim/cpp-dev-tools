@@ -42,7 +42,10 @@ ColumnLayout {
     searchPlaceholderText: "Search shortcut"
     searchableModel: shortcutModel
     focus: true
-    onItemSelected: shortcutModel.selectCurrentCommand()
+    onItemSelected: {
+      shortcutModel.selectCurrentCommand();
+      shortcutTextField.forceActiveFocus();
+    }
     onItemRightClicked: contextMenu.open()
     KeyNavigation.up: shortcutTextField.enabled ? shortcutTextField : backBtn
   }
