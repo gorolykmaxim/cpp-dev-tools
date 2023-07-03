@@ -2,6 +2,7 @@
 
 #include "database.h"
 #include "io_task.h"
+#include "theme.h"
 
 #define LOG() qDebug() << "[KeyboardShortcutsModel]"
 
@@ -27,6 +28,23 @@ QString KeyboardShortcutsModel::GetSelectedShortcut() const {
   return selected_command < 0 ? "" : list[selected_command].shortcut;
 }
 
+QList<Database::Cmd> KeyboardShortcutsModel::MakeCommandsToUpdateDatabase()
+    const {
+  QList<Database::Cmd> cmds;
+  for (int i : new_shortcut.keys()) {
+    const UserCommand& cmd = list[i];
+    cmds.append(Database::Cmd(
+        "UPDATE user_command SET shortcut=? WHERE \"group\"=? AND name=?",
+        {new_shortcut[i], cmd.group, cmd.name}));
+  }
+  return cmds;
+}
+
+void KeyboardShortcutsModel::ResetAllModifications() {
+  selected_command = -1;
+  new_shortcut.clear();
+}
+
 void KeyboardShortcutsModel::selectCurrentCommand() {
   selected_command = GetSelectedItemIndex();
   LOG() << "Selected command for editing" << selected_command;
@@ -49,9 +67,25 @@ void KeyboardShortcutsModel::load() {
       });
 }
 
+void KeyboardShortcutsModel::setSelectedShortcut(const QString& shortcut) {
+  if (selected_command < 0) {
+    return;
+  }
+  LOG() << "Selection action has new shortcut:" << shortcut;
+  new_shortcut[selected_command] = shortcut;
+  Load(-1);
+}
+
 QVariantList KeyboardShortcutsModel::GetRow(int i) const {
+  static const Theme kTheme;
   const UserCommand& cmd = list[i];
-  return {cmd.group + " > " + cmd.name, cmd.shortcut, ""};
+  QString shortcut = cmd.shortcut;
+  QString color;
+  if (new_shortcut.contains(i)) {
+    shortcut = new_shortcut[i];
+    color = kTheme.kColorPrimary;
+  }
+  return {cmd.group + " > " + cmd.name, shortcut, color};
 }
 
 int KeyboardShortcutsModel::GetRowCount() const { return list.size(); }

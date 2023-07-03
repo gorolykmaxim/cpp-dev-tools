@@ -2,8 +2,14 @@
 
 #include "application.h"
 #include "database.h"
+#include "io_task.h"
 
 #define LOG() qDebug() << "[UserCommandSystem]"
+
+static const QString kSelectGlobalCmdsSql =
+    "SELECT \"group\", name, shortcut FROM user_command WHERE global=true";
+static const QString kSelectLocalCmdsSql =
+    "SELECT \"group\", name, shortcut FROM user_command WHERE global=false";
 
 QString UserCommand::GetFormattedShortcut() const {
   QString result = shortcut.toUpper();
@@ -154,17 +160,8 @@ void UserCommandSystem::Initialize() {
   Database::ExecCmdsAsync(cmds);
   LOG() << "Loading global user command shortcuts";
   QList<UserCommand> user_cmds = Database::ExecQueryAndReadSync<UserCommand>(
-      "SELECT \"group\", name, shortcut FROM user_command WHERE "
-      "global=true",
-      &UserCommandSystem::ReadUserCommandFromSql);
-  for (const UserCommand& cmd : user_cmds) {
-    for (GlobalUserCommand& gcmd : user_commands->list) {
-      if (cmd.group == gcmd.group && cmd.name == gcmd.name) {
-        gcmd.shortcut = cmd.shortcut;
-        break;
-      }
-    }
-  }
+      kSelectGlobalCmdsSql, &UserCommandSystem::ReadUserCommandFromSql);
+  UpdateGlobalShortcuts(user_cmds);
   LOG() << "Committing global user command list";
   user_commands->Load();
   cmds.clear();
@@ -260,16 +257,29 @@ void UserCommandSystem::Initialize() {
   Database::ExecCmdsAsync(cmds);
   LOG() << "Loading context user command shortcuts";
   user_cmds = Database::ExecQueryAndReadSync<UserCommand>(
-      "SELECT \"group\", name, shortcut FROM user_command WHERE "
-      "global=false",
-      &UserCommandSystem::ReadUserCommandFromSql);
-  for (const UserCommand& cmd : user_cmds) {
-    user_cmd_index[cmd.group][cmd.name] = cmd.shortcut;
-  }
+      kSelectLocalCmdsSql, &UserCommandSystem::ReadUserCommandFromSql);
+  UpdateLocalShortcuts(user_cmds);
 }
 
 const QList<GlobalUserCommand>& UserCommandSystem::GetUserCommands() const {
   return user_commands->list;
+}
+
+void UserCommandSystem::ReloadCommands() {
+  IoTask::Run<QList<UserCommand>>(
+      this,
+      [] {
+        return Database::ExecQueryAndRead<UserCommand>(
+            kSelectGlobalCmdsSql, &UserCommandSystem::ReadUserCommandFromSql);
+      },
+      [this](QList<UserCommand> cmds) { UpdateGlobalShortcuts(cmds); });
+  IoTask::Run<QList<UserCommand>>(
+      this,
+      [] {
+        return Database::ExecQueryAndRead<UserCommand>(
+            kSelectLocalCmdsSql, &UserCommandSystem::ReadUserCommandFromSql);
+      },
+      [this](QList<UserCommand> cmds) { UpdateLocalShortcuts(cmds); });
 }
 
 void UserCommandSystem::executeCommand(int i) {
@@ -284,4 +294,22 @@ void UserCommandSystem::executeCommand(int i) {
 QString UserCommandSystem::getShortcut(const QString& group,
                                        const QString& name) const {
   return user_cmd_index[group][name];
+}
+
+void UserCommandSystem::UpdateGlobalShortcuts(const QList<UserCommand>& cmds) {
+  for (const UserCommand& cmd : cmds) {
+    for (GlobalUserCommand& gcmd : user_commands->list) {
+      if (cmd.group == gcmd.group && cmd.name == gcmd.name) {
+        gcmd.shortcut = cmd.shortcut;
+        break;
+      }
+    }
+  }
+  user_commands->Load();
+}
+
+void UserCommandSystem::UpdateLocalShortcuts(const QList<UserCommand>& cmds) {
+  for (const UserCommand& cmd : cmds) {
+    user_cmd_index[cmd.group][cmd.name] = cmd.shortcut;
+  }
 }

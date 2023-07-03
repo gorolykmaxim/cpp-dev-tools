@@ -21,6 +21,7 @@ ColumnLayout {
     Cdt.TextField {
       id: shortcutTextField
       text: shortcutModel.selectedShortcut
+      onDisplayTextChanged: shortcutModel.setSelectedShortcut(displayText)
       placeholderText: "Shortcut"
       Layout.fillWidth: true
       KeyNavigation.right: backBtn

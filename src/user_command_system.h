@@ -38,12 +38,16 @@ class UserCommandSystem : public QObject {
   static UserCommand ReadUserCommandFromSql(QSqlQuery& sql);
   void Initialize();
   const QList<GlobalUserCommand>& GetUserCommands() const;
+  void ReloadCommands();
 
  public slots:
   void executeCommand(int i);
   QString getShortcut(const QString& group, const QString& name) const;
 
  private:
+  void UpdateGlobalShortcuts(const QList<UserCommand>& cmds);
+  void UpdateLocalShortcuts(const QList<UserCommand>& cmds);
+
   GlobalUserCommandListModel* user_commands;
   UserCommandIndex user_cmd_index;
 };

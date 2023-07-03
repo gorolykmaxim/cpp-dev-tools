@@ -3,6 +3,7 @@
 
 #include <QQmlEngine>
 
+#include "database.h"
 #include "text_list_model.h"
 #include "user_command_system.h"
 
@@ -17,10 +18,13 @@ class KeyboardShortcutsModel : public TextListModel {
   explicit KeyboardShortcutsModel(QObject* parent);
   QString GetSelectedCommand() const;
   QString GetSelectedShortcut() const;
+  QList<Database::Cmd> MakeCommandsToUpdateDatabase() const;
+  void ResetAllModifications();
 
  public slots:
   void selectCurrentCommand();
   void load();
+  void setSelectedShortcut(const QString& shortcut);
 
  protected:
   QVariantList GetRow(int i) const;
@@ -31,6 +35,7 @@ class KeyboardShortcutsModel : public TextListModel {
 
  private:
   QList<UserCommand> list;
+  QHash<int, QString> new_shortcut;
   int selected_command;
 };
 

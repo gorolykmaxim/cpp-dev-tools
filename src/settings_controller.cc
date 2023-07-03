@@ -59,6 +59,8 @@ void SettingsController::save() {
   }
   cmds.append(external_search_folders->MakeCommandsToUpdateDatabase());
   cmds.append(documentation_folders->MakeCommandsToUpdateDatabase());
+  cmds.append(shortcuts->MakeCommandsToUpdateDatabase());
+  shortcuts->ResetAllModifications();
   app.task.context = TaskContext{settings.task_history_limit,
                                  settings.run_with_console_on_win};
   cmds.append(Database::Cmd(
@@ -69,6 +71,7 @@ void SettingsController::save() {
                               {i, terminals->list[i]}));
   }
   Database::ExecCmdsAsync(cmds);
+  app.user_command.ReloadCommands();
   emit settingsChanged();
   app.notification.Post(Notification("Settings: Changes saved"));
 }
