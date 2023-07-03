@@ -7,8 +7,6 @@ import cdt
 Loader {
   id: root
   property var foldersModel: null
-  signal folderAdded(folder: string)
-  signal folderRemoved(folder: string)
   signal back()
   focus: true
   anchors.fill: parent
@@ -19,6 +17,7 @@ Loader {
       anchors.fill: parent
       spacing: 0
       Keys.onEscapePressed: root.back()
+      Component.onCompleted: foldersModel.load()
       Cdt.Pane {
         Layout.fillWidth: true
         padding: Theme.basePadding
@@ -60,7 +59,7 @@ Loader {
           text: "Remove Folder"
           enabled: input.activeFocus || folderList.activeFocus
           shortcut: gSC("FolderList", "Remove Folder")
-          onTriggered: folderList.ifCurrentItem('title', folderRemoved)
+          onTriggered: foldersModel.removeSelectedFolder()
         }
       }
     }
@@ -71,7 +70,7 @@ Loader {
       allowCreating: false
       chooseFolder: true
       onFileChosen: (file) => {
-        folderAdded(file);
+        foldersModel.addFolder(file);
         root.sourceComponent = listView;
       }
       onCancelled: root.sourceComponent = listView

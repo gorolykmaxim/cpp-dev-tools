@@ -151,8 +151,6 @@ Loader {
     id: externalSearchFolderEditorView
     Cdt.FolderList {
       foldersModel: controller.externalSearchFolders
-      onFolderAdded: folder => controller.externalSearchFolders.addFolder(folder)
-      onFolderRemoved: folder => controller.externalSearchFolders.removeFolder(folder)
       onBack: controller.goToSettings()
     }
   }
@@ -160,8 +158,6 @@ Loader {
     id: documentationFolderEditorView
     Cdt.FolderList {
       foldersModel: controller.documentationFolders
-      onFolderAdded: folder => controller.documentationFolders.addFolder(folder)
-      onFolderRemoved: folder => controller.documentationFolders.removeFolder(folder)
       onBack: controller.goToSettings()
     }
   }

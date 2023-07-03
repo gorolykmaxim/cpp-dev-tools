@@ -129,10 +129,7 @@ FolderListModel::FolderListModel(QObject *parent, const QString &table,
   SetEmptyListPlaceholder("Add folders by clicking on 'Add Folder' button");
 }
 
-void FolderListModel::SetFolders(QStringList &folders) {
-  list = folders;
-  Load();
-}
+void FolderListModel::SetFolders(QStringList &folders) { list = folders; }
 
 QList<Database::Cmd> FolderListModel::MakeCommandsToUpdateDatabase() {
   QList<Database::Cmd> cmds;
@@ -143,6 +140,8 @@ QList<Database::Cmd> FolderListModel::MakeCommandsToUpdateDatabase() {
   return cmds;
 }
 
+void FolderListModel::load() { Load(); }
+
 void FolderListModel::addFolder(const QString &folder) {
   if (list.contains(folder)) {
     return;
@@ -152,9 +151,13 @@ void FolderListModel::addFolder(const QString &folder) {
   Load();
 }
 
-void FolderListModel::removeFolder(const QString &folder) {
-  LOG() << "Removing" << table << folder;
-  list.removeAll(folder);
+void FolderListModel::removeSelectedFolder() {
+  int i = GetSelectedItemIndex();
+  if (i < 0) {
+    return;
+  }
+  LOG() << "Removing" << table << list[i];
+  list.remove(i);
   Load();
 }
 

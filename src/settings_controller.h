@@ -20,8 +20,9 @@ class FolderListModel : public TextListModel {
   QStringList list;
 
  public slots:
+  void load();
   void addFolder(const QString& folder);
-  void removeFolder(const QString& folder);
+  void removeSelectedFolder();
 
  protected:
   QVariantList GetRow(int i) const;
