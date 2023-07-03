@@ -29,7 +29,7 @@ SearchUserCommandListModel::SearchUserCommandListModel(QObject* parent)
 }
 
 QVariantList SearchUserCommandListModel::GetRow(int i) const {
-  const UserCommand& cmd = Application::Get().user_command.GetUserCommands()[i];
+  const GlobalUserCommand& cmd = Application::Get().user_command.GetUserCommands()[i];
   QString title = cmd.group + ": " + cmd.name;
   return {title, cmd.GetFormattedShortcut()};
 }

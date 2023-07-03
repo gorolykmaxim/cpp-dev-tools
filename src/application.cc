@@ -52,7 +52,7 @@ Application::~Application() { task.KillAllTasks(); }
 
 int Application::Exec() {
   QtConcurrent::run(&io_thread_pool, &Database::Initialize).waitForFinished();
-  user_command.RegisterCommands();
+  user_command.Initialize();
   view.Initialize();
   editor.Initialize();
   task.Initialize();

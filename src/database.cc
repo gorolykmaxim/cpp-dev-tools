@@ -135,6 +135,13 @@ void Database::Initialize() {
       "source_folder TEXT, "
       "build_folder TEXT, "
       "FOREIGN KEY(project_id) REFERENCES project(id) ON DELETE CASCADE)");
+  ExecCmd(
+      "CREATE TABLE IF NOT EXISTS user_command("
+      "\"group\" TEXT, "
+      "name TEXT, "
+      "shortcut TEXT,"
+      "global BOOL DEFAULT FALSE,"
+      "PRIMARY KEY(\"group\", name))");
 }
 
 void Database::ExecQuery(QSqlQuery &sql, const QString &query,

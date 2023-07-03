@@ -11,32 +11,33 @@ struct UserCommand {
   QString group;
   QString name;
   QString shortcut;
+};
+
+struct GlobalUserCommand : public UserCommand {
   std::function<void()> callback;
 };
 
-class UserCommandListModel : public TextListModel {
+class GlobalUserCommandListModel : public TextListModel {
  public:
-  explicit UserCommandListModel(QObject* parent);
+  explicit GlobalUserCommandListModel(QObject* parent);
   QVariantList GetRow(int i) const override;
   int GetRowCount() const override;
 
-  QList<UserCommand> list;
+  QList<GlobalUserCommand> list;
 };
 
 class UserCommandSystem : public QObject {
   Q_OBJECT
-  Q_PROPERTY(UserCommandListModel* userCommands MEMBER user_commands CONSTANT)
+  Q_PROPERTY(
+      GlobalUserCommandListModel* userCommands MEMBER user_commands CONSTANT)
  public:
   UserCommandSystem();
-  void RegisterCommands();
-  const QList<UserCommand>& GetUserCommands() const;
+  void Initialize();
+  const QList<GlobalUserCommand>& GetUserCommands() const;
 
  public slots:
   void executeCommand(int i);
 
  private:
-  void RegisterCommand(const QString& group, const QString& name,
-                       const QString& shortcut,
-                       const std::function<void()>& callback);
-  UserCommandListModel* user_commands;
+  GlobalUserCommandListModel* user_commands;
 };
