@@ -21,6 +21,7 @@ ColumnLayout {
     Cdt.TextField {
       id: shortcutTextField
       text: shortcutModel.selectedShortcut
+      enabled: shortcutModel.selectedShortcut
       onDisplayTextChanged: shortcutModel.setSelectedShortcut(displayText)
       placeholderText: "Shortcut"
       Layout.fillWidth: true
@@ -43,7 +44,7 @@ ColumnLayout {
     focus: true
     onItemSelected: shortcutModel.selectCurrentCommand()
     onItemRightClicked: contextMenu.open()
-    KeyNavigation.up: shortcutTextField
+    KeyNavigation.up: shortcutTextField.enabled ? shortcutTextField : backBtn
   }
   Menu {
     id: contextMenu
