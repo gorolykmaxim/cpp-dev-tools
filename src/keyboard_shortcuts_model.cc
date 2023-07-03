@@ -72,7 +72,11 @@ void KeyboardShortcutsModel::setSelectedShortcut(const QString& shortcut) {
     return;
   }
   LOG() << "Selection action has new shortcut:" << shortcut;
-  new_shortcut[selected_command] = shortcut;
+  if (list[selected_command].shortcut == shortcut) {
+    new_shortcut.remove(selected_command);
+  } else {
+    new_shortcut[selected_command] = shortcut;
+  }
   Load(-1);
 }
 
