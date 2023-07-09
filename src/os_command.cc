@@ -199,6 +199,9 @@ void OsCommand::LoadEnvironmentVariablesOnMac(QObject *ctx) {
           }
           QString name = line.sliced(0, i);
           QString value = line.sliced(i + 1);
+          if (name == "PATH") {
+            value = "/usr/local/bin:" + value;
+          }
           qputenv(name.toStdString().c_str(), value.toUtf8());
         }
       });
