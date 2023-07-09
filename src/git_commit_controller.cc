@@ -81,6 +81,10 @@ void GitCommitController::findChangedFiles() {
             if (files->list.isEmpty() != was_empty) {
               emit filesChanged();
             }
+            if (files->list.isEmpty()) {
+              setMessage("");
+              emit messageChanged();
+            }
             return OsCommand::Run("git", {"diff", "HEAD", "--numstat"}, "",
                                   "Git: Failed to collect diff statistics");
           })
