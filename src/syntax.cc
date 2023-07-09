@@ -353,6 +353,19 @@ static const Regex kKotlinSoftKeywords = KeywordsRegExp({
     "protected",  "public",    "reified",     "sealed",      "suspend",
     "tailrec",    "vararg",
 });
+static const Regex kJavaKeywords = KeywordsRegExp({
+    "abstract", "continue", "for",        "new",       "switch",
+    "assert",   "default",  "goto",       "package",   "synchronized",
+    "boolean",  "do",       "if",         "private",   "this",
+    "break",    "double",   "implements", "protected", "throw",
+    "byte",     "else",     "import",     "public",    "throws",
+    "case",     "enum",     "instanceof", "return",    "transient",
+    "catch",    "extends",  "int",        "short",     "try",
+    "char",     "final",    "interface",  "static",    "void",
+    "class",    "finally",  "long",       "strictfp",  "volatile",
+    "const",    "float",    "native",     "super",     "while",
+    "null",     "var",
+});
 
 static QList<TextFormat> ParseByRegex(const QString &text,
                                       const QTextCharFormat &format,
@@ -486,6 +499,15 @@ static QList<TextFormat> ParseKotlin(const QString &text) {
   return results;
 }
 
+static QList<TextFormat> ParseJava(const QString &text) {
+  QList<TextFormat> results;
+  results.append(ParseByRegex(text, kLanguageKeywordFormat1, kJavaKeywords));
+  results.append(ParseAnnotations(text));
+  results.append(ParseNumbers(text));
+  results.append(ParseStringsAndComments(text, "//"));
+  return results;
+}
+
 QList<TextFormat> Syntax::FindStringsAndComments(
     const QString &text, const QString &comment_symbol) {
   return ParseStringsAndComments(text, comment_symbol);
@@ -526,6 +548,8 @@ void SyntaxFormatter::DetectLanguageByFile(const QString &file_name) {
     format = ParseJs;
   } else if (file_name.endsWith(".kt")) {
     format = ParseKotlin;
+  } else if (file_name.endsWith(".java")) {
+    format = ParseJava;
   } else {
     format = nullptr;
   }
