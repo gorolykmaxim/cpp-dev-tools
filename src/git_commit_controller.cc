@@ -184,13 +184,12 @@ void GitCommitController::commit(bool commit_all, bool amend) {
         untracked.append(f.path);
       }
     }
-    if (untracked.isEmpty()) {
-      return;
+    if (!untracked.isEmpty()) {
+      untracked.insert(0, "add");
+      add_untracked =
+          OsCommand::Run("git", untracked, "",
+                         "Git: Failed to add untracked files before commit");
     }
-    untracked.insert(0, "add");
-    add_untracked =
-        OsCommand::Run("git", untracked, "",
-                       "Git: Failed to add untracked files before commit");
   }
   add_untracked
       .Then<OsProcess>(this,
