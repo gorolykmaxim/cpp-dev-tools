@@ -121,7 +121,13 @@ static void CreateCmakeTasks(TasksInfo& info, const QString& project_path,
       continue;
     }
     QJsonDocument doc = QJsonDocument::fromJson(f.readAll());
-    if (doc["type"].toString() != "EXECUTABLE") {
+    bool is_executable;
+    QString type = doc["type"].toString();
+    if (type == "EXECUTABLE") {
+      is_executable = true;
+    } else if (type == "STATIC_LIBRARY" || type == "SHARED_LIBRARY") {
+      is_executable = false;
+    } else {
       continue;
     }
     QString target = doc["name"].toString();
@@ -138,6 +144,9 @@ static void CreateCmakeTasks(TasksInfo& info, const QString& project_path,
       }
     }
     for (bool run_after_build : {false, true}) {
+      if (!is_executable && run_after_build) {
+        continue;
+      }
       entt::entity entity = registry.create();
       registry.emplace<TaskId>(
           entity, "cmake-target:" + target + ':' + exec_path + ':' +
