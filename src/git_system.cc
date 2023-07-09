@@ -60,6 +60,13 @@ void GitSystem::Pull() {
       .Then(this, [this](OsProcess) { emit pull(); });
 }
 
+void GitSystem::Fetch() {
+  Application::Get().notification.Post(
+      Notification("Git: Fetching changes..."));
+  ExecuteGitCommand({"fetch", "--prune"}, "Git: Failed to fetch changes",
+                    "Git: Fetch complete");
+}
+
 void GitSystem::Push() {
   Application::Get().notification.Post(Notification("Git: Pushing changes..."));
   OsCommand::Run("git", {"push", "origin", GetCurrentBranchName()}, "",

@@ -21,6 +21,7 @@ class GitSystem : public QObject {
   static QString FormatChangeStats(int additions, int removals);
   void Push();
   void Pull();
+  void Fetch();
   bool IsLookingForBranches() const;
   const QList<GitBranch>& GetBranches() const;
   void ClearBranches();

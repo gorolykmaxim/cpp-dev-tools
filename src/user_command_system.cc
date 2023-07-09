@@ -157,6 +157,8 @@ void UserCommandSystem::Initialize() {
   RegisterCmd("Run", "Kill Task Execution", "Ctrl+Alt+Shift+T", cmds,
               user_commands, default_user_cmd_index,
               [] { Application::Get().task.cancelSelectedExecution(true); });
+  RegisterCmd("Git", "Fetch", "Ctrl+Shift+O", cmds, user_commands,
+              default_user_cmd_index, [] { Application::Get().git.Fetch(); });
   RegisterCmd("Git", "Pull", "Ctrl+Shift+P", cmds, user_commands,
               default_user_cmd_index, [] { Application::Get().git.Pull(); });
   RegisterCmd("Git", "Push", "Ctrl+Shift+K", cmds, user_commands,
