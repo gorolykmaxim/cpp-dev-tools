@@ -158,7 +158,15 @@ void GitCommitController::resetSelectedFile() {
   if (!f->is_staged && f->status == ChangedFile::kNew) {
     QString path = f->path;
     IoTask::Run(
-        this, [path] { QFile(path).remove(); }, [this] { findChangedFiles(); });
+        this,
+        [path] {
+          if (QFileInfo(path).isDir()) {
+            QDir(path).removeRecursively();
+          } else {
+            QFile(path).remove();
+          }
+        },
+        [this] { findChangedFiles(); });
   } else {
     ExecuteGitCommand({"checkout", "HEAD", "--", f->path}, "",
                       "Git: Failed to reset file");
