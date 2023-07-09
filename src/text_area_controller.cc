@@ -564,7 +564,8 @@ void FileLinkLookupController::openCurrentFileLink() {
   }
   int i = index[current_line][current_line_link];
   const FileLink& link = links[i];
-  Application::Get().editor.OpenFile(link.file_path, link.column, link.row);
+  Application::Get().editor.OpenFile(link.file_path, link.line_num,
+                                     link.col_num);
 }
 
 void FileLinkLookupController::goToLink(bool next) {
@@ -594,9 +595,9 @@ void FileLinkLookupController::FindFileLinks(const QRegularExpression& regex,
     link.file_path = m.captured(1);
     link.offset = m.capturedStart();
     link.length = m.capturedLength();
-    link.column = m.captured(2).toInt();
+    link.line_num = m.captured(2).toInt();
     if (m.lastCapturedIndex() > 2) {
-      link.row = m.captured(3).toInt();
+      link.col_num = m.captured(3).toInt();
     }
     line += text.sliced(pos, link.offset - pos).count('\n');
     link.line = line;

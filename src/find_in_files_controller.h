@@ -10,8 +10,8 @@
 struct FileSearchResult {
   QString match;
   QString file_path;
-  int column = -1;
-  int row = -1;
+  int line = -1;
+  int col = -1;
   int offset = -1;
   int match_length = -1;
 };

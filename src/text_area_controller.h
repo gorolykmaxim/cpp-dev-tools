@@ -22,8 +22,8 @@ struct LineInfo {
 struct FileLink : public TextSegment {
   int line = 0;
   QString file_path;
-  int column = -1;
-  int row = -1;
+  int line_num = -1;
+  int col_num = -1;
 };
 
 struct TextSelection {

@@ -127,8 +127,8 @@ static ResultBatch Find(const FindInFilesOptions& options,
       FileSearchResult result;
       result.file_path = file_name;
       result.match = HighlightMatch(line, row, search_term.size());
-      result.column = column;
-      result.row = row + 1;
+      result.line = column;
+      result.col = row + 1;
       result.offset = offset + row;
       result.match_length = search_term.size();
       results.append(result);
@@ -152,8 +152,8 @@ static ResultBatch FindRegex(const QRegularExpression& search_term_regex,
     result.file_path = file_name;
     result.match =
         HighlightMatch(line, match.capturedStart(0), match.capturedLength(0));
-    result.column = column;
-    result.row = match.capturedStart(0) + 1;
+    result.line = column;
+    result.col = match.capturedStart(0) + 1;
     result.offset = offset + match.capturedStart(0);
     result.match_length = match.capturedLength(0);
     results.append(result);
@@ -315,8 +315,8 @@ void FindInFilesController::openSelectedResultInEditor() {
     return;
   }
   const FileSearchResult& result = search_results->At(selected_result);
-  Application::Get().editor.OpenFile(result.file_path, result.column,
-                                     result.row);
+  Application::Get().editor.OpenFile(result.file_path, result.line,
+                                     result.col);
 }
 
 void FindInFilesController::OnResultFound(int i) {
