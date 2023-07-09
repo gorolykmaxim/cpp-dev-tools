@@ -13,16 +13,17 @@ void EditorSystem::Initialize() {
   LOG() << "Command to open editor:" << open_command;
 }
 
-void EditorSystem::OpenFile(const QString& file, int column, int row) {
+void EditorSystem::OpenFile(const QString& file, int line, int col) {
   QString link = file;
-  if (column > 0) {
-    link += ':' + QString::number(column);
+  if (line > 0) {
+    link += ':' + QString::number(line);
   }
-  if (row > 0) {
-    link += ':' + QString::number(row);
+  if (col > 0) {
+    link += ':' + QString::number(col);
   }
   LOG() << "Opening file link" << link;
   QString cmd = open_command;
   cmd.replace("{}", link);
+  cmd.replace("{file}", file);
   OsCommand::RunCmd(cmd, "Code Editor: Failed to open file: " + link);
 }

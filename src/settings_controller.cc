@@ -49,10 +49,12 @@ void SettingsController::save() {
   LOG() << "Saving settings";
   Application &app = Application::Get();
   QList<Database::Cmd> cmds;
-  if (!settings.open_in_editor_command.contains("{}")) {
+  if (!settings.open_in_editor_command.contains("{}") &&
+      !settings.open_in_editor_command.contains("{file}")) {
     settings.open_in_editor_command += " {}";
   }
-  if (settings.open_in_editor_command.trimmed() != "{}") {
+  if (settings.open_in_editor_command.trimmed() != "{}" &&
+      settings.open_in_editor_command.trimmed() != "{file}") {
     app.editor.open_command = settings.open_in_editor_command;
     cmds.append(Database::Cmd("UPDATE editor SET open_command=?",
                               {settings.open_in_editor_command}));
