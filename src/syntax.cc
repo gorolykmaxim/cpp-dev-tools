@@ -25,7 +25,6 @@ static QRegularExpression KeywordsRegExpNoBoundaries(QStringList words) {
   return QRegularExpression(words.join('|'));
 }
 
-static const Regex kNumberRegex("\\b([0-9.]+|0x[0-9.a-f]+)\\b");
 static const QTextCharFormat kFunctionNameFormat = TextColorToFormat("#dcdcaa");
 static const QTextCharFormat kCommentFormat = TextColorToFormat("#6a9956");
 static const QTextCharFormat kLanguageKeywordFormat1 =
@@ -335,6 +334,25 @@ static const Regex kJsKeywords = KeywordsRegExp({
     "true",         "try",       "typeof",   "var",        "void",
     "volatile",     "while",     "with",     "yield",
 });
+static const Regex kKotlinHardKeywords = KeywordsRegExp({
+    "as",    "as?",   "break", "class",  "continue",  "do",     "else",
+    "false", "for",   "fun",   "if",     "in",        "!in",    "interface",
+    "is",    "!is",   "null",  "object", "package",   "return", "super",
+    "this",  "throw", "true",  "try",    "typealias", "typeof", "val",
+    "var",   "when",  "while",
+});
+static const Regex kKotlinSoftKeywords = KeywordsRegExp({
+    "by",         "catch",     "constructor", "delegate",    "dynamic",
+    "field",      "file",      "finally",     "get",         "import",
+    "init",       "param",     "property",    "receiver",    "set",
+    "setparam",   "value",     "where",       "actual",      "abstract",
+    "annotation", "companion", "const",       "crossinline", "data",
+    "enum",       "expect",    "external",    "final",       "infix",
+    "inline",     "inner",     "internal",    "lateinit",    "noinline",
+    "open",       "operator",  "out",         "override",    "private",
+    "protected",  "public",    "reified",     "sealed",      "suspend",
+    "tailrec",    "vararg",
+});
 
 static QList<TextFormat> ParseByRegex(const QString &text,
                                       const QTextCharFormat &format,
@@ -399,6 +417,11 @@ static QList<TextFormat> ParseStringsAndComments(
   return results;
 }
 
+static QList<TextFormat> ParseAnnotations(const QString &text) {
+  static const Regex kAnnotationRegex("\\s?@[^\\(^\\s]+");
+  return ParseByRegex(text, kFunctionNameFormat, kAnnotationRegex);
+}
+
 static QList<TextFormat> ParseCmake(const QString &text) {
   static const Regex kFunctionRegex("\\b[a-zA-Z0-9\\_]+\\s?\\(");
   static const Regex kCommentRegex("#.*$");
@@ -451,6 +474,18 @@ static QList<TextFormat> ParseJs(const QString &text) {
   return results;
 }
 
+static QList<TextFormat> ParseKotlin(const QString &text) {
+  QList<TextFormat> results;
+  results.append(
+      ParseByRegex(text, kLanguageKeywordFormat2, kKotlinHardKeywords));
+  results.append(
+      ParseByRegex(text, kLanguageKeywordFormat1, kKotlinSoftKeywords));
+  results.append(ParseAnnotations(text));
+  results.append(ParseNumbers(text));
+  results.append(ParseStringsAndComments(text, "//"));
+  return results;
+}
+
 QList<TextFormat> Syntax::FindStringsAndComments(
     const QString &text, const QString &comment_symbol) {
   return ParseStringsAndComments(text, comment_symbol);
@@ -489,6 +524,8 @@ void SyntaxFormatter::DetectLanguageByFile(const QString &file_name) {
     format = ParseCpp;
   } else if (file_name.endsWith(".js")) {
     format = ParseJs;
+  } else if (file_name.endsWith(".kt")) {
+    format = ParseKotlin;
   } else {
     format = nullptr;
   }
