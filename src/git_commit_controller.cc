@@ -168,14 +168,38 @@ void GitCommitController::resetSelectedFile() {
 void GitCommitController::commit(bool commit_all, bool amend) {
   LOG() << "Committing"
         << "all files:" << commit_all;
-  QStringList args = {"commit", "-F", "-"};
+  Promise<OsProcess> add_untracked(OsProcess{0, ""});
   if (commit_all) {
-    args.append("-a");
+    QStringList untracked;
+    for (const ChangedFile &f : files->list) {
+      if (f.status == ChangedFile::kNew && !f.is_staged) {
+        untracked.append(f.path);
+      }
+    }
+    if (untracked.isEmpty()) {
+      return;
+    }
+    untracked.insert(0, "add");
+    add_untracked =
+        OsCommand::Run("git", untracked, "",
+                       "Git: Failed to add untracked files before commit");
   }
-  if (amend) {
-    args.append("--amend");
-  }
-  ExecuteGitCommand(args, message, "Git: Failed to commit")
+  add_untracked
+      .Then<OsProcess>(this,
+                       [this, commit_all, amend](OsProcess p) {
+                         if (p.exit_code != 0) {
+                           return Promise<OsProcess>(p);
+                         }
+                         QStringList args = {"commit", "-F", "-"};
+                         if (commit_all) {
+                           args.append("-a");
+                         }
+                         if (amend) {
+                           args.append("--amend");
+                         }
+                         return ExecuteGitCommand(args, message,
+                                                  "Git: Failed to commit");
+                       })
       .Then(this, [this](OsProcess p) {
         if (p.exit_code == 0) {
           setMessage("");
