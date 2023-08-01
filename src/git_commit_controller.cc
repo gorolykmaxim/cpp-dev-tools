@@ -10,8 +10,7 @@
 #define LOG() qDebug() << "[GitCommitController]"
 
 GitCommitController::GitCommitController(QObject *parent)
-    : QObject(parent),
-      files(new ChangedFileListModel(this)),
+    : QObject(parent), files(new ChangedFileListModel(this)),
       formatter(new CommitMessageFormatter(this)) {
   // This re-runs git diff when user switches to a different changed file.
   connect(files, &TextListModel::selectedItemChanged, this, [this] {
@@ -171,6 +170,10 @@ void GitCommitController::resetSelectedFile() {
           }
         },
         [this] { findChangedFiles(); });
+  } else if (f->path.contains(" -> ")) {
+    QStringList parts = f->path.split(" -> ");
+    ExecuteGitCommand({"mv", parts[1], parts[0]}, "",
+                      "Git: Failed to reset file");
   } else {
     ExecuteGitCommand({"checkout", "HEAD", "--", f->path}, "",
                       "Git: Failed to reset file");
