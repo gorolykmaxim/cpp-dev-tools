@@ -9,6 +9,8 @@
 
 #define LOG() qDebug() << "[GitCommitController]"
 
+static const QString kMoveSign = " -> ";
+
 GitCommitController::GitCommitController(QObject *parent)
     : QObject(parent), files(new ChangedFileListModel(this)),
       formatter(new CommitMessageFormatter(this)) {
@@ -137,14 +139,20 @@ void GitCommitController::findChangedFiles() {
       });
 }
 
+static QString GetNewFilePath(const ChangedFile &file) {
+  return file.path.contains(kMoveSign) ? file.path.split(kMoveSign)[1]
+                                       : file.path;
+}
+
 void GitCommitController::toggleStagedSelectedFile() {
   const ChangedFile *f = files->GetSelected();
   if (!f) {
     return;
   }
   if (f->is_staged) {
-    LOG() << "Unstaging" << f->path;
-    ExecuteGitCommand({"restore", "--staged", f->path}, "",
+    QString path = GetNewFilePath(*f);
+    LOG() << "Unstaging" << path;
+    ExecuteGitCommand({"restore", "--staged", path}, "",
                       "Git: Failed to unstage file");
   } else {
     LOG() << "Staging" << f->path;
@@ -170,8 +178,8 @@ void GitCommitController::resetSelectedFile() {
           }
         },
         [this] { findChangedFiles(); });
-  } else if (f->path.contains(" -> ")) {
-    QStringList parts = f->path.split(" -> ");
+  } else if (f->path.contains(kMoveSign)) {
+    QStringList parts = f->path.split(kMoveSign);
     ExecuteGitCommand({"mv", parts[1], parts[0]}, "",
                       "Git: Failed to reset file");
   } else {
@@ -242,8 +250,9 @@ void GitCommitController::rollbackChunk(int chunk, int chunk_count) {
   if (!f) {
     return;
   }
+  QString path = GetNewFilePath(*f);
   LOG() << "Rolling back git diff chunk " << chunk << "of" << chunk_count
-        << "in" << f->path;
+        << "in" << path;
   QStringList input;
   for (int i = 0; i < chunk_count; i++) {
     if (chunk == i) {
@@ -252,7 +261,7 @@ void GitCommitController::rollbackChunk(int chunk, int chunk_count) {
       input.append("n\n");
     }
   }
-  ExecuteGitCommand({"checkout", "-p", "--", f->path}, input.join(""),
+  ExecuteGitCommand({"checkout", "-p", "--", path}, input.join(""),
                     "Git: Failed to rollback diff chunk");
 }
 
@@ -283,7 +292,7 @@ void GitCommitController::DiffSelectedFile() {
     SetDiff("", "");
     return;
   }
-  QString path = selected->path;
+  QString path = GetNewFilePath(*selected);
   LOG() << "Will get git diff of" << path;
   Promise<OsProcess> git_diff;
   if (selected->status == ChangedFile::kNew && !selected->is_staged) {
