@@ -9,19 +9,21 @@
 class TaskListModel : public TextListModel {
   Q_OBJECT
   QML_ELEMENT
- public:
-  explicit TaskListModel(QObject* parent = nullptr);
+public:
+  explicit TaskListModel(QObject *parent = nullptr);
+  ~TaskListModel();
 
- public slots:
+public slots:
   void displayTaskList();
-  void executeCurrentTask(bool repeat_until_fail, const QString& view,
-                          const QStringList& args);
+  void executeCurrentTask(bool repeat_until_fail, const QString &view,
+                          const QStringList &args);
 
- protected:
+protected:
   QVariantList GetRow(int i) const override;
   int GetRowCount() const override;
 
- private:
+private:
   entt::registry registry;
   QList<entt::entity> tasks;
+  std::atomic_bool cancel;
 };
