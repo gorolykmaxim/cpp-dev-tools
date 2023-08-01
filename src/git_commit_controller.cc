@@ -161,12 +161,16 @@ void GitCommitController::toggleStagedSelectedFile() {
 }
 
 void GitCommitController::resetSelectedFile() {
+  static const QString kErr = "Git: Failed to reset file";
   const ChangedFile *f = files->GetSelected();
   if (!f) {
     return;
   }
   LOG() << "Reseting" << f->path;
-  if (!f->is_staged && f->status == ChangedFile::kNew) {
+  if (f->path.contains(kMoveSign)) {
+    QStringList parts = f->path.split(kMoveSign);
+    ExecuteGitCommand({"mv", parts[1], parts[0]}, "", kErr);
+  } else if (!f->is_staged && f->status == ChangedFile::kNew) {
     QString path = f->path;
     IoTask::Run(
         this,
@@ -178,13 +182,10 @@ void GitCommitController::resetSelectedFile() {
           }
         },
         [this] { findChangedFiles(); });
-  } else if (f->path.contains(kMoveSign)) {
-    QStringList parts = f->path.split(kMoveSign);
-    ExecuteGitCommand({"mv", parts[1], parts[0]}, "",
-                      "Git: Failed to reset file");
+  } else if (f->is_staged && f->status == ChangedFile::kNew) {
+    ExecuteGitCommand({"rm", "-f", f->path}, "", kErr);
   } else {
-    ExecuteGitCommand({"checkout", "HEAD", "--", f->path}, "",
-                      "Git: Failed to reset file");
+    ExecuteGitCommand({"checkout", "HEAD", "--", f->path}, "", kErr);
   }
 }
 
