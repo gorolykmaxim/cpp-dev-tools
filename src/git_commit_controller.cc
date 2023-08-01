@@ -42,8 +42,13 @@ GitCommitController::GitCommitController(QObject *parent)
 
 bool GitCommitController::HasChanges() const { return !files->list.isEmpty(); }
 
-int GitCommitController::CalcSideBarWidth() const {
+int GitCommitController::CalcSideBarWidthShort() const {
   return ViewSystem::CalcWidthInMonoFont(QString(50, 'a')) +
+         Theme().kBasePadding;
+}
+
+int GitCommitController::CalcSideBarWidthLong() const {
+  return ViewSystem::CalcWidthInMonoFont(QString(72, 'a')) +
          Theme().kBasePadding;
 }
 
