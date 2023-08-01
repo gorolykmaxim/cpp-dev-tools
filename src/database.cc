@@ -142,6 +142,11 @@ void Database::Initialize() {
       "shortcut TEXT,"
       "global BOOL DEFAULT FALSE,"
       "PRIMARY KEY(\"group\", name))");
+  ExecCmd(
+      "CREATE TABLE IF NOT EXISTS current_view("
+      "project_id BLOB PRIMARY KEY, "
+      "name TEXT NOT NULL, "
+      "FOREIGN KEY(project_id) REFERENCES project(id) ON DELETE CASCADE)");
 }
 
 void Database::ExecQuery(QSqlQuery &sql, const QString &query,

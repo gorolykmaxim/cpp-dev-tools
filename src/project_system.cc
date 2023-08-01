@@ -64,7 +64,7 @@ void ProjectSystem::SetCurrentProject(Project project) {
     app.task.LoadLastTaskExecution();
     app.sqlite.InitializeSelectedFile();
     app.git.FindBranches();
-    app.view.SetCurrentView("TaskList.qml");
+    app.view.OpenViewOfCurrentProjectOr("TaskList.qml");
   }
 }
 

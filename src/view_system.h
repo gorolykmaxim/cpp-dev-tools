@@ -71,6 +71,7 @@ class ViewSystem : public QObject {
   QString GetWindowTitle() const;
   void Initialize();
   void SetDefaultWindowSize();
+  void OpenViewOfCurrentProjectOr(const QString& default_view);
 
  public slots:
   void DisplaySearchUserCommandDialog();

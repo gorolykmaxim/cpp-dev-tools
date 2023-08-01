@@ -8,6 +8,7 @@
 #include <QScreen>
 
 #include "database.h"
+#include "io_task.h"
 
 #define LOG() qDebug() << "[ViewSystem]"
 
@@ -59,6 +60,11 @@ void ViewSystem::SetCurrentView(const QString &current_view) {
   emit currentViewChanged();
   this->current_view = current_view;
   emit currentViewChanged();
+  Project project = Application::Get().project.GetCurrentProject();
+  if (!project.IsNull()) {
+    Database::ExecCmdAsync("INSERT OR REPLACE INTO current_view VALUES(?, ?)",
+                           {project.id, current_view});
+  }
 }
 
 QString ViewSystem::GetCurrentView() const { return current_view; }
@@ -103,6 +109,24 @@ void ViewSystem::SetDefaultWindowSize() {
   dimensions.y = screen_size.height() / 2 - dimensions.height / 2;
   LOG() << "Reseting to default" << dimensions;
   emit windowDimensionsChanaged();
+}
+
+void ViewSystem::OpenViewOfCurrentProjectOr(const QString &default_view) {
+  QUuid project_id = Application::Get().project.GetCurrentProject().id;
+  IoTask::Run<QStringList>(
+      this,
+      [project_id] {
+        return Database::ExecQueryAndRead<QString>(
+            "SELECT name FROM current_view WHERE project_id=?",
+            &Database::ReadStringFromSql, {project_id});
+      },
+      [this, default_view](QStringList views) {
+        if (views.isEmpty()) {
+          SetCurrentView(default_view);
+        } else {
+          SetCurrentView(views[0]);
+        }
+      });
 }
 
 void ViewSystem::saveWindowDimensions(int width, int height, int x, int y,
