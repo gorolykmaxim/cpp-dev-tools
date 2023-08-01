@@ -383,7 +383,8 @@ static QList<TextFormat> ParseByRegex(const QString &text,
 }
 
 static QList<TextFormat> ParseNumbers(const QString &text) {
-  static const Regex kRegex("\\b(\\d+(?:\\.\\d+)?|0x[0-9a-fA-F]+)\\b");
+  static const Regex kRegex(
+      "\\b(\\d+(?:\\.\\d+)?[flFL]{0,1}|0x[0-9a-fA-F]+)\\b");
   static const QTextCharFormat format = TextColorToFormat("#b5cea8");
   return ParseByRegex(text, format, kRegex);
 }
