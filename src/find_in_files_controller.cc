@@ -283,7 +283,9 @@ void FindInFilesController::OnSelectedResultChanged() {
           if (!file.open(QIODeviceBase::ReadOnly)) {
             return "Failed to open file: " + file.errorString();
           }
-          return QString(file.readAll());
+          QString content(file.readAll());
+          content.remove('\r');
+          return content;
         },
         [this, result](QString content) {
           selected_file_path = result.file_path;
