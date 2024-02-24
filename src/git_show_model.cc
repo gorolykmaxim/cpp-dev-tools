@@ -6,6 +6,8 @@
 
 #define LOG() qDebug() << "[GitShowModel]"
 
+static const QString kMoveSign = " => ";
+
 GitShowModel::GitShowModel(QObject *parent) : TextListModel(parent) {
   SetRoleNames({{0, "title"}, {1, "rightText"}});
   Application::Get().view.SetWindowTitle("Git Show");
@@ -44,6 +46,19 @@ QVariantList GitShowModel::GetRow(int i) const {
 
 int GitShowModel::GetRowCount() const { return files.size(); }
 
+static QString NormalizePathIfMove(const QString& path) {
+  int start_i = path.indexOf('{');
+  int move_i = path.indexOf(kMoveSign);
+  int end_i = path.indexOf('}');
+  if (start_i < 0 || move_i < 0 || end_i < 0 || !(start_i < move_i < end_i)) {
+    return path;
+  }
+  QString prefix = path.sliced(0, start_i);
+  QString suffix = end_i + 1 < path.size() ? path.sliced(end_i + 1) : "";
+  QStringList old_and_new = path.sliced(start_i + 1, end_i - start_i - 1).split(kMoveSign);
+  return prefix + old_and_new[0] + suffix + kMoveSign + prefix + old_and_new[1] + suffix;
+}
+
 void GitShowModel::FetchCommitInfo() {
   OsCommand::Run(
       "git", {"show", "--format=commit %H%nAuthor: %an %ae%nDate: %ad%n%n%B",
@@ -66,7 +81,8 @@ void GitShowModel::FetchCommitInfo() {
                 LOG() << "Failed to parse git show numstat line:" << line;
                 break;
               }
-              files.append({parts[2], parts[0].toInt(), parts[1].toInt()});
+              QString path = NormalizePathIfMove(parts[2]);
+              files.append({path, parts[0].toInt(), parts[1].toInt()});
             }
             Load();
             emit changeListChanged();
@@ -82,6 +98,7 @@ void GitShowModel::FetchCommitInfo() {
 
 void GitShowModel::DiffSelectedFile() {
   QString path = GetSelectedFileName();
+  path = path.contains(kMoveSign) ? path.split(kMoveSign)[1] : path;
   if (path.isEmpty()) {
     LOG() << "Clearing git diff view";
     SetDiff("", "");
