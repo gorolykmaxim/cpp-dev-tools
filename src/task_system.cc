@@ -145,7 +145,7 @@ void TaskSystem::FinishExecution(entt::entity entity, int exit_code) {
   LOG() << "Task execution" << exec.id << "finished with code" << exit_code;
   const Project& project = Application::Get().project.GetCurrentProject();
   QStringList indices;
-  for (int i : qAsConst(exec.stderr_line_indices)) {
+  for (int i : std::as_const(exec.stderr_line_indices)) {
     indices.append(QString::number(i));
   }
   QList<Database::Cmd> cmds;
