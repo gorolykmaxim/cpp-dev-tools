@@ -259,6 +259,8 @@ void UserCommandSystem::Initialize() {
   RegisterLocalCmd("GitLog", "Checkout", "Alt+C", cmds, user_cmd_index);
   RegisterLocalCmd("GitLog", "Cherry-Pick", "Alt+P", cmds, user_cmd_index);
   RegisterLocalCmd("GitLog", "New Branch", "Alt+N", cmds, user_cmd_index);
+  RegisterLocalCmd("GitLog", "Reset Soft", "Alt+R", cmds, user_cmd_index);
+  RegisterLocalCmd("GitLog", "Reset Hard", "Alt+Shift+R", cmds, user_cmd_index);
   RegisterLocalCmd("TestExecution", "Re-Run", "Alt+Shift+R", cmds,
                    user_cmd_index);
   RegisterLocalCmd("TestExecution", "Re-Run Until Fails", "Ctrl+Alt+Shift+R",

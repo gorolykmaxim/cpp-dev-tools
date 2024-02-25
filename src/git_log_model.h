@@ -32,6 +32,7 @@ class GitLogModel : public TextListModel {
   void load(bool only_reselect = false);
   void checkout();
   void cherryPick();
+  void reset(bool hard);
 
  protected:
   QVariantList GetRow(int i) const;
@@ -43,6 +44,7 @@ class GitLogModel : public TextListModel {
 
  private:
   void SaveOptions() const;
+  void ExecuteGitCommand(const QStringList& args, const QString& error_title);
 
   QString branch_or_file;
   QString search_term;

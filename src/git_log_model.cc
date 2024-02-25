@@ -103,35 +103,31 @@ void GitLogModel::load(bool only_reselect) {
 }
 
 void GitLogModel::checkout() {
-  int i = GetSelectedItemIndex();
-  if (i < 0) {
+  QString sha = GetSelectedCommitSha();
+  if (sha.isEmpty()) {
     return;
   }
-  const GitCommit& commit = list[i];
-  LOG() << "Checking-out commit" << commit.sha;
-  OsCommand::Run("git", {"checkout", commit.sha}, "",
-                 "Git: Failed to checkout " + commit.sha)
-      .Then(this, [this](OsProcess p) {
-        if (p.exit_code == 0) {
-          load();
-        }
-      });
+  LOG() << "Checking-out commit" << sha;
+  ExecuteGitCommand({"checkout", sha}, "Git: Failed to checkout " + sha);
 }
 
 void GitLogModel::cherryPick() {
-  int i = GetSelectedItemIndex();
-  if (i < 0) {
+  QString sha = GetSelectedCommitSha();
+  if (sha.isEmpty()) {
     return;
   }
-  const GitCommit& commit = list[i];
-  LOG() << "Cherry-picking commit" << commit.sha;
-  OsCommand::Run("git", {"cherry-pick", commit.sha}, "",
-                 "Git: Failed to cherry-pick " + commit.sha)
-      .Then(this, [this](OsProcess p) {
-        if (p.exit_code == 0) {
-          load();
-        }
-      });
+  LOG() << "Cherry-picking commit" << sha;
+  ExecuteGitCommand({"cherry-pick", sha}, "Git: Failed to cherry-pick " + sha);
+}
+
+void GitLogModel::reset(bool hard) {
+  QString sha = GetSelectedCommitSha();
+  if (sha.isEmpty()) {
+    return;
+  }
+  LOG() << "Resetting (hard:" << hard << ") current bracn to commit" << sha;
+  ExecuteGitCommand({"reset", hard ? "--hard" : "--soft", sha},
+                    "Git: Failed to reset to commit " + sha);
 }
 
 QVariantList GitLogModel::GetRow(int i) const {
@@ -146,4 +142,14 @@ void GitLogModel::SaveOptions() const {
   Database::ExecCmdAsync(
       "INSERT OR REPLACE INTO git_log_context VALUES(?, ?, ?)",
       {project_id, branch_or_file, search_term});
+}
+
+void GitLogModel::ExecuteGitCommand(const QStringList& args,
+                                    const QString& error_title) {
+  OsCommand::Run("git", args, "", error_title)
+      .Then(this, [this](OsProcess p) {
+        if (p.exit_code == 0) {
+          load();
+        }
+      });
 }

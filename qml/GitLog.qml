@@ -90,6 +90,18 @@ Loader {
           enabled: gitLogList.activeFocus
           onTriggered: root.sourceComponent = createView
         }
+        MenuItem {
+          text: "Reset Soft"
+          shortcut: gSC("GitLog", "Reset Soft")
+          enabled: gitLogList.activeFocus
+          onTriggered: logModel.reset(false)
+        }
+        MenuItem {
+          text: "Reset Hard"
+          shortcut: gSC("GitLog", "Reset Hard")
+          enabled: gitLogList.activeFocus
+          onTriggered: logModel.reset(true)
+        }
       }
     }
   }
