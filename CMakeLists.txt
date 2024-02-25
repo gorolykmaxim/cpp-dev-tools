@@ -101,6 +101,8 @@ qt_add_executable(cpp-dev-tools
   src/gtest_execution_model.cc
   src/keyboard_shortcuts_model.h
   src/keyboard_shortcuts_model.cc
+  src/threads.h
+  src/threads.cc
   src/main.cc)
 if(NOT MSVC)
   # TODO: figure out how to enable all warnings in MSVC without triggering

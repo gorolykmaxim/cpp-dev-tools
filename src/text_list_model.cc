@@ -5,6 +5,7 @@
 #include <limits>
 
 #include "theme.h"
+#include "threads.h"
 
 #define LOG() qDebug() << "[TextListModel]"
 
@@ -212,20 +213,7 @@ void TextListModel::Load(int item_to_select) {
   cmd_buffer.Clear();
   cmd_buffer.ScheduleCommands(
       count, 2000, [this, not_filtered, filtered](int first, int last) {
-        // Split current items segment among threads.
-        int threads = QThreadPool::globalInstance()->maxThreadCount();
-        int count_per_thread = (last - first + 1) / threads;
-        QList<std::pair<int, int>> ranges;
-        int start = first;
-        int end = first;
-        for (int i = 0; i < threads - 1; i++) {
-          start = first + i * count_per_thread;
-          end = start + count_per_thread;
-          ranges.append(std::make_pair(start, end));
-        }
-        start = end;
-        end = last + 1;
-        ranges.append(std::make_pair(start, end));
+        QList<std::pair<int, int>> ranges = Threads::SplitArrayAmongThreads(last - first + 1, first);
         // Fuzzy-highlight search results in parallel.
         QtConcurrent::blockingMap(
             ranges, [this, not_filtered](std::pair<int, int> range) {

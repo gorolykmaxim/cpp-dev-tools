@@ -6,6 +6,7 @@
 #include "io_task.h"
 #include "path.h"
 #include "theme.h"
+#include "threads.h"
 
 #define LOG() qDebug() << "[FindInFilesController]"
 
@@ -75,7 +76,8 @@ QString FindInFilesController::GetSearchStatus() const {
 
 static bool IsBinaryFile(const QString& line, bool& seen_replacement_char,
                          bool& seen_null) {
-  if (line.contains("\uFFFD")) {
+  static const QString kReplacementChar("\uFFFD");
+  if (line.contains(kReplacementChar)) {
     seen_replacement_char = true;
   }
   if (line.contains('\0')) {
@@ -203,10 +205,20 @@ void FindInFilesController::search() {
           if (options.exclude_git_ignored_files) {
             paths_to_exclude = GitSystem::FindIgnoredPathsSync();
           }
+          QStringList files_to_scan;
           for (const QString& folder : folders) {
             QDirIterator it(folder, QDir::Files, QDirIterator::Subdirectories);
             while (it.hasNext()) {
-              QFile file(it.next());
+              files_to_scan.append(it.next());
+            }
+          }
+          QList<std::pair<int, int>> ranges = Threads::SplitArrayAmongThreads(
+              files_to_scan.size());
+          QtConcurrent::blockingMap(ranges, [&files_to_scan, &paths_to_exclude,
+                                             &options, &search_term_regex,
+                                             &search_term, &promise](std::pair<int, int> range) {
+            for (int i = range.first; i < range.second; i++) {
+              QFile file(files_to_scan[i]);
               bool file_excluded = false;
               for (const QString& excluded_path : paths_to_exclude) {
                 if (file.fileName().startsWith(excluded_path)) {
@@ -231,8 +243,9 @@ void FindInFilesController::search() {
               bool seen_null = false;
               int column = 1;
               int line_offset = 0;
+              QString line;
               while (!stream.atEnd()) {
-                QString line = stream.readLine();
+                stream.readLineInto(&line);
                 if (IsBinaryFile(line, seen_replacement_char, seen_null)) {
                   LOG() << "Skipping binary file" << file.fileName();
                   file_results.clear();
@@ -259,7 +272,7 @@ void FindInFilesController::search() {
                 promise.addResult(file_results);
               }
             }
-          }
+          });
         });
     search_result_watcher.setFuture(future);
   }
