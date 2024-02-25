@@ -11,6 +11,18 @@
 
 static const QString kMoveSign = " -> ";
 
+bool ChangedFile::IsUntracked() const {
+  return index_status == kUntracked && work_tree_status == kUntracked;
+}
+
+bool ChangedFile::HasChanges(Status status) {
+  return status != kUntracked && status != kUnmodified;
+}
+
+bool ChangedFile::IsNew(Status status) {
+  return status == kUntracked || status == kNew;
+}
+
 GitCommitController::GitCommitController(QObject *parent)
     : QObject(parent), files(new ChangedFileListModel(this)),
       formatter(new CommitMessageFormatter(this)) {
@@ -52,6 +64,20 @@ int GitCommitController::CalcSideBarWidthLong() const {
          Theme().kBasePadding;
 }
 
+static ChangedFile::Status ParseStatus(const QString& line, int i) {
+  if (line[i] == '?') {
+    return ChangedFile::kUntracked;
+  } else if (line[i] == 'A') {
+    return ChangedFile::kNew;
+  } else if (line[i] == 'M') {
+    return ChangedFile::kModified;
+  } else if (line[i] == 'D') {
+    return ChangedFile::kDeleted;
+  } else {
+    return ChangedFile::kUnmodified;
+  }
+}
+
 void GitCommitController::findChangedFiles() {
   LOG() << "Looking for changed files";
   OsCommand::Run("git", {"status", "--porcelain=v1"}, "",
@@ -66,15 +92,8 @@ void GitCommitController::findChangedFiles() {
             } else {
               for (QString line : p.output.split('\n', Qt::SkipEmptyParts)) {
                 ChangedFile f;
-                f.is_staged = !line.startsWith(' ') && !line.startsWith('?');
-                int status = f.is_staged ? 0 : 1;
-                if (line[status] == '?' || line[status] == 'A') {
-                  f.status = ChangedFile::kNew;
-                } else if (line[status] == 'M') {
-                  f.status = ChangedFile::kModified;
-                } else if (line[status] == 'D') {
-                  f.status = ChangedFile::kDeleted;
-                }
+                f.index_status = ParseStatus(line, 0);
+                f.work_tree_status = ParseStatus(line, 1);
                 f.path = line.sliced(3);
                 files->list.append(f);
               }
@@ -113,7 +132,7 @@ void GitCommitController::findChangedFiles() {
           // won't tell about them.
           QList<QString> untracked_files;
           for (ChangedFile &f : files->list) {
-            if (!f.is_staged && f.status == ChangedFile::kNew) {
+            if (f.IsUntracked()) {
               untracked_files.append(f.path);
             }
           }
@@ -154,7 +173,7 @@ void GitCommitController::toggleStagedSelectedFile() {
   if (!f) {
     return;
   }
-  if (f->is_staged) {
+  if (ChangedFile::HasChanges(f->index_status) && !ChangedFile::HasChanges(f->work_tree_status)) {
     QString path = GetNewFilePath(*f);
     LOG() << "Unstaging" << path;
     ExecuteGitCommand({"restore", "--staged", path}, "",
@@ -175,7 +194,7 @@ void GitCommitController::resetSelectedFile() {
   if (f->path.contains(kMoveSign)) {
     QStringList parts = f->path.split(kMoveSign);
     ExecuteGitCommand({"mv", parts[1], parts[0]}, "", kErr);
-  } else if (!f->is_staged && f->status == ChangedFile::kNew) {
+  } else if (f->IsUntracked()) {
     QString path = f->path;
     IoTask::Run(
         this,
@@ -187,7 +206,7 @@ void GitCommitController::resetSelectedFile() {
           }
         },
         [this] { findChangedFiles(); });
-  } else if (f->is_staged && f->status == ChangedFile::kNew) {
+  } else if (f->index_status == ChangedFile::kNew) {
     ExecuteGitCommand({"rm", "-f", f->path}, "", kErr);
   } else {
     ExecuteGitCommand({"checkout", "HEAD", "--", f->path}, "", kErr);
@@ -201,7 +220,7 @@ void GitCommitController::commit(bool commit_all, bool amend) {
   if (commit_all) {
     QStringList untracked;
     for (const ChangedFile &f : files->list) {
-      if (f.status == ChangedFile::kNew && !f.is_staged) {
+      if (f.IsUntracked()) {
         untracked.append(f.path);
       }
     }
@@ -301,7 +320,7 @@ void GitCommitController::DiffSelectedFile() {
   QString path = GetNewFilePath(*selected);
   LOG() << "Will get git diff of" << path;
   Promise<OsProcess> git_diff;
-  if (selected->status == ChangedFile::kNew && !selected->is_staged) {
+  if (selected->IsUntracked()) {
     git_diff =
         OsCommand::Run("git", {"diff", "--no-index", "--", "/dev/null", path},
                        "", kErrorTitle, "", 1)
@@ -365,14 +384,18 @@ QString ChangedFileListModel::GetStats() const {
 QVariantList ChangedFileListModel::GetRow(int i) const {
   const ChangedFile &f = list[i];
   QString color;
-  if (f.status == ChangedFile::kNew) {
+  if (ChangedFile::IsNew(f.index_status) || ChangedFile::IsNew(f.work_tree_status)) {
     color = "lime";
-  } else if (f.status == ChangedFile::kDeleted) {
+  } else if (f.index_status == ChangedFile::kDeleted || f.work_tree_status == ChangedFile::kDeleted) {
     color = "red";
   }
-  QString icon = "check_box_outline_blank";
-  if (f.is_staged) {
-    icon = "check_box";
+  QString icon;
+  if (ChangedFile::HasChanges(f.index_status) && ChangedFile::HasChanges(f.work_tree_status)) {
+    icon = "offline_pin";
+  } else if (ChangedFile::HasChanges(f.index_status)) {
+    icon = "check_circle";
+  } else {
+    icon = "radio_button_unchecked";
   }
   return {f.path, color, icon, color,
           GitSystem::FormatChangeStats(f.additions, f.removals)};

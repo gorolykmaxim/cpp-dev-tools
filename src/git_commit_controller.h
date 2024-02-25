@@ -11,15 +11,21 @@
 
 struct ChangedFile {
   enum Status {
+    kUnmodified,
+    kUntracked,
     kNew,
     kModified,
     kDeleted,
   };
-  Status status = kNew;
-  bool is_staged = false;
+  Status index_status = kUnmodified;
+  Status work_tree_status = kUnmodified;
   int additions = 0;
   int removals = 0;
   QString path;
+
+  bool IsUntracked() const;
+  static bool HasChanges(Status status);
+  static bool IsNew(Status status);
 };
 
 class ChangedFileListModel : public TextListModel {
