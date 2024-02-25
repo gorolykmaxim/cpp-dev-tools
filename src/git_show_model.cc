@@ -50,7 +50,7 @@ static QString NormalizePathIfMove(const QString& path) {
   int start_i = path.indexOf('{');
   int move_i = path.indexOf(kMoveSign);
   int end_i = path.indexOf('}');
-  if (start_i < 0 || move_i < 0 || end_i < 0 || !(start_i < move_i < end_i)) {
+  if (start_i < 0 || move_i < 0 || end_i < 0 || !(start_i < move_i && move_i < end_i)) {
     return path;
   }
   QString prefix = path.sliced(0, start_i);
