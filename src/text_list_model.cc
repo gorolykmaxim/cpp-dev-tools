@@ -132,7 +132,7 @@ static HighlightResult HighlightFuzzySubString(const QString& source,
         if (match_length > 0 && match_length < min_sub_match_length) {
           // Last sub-match didn't become confirmed.
           // Rollback 'term' index to last confirmed sub-match position.
-          ti = last_ti_match;
+          ti = last_ti_match + 1;
           // Rollback 'source' index to the first char of current sub-match,
           // since we need to add it to the 'result' and restart search from the
           // next char.
