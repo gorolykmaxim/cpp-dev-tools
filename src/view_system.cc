@@ -6,6 +6,7 @@
 #include <QGuiApplication>
 #include <QQmlContext>
 #include <QScreen>
+#include <QSet>
 
 #include "database.h"
 #include "io_task.h"
@@ -54,6 +55,7 @@ int ViewSystem::CalcWidthInMonoFont(const QString &str) {
 }
 
 void ViewSystem::SetCurrentView(const QString &current_view) {
+  static const QSet<QString> kTransientViews = {"TaskExecution.qml"};
   emit dialogClosed();
   LOG() << "Changing current view to" << current_view;
   this->current_view = "";
@@ -61,7 +63,7 @@ void ViewSystem::SetCurrentView(const QString &current_view) {
   this->current_view = current_view;
   emit currentViewChanged();
   Project project = Application::Get().project.GetCurrentProject();
-  if (!project.IsNull()) {
+  if (!project.IsNull() && !kTransientViews.contains(current_view)) {
     Database::ExecCmdAsync("INSERT OR REPLACE INTO current_view VALUES(?, ?)",
                            {project.id, current_view});
   }
