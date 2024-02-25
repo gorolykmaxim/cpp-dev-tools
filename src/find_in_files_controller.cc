@@ -206,35 +206,45 @@ void FindInFilesController::search() {
             paths_to_exclude = GitSystem::FindIgnoredPathsSync();
           }
           QStringList files_to_scan;
-          for (const QString& folder : folders) {
-            QDirIterator it(folder, QDir::Files, QDirIterator::Subdirectories);
-            while (it.hasNext()) {
-              files_to_scan.append(it.next());
+          QStringList visiting = folders;
+          while (!visiting.isEmpty()) {
+            QStringList to_visit;
+            for (const QString& folder : visiting) {
+              QDirIterator it(folder, QDir::AllEntries | QDir::NoDotAndDotDot);
+              while (it.hasNext()) {
+                QString path = it.next();
+                bool file_excluded = false;
+                for (const QString& excluded_path : paths_to_exclude) {
+                  if (path.startsWith(excluded_path)) {
+                    file_excluded = true;
+                    break;
+                  }
+                }
+                bool not_included = !options.files_to_include.isEmpty() &&
+                                    !Path::MatchesWildcard(
+                                        path, options.files_to_include);
+                bool excluded = !options.files_to_exclude.isEmpty() &&
+                                Path::MatchesWildcard(path,
+                                                      options.files_to_exclude);
+                if (file_excluded || not_included || excluded) {
+                  continue;
+                }
+                if (it.fileInfo().isDir()) {
+                  to_visit.append(path);
+                } else {
+                  files_to_scan.append(path);
+                }
+              }
             }
+            visiting = to_visit;
           }
           QList<std::pair<int, int>> ranges = Threads::SplitArrayAmongThreads(
               files_to_scan.size());
-          QtConcurrent::blockingMap(ranges, [&files_to_scan, &paths_to_exclude,
-                                             &options, &search_term_regex,
+          QtConcurrent::blockingMap(ranges, [&files_to_scan, &options, &search_term_regex,
                                              &search_term, &promise](std::pair<int, int> range) {
             for (int i = range.first; i < range.second; i++) {
               QFile file(files_to_scan[i]);
-              bool file_excluded = false;
-              for (const QString& excluded_path : paths_to_exclude) {
-                if (file.fileName().startsWith(excluded_path)) {
-                  file_excluded = true;
-                  break;
-                }
-              }
-              bool not_included =
-                  !options.files_to_include.isEmpty() &&
-                  !Path::MatchesWildcard(file.fileName(),
-                                         options.files_to_include);
-              bool excluded = !options.files_to_exclude.isEmpty() &&
-                              Path::MatchesWildcard(file.fileName(),
-                                                    options.files_to_exclude);
-              if (file_excluded || not_included || excluded ||
-                  !file.open(QIODevice::ReadOnly)) {
+              if (!file.open(QIODevice::ReadOnly)) {
                 continue;
               }
               QTextStream stream(&file);
