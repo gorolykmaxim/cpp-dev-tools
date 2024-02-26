@@ -5,7 +5,6 @@
 #include "application.h"
 #include "database.h"
 #include "io_task.h"
-#include "theme.h"
 
 #define LOG() qDebug() << "[GitCommitController]"
 
@@ -53,16 +52,6 @@ GitCommitController::GitCommitController(QObject *parent)
 }
 
 bool GitCommitController::HasChanges() const { return !files->list.isEmpty(); }
-
-int GitCommitController::CalcSideBarWidthShort() const {
-  return ViewSystem::CalcWidthInMonoFont(QString(50, 'a')) +
-         Theme().kBasePadding;
-}
-
-int GitCommitController::CalcSideBarWidthLong() const {
-  return ViewSystem::CalcWidthInMonoFont(QString(72, 'a')) +
-         Theme().kBasePadding;
-}
 
 static ChangedFile::Status ParseStatus(const QString& line, int i) {
   if (line[i] == '?') {

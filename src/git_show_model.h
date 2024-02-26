@@ -15,7 +15,6 @@ class GitShowModel : public TextListModel {
   Q_OBJECT
   QML_ELEMENT
   Q_PROPERTY(QString sha MEMBER sha NOTIFY shaChanged)
-  Q_PROPERTY(int sidebarWidth READ CalSidebarWidth CONSTANT)
   Q_PROPERTY(QString stats READ GetStats NOTIFY changeListChanged)
   Q_PROPERTY(bool hasChanges READ HasChanges NOTIFY changeListChanged)
   Q_PROPERTY(
@@ -26,7 +25,6 @@ class GitShowModel : public TextListModel {
   Q_PROPERTY(QString diffError MEMBER diff_error NOTIFY rawDiffChanged)
  public:
   explicit GitShowModel(QObject* parent = nullptr);
-  int CalSidebarWidth() const;
   QString GetStats() const;
   bool HasChanges() const;
   QString GetSelectedFileName() const;

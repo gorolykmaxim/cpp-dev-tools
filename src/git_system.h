@@ -16,6 +16,8 @@ class GitSystem : public QObject {
   Q_OBJECT
   Q_PROPERTY(QString currentBranch READ GetCurrentBranchName NOTIFY
                  currentBranchChanged)
+  Q_PROPERTY(int commitMessageWidthShort READ CalcCommitMessageWidthShort CONSTANT)
+  Q_PROPERTY(int commitMessageWidthLong READ CalcCommitMessageWidthLong CONSTANT)
  public:
   static QList<QString> FindIgnoredPathsSync();
   static QString FormatChangeStats(int additions, int removals);
@@ -28,6 +30,8 @@ class GitSystem : public QObject {
   QString GetCurrentBranchName() const;
   Promise<OsProcess> CreateBranch(const QString& name, const QString& basis);
   void FindBranches();
+  int CalcCommitMessageWidthShort() const;
+  int CalcCommitMessageWidthLong() const;
 
  public slots:
   void refreshBranchesIfProjectSelected();

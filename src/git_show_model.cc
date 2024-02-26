@@ -2,7 +2,6 @@
 
 #include "application.h"
 #include "os_command.h"
-#include "theme.h"
 
 #define LOG() qDebug() << "[GitShowModel]"
 
@@ -15,11 +14,6 @@ GitShowModel::GitShowModel(QObject *parent) : TextListModel(parent) {
           &GitShowModel::DiffSelectedFile);
   connect(this, &GitShowModel::shaChanged, this,
           &GitShowModel::FetchCommitInfo);
-}
-
-int GitShowModel::CalSidebarWidth() const {
-  return ViewSystem::CalcWidthInMonoFont(QString(50, 'a')) +
-         Theme().kBasePadding;
 }
 
 QString GitShowModel::GetStats() const {

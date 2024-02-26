@@ -6,6 +6,7 @@
 
 #include "application.h"
 #include "os_command.h"
+#include "theme.h"
 
 #define LOG() qDebug() << "[GitSystem]"
 
@@ -142,6 +143,14 @@ void GitSystem::FindBranches() {
           emit currentBranchChanged();
         }
       });
+}
+
+int GitSystem::CalcCommitMessageWidthShort() const {
+  return ViewSystem::CalcWidthInMonoFont(QString(50, 'a')) + Theme().kBasePadding;
+}
+
+int GitSystem::CalcCommitMessageWidthLong() const {
+  return ViewSystem::CalcWidthInMonoFont(QString(72, 'a')) + Theme().kBasePadding;
 }
 
 void GitSystem::refreshBranchesIfProjectSelected() {

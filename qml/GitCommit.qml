@@ -25,9 +25,9 @@ SplitView {
   }
   SplitView {
     id: sidebar
-    SplitView.minimumWidth: controller.sidebarWidthLong <= root.width * 0.4 ?
-                              controller.sidebarWidthLong :
-                              controller.sidebarWidthShort
+    SplitView.minimumWidth: gitSystem.commitMessageWidthLong <= root.width * 0.4 ?
+                              gitSystem.commitMessageWidthLong :
+                              gitSystem.commitMessageWidthShort
     SplitView.fillHeight: true
     orientation: Qt.Vertical
     handle: Cdt.SplitViewHandle {
