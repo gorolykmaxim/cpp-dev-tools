@@ -6,3 +6,4 @@ cmake --build build-release
 cd build-release
 rm -f cpp-dev-tools.dmg
 ${CMAKE_PREFIX_PATH}/../../bin/macdeployqt cpp-dev-tools.app -qmldir=../qml -dmg
+open .
