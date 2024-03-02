@@ -220,13 +220,7 @@ void FindInFilesController::search() {
                     break;
                   }
                 }
-                bool not_included = !options.files_to_include.isEmpty() &&
-                                    !Path::MatchesWildcard(
-                                        path, options.files_to_include);
-                bool excluded = !options.files_to_exclude.isEmpty() &&
-                                Path::MatchesWildcard(path,
-                                                      options.files_to_exclude);
-                if (file_excluded || not_included || excluded) {
+                if (file_excluded) {
                   continue;
                 }
                 if (it.fileInfo().isDir()) {
@@ -240,11 +234,20 @@ void FindInFilesController::search() {
           }
           QList<std::pair<int, int>> ranges = Threads::SplitArrayAmongThreads(
               files_to_scan.size());
-          QtConcurrent::blockingMap(ranges, [&files_to_scan, &options, &search_term_regex,
-                                             &search_term, &promise](std::pair<int, int> range) {
+          QtConcurrent::blockingMap(ranges, [&files_to_scan, &options,
+                                             &search_term_regex, &search_term,
+                                             &promise](
+                                                std::pair<int, int> range) {
             for (int i = range.first; i < range.second; i++) {
               QFile file(files_to_scan[i]);
-              if (!file.open(QIODevice::ReadOnly)) {
+              bool not_included = !options.files_to_include.isEmpty() &&
+                                  !Path::MatchesWildcard(
+                                      file.fileName(),
+                                      options.files_to_include);
+              bool excluded = !options.files_to_exclude.isEmpty() &&
+                              Path::MatchesWildcard(file.fileName(),
+                                                    options.files_to_exclude);
+              if (not_included || excluded || !file.open(QIODevice::ReadOnly)) {
                 continue;
               }
               QTextStream stream(&file);
